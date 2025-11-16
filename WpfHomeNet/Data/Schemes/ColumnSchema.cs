@@ -14,11 +14,9 @@ namespace WpfHomeNet.Data.Schemes
         public bool IsUnique { get; set; }  // Новое свойство
         public bool IsAutoIncrement { get; set; }
         public DateTime? CreatedAt { get; set; }  // Новое свойство
-        public string? DefaultString { get; set; }
+        public bool IsCreatedAt { get; set; }  // true, если колонка — «время создания»
         public string? Comment { get; internal set; }
-        public int? DefaultInt { get; internal set; }
-        public DateTime? DefaultDateTime { get; internal set; }
-        public bool? DefaultBool { get; internal set; }
+
     }
 }
 

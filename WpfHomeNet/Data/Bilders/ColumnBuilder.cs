@@ -5,7 +5,7 @@ namespace WpfHomeNet.Data.Bilders
     using System;
     using WpfHomeNet.Data.Schemes;
 
-    public enum ColumnType { Int, Varchar, DateTime, Boolean }
+    public enum ColumnType { Unspecified, Int, Varchar, DateTime, Boolean }
 
     public class ColumnBuilder
     {
@@ -16,13 +16,16 @@ namespace WpfHomeNet.Data.Bilders
         private bool _isPrimaryKey;
         private bool _isUnique;
         private bool _isAutoIncrement;
-        private DateTime? _createdAt;
-        private string? _defaultString;
+        private DateTime? _createdAt;       
         private string? _comment;
-        private int? _defaultInt;
-        private bool? _defaultBool;
-        private DateTime? _defaultDateTime;
-        public ColumnBuilder(string name) => _name = name;
+        private bool _isCreatedAt;
+
+        public ColumnBuilder(string name)
+        {
+            _name = name;
+            _type = ColumnType.Unspecified;  // Явно задаём начальное состояние
+        }
+
 
         public ColumnBuilder WithType(ColumnType type)
         {
@@ -30,7 +33,7 @@ namespace WpfHomeNet.Data.Bilders
             return this;
         }
 
-        public ColumnBuilder Varchar(int length)
+        public ColumnBuilder AsVarchar(int length)
         {
             if (length < 1 || length > 65535)
                 throw new ArgumentOutOfRangeException(nameof(length),
@@ -41,7 +44,7 @@ namespace WpfHomeNet.Data.Bilders
             return this;
         }
 
-        public ColumnBuilder Integer()
+        public ColumnBuilder AsInteger()
         {
             _type = ColumnType.Int;
             return this;
@@ -71,36 +74,45 @@ namespace WpfHomeNet.Data.Bilders
             return this;
         }
 
+
+        public ColumnBuilder DateTime()
+        {
+            _type = ColumnType.DateTime;
+            return this;
+        }
+
+
         public ColumnBuilder CreatedAt(DateTime? timestamp = null)
         {
-            _createdAt = timestamp ?? DateTime.UtcNow;
+            if (_type == ColumnType.Unspecified)
+            {
+                _type = ColumnType.DateTime;  // Если тип не задан — устанавливаем
+            }
+            else if (_type != ColumnType.DateTime)
+            {
+                throw new InvalidOperationException(
+                    $"CreatedAt() requires DateTime type, but got {_type}.");
+            }
+
+            _createdAt = timestamp ?? System.DateTime.UtcNow;
             return this;
         }
 
-        public ColumnBuilder Default(string value)
+        public ColumnBuilder AsDateTime()
         {
-            _defaultString = value;
+            if (_type == ColumnType.Unspecified)
+            {
+                _type = ColumnType.DateTime;  // Авто установка типа
+            }
+            else if (_type != ColumnType.DateTime)
+            {
+                throw new InvalidOperationException("Для CreatedAt нужен DateTime!");
+            }
+
+            _isCreatedAt = true;  // Флаг: эта колонка — «время создания»
             return this;
         }
 
-
-        public ColumnBuilder Default(int value)
-        {
-            _defaultInt = value;
-            return this;
-        }
-
-        public ColumnBuilder Default(DateTime value)
-        {
-            _defaultDateTime = value;
-            return this;
-        }
-
-        public ColumnBuilder Default(bool value)
-        {
-            _defaultBool = value;
-            return this;
-        }
 
         public ColumnBuilder Comment(string text)
         {
@@ -126,11 +138,8 @@ namespace WpfHomeNet.Data.Bilders
                 IsPrimaryKey = _isPrimaryKey,
                 IsUnique = _isUnique,
                 IsAutoIncrement = _isAutoIncrement,
-                CreatedAt = _createdAt,
-                DefaultString = _defaultString,
-                DefaultInt = _defaultInt,
-                DefaultDateTime = _defaultDateTime,
-                DefaultBool = _defaultBool,
+                CreatedAt = _createdAt,   
+                IsCreatedAt = _isCreatedAt,
                 Comment = _comment
             };
         }

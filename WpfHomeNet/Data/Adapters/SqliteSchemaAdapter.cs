@@ -11,45 +11,67 @@ namespace WpfHomeNet.Data.Adapters
 
         public List<string> GetColumnDefinitions(TableSchema schema)
         {
+            // Валидация всех колонок
+            foreach (var col in schema.Columns)
+            {
+                ValidateColumn(col);
+            }
+
             return schema.Columns.Select(col =>
             {
-                // 1. Имя колонки в snake_case (в кавычках)
                 var name = $"\"{ToSnakeCase(col.Name)}\"";
 
-                // 2. Определяем SQL‑тип (с учётом особенностей SQLite)
-                string sqlType;
-                if (col.IsAutoIncrement && col.Type == ColumnType.Int)
+                string sqlType = col.Type switch
                 {
-                    sqlType = "INTEGER PRIMARY KEY"; // SQLite: автоинкремент через INTEGER PRIMARY KEY
-                }
-                else
-                {
-                    sqlType = col.Type switch
-                    {
-                        ColumnType.Varchar => $"VARCHAR({col.Length})",
-                        ColumnType.Int => "INTEGER",
-                        ColumnType.DateTime => "TIMESTAMP", // SQLite не имеет DATETIME, используем TIMESTAMP
-                        ColumnType.Boolean => "INTEGER",  // SQLite: BOOLEAN → INTEGER (0/1)
-                        _ => col.Type.ToString()
-                    };
-                }
+                    ColumnType.Varchar => $"TEXT",                    // SQLite: нет VARCHAR(N), используем TEXT
+                    ColumnType.Int => "INTEGER",                     // INTEGER = знаковое 64‑битное число
+                    ColumnType.DateTime => "TIMESTAMP",                // поддерживается, но без точности
+                    ColumnType.Boolean => "INTEGER",               // Boolean эмулируется как 0/1
+                    _ => throw new NotSupportedException($"Тип {col.Type} не поддерживается")
+                };
 
-                // 3. Собираем ограничения
                 var constraints = new List<string>();
 
-                if (col.IsNotNull && !col.IsAutoIncrement) // Для автоинкремента NOT NULL не нужен
-                    constraints.Add("NOT NULL");
+                if (col.IsCreatedAt)
+                {
+                    // SQLite: DEFAULT CURRENT_TIMESTAMP работает только для TIMESTAMP
+                    constraints.Add("DEFAULT CURRENT_TIMESTAMP");
+                }
 
-                if (col.IsPrimaryKey && !col.IsAutoIncrement) // Для автоинкремента PRIMARY KEY уже в типе
+                if (col.IsNotNull)
+                {
+                    constraints.Add("NOT NULL");
+                }
+
+                if (col.IsPrimaryKey)
+                {
                     constraints.Add("PRIMARY KEY");
 
-                if (col.IsUnique)
-                    constraints.Add("UNIQUE");
+                    // В SQLite PRIMARY KEY на INTEGER автоматически становится AUTOINCREMENT
+                    // Но явное указание не требуется — достаточно INTEGER PRIMARY KEY
+                }
 
-                // 4. Формируем итоговую строку
-                return $"{name} {sqlType} {string.Join(" ", constraints)}";
-            })
-            .ToList();
+                if (col.IsUnique)
+                {
+                    constraints.Add("UNIQUE");
+                }
+
+                var parts = new List<string> { name, sqlType };
+
+                if (constraints.Any())
+                    parts.Add(string.Join(" ", constraints));
+
+                return string.Join(" ", parts);
+            }).ToList();
+        }
+
+        private void ValidateColumn(ColumnSchema col)
+        {
+            if (col.Type == ColumnType.Unspecified)
+                throw new InvalidOperationException(
+                    $"Колонка '{col.Name}' " +
+                    $"не имеет заданного типа. Вызовите WithDateTime() " +
+                    $"или другой метод установки типа.");
         }
 
         private string ToSnakeCase(string name)
@@ -77,7 +99,4 @@ namespace WpfHomeNet.Data.Adapters
             return builder.ToString();
         }
     }
-
-
-
 }

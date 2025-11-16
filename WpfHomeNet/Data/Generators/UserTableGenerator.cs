@@ -1,27 +1,29 @@
-﻿namespace WpfHomeNet.Data.Generators
+﻿using WpfHomeNet.Data.Schemes;
+
+namespace WpfHomeNet.Data.Generators
 {
     public class UsersTableGenerator : TableGenerator
     {
         public UsersTableGenerator(): base( "users")
             
-        {               
-            { 
-                 AddColumn("Id").Integer().PrimaryKey().AutoIncrement().Build();
+        {                            
+                 AddColumn("Id").AsInteger().PrimaryKey().AutoIncrement();
                     
-                 AddColumn("FirstName").Varchar(255).NotNull() .Build();    
+                 AddColumn("FirstName").AsVarchar(50).NotNull();    
                     
-                 AddColumn("LastName") .Varchar(255).Build(); // NULL разрешён
+                 AddColumn("LastName").AsVarchar(50); // NULL разрешён
                     
-                 AddColumn("PhoneNumber").Varchar(255).Build();  // NULL разрешён   
+                 AddColumn("PhoneNumber").AsVarchar(50);  // NULL разрешён   
                    
-                 AddColumn("Email").Varchar(255).NotNull().Unique().Build();
+                 AddColumn("Email").AsVarchar(50).NotNull().Unique();
                
-                 AddColumn("Password").Varchar(255).NotNull().Build();               
+                 AddColumn("Password").AsVarchar(50).NotNull();               
                     
-                 AddColumn("CreatedAt").NotNull().CreatedAt().Build();
-                  
-            };
+                 AddColumn("CreatedAt").CreatedAt().NotNull();                             
         }
+
+        // Явный метод для получения схемы
+        public TableSchema Build() => Generate();
     }
 
 
