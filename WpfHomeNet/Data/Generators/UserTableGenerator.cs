@@ -9,17 +9,17 @@ namespace WpfHomeNet.Data.Generators
         {                            
                  AddColumn("Id").AsInteger().PrimaryKey().AutoIncrement();
                     
-                 AddColumn("FirstName").AsVarchar(50).NotNull();    
+                 AddColumn("FirstName").AsVarchar(50).DisallowNull();    
                     
-                 AddColumn("LastName").AsVarchar(50); // NULL разрешён
+                 AddColumn("LastName").AsVarchar(50).AllowNull(); // NULL разрешён
                     
-                 AddColumn("PhoneNumber").AsVarchar(50);  // NULL разрешён   
+                 AddColumn("PhoneNumber").AsVarchar(50).AllowNull();  // NULL разрешён   
                    
-                 AddColumn("Email").AsVarchar(50).NotNull().Unique();
+                 AddColumn("Email").AsVarchar(50).DisallowNull().Unique();
                
-                 AddColumn("Password").AsVarchar(50).NotNull();               
+                 AddColumn("Password").AsVarchar(50).DisallowNull();               
                     
-                 AddColumn("CreatedAt").CreatedAt().NotNull();                             
+                 AddColumn("CreatedAt").CreatedAt().DisallowNull();                             
         }
 
         // Явный метод для получения схемы

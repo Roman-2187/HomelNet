@@ -1,26 +1,34 @@
 ﻿using Dapper;
 using System.Data;
 using System.Data.Common;
-using WpfHomeNet.Data.GetTableStructure;
+using WpfHomeNet.Data.Generators;
+
+using WpfHomeNet.Data.Schemes;
 using WpfHomeNet.Data.TableUserBDs;
 using WpfHomeNet.Helpers;
 public class DBInitializer
 {
     IDbConnection _dbConnection;
-    private readonly IBaseUsersTable _usersTable;
+    ISqlQueryGenerator _sqlQueryGenerator;
     private readonly ILogger _logger;
-    private readonly GetBaseTableSchema _schemaProvider;
-   
-    public DBInitializer(
+    ISchemaProvider _schemaProvider;
+    TableSchema _tableSchema;
+
+
+    public DBInitializer
+        (
+        ISchemaProvider schemaProvider,
         IDbConnection connection,
-        IBaseUsersTable usersTable,
-        GetBaseTableSchema schemaProvider,
-        ILogger logger)
+        ISqlQueryGenerator sqlQueryGenerator,
+        TableSchema tableSchema,
+        ILogger logger
+        )
     {
         _dbConnection = connection;
-        _usersTable = usersTable;
-        _schemaProvider = schemaProvider;
+        _tableSchema = tableSchema;
+        _sqlQueryGenerator = sqlQueryGenerator;
         _logger = logger;
+        _schemaProvider = schemaProvider;
 
     }
 
@@ -30,7 +38,7 @@ public class DBInitializer
 
         if (!await TableExistsAsync())
         {
-            await CreateUsersTableAsync();
+            await CreateTableAsync();
         }
 
         else
@@ -45,30 +53,33 @@ public class DBInitializer
         {
             await _dbConnection.OpenAsync();
         }
-        return await _dbConnection.ExecuteScalarAsync<int>
-        (_usersTable.GenerateTableExistsSql(), new { tableName = _usersTable.TableName }) > 0;
+
+        return await _dbConnection.ExecuteScalarAsync<int>(
+            _sqlQueryGenerator.GenerateTableExistsSql(),
+            new { tableName = _tableSchema.TableName } ) > 0;
+       
     }
 
 
-    private async Task CreateUsersTableAsync()
+    private async Task CreateTableAsync()
     {
-        _logger.LogWarning("Таблица users не найдена. Создаю новую...");
+        _logger.LogWarning($"Таблица {_tableSchema.TableName} не найдена. Создаю новую...");
         try
         {
             if (_dbConnection.State != ConnectionState.Open)
             {
                 await _dbConnection.OpenAsync();
             }
-            await _dbConnection.ExecuteAsync(_usersTable.GenerateCreateTableSql());
+            await _dbConnection.ExecuteAsync(_sqlQueryGenerator.GenerateCreateTableSql());
 
             if (await TableExistsAsync()) _logger.LogDebug("Таблица users успешно создана.");
 
             else
             {
                 _logger.LogError(
-        "Таблица users не создана. " +
-        $"SQL: {_usersTable.GenerateCreateTableSql()}, " +
-        $"Соединение: connectionState{_dbConnection.State}");
+               "Таблица users не создана. " +
+               $"SQL: {_sqlQueryGenerator.GenerateCreateTableSql()}, " +
+               $"Соединение: connectionState{_dbConnection.State}");
             }
         }
         catch (Exception ex)
@@ -81,43 +92,93 @@ public class DBInitializer
 
     private async Task CheckTableStructureAsync()
     {
-        _logger.LogInformation("Проверяю структуру таблицы {Table}...", _usersTable.TableName);
-
+       var expectedSchema = _tableSchema;
         try
         {
-            await _dbConnection.OpenAsync();
-
-            // Создаём actualColumns прямо здесь — только для этой проверки
-            var actualColumns = await _schemaProvider.GetActualColumnsAsync(
-                (DbConnection)_dbConnection,
-                _usersTable.TableName
-            );
-
-            // Создаём expectedColumns здесь — только для сравнения
-            var expectedColumns = _usersTable.Columns.ToDictionary(c => c.Key.ToLower(), c => c.Value);
-               
-
-            _logger.LogDebug($"Ожидается колонок: ExpectedCount{expectedColumns.Count}, найдено: ActualCount {actualColumns.Count}");
-
-            var issues = _schemaProvider.CompareWithExpected(actualColumns, expectedColumns);
-
-
-            if (!issues.Any())
+            if (_dbConnection.State != ConnectionState.Open)
             {
-                _logger.LogInformation("Структура таблицы {Table} корректна.", _usersTable.TableName);
+                await _dbConnection.OpenAsync();
+            }
+              
+                              
+            if (!await TableExistsAsync())
+            {
+                Console.WriteLine($"❌ Таблица {expectedSchema.TableName} не существует!");
+                return;
+            }
+
+
+            // 2. Получаем фактическую схему из БД
+            List<ColumnSchema> columnSchemas = await _schemaProvider.GetActualColumnsAsync(
+                (DbConnection)_dbConnection,
+                expectedSchema.TableName);
+            var actualColumns = columnSchemas;
+
+            var actualSchema = new TableSchema
+            {
+                TableName = expectedSchema.TableName,
+                Columns = actualColumns
+            };
+
+            // 3. Сравниваем схемы
+            var comparer = new SchemaComparer();
+            var diff = comparer.Compare(expectedSchema, actualSchema);
+
+            // 4. Обрабатываем результаты
+            if (diff.IsIdentical)
+            {
+                Console.WriteLine("✅ Схема таблицы соответствует ожидаемой!");
             }
             else
             {
-                foreach (var issue in issues)
-                _logger.LogError(issue);
-                _logger.LogWarning($"Найдено IssueCount{issues.Count} проблем в структуре таблицы Table{_usersTable.TableName}.");
+                if (diff.MissingColumns.Any())
+                    Console.WriteLine($"❌ Отсутствуют колонки: {string.Join(", ", diff.MissingColumns.Select(c => c.Name))}");
+
+                if (diff.ExtraColumns.Any())
+                    Console.WriteLine($"⚠️ Лишние колонки: {string.Join(", ", diff.ExtraColumns.Select(c => c.Name))}");
+
+                if (diff.MismatchedColumns.Any())
+                {
+                    foreach (var mismatch in diff.MismatchedColumns)
+                    {
+                        Console.WriteLine($"🔍 Несоответствие в колонке '{mismatch.ColumnName}':");
+                        Console.WriteLine($"   Ожидалось: {DescribeColumn(mismatch.Expected)}");
+                        Console.WriteLine($"   Фактически: {DescribeColumn(mismatch.Actual)}");
+                    }
+                }
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError("Ошибка при проверке структуры таблицы: {Error}", ex.Message);
+            Console.WriteLine($"❌ Ошибка проверки схемы: {ex.Message}");
+        }
+        finally
+        {
+            _dbConnection.Close();
         }
     }
+
+
+
+
+
+   
+
+
+
+
+
+
+
+    // Вспомогательный метод для описания колонки
+    private string DescribeColumn(ColumnSchema column)
+    {
+        return $"{column.Type}({column.Length ?? 0}) " +
+               $"NULL: {column.IsNullable} " +
+               $"PK: {column.IsPrimaryKey} " +
+               $"AI: {column.IsAutoIncrement}";
+    }
+
 
 
 

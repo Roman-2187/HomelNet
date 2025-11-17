@@ -25,7 +25,7 @@ namespace WpfHomeNet.Data.Adapters
                 string sqlType = col.Type switch
                 {
                     ColumnType.Varchar => $"VARCHAR({col.Length})",
-                    ColumnType.Int => "INTEGER",
+                    ColumnType.Integer => "INTEGER",
                     ColumnType.DateTime => "TIMESTAMP",
                     ColumnType.Boolean => "BOOLEAN",
                     _ => throw new NotSupportedException($"Тип {col.Type} не поддерживается")
@@ -34,7 +34,7 @@ namespace WpfHomeNet.Data.Adapters
                 var constraints = new List<string>();
 
                 if (col.IsCreatedAt) constraints.Add("DEFAULT CURRENT_TIMESTAMP");
-                if (col.IsNotNull) constraints.Add("NOT NULL");
+                if (!col.IsNullable) constraints.Add("NOT NULL");
                 if (col.IsPrimaryKey) constraints.Add("PRIMARY KEY");
                 if (col.IsUnique) constraints.Add("UNIQUE");
 

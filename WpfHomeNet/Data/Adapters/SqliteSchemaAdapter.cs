@@ -24,7 +24,7 @@ namespace WpfHomeNet.Data.Adapters
                 string sqlType = col.Type switch
                 {
                     ColumnType.Varchar => $"TEXT",                    // SQLite: нет VARCHAR(N), используем TEXT
-                    ColumnType.Int => "INTEGER",                     // INTEGER = знаковое 64‑битное число
+                    ColumnType.Integer => "INTEGER",                     // INTEGER = знаковое 64‑битное число
                     ColumnType.DateTime => "TIMESTAMP",                // поддерживается, но без точности
                     ColumnType.Boolean => "INTEGER",               // Boolean эмулируется как 0/1
                     _ => throw new NotSupportedException($"Тип {col.Type} не поддерживается")
@@ -38,7 +38,7 @@ namespace WpfHomeNet.Data.Adapters
                     constraints.Add("DEFAULT CURRENT_TIMESTAMP");
                 }
 
-                if (col.IsNotNull)
+                if (!col.IsNullable)
                 {
                     constraints.Add("NOT NULL");
                 }

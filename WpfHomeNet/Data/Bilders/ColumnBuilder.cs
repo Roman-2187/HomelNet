@@ -3,22 +3,24 @@
 namespace WpfHomeNet.Data.Bilders
 {
     using System;
+    using System.Data.Common;
     using WpfHomeNet.Data.Schemes;
 
-    public enum ColumnType { Unspecified, Int, Varchar, DateTime, Boolean }
+    public enum ColumnType { Unspecified, Integer, Varchar, DateTime, Boolean }
 
     public class ColumnBuilder
     {
         private string? _name;
         private ColumnType _type;
         private int? _length;
-        private bool _isNotNull;
+        private bool _isNullable;
         private bool _isPrimaryKey;
         private bool _isUnique;
         private bool _isAutoIncrement;
         private DateTime? _createdAt;       
         private string? _comment;
         private bool _isCreatedAt;
+        private object? _defaultValue;
 
         public ColumnBuilder(string name)
         {
@@ -46,13 +48,25 @@ namespace WpfHomeNet.Data.Bilders
 
         public ColumnBuilder AsInteger()
         {
-            _type = ColumnType.Int;
+            _type = ColumnType.Integer;
+            return this;
+        }
+        public ColumnBuilder DateTime()
+        {
+            _type = ColumnType.DateTime;
             return this;
         }
 
-        public ColumnBuilder NotNull()
+        public ColumnBuilder AllowNull()
         {
-            _isNotNull = true;
+            _isNullable = true;
+            return this;
+        }
+
+
+        public ColumnBuilder DisallowNull()
+        {
+            _isNullable = false;
             return this;
         }
 
@@ -75,13 +89,7 @@ namespace WpfHomeNet.Data.Bilders
         }
 
 
-        public ColumnBuilder DateTime()
-        {
-            _type = ColumnType.DateTime;
-            return this;
-        }
-
-
+       
         public ColumnBuilder CreatedAt(DateTime? timestamp = null)
         {
             if (_type == ColumnType.Unspecified)
@@ -114,6 +122,12 @@ namespace WpfHomeNet.Data.Bilders
         }
 
 
+        public ColumnBuilder DefaultValue(string value)
+        { 
+            _defaultValue = value;
+            return this;
+        }
+
         public ColumnBuilder Comment(string text)
         {
             _comment = text;
@@ -122,7 +136,7 @@ namespace WpfHomeNet.Data.Bilders
 
         public ColumnSchema Build()
         {
-            if (_isAutoIncrement && (_type != ColumnType.Int || !_isPrimaryKey))
+            if (_isAutoIncrement && (_type != ColumnType.Integer || !_isPrimaryKey))
                 throw new InvalidOperationException(
                     "AutoIncrement can only be applied to Int primary keys");
 
@@ -134,16 +148,81 @@ namespace WpfHomeNet.Data.Bilders
                 Name = _name,
                 Type = _type,
                 Length = _length,
-                IsNotNull = _isNotNull,
+                IsNullable = _isNullable,
                 IsPrimaryKey = _isPrimaryKey,
                 IsUnique = _isUnique,
                 IsAutoIncrement = _isAutoIncrement,
                 CreatedAt = _createdAt,   
                 IsCreatedAt = _isCreatedAt,
+                DefaultValue = _defaultValue,
                 Comment = _comment
             };
         }
     }
+
+
+
+    class Myclass
+    {
+        public TableSchema ReadSchemaFromDb(string tableName, DbConnection connection)
+        {
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = @"
+        SELECT
+            column_name,
+            data_type,
+            character_maximum_length,
+            is_nullable,
+            column_default,
+            (
+                SELECT 't'
+                FROM information_schema.table_constraints tc
+                JOIN information_schema.key_column_usage kcu
+                    ON tc.constraint_name = kcu.constraint_name
+                WHERE tc.table_name = @tableName
+                    AND tc.constraint_type = 'PRIMARY KEY'
+                    AND kcu.column_name = c.column_name
+            ) AS is_primary_key
+        FROM information_schema.columns c
+        WHERE table_name = @tableName
+        ORDER BY ordinal_position";
+
+            cmd.Parameters.AddWithValue("@tableName", tableName);
+
+            using var reader = cmd.ExecuteReader();
+            var columns = new List<ColumnSchema>();
+
+            while (reader.Read())
+            {
+                var col = new ColumnSchema
+                {
+                    Name = reader["column_name"].ToString(),
+                    Type = MapDbTypeToDotNetType(reader["data_type"].ToString()),
+                    Length = reader["character_maximum_length"] as int?,
+                    IsNullable = reader["is_nullable"].ToString() == "YES",
+                    IsPrimaryKey = reader["is_primary_key"]?.ToString() == "t",
+                    IsAutoIncrement = IsAutoIncrement(reader["column_name"].ToString(), connection), // Отдельный метод
+                    DefaultValue = reader["column_default"]
+                };
+                columns.Add(col);
+            }
+
+            return new TableSchema
+            {
+                TableName = tableName,
+                Columns = columns
+            };
+        }
+    }
+
+
+
+   
+
+   
+
+
+  
 
 }
 

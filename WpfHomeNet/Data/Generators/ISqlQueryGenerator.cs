@@ -10,8 +10,7 @@ namespace WpfHomeNet.Data.Generators
         public string GenerateSelectByEmailSql();
         public string GenerateUpdateSql();
         public string GenerateDeleteSql();
-        public string GenerateTableExistsSql();
-        public string GenerateAddColumnSql(string columnName);
+        public string GenerateTableExistsSql();       
         public string GenerateSelectAllSql();
     }
 
