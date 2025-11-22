@@ -1,31 +1,59 @@
-﻿using HomeNetCore.Data.Adapters;
-
-namespace HomeNetCore.Data.Schemes
+﻿namespace HomeNetCore.Data.Schemes
 {
     // TableSchema с улучшенной логикой
     public class TableSchema
     {
         public string? TableName { get; set; }
         public List<ColumnSchema> Columns { get; set; } = new();
-        public string? Fields { get; private set; }
-        public string? Parameters { get; private set; }
-        public string? SetClause { get; private set; }
-      
-        public string? IdColumnName
-        {
-            get
-            {
-                // Возвращаем имя первой найденной колонки с флагом первичного ключа
-                return Columns.FirstOrDefault(c => c.IsPrimaryKey)?.Name;
-            }
-        }
+
+        // Все поля для общих операций с алиасами
+        public string? AllFields { get; set; }
+        public string? AllParameters { get; set; }
+
+        //
+        /// <summary>
+        ///  Поля для INSERT (без ID)
+        /// </summary>
+        public string? InsertFields { get; set; }
+
+        /// <summary>
+        /// параметры для INSERT (без ID)
+        /// </summary>
+        public string? InsertParameters { get; set; }
+
         
+        /// <summary>
+        /// SET clause для UPDATE
+        /// </summary>
+        public string? SetClause { get; set; }
+
+        /// <summary>
+        /// Находим ID-колонку автоматически по IsPrimaryKey в методе Initialize();
+        /// </summary>
+        public string? IdColumnName { get; set; }
+
         public void Initialize()
-        {
-            Fields = string.Join(", ", Columns.Select(c => c.Name));
-            Parameters = string.Join(", ", Columns.Select(c => $"@{c.Name}"));
-            SetClause = string.Join(", ", Columns.Select(c =>
-                $"{c.Name} = @{c.Name}"));
+        {                      
+            string idColumn = Columns.FirstOrDefault(c => c.IsPrimaryKey)?.Name
+                ?? throw new InvalidOperationException("ID-колонка не найдена в таблице");
+
+            // Формируем все поля с алиасами (включая ID)
+            AllFields = string.Join(", ",
+                Columns.Select(c => $"{c.Name} AS {c.OriginalName}"));
+
+            AllParameters = string.Join(", ",
+                Columns.Select(c => $"@{c.OriginalName}"));
+
+            // Формируем поля для INSERT (исключая ID)
+            InsertFields = string.Join(", ",
+                Columns.Where(c => c.Name != idColumn).Select(c => c.Name));
+
+            InsertParameters = string.Join(", ",
+                Columns.Where(c => c.Name != idColumn).Select(c => $"@{c.OriginalName}"));
+
+            // Формируем SET clause для UPDATE
+            SetClause = string.Join(", ",
+                Columns.Where(c => c.Name != idColumn).Select(c => $"{c.Name} = @{c.OriginalName}"));
         }
     }
 }

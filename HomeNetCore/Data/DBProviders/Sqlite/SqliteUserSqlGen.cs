@@ -7,15 +7,11 @@ namespace HomeNetCore.Data.DBProviders.Sqlite
 {
     public class SqliteUserSqlGen : IUserSqlGenerator
     {
-
         private readonly TableSchema _originalTable;
         private readonly TableSchema _formattedTable;
         private readonly SqliteSchemaAdapter _adapter;
         private readonly ILogger _logger;
-        private string tableName;
-        private string fields;
-        private string parameters;
-        private string setClause;
+       
 
         public SqliteUserSqlGen(
             TableSchema tableSchema,
@@ -30,34 +26,19 @@ namespace HomeNetCore.Data.DBProviders.Sqlite
             if (string.IsNullOrEmpty(tableSchema.TableName))
             {
                 _logger.LogError("Имя таблицы не может быть пустым или null");
-                throw new ArgumentException();
+                throw new ArgumentException("Таблица не может быть пустой");
             }
-            try
-            {
-                if (string.IsNullOrEmpty(tableSchema.TableName))
-                {
-                    _logger.LogError("Имя таблицы не может быть пустым или null");
-                    throw new Exception();
-                }               
-                tableName = _formattedTable.TableName ?? throw new Exception();
-                fields = _formattedTable.Fields ?? throw new Exception();
-                parameters = _formattedTable.Parameters ?? throw new Exception();
-                setClause = _formattedTable.SetClause ?? throw new Exception();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Произошла ошибка при инициализации: {ex.Message}");
-                throw;
-            }        
+                           
         }
 
-        public string GenerateInsert() 
+        public string GenerateInsert()
         {
-            if (string.IsNullOrEmpty(fields) || string.IsNullOrEmpty(parameters))
+            if (string.IsNullOrEmpty(_formattedTable.InsertFields) || string.IsNullOrEmpty(_formattedTable.InsertParameters))
             {
                 throw new InvalidOperationException("Некорректные поля или параметры для вставки");
             }
-            return $"INSERT INTO {tableName} ({fields}) VALUES ({parameters})";
+            return $@"INSERT INTO {_formattedTable.TableName} ({_formattedTable.InsertFields}) VALUES ({_formattedTable.InsertParameters});
+            SELECT last_insert_rowid() AS id"; 
         }
 
         public string GenerateUpdate()
@@ -65,26 +46,28 @@ namespace HomeNetCore.Data.DBProviders.Sqlite
             string idColumn = _formattedTable.IdColumnName
                 ?? throw new InvalidOperationException("ID-колонка не найдена в таблице");
 
-            if (string.IsNullOrEmpty(setClause))
+            if (string.IsNullOrEmpty(_formattedTable.SetClause))
             {
                 throw new InvalidOperationException("Некорректный SET clause для обновления");
             }
 
-            return $"UPDATE {tableName} SET {setClause} WHERE {idColumn} = @{idColumn}";
+            return $"UPDATE {_formattedTable.TableName} SET {_formattedTable.SetClause} WHERE {idColumn} = @{idColumn}";
         }
+
+
 
         public string GenerateDelete()
         {
             string idColumn = _formattedTable.IdColumnName
                 ?? throw new InvalidOperationException("ID-колонка не найдена в таблице");
-            return $"DELETE FROM {tableName} WHERE {idColumn} = @{idColumn}";
+            return $"DELETE FROM {_formattedTable.TableName} WHERE {idColumn} = @{idColumn}";
         }
 
         public string GenerateSelectById()
         {
             string idColumn = _formattedTable.IdColumnName
                 ?? throw new InvalidOperationException("ID-колонка не найдена в таблице");
-            return $"SELECT {fields} FROM {tableName} WHERE {idColumn} = @{idColumn}";
+            return $"SELECT {_formattedTable.AllFields} FROM {_formattedTable.TableName} WHERE {idColumn} = @{idColumn}";
         }
 
         public string GenerateSelectByEmail()
@@ -98,16 +81,18 @@ namespace HomeNetCore.Data.DBProviders.Sqlite
                 throw new InvalidOperationException($"Колонка {emailColumn} не существует в таблице");
             }
 
-            return $"SELECT {fields} FROM {tableName} WHERE {emailColumn} = @{emailColumn}";
+            return $"SELECT {_formattedTable.AllFields} FROM {_formattedTable.TableName} WHERE {emailColumn} = @{emailColumn}";
         }
 
         public string GenerateSelectAll()
         {
-            if (string.IsNullOrEmpty(fields))
+            if (string.IsNullOrEmpty(_formattedTable.AllFields))
             {
                 throw new InvalidOperationException("Некорректные поля для выборки");
             }
-            return $"SELECT {fields} FROM {tableName}";
-        }       
+
+            return $"SELECT {_formattedTable.AllFields} FROM {_formattedTable.TableName}";
+        }
     }
+
 }

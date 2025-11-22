@@ -23,6 +23,8 @@ namespace HomeNetCore.Data.Repositories
             _logger = logger ??
                 throw new ArgumentNullException(nameof(logger));
             _userSqlGenerator =  queryGenerator;
+
+
         }
 
         public async Task<UserEntity> InsertUserAsync(UserEntity user)
@@ -30,7 +32,9 @@ namespace HomeNetCore.Data.Repositories
             try
             {
                 var sql = _userSqlGenerator.GenerateInsert();
-                var newId = await _connection.QuerySingleAsync<int>(sql, user);
+                
+
+                var newId = await _connection.ExecuteScalarAsync<int>(sql, user);
                 user.Id = newId;
                 return user;
             }
@@ -44,6 +48,8 @@ namespace HomeNetCore.Data.Repositories
                 throw; // просто перебрасываем дальше — лог уже есть
             }
         }
+
+        
 
         public async Task DeleteByIdAsync(int id)
         {
@@ -61,16 +67,31 @@ namespace HomeNetCore.Data.Repositories
 
         public async Task<List<UserEntity>> GetAllAsync()
         {
-           
-            var users = (await _connection.QueryAsync<UserEntity>
-            (_userSqlGenerator.GenerateSelectAll())).ToList(); 
+            string sql = _userSqlGenerator.GenerateSelectAll();
 
-           _logger.LogInformation($"Получено {users.Count} пользователей.");
-           return users;
+            try
+            {
+                // Выполняем запрос через Dapper
+                var users = (await _connection.QueryAsync<UserEntity>(sql)).ToList();
+
+                // Проверяем результат
+                if (users == null)
+                {
+                    throw new InvalidOperationException("Не удалось получить данные из БД");
+                }
+
+                _logger.LogInformation($"Получено {users.Count} пользователей.");
+                return users;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Ошибка при получении пользователей из БД",ex.Message);
+                throw;
+            }
         }
 
 
-       
+
         public async Task<UserEntity?> GetByIdAsync(int id)
         {            
             return await _connection.QueryFirstOrDefaultAsync<UserEntity>

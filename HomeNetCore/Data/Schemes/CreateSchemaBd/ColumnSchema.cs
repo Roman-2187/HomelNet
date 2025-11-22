@@ -4,11 +4,13 @@
 namespace HomeNetCore.Data.Schemes
 {
    
-    
-
     public class ColumnSchema
     {
         public string? Name { get; set; }
+        /// <summary>
+        ///  сюда присвоится имя которое не попадет в метод ToSnakeCase();  
+        /// </summary>
+        public string? OriginalName { get; set; }
         public ColumnType Type { get; set; }
         public int? Length { get; set; }
         /// <summary>

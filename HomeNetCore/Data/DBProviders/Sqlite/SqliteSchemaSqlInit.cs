@@ -42,9 +42,11 @@ namespace WpfHomeNet.Data.SqliteClasses
             List<string> columnDefinitions = _adapter.GetColumnDefinitions(schema);
 
             // Формируем итоговый SQL-запрос
-            return $"CREATE TABLE IF NOT EXISTS \"{tableName}\" (" +
+            string sql = $"CREATE TABLE IF NOT EXISTS \"{tableName}\" (" +
                    string.Join(", ", columnDefinitions) +
                    ")";
+
+            return sql;
         }
 
         public string GenerateTableExistsSql(string? tableName)
@@ -57,7 +59,9 @@ namespace WpfHomeNet.Data.SqliteClasses
 
 
             string escapedName = _adapter.GetTableName(tableName);
-            return $"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='{tableName}'";
+            string sql = $"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='{tableName}'";
+            _logger.LogInformation("получена строка запроса",sql);
+            return sql;
         }
 
         public string GenerateGetTableStructureSql(string? tableName)

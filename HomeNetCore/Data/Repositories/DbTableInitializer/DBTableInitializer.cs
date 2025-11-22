@@ -154,10 +154,10 @@ public class DBTableInitializer
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                $"❌ Ошибка проверки схемы: {ex.GetType().Name}: {ex.Message}\n" +
-                $"   Детали: {ex.StackTrace}"
-            );
+            _logger.LogError("❌ Ошибка проверки схемы:  ",ex.Message);
+                
+                
+            
         }
     }
 

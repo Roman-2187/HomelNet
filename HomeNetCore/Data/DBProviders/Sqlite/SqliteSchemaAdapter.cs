@@ -41,28 +41,14 @@ namespace WpfHomeNet.Data.DBProviders.SqliteClasses
         /// <returns>Отформатированная схема с именами в snake_case</returns>
         public TableSchema ConvertToSnakeCaseSchema(TableSchema originalSchema)
         {
-            if (originalSchema == null)
-            {
-                throw new ArgumentNullException(nameof(originalSchema), "Исходная схема не может быть null");
-            }
-
-            if (string.IsNullOrEmpty(originalSchema.TableName))
-            {
-                throw new ArgumentException("Имя таблицы не может быть пустым или null", nameof(originalSchema.TableName));
-            }
-
             var snakeCaseSchema = new TableSchema
             {
                 TableName = GetTableName(originalSchema.TableName),
-                Columns = originalSchema.Columns?.Select(col =>
-                {
-                    if (col == null)
+                Columns = originalSchema.Columns.Select(col =>
+                    new ColumnSchema
                     {
-                        throw new InvalidOperationException("Колонка в схеме не может быть null");
-                    }
-                    return new ColumnSchema
-                    {
-                        Name = GetColumnName(col.Name) ?? throw new InvalidOperationException("Не удалось преобразовать имя колонки"),
+                        Name = GetColumnName(col.Name),
+                        OriginalName = col.Name,
                         Type = col.Type,
                         Length = col.Length,
                         IsNullable = col.IsNullable,
@@ -73,26 +59,17 @@ namespace WpfHomeNet.Data.DBProviders.SqliteClasses
                         IsCreatedAt = col.IsCreatedAt,
                         Comment = col.Comment,
                         DefaultValue = col.DefaultValue
-                    };
-                }).ToList() ?? new List<ColumnSchema>()
+                    }).ToList(),
+
+                // Явно задаем ID-колонку
+                IdColumnName = originalSchema.IdColumnName
             };
 
-            // Добавляем проверку перед инициализацией
-            if (!snakeCaseSchema.Columns.Any())
-            {
-                throw new InvalidOperationException("Схема не содержит колонок после преобразования");
-            }
-
             snakeCaseSchema.Initialize();
-
-            // Проверяем результат инициализации
-            if (string.IsNullOrEmpty(snakeCaseSchema.Fields))
-            {
-                throw new InvalidOperationException("Не удалось сгенерировать список полей после инициализации");
-            }
-
             return snakeCaseSchema;
         }
+
+       
 
 
 
@@ -139,6 +116,12 @@ namespace WpfHomeNet.Data.DBProviders.SqliteClasses
                 {
                     constraints.Add("UNIQUE");
                 }
+
+                if (col.IsAutoIncrement)
+                {
+                    constraints.Add("AUTOINCREMENT");
+                }
+
 
                 var parts = new List<string> { name, sqlType };
 

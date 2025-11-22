@@ -8,6 +8,7 @@ using HomeNetCore.Services;
 using Microsoft.Data.Sqlite;
 using System.Diagnostics;
 using System.Windows;
+using WpfHomeNet.Data.DBProviders.SqliteClasses;
 using WpfHomeNet.Data.SqliteClasses;
 using WpfHomeNet.UiHelpers;
 using WpfHomeNet.ViewModels;
@@ -35,6 +36,7 @@ namespace WpfHomeNet
         private IStatusUpdater _status;
         private ILogger _logger;
         private SqliteUserSqlGen _userSqlGen;
+        private SqliteSchemaAdapter _sqliteSchemaAdapter;
 
         public MainWindow()
         {
@@ -74,10 +76,16 @@ namespace WpfHomeNet
                      );
                
                 _tableSchema = new UsersTable().Build();
-                _userSqlGen = new SqliteUserSqlGen(_tableSchema);
+                _sqliteSchemaAdapter = new SqliteSchemaAdapter();
+                _userSqlGen = new SqliteUserSqlGen
+                    (
+                        _tableSchema,
+                        _sqliteSchemaAdapter,
+                        _logger
+                    );
+
                 _logger.LogInformation($"Путь бд {dbPath}");
- 
-                
+                 
                 _logger.LogInformation("Application started. PID: " + Process.GetCurrentProcess().Id);
 
                 _databaseInitializer = new DBTableInitializer
@@ -98,6 +106,8 @@ namespace WpfHomeNet
                         _logger,
                         _userSqlGen
                     );
+
+               
 
                 _userService = new UserService(repo, _logger);
 
