@@ -45,7 +45,7 @@ namespace HomeNetCore.Data.SqliteClasses
 
                 var columns = await ReadColumnsAsync(reader);
 
-                _logger.LogDebug($"Получено {columns.Count} столбцов для таблицы {tableName}");
+                _logger.LogInformation($"Получено {columns.Count} столбцов для таблицы {tableName}");
 
                 var getSchema = new TableSchema
                 {

@@ -61,7 +61,7 @@ namespace WpfHomeNet
             {
                 // Делаем асинхронным!
                 await _userService.AddUserAsync(newUser);
-
+                _logger.LogInformation("Пользователь добавлен");
 
                 await Task.Delay(2000);
 

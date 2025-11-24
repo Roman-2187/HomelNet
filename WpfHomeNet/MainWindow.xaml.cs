@@ -83,7 +83,7 @@ namespace WpfHomeNet
                         _sqliteSchemaAdapter,
                         _logger
                     );
-               _logger.LogInformation($"Путь бд {dbPath}");
+                _logger.LogInformation($"Путь бд {dbPath}");
                 _logger.LogInformation("Тестирование информационного сообщения");
                 _logger.LogDebug("Тестирование отладочного сообщения");
                 _logger.LogWarning("Тестирование предупреждения");

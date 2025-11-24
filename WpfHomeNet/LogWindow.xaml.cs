@@ -1,10 +1,9 @@
-﻿using System.Diagnostics;
-using System.IO;
+﻿using HomeNetCore.Helpers;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Threading;
-using System.Xml;
 
 
 
@@ -13,14 +12,15 @@ namespace WpfHomeNet
 
     public partial class LogWindow : Window
     {
-        private Dictionary<string, Brush> _colorMap = new()
+        // Обновляем маппинг цветов
+        private Dictionary<LogColor, Brush> _colorMap = new()
     {
-        {"CRITICAL", Brushes.Red},
-        {"ERROR", Brushes.Orange},
-        {"WARNING", Brushes.Yellow},
-        {"INFO", Brushes.Black},
-        {"DEBUG", Brushes.Blue},
-        {"TRACE", Brushes.Gray}
+        { LogColor.Critical, Brushes.Red },
+        { LogColor.Error, Brushes.OrangeRed },
+        { LogColor.Warning, Brushes.Orange },
+        { LogColor.Information, Brushes.Green },
+        { LogColor.Debug, Brushes.Blue },
+        { LogColor.Trace, Brushes.Gray }
     };
 
         private bool _isFirstMessage = true; // Флаг для первого сообщения
@@ -30,7 +30,8 @@ namespace WpfHomeNet
             InitializeComponent();
         }
 
-        public async Task AddLog(string text, string level, bool isAnimating)
+        // Обновляем сигнатуру метода AddLog
+        public async Task AddLog(string text, LogLevel level, LogColor color, bool isAnimating)
         {
             await Dispatcher.InvokeAsync(async () =>
             {
@@ -41,31 +42,26 @@ namespace WpfHomeNet
                         LogTextBox.Document = new FlowDocument();
                     }
 
-                   
-
                     if (isAnimating)
                     {
                         var lastParagraph = GetLastParagraph(LogTextBox.Document);
 
                         if (lastParagraph == null)
                         {
-                            lastParagraph = new Paragraph
-                            {
-                               
-                            };
+                            lastParagraph = new Paragraph();
                             LogTextBox.Document.Blocks.Add(lastParagraph);
                         }
 
                         lastParagraph.Inlines.Clear();
                         var run = new Run(text)
                         {
-                            Foreground = _colorMap.ContainsKey(level) ? _colorMap[level] : Brushes.White
+                            Foreground = _colorMap.ContainsKey(color) ? _colorMap[color] : Brushes.White
                         };
                         lastParagraph.Inlines.Add(run);
                     }
                     else
                     {
-                        AddNewLine(text, level);
+                        AddNewLine(text, color);
                     }
 
                     LogTextBox.ScrollToEnd();
@@ -84,27 +80,25 @@ namespace WpfHomeNet
             return document.Blocks.LastBlock as Paragraph;
         }
 
-        private void AddNewLine(string text, string level)
+        private void AddNewLine(string text, LogColor color)
         {
             if (LogTextBox.Document == null)
             {
                 LogTextBox.Document = new FlowDocument();
             }
 
-            var paragraph = new Paragraph
-            {
-               
-            };
+            var paragraph = new Paragraph();
 
             var run = new Run(text)
             {
-                Foreground = _colorMap.ContainsKey(level) ? _colorMap[level] : Brushes.White
+                Foreground = _colorMap.ContainsKey(color) ? _colorMap[color] : Brushes.White
             };
 
             paragraph.Inlines.Add(run);
             LogTextBox.Document.Blocks.Add(paragraph);
         }
     }
+
 
 
 
