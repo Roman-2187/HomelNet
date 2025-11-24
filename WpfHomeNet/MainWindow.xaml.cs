@@ -28,8 +28,7 @@ namespace WpfHomeNet
         private SqliteGetSchemaProvider _schemaProvider;
         private SqliteSchemaSqlInit _schemaSqlInit;
         private TableSchema _tableSchema;        
-        private SqliteConnection _sqliteConnection;
-        private LogManager _logManager;
+        private SqliteConnection _sqliteConnection;      
         public  LogWindow _logWindow;
         private UserService _userService;
         private MainViewModel _mainVm; 
@@ -37,6 +36,7 @@ namespace WpfHomeNet
         private ILogger _logger;
         private SqliteUserSqlGen _userSqlGen;
         private SqliteSchemaAdapter _sqliteSchemaAdapter;
+        private LogQueueManager _logQueueManager;
 
         public MainWindow()
         {
@@ -61,13 +61,20 @@ namespace WpfHomeNet
         private async Task InitializeAsync()
         {
             try
-            {                
+            { 
+                
+                _logger = new Logger();           
                  _connection = $"Data Source={dbPath}";
                  _sqliteConnection = new SqliteConnection(_connection);
-                 _logWindow = new LogWindow();
-                 _logManager = new LogManager(_logWindow);
-                 _logger = new Logger(_logManager.WriteLog);
-                 _schemaSqlInit = new SqliteSchemaSqlInit(_logger);
+                 
+                 
+
+                _logWindow = new LogWindow(_logger);
+                _logQueueManager = new LogQueueManager(_logWindow);
+
+                _logger.SetOutput(_logQueueManager.WriteLog);
+
+                _schemaSqlInit = new SqliteSchemaSqlInit(_logger);
                  _schemaProvider = new SqliteGetSchemaProvider
                     (
                          _schemaSqlInit,
@@ -84,28 +91,8 @@ namespace WpfHomeNet
                         _logger
                     );
                 _logger.LogInformation($"Путь бд {dbPath}");
-                _logger.LogInformation("Тестирование информационного сообщения");
-                _logger.LogDebug("Тестирование отладочного сообщения");
-                _logger.LogWarning("Тестирование предупреждения");
-                _logger.LogError("Тестирование сообщения об ошибке");
-                _logger.LogCritical("Тестирование критического сообщения");
 
-               
- 
-
-
-
-                
-                
-
-            
-            
-            
-            
-            
-            
-
-
+             
                 _logger.LogInformation("Application started. PID: " + Process.GetCurrentProcess().Id);
 
                 _databaseInitializer = new DBTableInitializer
@@ -150,9 +137,21 @@ namespace WpfHomeNet
             }
             catch (Exception ex)
             {
+
                 _logger.LogError($"Инициализация завершилась с ошибкой: {ex.Message}");
-                throw; // Передаём исключение в ContinueWith
+
+                // Закрываем все окна
+                CloseAllWindows();
+
+                // Показываем сообщение об ошибке
+                MessageBox.Show(
+                    $"Произошла критическая ошибка при инициализации: {ex.Message}",
+                    "Ошибка инициализации",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error
+                );
             }
+        
         }
 
         // Асинхронный метод загрузки данных
@@ -161,7 +160,7 @@ namespace WpfHomeNet
             try
             {
                 await _mainVm.LoadUsersAsync();
-                _logger.LogInformation("Пользователи загружены при старте.");
+                
             }
             catch (Exception ex)
             {
@@ -174,5 +173,25 @@ namespace WpfHomeNet
             }
         }
 
+
+
+        private void CloseAllWindows()
+        {
+            // Получаем коллекцию окон
+            foreach (Window window in Application.Current.Windows)
+            {
+                // Не закрываем главное окно
+                if (window != this)
+                {
+                    window.Close();
+                }
+            }
+
+            // Отдельно закрываем окно лога, если оно существует
+            if (_logWindow != null)
+            {
+                _logWindow.Close();
+            }
+        }
     }
 }

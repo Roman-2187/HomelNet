@@ -41,7 +41,7 @@ public class DBTableInitializer
 
     public async Task InitializeAsync()
     {
-        _logger.LogDebug($"Инициализация БД: проверка таблицы {_tableSchema.TableName} ...");
+        _logger.LogInformation($"Инициализация БД: проверка таблицы {_tableSchema.TableName} ...");
 
         if (!await TableExistsAsync())
         {
@@ -74,7 +74,7 @@ public class DBTableInitializer
 
     private async Task CreateTableAsync()
     {
-        _logger.LogWarning($"Таблица {_tableSchema.TableName} не найдена. Создаю новую...");
+        _logger.LogInformation($"Таблица {_tableSchema.TableName} не найдена. Создаю новую...");
         try
         {
             if (_dbConnection.State != ConnectionState.Open)

@@ -1,31 +1,28 @@
 ﻿using HomeNetCore.Helpers;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 
 namespace WpfHomeNet.UiHelpers
 {
 
-    public class LogManager
+    // Обновленный LogQueueManager
+    public class LogQueueManager
     {
         private readonly ConcurrentQueue<(LogLevel level, string message, LogColor color)> _logQueue = new();
         private bool _isProcessing;
-        private LogWindow _logWindow;
+        private readonly LogWindow _logWindow;
 
-        public LogManager(LogWindow logWindow)
+        public LogQueueManager(LogWindow logWindow)
         {
             _logWindow = logWindow ?? throw new ArgumentNullException(nameof(logWindow));
         }
 
         public void WriteLog((string Message, LogColor Color) logEntry)
         {
-            Debug.WriteLine($"Получено сообщение для логирования: {logEntry.Message}");
-
-            // Удаляем лишние переносы строк
+            // Обработка сообщения
             string message = logEntry.Message
                 .Replace(Environment.NewLine + Environment.NewLine, Environment.NewLine)
                 .Trim('\r', '\n');
 
-            // Теперь уровень логирования передается через Logger
             LogLevel level = GetLogLevelFromColor(logEntry.Color);
 
             _logQueue.Enqueue((level, message, logEntry.Color));
@@ -62,16 +59,19 @@ namespace WpfHomeNet.UiHelpers
                     {
                         currentText += c;
                         await _logWindow.AddLog(currentText, logEntry.level, logEntry.color, true);
-                        await Task.Delay(30);
+                        await Task.Delay(30); // Анимация
                     }
 
-                    // Добавляем перенос строки только если сообщение не заканчивается на перенос
+                    // Добавляем перенос строки если нужно
                     if (!logEntry.message.EndsWith(Environment.NewLine))
                     {
                         await _logWindow.AddLog(Environment.NewLine, logEntry.level, logEntry.color, false);
                     }
                 }
             }
+
+
+            // Продолжение класса LogQueueManager
             finally
             {
                 _isProcessing = false;

@@ -9,12 +9,6 @@ using System.Windows;
 namespace WpfHomeNet.ViewModels
 {
 
-    
-        public interface IStatusUpdater
-        {
-            void SetStatus(string message);
-        }
-
     public class MainViewModel : INotifyPropertyChanged, IStatusUpdater
     {
         private readonly UserService _userService;
@@ -80,26 +74,42 @@ namespace WpfHomeNet.ViewModels
 
                 if (users == null)
                 {
-                    StatusText = "Ошибка: получены пустые данные.";
+                    HandleError("Получены пустые данные");
                     return;
                 }
 
                 Users.Clear();
-                foreach (var user in users)
+                Users = new ObservableCollection<UserEntity>(users);
+
+                var userCount = users.Count;
+
+                if (userCount == 0)
                 {
-                    Users.Add(user);
+                    HandleSuccess($"Список пользователей пуст");
                 }
-
-                _logger?.LogInformation($"Загружено {users.Count} пользователей");
-
-                StatusText = $"Загружено {users.Count} пользователей";
+                else
+                {
+                    HandleSuccess($"Загружено {userCount} пользователей");
+                }
             }
             catch (Exception ex)
             {
-                _logger?.LogError("Ошибка загрузки пользователей");
-                StatusText = $"Ошибка загрузки: {ex.Message}";
+                HandleError($"Ошибка загрузки: {ex.Message}");
             }
         }
+
+        private void HandleSuccess(string message)
+        {
+            _logger?.LogInformation(message);
+            StatusText = message;
+        }
+
+        private void HandleError(string message)
+        {
+            _logger?.LogError(message);
+            StatusText = message;
+        }
+
 
 
 

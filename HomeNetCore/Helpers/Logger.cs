@@ -1,26 +1,41 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace HomeNetCore.Helpers
 {
     public class Logger : ILogger
     {
-        private readonly Action<(string Message, LogColor Color)> _output;
-        // Обновляем словарь маппинга
-                    private static readonly Dictionary<LogLevel, LogColor> LevelToColorMap = new()
-            {
-                { LogLevel.Trace, LogColor.Trace },
-                { LogLevel.Debug, LogColor.Debug },
-                { LogLevel.Information, LogColor.Information },
-                { LogLevel.Warning, LogColor.Warning },
-                { LogLevel.Error, LogColor.Error },
-                { LogLevel.Critical, LogColor.Critical }
-            };
+        private Action<(string Message, LogColor Color)> _output;
 
-        public Logger(Action<(string Message, LogColor Color)> output)
+        // Обновляем словарь маппинга
+        private static readonly Dictionary<LogLevel, LogColor> LevelToColorMap = new()
+    {
+        { LogLevel.Trace, LogColor.Trace },
+        { LogLevel.Debug, LogColor.Debug },
+        { LogLevel.Information, LogColor.Information },
+        { LogLevel.Warning, LogColor.Warning },
+        { LogLevel.Error, LogColor.Error },
+        { LogLevel.Critical, LogColor.Critical }
+    };
+
+        // Добавляем конструктор без параметров
+        public Logger()
         {
+            // Можно установить вывод по умолчанию, например, в Debug
+            _output = (logEntry) => Debug.WriteLine(logEntry.Message);
+        }
+
+        // Добавляем метод для установки вывода
+        public void SetOutput(Action<(string Message, LogColor Color)> output)
+        {
+            if (output == null)
+            {
+                throw new ArgumentNullException(nameof(output), "Вывод не может быть null");
+            }
             _output = output;
         }
 
+        // Остальные методы остаются без изменений
         public void Log(
             LogLevel level,
             string message,

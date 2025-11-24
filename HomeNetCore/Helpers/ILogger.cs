@@ -5,6 +5,8 @@ namespace HomeNetCore.Helpers
 
     public interface ILogger
     {
+
+        public void SetOutput(Action<(string Message, LogColor Color)> output);
         void Log(
             LogLevel level,
             string message,

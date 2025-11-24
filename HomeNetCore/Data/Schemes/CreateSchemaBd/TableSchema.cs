@@ -32,6 +32,8 @@
         /// </summary>
         public string? IdColumnName { get; set; }
 
+        public string? columnNames { get; set; }
+
         public void Initialize()
         {           
            
@@ -39,6 +41,10 @@
                 ?? throw new InvalidOperationException("ID-колонка не найдена в таблице");
 
             // Формируем все поля с алиасами (включая ID)
+
+            columnNames = string.Join(", ",
+               Columns.Select(c => $"{c.OriginalName}"));
+
             AllFields = string.Join(", ",
                 Columns.Select(c => $"{c.Name} AS {c.OriginalName}"));
 

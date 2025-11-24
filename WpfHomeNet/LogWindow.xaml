@@ -33,7 +33,7 @@
                  Grid.Row="1"                 
                  VerticalScrollBarVisibility="Auto"
                  IsReadOnly="True"
-                 FontSize="12"
+                 FontSize="14"
                  FontWeight="Bold"
                  Background="Black"
                  Foreground="White" 
