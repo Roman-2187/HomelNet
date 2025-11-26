@@ -52,7 +52,7 @@ namespace HomeNetCore.Data.Repositories
         {
             
             var affectedRows = 
-            await _connection.ExecuteAsync(_userSqlGenerator.GenerateDelete(),new { Id = id });
+            await _connection.ExecuteAsync(_userSqlGenerator.GenerateDelete(),new { id = id });
                                
             if (affectedRows == 0)
             {
@@ -92,7 +92,7 @@ namespace HomeNetCore.Data.Repositories
         public async Task<UserEntity?> GetByIdAsync(int id)
         {            
             return await _connection.QueryFirstOrDefaultAsync<UserEntity>
-            (_userSqlGenerator.GenerateSelectById(), new { Id = id });               
+            (_userSqlGenerator.GenerateSelectById(), new { id = id });               
         }
 
 

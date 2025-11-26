@@ -25,7 +25,11 @@ namespace HomeNetCore.Models
 
             [Column("created_at")]
             public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        }
+
+        public string FullName => $"{FirstName} {LastName}";
+
+        public string DisplayInfo => $"ID: {Id} - {FullName}";
+    }
 
    
 }

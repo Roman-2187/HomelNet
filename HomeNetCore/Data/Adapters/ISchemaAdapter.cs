@@ -8,6 +8,7 @@ namespace HomeNetCore.Data.Adapters
         string ConvertTableName(string rawName, NameFormat format);
          string ConvertColumnName(string? rawName, NameFormat format);
         List<string> GetColumnDefinitions(TableSchema schema);
+        TableSchema? ConvertToSnakeCaseSchema(TableSchema tableSchema);
     }
 
   public  enum NameFormat

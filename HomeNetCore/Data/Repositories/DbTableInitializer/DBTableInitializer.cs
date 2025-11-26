@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using HomeNetCore.Data.Adapters;
 using HomeNetCore.Data.Generators.SqlQueriesGenerator;
 using HomeNetCore.Data.Schemes;
 using HomeNetCore.Data.Schemes.GetSchemaTableBd;
@@ -12,21 +13,22 @@ public class DBTableInitializer
     private readonly DbConnection _dbConnection;
     private readonly ISchemaSqlInitializer _schemaSqlGenerator;
     private readonly ILogger _logger;
-    private readonly GetSchemaProvider _schemaProvider;
+    private readonly IGetSchemaProvider _schemaProvider;
     private readonly TableSchema _tableSchema;
-    private readonly SqliteSchemaAdapter _schemaAdapter;
+    private readonly ISchemaAdapter _schemaAdapter;
 
     public DBTableInitializer
-        (
-        GetSchemaProvider schemaProvider, SqliteSchemaAdapter schemaAdapter,
-        DbConnection connection,
-        ISchemaSqlInitializer schemaSqlGenerator,
-        TableSchema tableSchema,
-        ILogger logger
-        )
+                      (
+                        DbConnection connection,
+                        IGetSchemaProvider schemaProvider,
+                        ISchemaAdapter schemaAdapter,       
+                        ISchemaSqlInitializer schemaSqlGenerator,
+                        TableSchema tableSchema,
+                        ILogger logger
+                      )
     {
-        _schemaProvider = schemaProvider ??
-       throw new ArgumentNullException(nameof(schemaProvider));
+         _schemaProvider = schemaProvider ??
+            throw new ArgumentNullException(nameof(schemaProvider));
         _dbConnection = connection ??
             throw new ArgumentNullException(nameof(connection));
         _schemaSqlGenerator = schemaSqlGenerator ??
@@ -35,8 +37,8 @@ public class DBTableInitializer
             throw new ArgumentNullException(nameof(tableSchema));
         _logger = logger ??
             throw new ArgumentNullException(nameof(logger));
-
-        _schemaAdapter = schemaAdapter;
+        _schemaAdapter = schemaAdapter ??
+            throw new ArgumentNullException(nameof(schemaAdapter));
     }
 
     public async Task InitializeAsync()
@@ -113,8 +115,11 @@ public class DBTableInitializer
             var actualSchema = _tableSchema;
             var expectedSchema = await _schemaProvider.GetActualTableSchemaAsync(_tableSchema.TableName);
 
-            var actualAdaptedSchema = _schemaAdapter.ConvertToSnakeCaseSchema(actualSchema);
-            var expectedAdaptedSchema = _schemaAdapter.ConvertToSnakeCaseSchema(expectedSchema);
+            var actualAdaptedSchema = _schemaAdapter.ConvertToSnakeCaseSchema(actualSchema)??
+                throw new ArgumentNullException(nameof(actualSchema));
+
+            var expectedAdaptedSchema = _schemaAdapter.ConvertToSnakeCaseSchema(expectedSchema) ??
+                throw new ArgumentNullException(nameof(expectedSchema));
 
             // Обрабатываем случай отсутствия схемы
             if (actualSchema is null)

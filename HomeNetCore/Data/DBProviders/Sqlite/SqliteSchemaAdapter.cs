@@ -39,7 +39,7 @@ namespace WpfHomeNet.Data.DBProviders.SqliteClasses
             };          
         }
 
-       
+
         /// <summary>
         /// Преобразует схему в формат snake_case для использования в SQL-запросах
         /// </summary>
@@ -49,14 +49,14 @@ namespace WpfHomeNet.Data.DBProviders.SqliteClasses
         {
             var snakeCaseSchema = new TableSchema
             {
-                TableName = ConvertTableName(originalSchema.TableName,NameFormat.SnakeCase),
+                TableName = ConvertTableName(originalSchema.TableName, NameFormat.SnakeCase),
                 Columns = originalSchema.Columns.Select(col =>
                     new ColumnSchema
-                    { 
-                        OriginalName = ConvertColumnName(col.Name,NameFormat.CamelCase),
-                        Name = ConvertColumnName(col.Name,NameFormat.SnakeCase),                       
+                    {
+                        OriginalName = col.Name,
+                        Name = ConvertColumnName(col.Name, NameFormat.SnakeCase),
                         Type = col.Type,
-                        Length = null,
+                        Length = col.Length,
                         IsNullable = col.IsNullable,
                         IsPrimaryKey = col.IsPrimaryKey,
                         IsUnique = col.IsUnique,
@@ -65,15 +65,19 @@ namespace WpfHomeNet.Data.DBProviders.SqliteClasses
                         IsCreatedAt = col.IsCreatedAt,
                         Comment = col.Comment,
                         DefaultValue = col.DefaultValue
-                    }).ToList(),
-
-                // Явно задаем ID-колонку
-                IdColumnName = originalSchema.IdColumnName
+                    }).ToList()
             };
 
+            // Сначала инициализируем схему
             snakeCaseSchema.Initialize();
+
+            // Теперь присваиваем IdColumnName на основе преобразованной схемы
+            snakeCaseSchema.IdColumnName = snakeCaseSchema.Columns
+                .FirstOrDefault(c => c.IsPrimaryKey)?.Name;
+
             return snakeCaseSchema;
         }
+
 
         public List<string> GetColumnDefinitions(TableSchema schema)
         {

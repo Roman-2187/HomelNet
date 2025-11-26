@@ -1,4 +1,5 @@
-﻿using HomeNetCore.Data.Generators.SqlQueriesGenerator;
+﻿using HomeNetCore.Data.Adapters;
+using HomeNetCore.Data.Generators.SqlQueriesGenerator;
 using HomeNetCore.Data.Schemes;
 using HomeNetCore.Helpers;
 using WpfHomeNet.Data.DBProviders.SqliteClasses;
@@ -9,18 +10,18 @@ namespace HomeNetCore.Data.DBProviders.Sqlite
     {
         private readonly TableSchema _originalTable;
         private readonly TableSchema _formattedTable;
-        private readonly SqliteSchemaAdapter _adapter;
+        private readonly ISchemaAdapter _adapter;
         private readonly ILogger _logger;
        
         public SqliteUserSqlGen(
             TableSchema tableSchema,
-            SqliteSchemaAdapter adapter,
+            ISchemaAdapter adapter,
             ILogger logger)
         {
             _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _originalTable = tableSchema ?? throw new ArgumentNullException(nameof(tableSchema));
-            _formattedTable = adapter.ConvertToSnakeCaseSchema(tableSchema);
+            _formattedTable = adapter.ConvertToSnakeCaseSchema(tableSchema)??throw new ArgumentNullException(nameof(adapter));
 
             if (string.IsNullOrEmpty(tableSchema.TableName))
             {
@@ -59,7 +60,7 @@ namespace HomeNetCore.Data.DBProviders.Sqlite
         {
             string idColumn = _formattedTable.IdColumnName
                 ?? throw new InvalidOperationException("ID-колонка не найдена в таблице");
-            return $"DELETE FROM {_formattedTable.TableName} WHERE {idColumn} = @{idColumn}";
+            return $"DELETE  FROM {_formattedTable.TableName} WHERE {idColumn} = @{idColumn}";
         }
 
 
@@ -67,7 +68,7 @@ namespace HomeNetCore.Data.DBProviders.Sqlite
         {
             string idColumn = _formattedTable.IdColumnName
                 ?? throw new InvalidOperationException("ID-колонка не найдена в таблице");
-            return $"SELECT {_formattedTable.AllFields} FROM {_formattedTable.TableName} WHERE {idColumn} = @{idColumn}";
+            return $"SELECT * FROM {_formattedTable.TableName} WHERE {idColumn} = @{idColumn}";
         }
 
 

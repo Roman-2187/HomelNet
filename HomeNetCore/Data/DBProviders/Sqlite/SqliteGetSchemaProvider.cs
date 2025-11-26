@@ -11,7 +11,7 @@ using System.Data.Common;
 
 namespace HomeNetCore.Data.SqliteClasses
 {
-    public class SqliteGetSchemaProvider : GetSchemaProvider
+    public class SqliteGetSchemaProvider : IGetSchemaProvider
     {
          const int ColumnNameIndex = 1;
          const int ColumnTypeIndex = 2;

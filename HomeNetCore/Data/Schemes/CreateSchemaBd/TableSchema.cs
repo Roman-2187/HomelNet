@@ -3,6 +3,11 @@
     // TableSchema с улучшенной логикой
     public class TableSchema
     {
+
+        public TableSchema()
+        {
+            
+        }
         public string? TableName { get; set; }
         public List<ColumnSchema> Columns { get; set; } = new();
 

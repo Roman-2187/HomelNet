@@ -9,7 +9,7 @@ using WpfHomeNet.Data.Generators.SqlQueriesGenerator;
 
 namespace WpfHomeNet.Data.PostgreClasses
 {
-    public class PostgresSchemaProvider : GetSchemaProvider
+    public class PostgresSchemaProvider : IGetSchemaProvider
     {
         private readonly ISchemaSqlInitializer _generator;
         private readonly NpgsqlConnection _requiredConnection;

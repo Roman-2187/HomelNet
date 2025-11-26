@@ -33,6 +33,21 @@ namespace WpfHomeNet.ViewModels
             }
         }
 
+
+        private UserEntity? _selectedUser;
+        public UserEntity? SelectedUser
+        {
+            get => _selectedUser;
+            set
+            {
+                _selectedUser = value;
+                CanDelete = value != null;
+                OnPropertyChanged(nameof(CanDelete));
+            }
+        }
+
+        public bool CanDelete { get; private set; }
+
         private Visibility _scrollViewerVisibility = Visibility.Collapsed;
         public Visibility ScrollViewerVisibility
         {

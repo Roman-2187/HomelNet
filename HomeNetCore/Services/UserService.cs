@@ -1,6 +1,7 @@
 ﻿
 using HomeNetCore.Data.Repositories;
 using HomeNetCore.Helpers;
+using HomeNetCore.Helpers.Exceptions;
 using HomeNetCore.Models;
 namespace HomeNetCore.Services
 {
@@ -57,6 +58,36 @@ namespace HomeNetCore.Services
                 throw new ArgumentException("Email обязателен");
 
             return await _repo.GetByEmailAsync(email);
+        }
+
+
+
+        public async Task DeleteUserAsync(int userId)
+        {
+            try
+            {
+                await _repo.DeleteByIdAsync(userId);
+                _logger.LogInformation($"Пользователь с ID {userId} успешно удалён");
+            }
+            catch (NotFoundException ex)
+            {
+                _logger.LogWarning("Попытка удалить несуществующего пользователя",ex.Message );
+                throw;
+            }
+        }
+
+
+        public async Task<UserEntity?> GetUserByIdAsync(int userId)
+        {
+            try
+            {
+                return await _repo.GetByIdAsync(userId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError( "Ошибка при получении пользователя с ID {UserId}", userId.ToString(),ex.Message);
+                throw;
+            }
         }
 
     }

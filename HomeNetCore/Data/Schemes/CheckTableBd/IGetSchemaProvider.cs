@@ -3,7 +3,7 @@ using HomeNetCore.Data.Schemes;
 
 namespace HomeNetCore.Data.Schemes.GetSchemaTableBd
 {
-    public interface GetSchemaProvider
+    public interface IGetSchemaProvider
     {       
         /// <summary>
         /// получаем актуальную схему бд

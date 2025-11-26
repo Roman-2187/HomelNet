@@ -29,18 +29,18 @@
                     </Style>
                 </Grid.Resources>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="50"/>
-                    <ColumnDefinition Width="150"/>
-                    <ColumnDefinition Width="150"/>
-                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="30"/>
                     <ColumnDefinition Width="150"/>
                     <ColumnDefinition Width="150"/>
                     <ColumnDefinition Width="170"/>
+                    <ColumnDefinition Width="170"/>
+                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="150"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0" Text="ID" />
-                <TextBlock Grid.Column="1" Text="Имя" />
+                <TextBlock Grid.Column="1" Text=" Имя" />
                 <TextBlock Grid.Column="2" Text="Фамилия" />
                 <TextBlock Grid.Column="3" Text="Телефон"/>
                 <TextBlock Grid.Column="4" Text="Email" />
@@ -62,11 +62,11 @@
                     <DataTemplate>
                         <Grid Margin="1">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="50"/>
+                                <ColumnDefinition Width="30"/>
                                 <ColumnDefinition Width="150"/>
                                 <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="170"/>
+                                <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="150"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>

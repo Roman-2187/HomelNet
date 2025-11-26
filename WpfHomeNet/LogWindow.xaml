@@ -1,14 +1,18 @@
-﻿<Window x:Class="WpfHomeNet.LogWindow"
+﻿<Window x:Class="WpfHomeNet.LogWindow" 
+        
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Логи" Height="650
-        " Width="750
-        " 
-       WindowStyle="ToolWindow" >
+        Title="Логи" Height="700
+        " Width="670"
+         BorderThickness="3"
+        BorderBrush="Black"
+         WindowStyle="None"
+        AllowsTransparency="True" 
+        >
     <Grid>
         <!-- Разделение на две области: верхняя для лога, нижняя для дополнительных элементов -->
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="40"/>
             <!-- Панель инструментов -->
             <RowDefinition Height="*"/>
             <!-- Область лога -->
@@ -16,22 +20,25 @@
 
         <!-- Панель инструментов (можно добавить кнопки очистки, фильтрации и т.д.) -->
         <StackPanel Grid.Row="0" 
-               Background="#FF297AB8" 
+               Background="#FF668C66" 
                Orientation="Horizontal" 
                >
-            <Button Content="Очистить" 
-                
-                Margin="5"/>
-            <Button Content="Сохранить" 
-                 
-                Margin="5"/>
+            <Label Content="Окно логов" FontSize="16"
+                FontWeight="Bold"
+                Background="#FF668C66"
+                HorizontalAlignment="Center"
+                BorderThickness="0"
+                VerticalAlignment="Center" />
+               
+            
             <!-- Другие кнопки управления -->
-        </StackPanel>
+        </StackPanel >
 
         <!-- Область лога -->
         <RichTextBox x:Name="LogTextBox" 
                  Grid.Row="1"                 
-                 VerticalScrollBarVisibility="Auto"
+                 VerticalScrollBarVisibility="Hidden"
+                     
                  IsReadOnly="True"
                  FontSize="14"
                  FontWeight="Bold"

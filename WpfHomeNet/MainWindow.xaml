@@ -133,14 +133,26 @@
                 Orientation="Vertical">
                 <!-- будующий обработчик( Click="Menu_Click" ) -->
                 <Button Content="Меню пустое пока"  />
+                
                 <Button Content="Добавить юзера"
                         Click="AddUser_Click"/>
-                <Button x:Name="toggleButton" 
+
+                <!-- Кнопка удаления -->
+                <Button x:Name="DeleteButton" 
+            Content="Удалить юзера"
+            Click="RemoveUser_Click"
+            Margin="10"
+            IsEnabled="{Binding IsValidUserId}"/>
+
+                <Button x:Name="ShowButton" 
                        Content="Показать юзеров"
                        Click="ShowScrollViewerButton_Click"/>
+                
+                
                 <Button Content="Обновить юзеров" Click="Refresh_Click"/>
 
-                <Button Content="логи пока пусто" />
+                <Button x:Name="btnLogs" Content="Показать логи" Click="ShowWindowLogs_Click"/>
+
             </StackPanel>
 
             
