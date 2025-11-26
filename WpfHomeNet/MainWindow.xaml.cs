@@ -191,27 +191,7 @@ namespace WpfHomeNet
             }
         }
 
-        private void ShowWindowLogs_Click(object sender, RoutedEventArgs e)
-        {
-
-            // Проверяем на null и бросаем исключение
-            if (_logWindow == null)
-            {
-                throw new InvalidOperationException("Логическое нарушение: окно логов не было создано");
-            }
-
-            if (_logWindow.IsVisible)
-            {
-                // Скрываем логи и центрируем главное окно
-                _logWindow.Hide();
-                CenterMainAndHideLogs();
-            }
-            else
-            {
-                // Показываем логи и сдвигаем окна
-                ShowLogsAndShift(_logWindow);
-            }
-        }
+     
 
 
 

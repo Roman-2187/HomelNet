@@ -22,6 +22,12 @@ namespace WpfHomeNet
 
         private async void LoadAllUsers()
         {
+            if (_userService is null )
+            {
+                throw new InvalidOperationException(
+                            $"Не инициализированы зависимости: " +
+                            $"_userService: {_userService}");
+            }
             try
             {
                 _allUsers = await _userService.GetAllUsersAsync();
@@ -44,6 +50,12 @@ namespace WpfHomeNet
 
             try
             {
+                if (_userService is null || _allUsers is null)
+                {
+                    throw new InvalidOperationException(
+                                $"Не инициализированы зависимости: " +
+                                $"_userService: {_userService}, _allUsers: {_allUsers}, ");
+                }
                 // Ищем пользователя в локальной коллекции
                 _selectedUser = _allUsers.FirstOrDefault(u => u.Id == userId);
 
@@ -80,8 +92,17 @@ namespace WpfHomeNet
                     return;
                 }
 
+                if (_userService is null )
+                {
+                    throw new InvalidOperationException(
+                                $"Не инициализированы зависимости: " +
+                                $"_userService: {_userService}");
+                }
+
                 await _userService.DeleteUserAsync(selectedUser.Id);
+
                 _logger.LogInformation($"Пользователь {selectedUser.FirstName} | успешно удален");
+
                 MessageBox.Show("Пользователь успешно удален");
                 Close();
             }

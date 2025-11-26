@@ -3,25 +3,36 @@ using HomeNetCore.Models;
 using HomeNetCore.Services;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Windows;
 
 namespace WpfHomeNet.ViewModels
 {
 
+    // ViewModel для главного окна
     public class MainViewModel : INotifyPropertyChanged, IStatusUpdater
     {
-        private readonly UserService _userService;
-        private readonly ILogger _logger;
+       
+        private readonly UserService _userService; 
+        private readonly ILogger _logger; 
 
+        // Событие для уведомления об изменении свойств
+        public event PropertyChangedEventHandler? PropertyChanged;
 
+        // Свойства для хранения данных
+        private ObservableCollection<UserEntity> _users = []; // Коллекция пользователей
+
+        private Visibility _scrollViewerVisibility = Visibility.Collapsed; // Видимость ScrollViewer
+
+        private string _statusText = string.Empty; // Текстовое сообщение статуса
+
+        
         public MainViewModel(UserService userService, ILogger logger)
         {
             _userService = userService;
             _logger = logger;
         }
 
-        private ObservableCollection<UserEntity> _users = new ObservableCollection<UserEntity>();
+        // Свойства с уведомлениями об изменении
         public ObservableCollection<UserEntity> Users
         {
             get => _users;
@@ -29,26 +40,10 @@ namespace WpfHomeNet.ViewModels
             {
                 if (_users == value) return;
                 _users = value;
-                OnPropertyChanged(nameof(Users));
+                OnPropertyChanged(nameof(Users)); 
             }
         }
 
-
-        private UserEntity? _selectedUser;
-        public UserEntity? SelectedUser
-        {
-            get => _selectedUser;
-            set
-            {
-                _selectedUser = value;
-                CanDelete = value != null;
-                OnPropertyChanged(nameof(CanDelete));
-            }
-        }
-
-        public bool CanDelete { get; private set; }
-
-        private Visibility _scrollViewerVisibility = Visibility.Collapsed;
         public Visibility ScrollViewerVisibility
         {
             get => _scrollViewerVisibility;
@@ -57,9 +52,9 @@ namespace WpfHomeNet.ViewModels
                 _scrollViewerVisibility = value;
                 OnPropertyChanged(nameof(ScrollViewerVisibility));
             }
-        }
-
-        private string _statusText = string.Empty;
+        } 
+        
+        
         public string StatusText
         {
             get => _statusText;
@@ -67,25 +62,42 @@ namespace WpfHomeNet.ViewModels
             {
                 if (_statusText == value) return;
                 _statusText = value;
-                Debug.WriteLine($"SETTER: {_statusText} → {value}");
                 OnPropertyChanged(nameof(StatusText));
             }
         }
 
+
+        // Методы управления видимостью ScrollViewer
+        public void ShowScrollViewer() => ScrollViewerVisibility = Visibility.Visible;
+        public void HideScrollViewer() => ScrollViewerVisibility = Visibility.Collapsed;
+
+
+
+       
+
+        // Методы для работы со статусом
         public void SetStatus(string message) => StatusText = message;
 
-        public void ShowScrollViewer()
+
+       
+
+        // Метод уведомления об изменении свойства
+        protected void OnPropertyChanged(string propertyName)
         {
-            ScrollViewerVisibility = Visibility.Visible;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
+
+
+
+        // Основной метод загрузки пользователей
         public async Task LoadUsersAsync()
         {
-            StatusText = "Загрузка...";
+            StatusText = "Загрузка..."; // Устанавливаем статус загрузки
 
             try
             {
-                var users = await _userService.GetAllUsersAsync();
+                var users = await _userService.GetAllUsersAsync(); // Получаем пользователей
 
                 if (users == null)
                 {
@@ -93,8 +105,8 @@ namespace WpfHomeNet.ViewModels
                     return;
                 }
 
-                Users.Clear();
-                Users = new ObservableCollection<UserEntity>(users);
+                Users.Clear(); // Очищаем старую коллекцию
+                Users = new ObservableCollection<UserEntity>(users); // Заполняем новую
 
                 var userCount = users.Count;
 
@@ -113,6 +125,9 @@ namespace WpfHomeNet.ViewModels
             }
         }
 
+
+
+        // Вспомогательные методы для обработки результатов
         private void HandleSuccess(string message)
         {
             _logger?.LogInformation(message);
@@ -124,22 +139,7 @@ namespace WpfHomeNet.ViewModels
             _logger?.LogError(message);
             StatusText = message;
         }
-
-
-
-
-
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        protected void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
     }
-
-
-
 
 
 }

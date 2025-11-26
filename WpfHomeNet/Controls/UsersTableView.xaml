@@ -7,7 +7,7 @@
              d:DesignHeight="450" Width="990 ">
     
 
-    <ScrollViewer  Visibility="{Binding ScrollViewerVisibility}"
+    <ScrollViewer x:Name = "UserPanel"  Visibility="{Binding ScrollViewerVisibility}"
                    VerticalScrollBarVisibility="Hidden"
                    HorizontalScrollBarVisibility="Disabled" 
                    Focusable="False" >
@@ -35,8 +35,8 @@
                     <ColumnDefinition Width="170"/>
                     <ColumnDefinition Width="170"/>
                     <ColumnDefinition Width="150"/>
-                    <ColumnDefinition Width="150"/>
                     <ColumnDefinition Width="*"/>
+                   
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0" Text="ID" />
@@ -47,10 +47,7 @@
                 <TextBlock Grid.Column="5" Text="Пароль" />
                 <TextBlock Grid.Column="6" Text="Дата создания" />
                
-               <TextBlock Grid.Column="7" 
-                          Text="[x]"
-                          MouseLeftButtonDown="TextBlock_Click"
-                          Cursor="Hand"/>     
+             
             </Grid>
 
             <!-- 2. Нижний ряд: данные пользователей -->

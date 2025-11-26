@@ -2,7 +2,6 @@
 using HomeNetCore.Data.Generators.SqlQueriesGenerator;
 using HomeNetCore.Data.Schemes;
 using HomeNetCore.Helpers;
-using WpfHomeNet.Data.DBProviders.SqliteClasses;
 
 namespace HomeNetCore.Data.DBProviders.Sqlite
 {
@@ -12,7 +11,7 @@ namespace HomeNetCore.Data.DBProviders.Sqlite
         private readonly TableSchema _formattedTable;
         private readonly ISchemaAdapter _adapter;
         private readonly ILogger _logger;
-       
+
         public SqliteUserSqlGen(
             TableSchema tableSchema,
             ISchemaAdapter adapter,
@@ -21,13 +20,13 @@ namespace HomeNetCore.Data.DBProviders.Sqlite
             _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _originalTable = tableSchema ?? throw new ArgumentNullException(nameof(tableSchema));
-            _formattedTable = adapter.ConvertToSnakeCaseSchema(tableSchema)??throw new ArgumentNullException(nameof(adapter));
+            _formattedTable = adapter.ConvertToSnakeCaseSchema(tableSchema) ?? throw new ArgumentNullException(nameof(adapter));
 
             if (string.IsNullOrEmpty(tableSchema.TableName))
             {
                 _logger.LogError("Имя таблицы не может быть пустым или null");
                 throw new ArgumentException("Таблица не может быть пустой");
-            }                           
+            }
         }
 
 
@@ -38,7 +37,7 @@ namespace HomeNetCore.Data.DBProviders.Sqlite
                 throw new InvalidOperationException("Некорректные поля или параметры для вставки");
             }
             return $@"INSERT INTO {_formattedTable.TableName} ({_formattedTable.InsertFields}) VALUES ({_formattedTable.InsertParameters});
-            SELECT last_insert_rowid() AS id"; 
+            SELECT last_insert_rowid() AS id";
         }
 
 
@@ -96,5 +95,23 @@ namespace HomeNetCore.Data.DBProviders.Sqlite
 
             return $"SELECT {_formattedTable.AllFields} FROM {_formattedTable.TableName}";
         }
+
+
+        public string GenerateEmailExists()
+        {
+            // Получаем имя колонки email с учетом форматирования
+            string emailColumn = _formattedTable.Columns
+                .FirstOrDefault(c => c.Name == "email")
+                ?.Name ??
+                throw new InvalidOperationException("Колонка email не найдена в таблице");
+
+            // Формируем SQL-запрос с правильным экранированием
+            return $@"
+            SELECT COUNT(*) 
+            FROM {_formattedTable.TableName} 
+            WHERE {emailColumn} = @email";
+    
+        }
+
     }
 }

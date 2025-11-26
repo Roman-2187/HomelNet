@@ -12,7 +12,7 @@
           FontSize="14"
           BorderThickness="3"
           BorderBrush="Black"
-         MouseDown="UsersGrid_MouseDown" >
+         MouseDown="WindowDrag_MouseDown" >
     <Window.Resources>
         <!-- Стиль применяется ко ВСЕМ кнопкам внутри этой StackPanel -->
         <Style TargetType="Button">
@@ -143,15 +143,18 @@
             Click="RemoveUser_Click"
             Margin="10"
             IsEnabled="{Binding IsValidUserId}"/>
-
+                
                 <Button x:Name="ShowButton" 
                        Content="Показать юзеров"
-                       Click="ShowScrollViewerButton_Click"/>
+                       Click="ShowUsers_Click"/>
                 
                 
-                <Button Content="Обновить юзеров" Click="Refresh_Click"/>
+                <Button Content="Обновить юзеров"
+                        Click="Refresh_Click"/>
 
-                <Button x:Name="btnLogs" Content="Показать логи" Click="ShowWindowLogs_Click"/>
+                <Button x:Name="btnLogs"
+                        Content="Показать логи"
+                        Click="ShowWindowLogs_Click"/>
 
             </StackPanel>
 

@@ -7,6 +7,89 @@
         BorderThickness="2" BorderBrush="Black"
         WindowStartupLocation="CenterOwner" Background="#FF9CB486">
 
+    <Window.Resources>
+        <!-- Стиль для TextBox -->
+        <Style TargetType="TextBox">
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="BorderThickness" Value="0.2"/>
+            <Setter Property="BorderBrush" Value="Black"/>
+
+            <!-- Триггеры для эффектов -->
+            <Style.Triggers>
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsFocused" Value="True"/>
+                    </MultiTrigger.Conditions>
+                    <Setter Property="BorderBrush" Value="Black"/>
+                    <Setter Property="Background" Value="White"/>
+                </MultiTrigger>
+
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsMouseOver" Value="True"/>
+                        <Condition Property="IsFocused" Value="False"/>
+                    </MultiTrigger.Conditions>
+                    <Setter Property="BorderBrush" Value="LightBlue"/>
+                    <Setter Property="Background" Value="LightBlue"/>
+                </MultiTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Стиль для PasswordBox -->
+        <Style TargetType="PasswordBox">
+           
+
+            <!-- Триггеры для эффектов -->
+            <Style.Triggers>
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsFocused" Value="True"/>
+                    </MultiTrigger.Conditions>
+                    <Setter Property="BorderBrush" Value="Black"/>
+                    <Setter Property="Background" Value="White"/>
+                </MultiTrigger>
+
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsMouseOver" Value="True"/>
+                        <Condition Property="IsFocused" Value="False"/>
+                    </MultiTrigger.Conditions>
+                    <Setter Property="BorderBrush" Value="LightBlue"/>
+                    <Setter Property="Background" Value="LightBlue"/>
+                </MultiTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- НОВЫЙ СТИЛЬ ДЛЯ КНОПОК -->
+        <Style TargetType="Button">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Width" Value="97"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Margin" Value="2,5,0,0"/>
+            <Setter Property="BorderBrush" Value="Black"/>
+            <Setter Property="BorderThickness" Value="0.2"/>
+            <Setter Property="Background" Value="#00DDDDDD"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+
+            <!-- Эффекты при наведении -->
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#80DDDDDD"/>
+                </Trigger>
+
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#CCDDDDDD"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="30"/>
@@ -17,13 +100,14 @@
 
         <TextBlock Grid.Row="0" 
                    Text="Выберите пользователя для удаления:"
+                   FontWeight="Bold"
                    FontSize="14"
                    HorizontalAlignment="Center"/>
 
         <StackPanel Grid.Row="1" Orientation="Horizontal">
           <TextBox x:Name="userIdTextBox" 
-         Width="150" 
-         Margin="5">
+         Width="200" 
+         Margin="5" >
     <TextBox.Template>
         <ControlTemplate TargetType="{x:Type TextBox}">
             <Grid>
@@ -54,12 +138,30 @@
                    Margin="5"/>
         </StackPanel>
 
+
         <ListBox x:Name="userListBox" 
-                 Grid.Row="2"
-                 DisplayMemberPath="DisplayInfo"
-                 SelectedValuePath="Id"
-                 Margin="5" SelectionChanged="userListBox_SelectionChanged"
-                 Height="100"/>
+    Grid.Row="2"
+    DisplayMemberPath="DisplayInfo"
+    SelectedValuePath="Id"
+    Margin="5"
+    SelectionChanged="userListBox_SelectionChanged"                 
+    Height="100" Background="Transparent"
+    IsHitTestVisible="False">
+            <!-- Отключаем возможность выделения мышью -->
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="{x:Type ListBoxItem}">
+                    <Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="FontWeight" Value="Bold"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </ListBox.ItemContainerStyle>
+        </ListBox>
+
+   
+
+
 
 
         <StackPanel Grid.Row="3" 

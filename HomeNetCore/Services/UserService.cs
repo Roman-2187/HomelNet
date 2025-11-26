@@ -2,6 +2,7 @@
 using HomeNetCore.Data.Repositories;
 using HomeNetCore.Helpers;
 using HomeNetCore.Helpers.Exceptions;
+using HomeNetCore.Helpers.Exeptions;
 using HomeNetCore.Models;
 namespace HomeNetCore.Services
 {
@@ -25,7 +26,7 @@ namespace HomeNetCore.Services
                 var users = _repo.GetAllAsync(); // Синхронный вызов
                 if (users == null)
                     throw new InvalidOperationException("Репозиторий вернул null");
-               // _logger.LogInformation($" GetAllUsersAsync вернул {users.Count} пользователей");
+               
                 return users;
             });
         }
@@ -33,22 +34,21 @@ namespace HomeNetCore.Services
 
         public async Task AddUserAsync(UserEntity user)
         {
-            // 1. Валидация обязательных полей
-            if (string.IsNullOrWhiteSpace(user.FirstName))
-                throw new ArgumentException("Имя (FirstName) обязательно");
+            // Проверяем существование email
+            if (await _repo.EmailExistsAsync(user.Email))
+            {
+                throw new DuplicateEmailException($"Email {user.Email} уже существует");
+            }
 
-            if (string.IsNullOrWhiteSpace(user.Email))
-                throw new ArgumentException("Email обязателен");
-
-            if (string.IsNullOrWhiteSpace(user.Password))
-                throw new ArgumentException("Пароль (Password) обязателен");
-
-            // 2. Заполняем дефолтные значения
-            user.LastName ??= string.Empty;
-            user.PhoneNumber ??= string.Empty;
-
-            // 3. Асинхронный вызов репозитория
-            await _repo.InsertUserAsync(user);
+            try
+            {
+                await _repo.InsertUserAsync(user);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Ошибка при добавлении пользователя: {ex.Message}");
+                throw;
+            }
         }
 
 
@@ -62,12 +62,26 @@ namespace HomeNetCore.Services
 
 
 
+        public async Task<bool> EmailExistsAsync(string email)
+        {
+            try
+            {
+                return await _repo.EmailExistsAsync(email);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Ошибка при проверке email {email}: {ex.Message}");
+                throw;
+            }
+        }
+
+
         public async Task DeleteUserAsync(int userId)
         {
             try
             {
                 await _repo.DeleteByIdAsync(userId);
-                _logger.LogInformation($"Пользователь с ID {userId} успешно удалён");
+               
             }
             catch (NotFoundException ex)
             {

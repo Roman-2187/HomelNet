@@ -3,7 +3,7 @@ using HomeNetCore.Data.Schemes;
 
 namespace HomeNetCore.Data.DBProviders.Sqlite
 {
-    public class PostgresUserSqlGen : IUserSqlGenerator
+    public class PostgresUserSqlGen //: IUserSqlGenerator
     {
         private readonly TableSchema tableSchema;
         private readonly string fields;

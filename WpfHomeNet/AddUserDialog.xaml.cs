@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HomeNetCore.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,19 +16,20 @@ using System.Windows.Shapes;
 namespace HomeSocialNetwork
 {
     public partial class AddUserDialog : Window
-    {
-        public AddUserDialog()
-        {
-            InitializeComponent();
-        }
-
-        // Свойства для получения данных из формы
-        public string FirstName => FirstNameTextBox.Text;
+    {   public string FirstName => FirstNameTextBox.Text;
         public string LastName => LastNameTextBox.Text;
         public string PhoneNumber => PhoneNumberTextBox.Text;
         public string Email => EmailTextBox.Text;
         public string Password => PasswordBox.Password;
-
+  
+        
+        public AddUserDialog()
+        {
+            InitializeComponent();            
+        }
+            
+        // Свойства для получения данных из формы
+      
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
             // Валидация обязательных полей

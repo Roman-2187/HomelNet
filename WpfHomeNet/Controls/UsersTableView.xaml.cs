@@ -10,7 +10,7 @@ namespace HomeSocialNetwork.Controls
     /// </summary>
     public partial class UsersTableView : UserControl
     {
-        private MainViewModel _viewModel;
+        private MainViewModel? _viewModel;
 
         public UsersTableView()
         {
@@ -51,18 +51,6 @@ namespace HomeSocialNetwork.Controls
             }
         }
 
-      
-
-
-
-
-        private void TextBlock_Click(object sender, MouseButtonEventArgs e)
-        {
-            if (DataContext is MainViewModel vm)
-            {
-                vm.ScrollViewerVisibility = Visibility.Collapsed; // Скрываем ScrollViewer
-            }
-        }
-
+     
     }
 }

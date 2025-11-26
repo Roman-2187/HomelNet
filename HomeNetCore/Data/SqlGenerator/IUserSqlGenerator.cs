@@ -11,5 +11,6 @@ namespace HomeNetCore.Data.Generators.SqlQueriesGenerator
       public string GenerateSelectById();
       public string GenerateSelectByEmail();
       public string GenerateSelectAll();
+        string GenerateEmailExists();
     }
 }

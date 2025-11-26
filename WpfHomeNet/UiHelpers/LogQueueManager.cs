@@ -1,5 +1,6 @@
 ﻿using HomeNetCore.Helpers;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace WpfHomeNet.UiHelpers
 {
@@ -10,10 +11,12 @@ namespace WpfHomeNet.UiHelpers
         private readonly ConcurrentQueue<(LogLevel level, string message, LogColor color)> _logQueue = new();
         private bool _isProcessing;
         private readonly LogWindow _logWindow;
+        private readonly CancellationTokenSource _cts = new();
 
         public LogQueueManager(LogWindow logWindow)
         {
             _logWindow = logWindow ?? throw new ArgumentNullException(nameof(logWindow));
+            StartProcessing(); // Запускаем обработку при создании
         }
 
         public void WriteLog((string Message, LogColor Color) logEntry)
@@ -23,17 +26,8 @@ namespace WpfHomeNet.UiHelpers
                 .Replace(Environment.NewLine + Environment.NewLine, Environment.NewLine)
                 .Trim('\r', '\n');
 
-            LogLevel level = GetLogLevelFromColor(logEntry.Color);
-
-            _logQueue.Enqueue((level, message, logEntry.Color));
-
-            if (!_isProcessing)
-                ProcessLogQueue();
-        }
-
-        private LogLevel GetLogLevelFromColor(LogColor color)
-        {
-            return color switch
+            // Прямое сопоставление цвета и уровня логирования
+            LogLevel level = logEntry.Color switch
             {
                 LogColor.Critical => LogLevel.Critical,
                 LogColor.Error => LogLevel.Error,
@@ -43,9 +37,31 @@ namespace WpfHomeNet.UiHelpers
                 LogColor.Trace => LogLevel.Trace,
                 _ => LogLevel.Information
             };
+
+            _logQueue.Enqueue((level, message, logEntry.Color));
         }
 
-        private async void ProcessLogQueue()
+        private async void StartProcessing()
+        {
+            try
+            {
+                while (!_cts.IsCancellationRequested)
+                {
+                    await ProcessLogQueue();
+                    await Task.Delay(10); // Небольшая задержка
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Обработка отмены
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Ошибка при обработке лога: {ex.Message}");
+            }
+        }
+
+        private async Task ProcessLogQueue()
         {
             if (_isProcessing) return;
             _isProcessing = true;
@@ -69,15 +85,20 @@ namespace WpfHomeNet.UiHelpers
                     }
                 }
             }
-
-
-            // Продолжение класса LogQueueManager
             finally
             {
                 _isProcessing = false;
             }
         }
+
+        public void Dispose()
+        {
+            _cts.Cancel();
+            _cts.Dispose();
+        }
     }
+
+
 
 
 
