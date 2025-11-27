@@ -1,69 +1,89 @@
-﻿using HomeNetCore.Data.Generators.SqlQueriesGenerator;
+﻿using HomeNetCore.Data.Adapters;
+using HomeNetCore.Data.Generators.SqlQueriesGenerator;
 using HomeNetCore.Data.Schemes;
+using HomeNetCore.Helpers;
 
 namespace HomeNetCore.Data.DBProviders.Sqlite
 {
-    public class PostgresUserSqlGen //: IUserSqlGenerator
+    public class PostgresUserSqlGen : IUserSqlGenerator
     {
-        private readonly TableSchema tableSchema;
-        private readonly string fields;
-        private readonly string parameters;
-        private readonly string setClause;
 
-        public PostgresUserSqlGen(TableSchema tableSchema)
+
+        private readonly TableSchema _originalTable;
+        private readonly TableSchema _formattedTable;
+        private readonly ISchemaAdapter _adapter;
+        private readonly ILogger _logger;
+
+
+       
+        public PostgresUserSqlGen(
+            TableSchema tableSchema,
+            ISchemaAdapter adapter,
+            ILogger logger)
         {
-            this.tableSchema = tableSchema;
+            _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _originalTable = tableSchema ?? throw new ArgumentNullException(nameof(tableSchema));
+            _formattedTable = adapter.ConvertToSnakeCaseSchema(tableSchema) ?? throw new ArgumentNullException(nameof(adapter));
 
-            // Формируем основные строки с учетом особенностей PostgreSQL
-            fields = string.Join(", ", tableSchema.Columns.Select(c => c.Name));
-            parameters = string.Join(", ", tableSchema.Columns.Select(c => $"@{c.Name}"));
-            setClause = string.Join(", ", tableSchema.Columns.Select(c => $"{c.Name} = @{c.Name}"));
+            if (string.IsNullOrEmpty(_originalTable.TableName))
+            {
+                _logger.LogError("Имя таблицы не может быть пустым или null");
+                throw new ArgumentException("Таблица не может быть пустой");
+            }
         }
 
         public string GenerateInsert()
         {
             // В PostgreSQL можно использовать более короткий синтаксис
-            return $"INSERT INTO {tableSchema.TableName} ({fields}) VALUES ({parameters})";
+            return $"INSERT INTO {_originalTable.TableName} ({_originalTable.InsertFields}) VALUES ({_originalTable.InsertParameters})";
         }
 
         public string GenerateUpdate()
         {
-            return $"UPDATE {tableSchema.TableName} SET {setClause} WHERE Id = @Id";
+            return $"UPDATE {_originalTable.TableName} SET {_originalTable.SetClause} WHERE Id = @Id";
         }
 
         public string GenerateDelete()
         {
-            return $"DELETE FROM {tableSchema.TableName} WHERE Id = @Id";
+            return $"DELETE FROM {_originalTable.TableName} WHERE Id = @Id";
         }
 
         public string GenerateSelectById()
         {
-            return $"SELECT {fields} FROM {tableSchema.TableName} WHERE Id = @Id";
+            return $"SELECT {_originalTable.AllFields} FROM {_originalTable.TableName} WHERE Id = @Id";
         }
 
         public string GenerateSelectByEmail()
         {
-            return $"SELECT {fields} FROM {tableSchema.TableName} WHERE Email = @Email";
+            return $"SELECT {_originalTable.AllFields} FROM {_originalTable.TableName} WHERE Email = @Email";
         }
 
         public string GenerateSelectAll()
         {
-            return $"SELECT {fields} FROM {tableSchema.TableName}";
+            return $"SELECT {_originalTable.AllFields} FROM {_originalTable.TableName}";
         }
 
         // Дополнительные методы для PostgreSQL
         public string GenerateUpsert()
         {
             return $@"
-          INSERT INTO {tableSchema.TableName} ({fields}) 
-          VALUES ({parameters})
+          INSERT INTO {_originalTable.TableName} ({_originalTable.InsertFields}) 
+          VALUES ({_originalTable.InsertParameters})
           ON CONFLICT (Id) 
-          DO UPDATE SET {setClause}";
+          DO UPDATE SET {_originalTable.SetClause}";
         }
 
         public string GenerateSelectCount()
         {
-            return $"SELECT COUNT(*) FROM {tableSchema.TableName}";
+            return $"SELECT COUNT(*) FROM {_originalTable.TableName}";
+        }
+
+
+        public string GenerateEmailExists()
+        {
+           return string.Empty ;
+
         }
     }
 

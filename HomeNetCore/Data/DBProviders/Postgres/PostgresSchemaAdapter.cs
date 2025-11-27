@@ -6,9 +6,9 @@ using System.Text;
 namespace WpfHomeNet.Data.DBProviders.Postgres
 
 {
-    public class PostgresSchemaAdapter 
+    public class PostgresSchemaAdapter : ISchemaAdapter
     {
-        public string GetTableName(string? rawName)
+        public string ConvertTableName(string? rawName, NameFormat format)
         {
             if (string.IsNullOrEmpty(rawName))
             {
@@ -18,7 +18,7 @@ namespace WpfHomeNet.Data.DBProviders.Postgres
             return ToSnakeCase(rawName);
         }
 
-        public string GetColumnName(string? rawName)
+        public string ConvertColumnName(string? rawName, NameFormat format)
         {
             if (string.IsNullOrEmpty(rawName))
             {
@@ -37,12 +37,12 @@ namespace WpfHomeNet.Data.DBProviders.Postgres
         {
             var snakeCaseSchema = new TableSchema
             {
-                TableName = GetTableName(originalSchema.TableName),
+                TableName = ConvertTableName(originalSchema.TableName, NameFormat.SnakeCase),
                 Columns = originalSchema.Columns.Select(col =>
                     new ColumnSchema
                     {
-                        Name = GetColumnName(col.Name),
                         OriginalName = col.Name,
+                        Name = ConvertColumnName(col.Name, NameFormat.SnakeCase),
                         Type = col.Type,
                         Length = col.Length,
                         IsNullable = col.IsNullable,
@@ -53,12 +53,14 @@ namespace WpfHomeNet.Data.DBProviders.Postgres
                         IsCreatedAt = col.IsCreatedAt,
                         Comment = col.Comment,
                         DefaultValue = col.DefaultValue
-                    }).ToList(),
-
-                IdColumnName = originalSchema.IdColumnName
+                    }).ToList()
             };
-
             snakeCaseSchema.Initialize();
+
+            // Теперь присваиваем IdColumnName на основе преобразованной схемы
+            snakeCaseSchema.IdColumnName = snakeCaseSchema.Columns
+                .FirstOrDefault(c => c.IsPrimaryKey)?.Name;
+
             return snakeCaseSchema;
         }
 
@@ -71,7 +73,7 @@ namespace WpfHomeNet.Data.DBProviders.Postgres
 
             return schema.Columns.Select(col =>
             {
-                var name = $"\"{GetColumnName(col.Name)}\"";
+                var name = $"\"{ConvertColumnName(col.Name, NameFormat.SnakeCase)}\"";
 
                 string sqlType = col.Type switch
                 {
@@ -177,27 +179,27 @@ namespace WpfHomeNet.Data.DBProviders.Postgres
         }
 
         // Добавим методы для создания индексов и ограничений
-        public string CreateIndex(string tableName, string columnName)
-        {
-            return $"CREATE INDEX idx_{ToSnakeCase(tableName)}_{ToSnakeCase(columnName)} " +
-                   $"ON \"{GetTableName(tableName)}\"(\"{GetColumnName(columnName)}\")";
-        }
+        //public string CreateIndex(string tableName, string columnName)
+        //{
+        //    return $"CREATE INDEX idx_{ToSnakeCase(tableName)}_{ToSnakeCase(columnName)} " +
+        //           $"ON \"{ConvertTableName(tableName)}\"(\"{GetColumnName(columnName)}\")";
+        //}
 
-        public string CreateForeignKey(string tableName, string columnName, string referencedTable, string referencedColumn)
-        {
-            return $"ALTER TABLE \"{GetTableName(tableName)}\" " +
-                   $"ADD CONSTRAINT fk_{ToSnakeCase(tableName)}_{ToSnakeCase(columnName)} " +
-                   $"FOREIGN KEY (\"{GetColumnName(columnName)}\") " +
-                   $"REFERENCES \"{GetTableName(referencedTable)}\"(\"{GetColumnName(referencedColumn)}\")";
-        }
+        //public string CreateForeignKey(string tableName, string columnName, string referencedTable, string referencedColumn)
+        //{
+        //    return $"ALTER TABLE \"{GetTableName(tableName)}\" " +
+        //           $"ADD CONSTRAINT fk_{ToSnakeCase(tableName)}_{ToSnakeCase(columnName)} " +
+        //           $"FOREIGN KEY (\"{GetColumnName(columnName)}\") " +
+        //           $"REFERENCES \"{GetTableName(referencedTable)}\"(\"{GetColumnName(referencedColumn)}\")";
+        //}
 
-        // Метод для создания таблицы
-        public string CreateTable(TableSchema schema)
-        {
-            var columns = GetColumnDefinitions(schema);
-            var columnDefinitions = string.Join(",\n    ", columns);
+        //// Метод для создания таблицы
+        //public string CreateTable(TableSchema schema)
+        //{
+        //    var columns = GetColumnDefinitions(schema);
+        //    var columnDefinitions = string.Join(",\n    ", columns);
 
-            return $"CREATE TABLE \"{GetTableName(schema.TableName)}\" (\n    {columnDefinitions}\n)";
-        }
+        //    return $"CREATE TABLE \"{GetTableName(schema.TableName)}\" (\n    {columnDefinitions}\n)";
+        //}
     }
 }

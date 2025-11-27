@@ -1,12 +1,27 @@
-﻿using HomeNetCore.Data.Builders;
+﻿using HomeNetCore.Data.Adapters;
+using HomeNetCore.Data.Builders;
 using HomeNetCore.Data.Generators.SqlQueriesGenerator;
 using HomeNetCore.Data.Schemes;
+using HomeNetCore.Helpers;
+using WpfHomeNet.Data.DBProviders.Postgres;
 
-namespace WpfHomeNet.Data.Generators.SqlQueriesGenerator
+namespace HomeNetCore.Data.DBProviders.Postgres
 {
-    public class PostgresSchemaSqlGenerator: ISchemaSqlInitializer  
+    public class PostgresSchemaSqlInit: ISchemaSqlInitializer  
     {
-      
+
+
+        private readonly ISchemaAdapter _adapter;
+        private ILogger _logger;
+
+
+        public PostgresSchemaSqlInit(ILogger logger,ISchemaAdapter schemaAdapter)
+        {
+            _adapter = schemaAdapter;
+            _logger = logger;
+        }
+       
+
 
         public  string GenerateCreateTableSql(TableSchema schema)
         {

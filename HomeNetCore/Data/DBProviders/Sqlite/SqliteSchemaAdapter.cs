@@ -4,7 +4,7 @@ using HomeNetCore.Data.Schemes;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace WpfHomeNet.Data.DBProviders.SqliteClasses
+namespace HomeNetCore.Data.DBProviders.Sqlite
 {
     public class SqliteSchemaAdapter : ISchemaAdapter
     {

@@ -96,8 +96,13 @@ namespace WpfHomeNet
                 throw new InvalidOperationException("Логическое нарушение: окно логов не было создано");
             }
 
+
+
+
             if (_logWindow.IsVisible)
             {
+
+
                 // Скрываем логи и центрируем главное окно
                 _logWindow.Hide();
                 CenterMainAndHideLogs();
@@ -106,6 +111,8 @@ namespace WpfHomeNet
             {
                 // Показываем логи и сдвигаем окна
                 ShowLogsAndShift(_logWindow);
+
+                
             }
         }
 

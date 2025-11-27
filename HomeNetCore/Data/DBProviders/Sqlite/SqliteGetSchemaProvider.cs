@@ -11,23 +11,35 @@ using System.Data.Common;
 
 namespace HomeNetCore.Data.SqliteClasses
 {
-    public class SqliteGetSchemaProvider : IGetSchemaProvider
+    public class SqliteGetSchemaProvider : ISchemaProvider
     {
          const int ColumnNameIndex = 1;
          const int ColumnTypeIndex = 2;
          const int IsNullableIndex = 3;
          const int IsPrimaryKeyIndex = 5;
         private readonly ISchemaSqlInitializer _generator;
-        private readonly SqliteConnection _requiredConnection;
+        private readonly DbConnection _requiredConnection;
         private readonly ILogger _logger;
 
         public SqliteGetSchemaProvider(
             ISchemaSqlInitializer generator,
-            SqliteConnection connection,
+            DbConnection connection,
             ILogger logger)
         {
+
+            // Сначала проверяем на null
+            if (connection == null)
+                throw new ArgumentNullException(nameof(connection));
+
+            // Затем проверяем тип
+            if (connection is not SqliteConnection)
+                throw new ArgumentException(
+                    $"Only SQLite connections are supported. Received: {connection.GetType().Name}",
+                    nameof(connection));
+
+            _requiredConnection = connection;
+
             _generator = generator ?? throw new ArgumentNullException(nameof(generator));
-            _requiredConnection = connection ?? throw new ArgumentNullException(nameof(connection));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 

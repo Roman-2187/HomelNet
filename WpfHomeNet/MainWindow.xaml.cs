@@ -1,16 +1,21 @@
-﻿using HomeNetCore.Data.Adapters;
+﻿using HomeNetCore.Data;
+using HomeNetCore.Data.Adapters;
 using HomeNetCore.Data.DBProviders.Sqlite;
+using HomeNetCore.Data.Generators.SqlQueriesGenerator;
+using HomeNetCore.Data.PostgreClasses;
 using HomeNetCore.Data.Repositories;
 using HomeNetCore.Data.Schemes;
+using HomeNetCore.Data.Schemes.GetSchemaTableBd;
 using HomeNetCore.Data.SqliteClasses;
 using HomeNetCore.Data.TableSchemas;
 using HomeNetCore.Helpers;
 using HomeNetCore.Services;
 using Microsoft.Data.Sqlite;
+using Npgsql;
+using System.Data.Common;
 using System.Diagnostics;
 using System.Windows;
-using WpfHomeNet.Data.DBProviders.SqliteClasses;
-using WpfHomeNet.Data.SqliteClasses;
+using WpfHomeNet.Data.DBProviders.Postgres;
 using WpfHomeNet.UiHelpers;
 using WpfHomeNet.ViewModels;
 
@@ -20,112 +25,116 @@ namespace WpfHomeNet
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     /// 
-
+   
     public partial class MainWindow : Window
     {
 
-        private readonly string dbPath = DatabasePathHelper.GetDatabasePath("home_net.db");
-        private string? _connection;
+        private static readonly string dbPath = DatabasePathHelper.GetDatabasePath("home_net.db");        
+        private  readonly string _connectionString =$"Data Source={dbPath}";        
+        private DbConnection? _connection;
         private DBTableInitializer? _databaseInitializer;
-        private SqliteGetSchemaProvider? _schemaProvider;
-        private SqliteSchemaSqlInit? _schemaSqlInit;
-        private TableSchema? _tableSchema;
-        private SqliteConnection? _sqliteConnection;
+        private ISchemaProvider? _schemaProvider;
+        private ISchemaSqlInitializer? _schemaSqlInit;
+        private TableSchema? _tableSchema;        
         public LogWindow? _logWindow;
         private UserService? _userService;
         private MainViewModel? _mainVm;
         private IStatusUpdater? _status;
         private ILogger? _logger;
-        private SqliteUserSqlGen? _userSqlGen;
-        private ISchemaAdapter? _sqliteSchemaAdapter;
+        private IUserSqlGenerator? _userSqlGen;
+        private ISchemaAdapter? _schemaAdapter;
         private LogQueueManager? _logQueueManager;
         private UserRepository? _userRepository;
+        
 
         public MainWindow()
         {
+            InitializeComponent(); 
+        
+            InitializeLogging();
 
-            InitializeComponent();
-
-            CenterMainAndHideLogs();
-
-
-
-
-
-            // Запуск асинхронной инициализации с обработкой ошибок
-            InitializeAsync().ContinueWith(task =>
-            {
-                if (task.IsFaulted && task.Exception != null)
-                {
-                    MessageBox.Show(
-                        $"Критическая ошибка при запуске: {task.Exception.InnerException?.Message}",
-                        "Ошибка",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
-                    Close();
-                }
-            }, TaskScheduler.FromCurrentSynchronizationContext());
+            CenterMainAndHideLogs();         
         }
 
-        private async Task InitializeAsync()
+
+
+
+        private void InitializeLogging()
+        {
+            _logger = new Logger();
+            _logWindow = new LogWindow(_logger);
+            _logQueueManager = new LogQueueManager(_logWindow);
+            _logger.SetOutput(_logQueueManager.WriteLog);
+
+            _logger.LogInformation($"Путь БД: {dbPath}");
+            _logger.LogInformation("Application started. PID: " + Process.GetCurrentProcess().Id);
+        }
+
+
+        private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
             try
+            { 
+                await InitializeAsync(DatabaseType.SQLite);
+                await PostInitializeAsync();
+
+               
+                await LoadUsersOnStartupAsync();
+            }
+            catch (Exception ex)
             {
-                _connection = $"Data Source={dbPath}";
+                _logger?.LogError($"Критическая ошибка при запуске: {ex.Message}");
+                MessageBox.Show(
+                    $"Произошла ошибка при запуске приложения: {ex.Message}",
+                    "Ошибка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                Close();
+            }
+        }
 
-                _logger = new Logger();
 
-                _sqliteConnection = new SqliteConnection(_connection);
 
-                _logWindow = new LogWindow(_logger);
+       
 
-                btnLogs.Tag = new { LogWindow = _logWindow };
-
-                _logQueueManager = new LogQueueManager(_logWindow);
-
-                _logger.SetOutput(_logQueueManager.WriteLog);
-
-                _schemaSqlInit = new SqliteSchemaSqlInit(_logger);
-
-                _schemaProvider = new SqliteGetSchemaProvider(
-                    _schemaSqlInit, _sqliteConnection, _logger);
-
+        private async Task InitializeAsync(DatabaseType databaseType)
+        {
+            try
+            {                              
                 _tableSchema = new UsersTable().Build();
 
-                _sqliteSchemaAdapter = new SqliteSchemaAdapter();
+                var factory = new DatabaseServiceFactory(_connectionString, _logger);
 
-                _userSqlGen = new SqliteUserSqlGen(
-                    _tableSchema, _sqliteSchemaAdapter, _logger);
-                _logger.LogInformation($"Путь бд {dbPath}");
+                // 2. Получаем все сервисы одним вызовом
+                var (connection, sqlInit, schemaProvider, schemaAdapter, userSqlGen) =
+                    factory.CreateServices(databaseType, _tableSchema);
 
-                _logger.LogInformation("Application started. PID: " + Process.GetCurrentProcess().Id);
+
+                // 3. Сохраняем в поля класса (если нужно)
+                _connection = connection;
+                _schemaSqlInit = sqlInit;
+                _schemaProvider = schemaProvider;
+                _schemaAdapter = schemaAdapter;
+                _userSqlGen = userSqlGen;
+
+
 
                 _databaseInitializer = new DBTableInitializer(
-                    _sqliteConnection, _schemaProvider,
-                    _sqliteSchemaAdapter, _schemaSqlInit,
+                    _connection, _schemaProvider,
+                    _schemaAdapter, _schemaSqlInit,
                     _tableSchema, _logger);
 
                 // Асинхронное ожидание инициализации БД
                 await _databaseInitializer.InitializeAsync();
 
-                _userRepository = new UserRepository(_sqliteConnection, _logger, _userSqlGen);
+                _userRepository = new UserRepository(_connection, _logger, _userSqlGen);
 
                 _userService = new UserService(_userRepository, _logger);
 
                 // Создание ViewModel
-                _mainVm = new MainViewModel(_userService, _logger);
-
-
-                _status = (IStatusUpdater)_mainVm;
-                DataContext = _status;
-
-                // Асинхронная загрузка данных
-                await LoadUsersOnStartupAsync();
-
-
-
-
-
+                _mainVm = new MainViewModel(_userService, _logger); 
+                
+                         
             }
             catch (Exception ex)
             {
@@ -141,13 +150,29 @@ namespace WpfHomeNet
                     MessageBoxImage.Error
                 );
             }
-
         }
 
 
 
-       
 
+
+        public async Task PostInitializeAsync()
+        {
+            // Проверка критических зависимостей
+            if (_logger is null)
+            {
+                throw new InvalidOperationException("_logger не инициализирован");
+            }
+
+            if (_logQueueManager is null)
+            {
+                throw new InvalidOperationException("_logQueueManager не инициализирован");
+            }
+                      
+            _status = (IStatusUpdater?)_mainVm;
+
+            DataContext = _status;            
+        }
 
         private async Task LoadUsersOnStartupAsync()
         {
@@ -177,7 +202,6 @@ namespace WpfHomeNet
         }
 
 
-
         private void CloseAllWindows()
         {
             // Получаем коллекцию окон
@@ -192,9 +216,6 @@ namespace WpfHomeNet
         }
 
      
-
-
-
         private void ShowLogsAndShift(LogWindow logWindow)
         {
             // Позиция главного окна

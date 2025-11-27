@@ -2,24 +2,34 @@
 using HomeNetCore.Data.Generators.SqlQueriesGenerator;
 using HomeNetCore.Data.Schemes;
 using HomeNetCore.Data.Schemes.GetSchemaTableBd;
+using Microsoft.Data.Sqlite;
 using Npgsql;
+using NpgsqlTypes;
 using System.Data;
-using WpfHomeNet.Data.Generators.SqlQueriesGenerator;
+using System.Data.Common;
 
 
-namespace WpfHomeNet.Data.PostgreClasses
+
+namespace HomeNetCore.Data.PostgreClasses
 {
-    public class PostgresSchemaProvider : IGetSchemaProvider
+    public class PostgresSchemaProvider : ISchemaProvider
     {
         private readonly ISchemaSqlInitializer _generator;
-        private readonly NpgsqlConnection _requiredConnection;
+        private readonly DbConnection _requiredConnection;
 
-        public PostgresSchemaProvider(
-            ISchemaSqlInitializer generator,
-            NpgsqlConnection connection) // Явно требуем NpgsqlConnection
+        public PostgresSchemaProvider( ISchemaSqlInitializer generator,DbConnection connection)            
         {
+            // Сначала проверяем на null
+            if (connection == null)
+                throw new ArgumentNullException(nameof(connection));
+
+            // Затем проверяем тип
+            if (connection is not NpgsqlConnection)throw new ArgumentException(                
+                $"Only Postgres connections are supported. Received: {connection.GetType().Name}",  nameof(connection));
+                  
+
             _generator = generator ?? throw new ArgumentNullException(nameof(generator));
-            _requiredConnection = connection ?? throw new ArgumentNullException(nameof(connection));
+            _requiredConnection = connection; 
 
             if (_requiredConnection.State != ConnectionState.Open)
                 throw new InvalidOperationException("Соединение с PostgreSQL должно быть открыто!");
@@ -32,8 +42,10 @@ namespace WpfHomeNet.Data.PostgreClasses
             using var command = _requiredConnection.CreateCommand();
             command.CommandText = _generator.GenerateGetTableStructureSql(tableName);
 
-            // Параметры уже строго типизированы для PostgreSQL
-            command.Parameters.AddWithValue("@tableName", tableName);
+           
+            var npgsqlCmd = (NpgsqlCommand)command;
+            npgsqlCmd.Parameters.Add("@tableName", NpgsqlDbType.Text).Value =
+                tableName ?? (object)DBNull.Value;
 
             using var reader = await command.ExecuteReaderAsync();
 

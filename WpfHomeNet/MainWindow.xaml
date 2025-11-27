@@ -12,6 +12,7 @@
           FontSize="14"
           BorderThickness="3"
           BorderBrush="Black"
+          Loaded="Window_Loaded"
          MouseDown="WindowDrag_MouseDown" >
     <Window.Resources>
         <!-- Стиль применяется ко ВСЕМ кнопкам внутри этой StackPanel -->

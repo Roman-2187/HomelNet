@@ -6,21 +6,21 @@ using HomeNetCore.Data.Schemes.GetSchemaTableBd;
 using HomeNetCore.Helpers;
 using System.Data;
 using System.Data.Common;
-using WpfHomeNet.Data.DBProviders.SqliteClasses;
+
 using WpfHomeNet.Data.Schemes.CheckTableBd;
 public class DBTableInitializer
 {
     private readonly DbConnection _dbConnection;
     private readonly ISchemaSqlInitializer _schemaSqlGenerator;
     private readonly ILogger _logger;
-    private readonly IGetSchemaProvider _schemaProvider;
+    private readonly ISchemaProvider _schemaProvider;
     private readonly TableSchema _tableSchema;
     private readonly ISchemaAdapter _schemaAdapter;
 
     public DBTableInitializer
                       (
                         DbConnection connection,
-                        IGetSchemaProvider schemaProvider,
+                        ISchemaProvider schemaProvider,
                         ISchemaAdapter schemaAdapter,       
                         ISchemaSqlInitializer schemaSqlGenerator,
                         TableSchema tableSchema,

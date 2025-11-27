@@ -1,21 +1,22 @@
 ﻿using HomeNetCore.Data.Adapters;
 using HomeNetCore.Data.Builders;
+using HomeNetCore.Data.DBProviders.Sqlite;
 using HomeNetCore.Data.Generators.SqlQueriesGenerator;
 using HomeNetCore.Data.Schemes;
 using HomeNetCore.Helpers;
-using WpfHomeNet.Data.DBProviders.SqliteClasses;
 
-namespace WpfHomeNet.Data.SqliteClasses
+
+namespace HomeNetCore.Data.DBProviders.Sqlite
 {
 
     public class SqliteSchemaSqlInit : ISchemaSqlInitializer
     {
-        private readonly SqliteSchemaAdapter _adapter;
+        private readonly ISchemaAdapter _adapter;
         private ILogger _logger;
 
-        public SqliteSchemaSqlInit(ILogger logger)
+        public SqliteSchemaSqlInit(ILogger logger,ISchemaAdapter schemaAdapter)
         {
-            _adapter = new SqliteSchemaAdapter();
+            _adapter = schemaAdapter;
             _logger = logger;
         }
 
