@@ -125,17 +125,28 @@ namespace WpfHomeNet
 
 
         private async void RemoveUser_Click(object sender, RoutedEventArgs e)
-        {            
+        {
             var mainVm = (MainViewModel)DataContext;
 
-            var deleteWindow = new DeleteUserDialog(
-                mainVm.Users, _userService,_logger)                                             
+            var deleteWindow = new DeleteUserDialog(mainVm.Users, _userService, _logger)
             {
                 Owner = this
             };
 
+            // Подключаем обработчик статуса
+            deleteWindow.OnStatusUpdated = (message, color) =>
+            {
+                // Здесь вы можете:
+                // - обновить TextBlock в главном окне
+                // - вызвать метод ViewModel
+                // - показать MessageBox
+                mainVm.SetStatus(message) ; // Если в VM есть такое свойство
+                
+            };
+
             deleteWindow.ShowDialog();
         }
+
 
 
 

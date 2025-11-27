@@ -16,7 +16,7 @@ namespace WpfHomeNet
         private readonly UserService _userService;
         private readonly ILogger _logger;
         private UserEntity? _selectedUser; // Может быть null, если пользователь не найден
-
+        public Action<string, Brush>? OnStatusUpdated;
 
         public DeleteUserDialog(
             ObservableCollection<UserEntity> users,
@@ -213,14 +213,23 @@ namespace WpfHomeNet
                 yesButton.IsEnabled = false;
 
                 // 4. Показываем статус
-                await ShowStatus("Пользователь удалён", Brushes.Green, 2);
+                OnStatusUpdated?.Invoke($"Пользователь с ID {selectedUser.Id} удалён", Brushes.Green);
+
+                userIdTextBox.Text = "Введите ID";
+
+
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Произошла ошибка: {ex.Message}");
+                OnStatusUpdated?.Invoke($"Ошибка: {ex.Message}", Brushes.Red);
             }
         }
 
+
+
+
+      
 
 
 
