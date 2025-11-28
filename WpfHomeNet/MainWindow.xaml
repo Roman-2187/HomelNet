@@ -133,7 +133,8 @@
                 Background="#00465445"                             
                 Orientation="Vertical">
                 <!-- будующий обработчик( Click="Menu_Click" ) -->
-                <Button Content="Меню пустое пока"  />
+                <Button Content="Test list Users"
+                        Click="AddUsersList_Click" />
                 
                 <Button Content="Добавить юзера"
                         Click="AddUser_Click"/>

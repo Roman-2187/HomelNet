@@ -38,4 +38,8 @@
     <ProjectReference Include="..\HomeNetCore\HomeNetCore.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Interfaces\" />
+  </ItemGroup>
+
 </Project>

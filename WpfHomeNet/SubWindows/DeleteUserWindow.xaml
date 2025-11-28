@@ -2,11 +2,14 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Удаление пользователя" 
-        Height="250" Width="350"
-        WindowStyle="None" AllowsTransparency="True"
-        BorderThickness="2" BorderBrush="Black"
-        WindowStartupLocation="CenterOwner" Background="#FF9CB486">
-
+        Height="250"
+        Width="350"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        BorderThickness="2"
+        BorderBrush="Black"
+        WindowStartupLocation="CenterOwner"
+        Background="#FF9CB486">
     <Window.Resources>
         <!-- Стиль для TextBox -->
         <Style TargetType="TextBox">
@@ -16,8 +19,7 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="BorderThickness" Value="0.2"/>
-            <Setter Property="BorderBrush" Value="Black"/>
-
+            <Setter Property="BorderBrush" Value="DarkGray"/>
             <!-- Триггеры для эффектов -->
             <Style.Triggers>
                 <MultiTrigger>
@@ -27,7 +29,6 @@
                     <Setter Property="BorderBrush" Value="Black"/>
                     <Setter Property="Background" Value="White"/>
                 </MultiTrigger>
-
                 <MultiTrigger>
                     <MultiTrigger.Conditions>
                         <Condition Property="IsMouseOver" Value="True"/>
@@ -38,9 +39,6 @@
                 </MultiTrigger>
             </Style.Triggers>
         </Style>
-
-      
-
         <!-- НОВЫЙ СТИЛЬ ДЛЯ КНОПОК -->
         <Style TargetType="Button">
             <Setter Property="FontWeight" Value="Bold"/>
@@ -52,21 +50,17 @@
             <Setter Property="BorderThickness" Value="0.2"/>
             <Setter Property="Background" Value="#00DDDDDD"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
-
             <!-- Эффекты при наведении -->
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Background" Value="#80DDDDDD"/>
                 </Trigger>
-
                 <Trigger Property="IsPressed" Value="True">
                     <Setter Property="Background" Value="#CCDDDDDD"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
     </Window.Resources>
-
-
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="30"/>
@@ -74,88 +68,72 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-
         <TextBlock Grid.Row="0" 
-                   Text="Выберите пользователя для удаления:"
-                   FontWeight="Bold"
-                   FontSize="14"
-                   HorizontalAlignment="Center"/>
-
+             Text="Выберите пользователя для удаления:"
+             FontWeight="Bold"
+             FontSize="14"
+             HorizontalAlignment="Center"/>
         <StackPanel Grid.Row="1" Orientation="Horizontal">
             <TextBox x:Name="userIdTextBox"
-         Width="200"
-         Margin="5"
-         Text="Введите ID"
-         Foreground="Black"
-         GotFocus="userIdTextBox_GotFocus"
-         LostFocus="userIdTextBox_LostFocus"/>
-
-
-
-
+                Width="200"
+                Margin="5"
+                Text="Введите ID"
+                Foreground="DarkSlateGray"
+                GotFocus="userIdTextBox_GotFocus"
+                LostFocus="userIdTextBox_LostFocus"/>
             <Button x:Name="searchButton" 
-                   Content="Найти" 
-                   Click="SearchUser_Click" 
-                   Margin="5"/>
-
+                Content="Найти" 
+                Click="SearchUser_Click" 
+                Margin="5"/>
             <TextBlock x:Name="statusTextBlock"
-               Margin="10,0,0,0"
-               Foreground="DarkGreen"
-               Opacity="0" 
-               VerticalAlignment="Center">
+                Margin="10,0,0,0"
+                Foreground="DarkGreen"
+                Opacity="0" 
+                VerticalAlignment="Center">
                 <TextBlock.Effect>
-                    <DropShadowEffect Color="Black" BlurRadius="2" ShadowDepth="1" Opacity="0.3"/>
+                    <DropShadowEffect
+                        Color="Gray"
+                        BlurRadius="2"
+                        ShadowDepth="1"
+                        Opacity="0.3"/>
                 </TextBlock.Effect>
             </TextBlock>
         </StackPanel>
-
-
         <ListBox x:Name="userListBox" 
-    Grid.Row="2"
-    DisplayMemberPath="DisplayInfo"
-    SelectedValuePath="Id"
-    Margin="5"
-    SelectionChanged="userListBox_SelectionChanged"                 
-    Height="100" Background="Transparent"
-    >
-              <ListBox.ItemContainerStyle>
-        <Style TargetType="{x:Type ListBoxItem}">
-            <!-- Убираем рамку фокуса -->
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            
-            <!-- Отключаем стандартные эффекты -->
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="FontWeight" Value="Normal"/> <!-- Шрифт по умолчанию -->
-
-            <!-- Триггер только на кастомное свойство Tag="Found" -->
-            <Style.Triggers>
-                <Trigger Property="Tag" Value="Found">
-                    <Setter Property="FontWeight" Value="Bold"/>
-                    <Setter Property="Foreground" Value="DarkBlue"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-    </ListBox.ItemContainerStyle>
+            Grid.Row="2"
+                  
+            DisplayMemberPath="DisplayInfo"
+            SelectedValuePath="Id"
+            Margin="5"
+            SelectionChanged="userListBox_SelectionChanged"                 
+            Height="100" Background="Transparent">
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="{x:Type ListBoxItem}">
+                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="BorderBrush" Value="Transparent"/>
+                    <Setter Property="FontWeight" Value="Normal"/>
+                    <Style.Triggers>
+                        <Trigger Property="Tag" Value="Found">
+                            <Setter Property="FontWeight" Value="Bold"/>
+                            <Setter Property="Foreground" Value="DarkGreen"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </ListBox.ItemContainerStyle>
         </ListBox>
-
-   
-
-
-
-
         <StackPanel Grid.Row="3" 
-                   Orientation="Horizontal"
-                   HorizontalAlignment="Right">
+            Orientation="Horizontal"
+            HorizontalAlignment="Right">
             <Button x:Name="yesButton" 
-       Content="Удалить" 
-       Click="YesButton_Click" 
-       Margin="5"
-       IsEnabled="{Binding CanDelete}"/>
+                Content="Удалить" 
+                Click="YesButton_Click" 
+                Margin="5"
+                IsEnabled="{Binding CanDelete}"/>
             <Button x:Name="noButton" 
-                   Content="Отмена" 
-                   Click="NoButton_Click" 
-                   Margin="5"/>
+                Content="Отмена" 
+                Click="NoButton_Click" 
+                Margin="5"/>
         </StackPanel>
     </Grid>
 </Window>

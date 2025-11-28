@@ -15,7 +15,7 @@ namespace WpfHomeNet
         private readonly ObservableCollection<UserEntity> _users;
         private readonly UserService _userService;
         private readonly ILogger _logger;
-        private UserEntity? _selectedUser; // Может быть null, если пользователь не найден
+        private UserEntity? _selectedUser; 
         public Action<string, Brush>? OnStatusUpdated;
 
         public DeleteUserDialog(
@@ -32,15 +32,6 @@ namespace WpfHomeNet
             userListBox.ItemsSource = _users;
         }
 
-
-
-
-
-
-
-
-
-
         private async void SearchUser_Click(object sender, RoutedEventArgs e)
         {
             if (!int.TryParse(userIdTextBox.Text, out int userId))
@@ -51,36 +42,32 @@ namespace WpfHomeNet
 
             try
             {
-                // 1. Сбрасываем все предыдущие выделения
+                // 1. Сбрасываем всё: снимаем выделение, очищаем подсветку
                 ClearHighlights();
                 userListBox.SelectedItem = null;
+                _selectedUser = null; // Сбрасываем найденного пользователя
 
-                // 2. Ищем пользователя в общей коллекции (_users)
+                // 2. Ищем в коллекции
                 _selectedUser = _users.FirstOrDefault(u => u.Id == userId);
 
                 if (_selectedUser != null)
                 {
-                    // 3. Устанавливаем SelectedItem
+                    // 3. Автоматически выделяем в ListBox
                     userListBox.SelectedItem = _selectedUser;
 
-                    // 4. Получаем контейнер ListBoxItem
+                    // 4. Находим контейнер для подсветки
                     ListBoxItem? container = userListBox.ItemContainerGenerator.ContainerFromItem(_selectedUser) as ListBoxItem;
-
                     if (container != null)
                     {
-                        // 5. Помечаем как найденный
                         container.Tag = "Found";
                         container.Focus();
                     }
                     else
                     {
-                        // 6. Если контейнер не создан (виртуализация), прокручиваем к элементу
+                        // Если контейнер не создан (виртуализация)
                         userListBox.ScrollIntoView(_selectedUser);
-
-                        // 7. Ждём создания контейнера
                         await Task.Delay(100);
                         container = userListBox.ItemContainerGenerator.ContainerFromItem(_selectedUser) as ListBoxItem;
-
                         if (container != null)
                         {
                             container.Tag = "Found";
@@ -88,7 +75,6 @@ namespace WpfHomeNet
                         }
                         else
                         {
-                            // 8. Пробуем ещё раз через Dispatcher
                             Dispatcher?.BeginInvoke(new Action(() =>
                             {
                                 container = userListBox.ItemContainerGenerator.ContainerFromItem(_selectedUser) as ListBoxItem;
@@ -100,23 +86,41 @@ namespace WpfHomeNet
                             }));
                         }
                     }
+
+                    // 5. АКТИВИРУЕМ кнопку — только потому что нашли по ID
+                    yesButton.IsEnabled = true;
                 }
                 else
                 {
                     MessageBox.Show("Пользователь не найден");
+                    // Блокируем кнопку — пользователя нет
+                    yesButton.IsEnabled = false;
                 }
+
+                userIdTextBox.Text = "Введите ID";
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Произошла ошибка: {ex.Message}");
+                // В случае ошибки — блокируем кнопку
+                yesButton.IsEnabled = false;
             }
         }
 
 
 
 
+        private void userListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // Если выделение изменилось НЕ из-за поиска по ID — блокируем кнопку
+            if (userListBox.SelectedItem != _selectedUser)
+            {
+                yesButton.IsEnabled = false;
+            }
+            // Иначе (если SelectedItem == _selectedUser) — оставляем кнопку активной
+            // (это могло произойти из-за прокрутки/виртуализации, но пользователь тот же)
+        }
 
-        
 
 
 
@@ -138,7 +142,7 @@ namespace WpfHomeNet
             if (string.IsNullOrWhiteSpace(userIdTextBox.Text))
             {
                 userIdTextBox.Text = "Введите ID";
-                userIdTextBox.Foreground = Brushes.Gray;
+                userIdTextBox.Foreground = Brushes.DarkSlateGray;
             }
         }
 
@@ -148,7 +152,7 @@ namespace WpfHomeNet
         {
             foreach (var item in userListBox.Items)
             {
-                ListBoxItem container = userListBox.ItemContainerGenerator.ContainerFromItem(item) as ListBoxItem;
+                ListBoxItem? container = userListBox.ItemContainerGenerator.ContainerFromItem(item) as ListBoxItem;
                 if (container != null)
                 {
                     container.Tag = null; // Снимаем метку
@@ -157,37 +161,11 @@ namespace WpfHomeNet
         }
 
 
-        private async Task ShowStatus(string message, Brush color, int durationSec = 3)
-        {
-            if (statusTextBlock == null)
-                return;
-
-            await Dispatcher.InvokeAsync(() =>
-            {
-                statusTextBlock.Inlines.Clear();
-                statusTextBlock.Inlines.Add(new Run(message) { Foreground = color });
-                statusTextBlock.Opacity = 0;
-
-                var appearAnim = new DoubleAnimation(1, TimeSpan.FromMilliseconds(300));
-                statusTextBlock.BeginAnimation(OpacityProperty, appearAnim);
-            });
-
-            await Task.Delay(durationSec * 100);
-
-            await Dispatcher.InvokeAsync(() =>
-            {
-                var disappearAnim = new DoubleAnimation(0, TimeSpan.FromMilliseconds(500));
-                disappearAnim.Completed += (_, _) => statusTextBlock.Inlines.Clear();
-                statusTextBlock.BeginAnimation(OpacityProperty, disappearAnim);
-            });
-        }
+        
 
 
 
-        private void userListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            yesButton.IsEnabled = userListBox.SelectedItem != null;
-        }
+       
 
         private async void YesButton_Click(object sender, RoutedEventArgs e)
         {

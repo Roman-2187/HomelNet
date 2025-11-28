@@ -27,9 +27,9 @@ namespace WpfHomeNet
             {
                 DragMove();
               
-                _logWindow.WindowStartupLocation = WindowStartupLocation.Manual;
-                _logWindow.Left = Application.Current.MainWindow.Left + 1005;
-                _logWindow.Top = Application.Current.MainWindow.Top + 0;
+                LogWindow.WindowStartupLocation = WindowStartupLocation.Manual;
+                LogWindow.Left = Application.Current.MainWindow.Left + 1005;
+                LogWindow.Top = Application.Current.MainWindow.Top + 0;
             }
         }
 
@@ -45,7 +45,7 @@ namespace WpfHomeNet
         {
             Close();
                       
-           _logWindow.Close();            
+           LogWindow.Close();            
         }
 
         #endregion
@@ -76,14 +76,14 @@ namespace WpfHomeNet
         private void ShowWindowLogs_Click(object sender, RoutedEventArgs e)
         {
                                   
-            if (_logWindow.IsVisible)
+            if (LogWindow.IsVisible)
             {                
-                _logWindow.Hide();
+                LogWindow.Hide();
                 CenterMainAndHideLogs();
             }
             else
             {                
-                ShowWindowLogs(_logWindow);                
+                ShowWindowLogs(LogWindow);                
             }
         }
 
@@ -105,6 +105,9 @@ namespace WpfHomeNet
                 Email = dialog.Email,
                 Password = dialog.Password
             };
+
+
+
 
             var button = (Button)sender;
             button.IsEnabled = false;
@@ -128,7 +131,7 @@ namespace WpfHomeNet
         {
             var mainVm = (MainViewModel)DataContext;
 
-            var deleteWindow = new DeleteUserDialog(mainVm.Users, _userService, _logger)
+            var deleteWindow = new DeleteUserDialog(mainVm.Users, UserService, Logger)
             {
                 Owner = this
             };
@@ -146,6 +149,8 @@ namespace WpfHomeNet
 
             deleteWindow.ShowDialog();
         }
+
+
 
 
 
@@ -169,11 +174,11 @@ namespace WpfHomeNet
         {            
             try
             {                
-                _status.SetStatus("Обновление...");
+                Status.SetStatus("Обновление...");
                 
                 await Task.Delay(2000); 
-                await _mainVm.LoadUsersAsync();
-                _status.SetStatus("Список обновлён");
+                await MainVm.LoadUsersAsync();
+                Status.SetStatus("Список обновлён");
                 await Task.Delay(2000);
 
                
@@ -181,11 +186,46 @@ namespace WpfHomeNet
             }
             catch (Exception ex)
             {
-                _status.SetStatus($"Ошибка обновления: {ex.Message}");
+                Status.SetStatus($"Ошибка обновления: {ex.Message}");
 
                 HandleException(ex);
             }
         }
+
+
+
+        private async void AddUsersList_Click(object sender, RoutedEventArgs e)
+        {
+            var testData = new TestUserList().GetUsers();
+       
+            try
+            {
+                foreach (var user in testData)
+                {
+
+                    if (await UserService.EmailExistsAsync(user?.Email))
+                    {
+                        throw new DuplicateEmailException(user?.Email);
+                    }
+
+                    await UserService.AddUserAsync(user);
+                }
+            }
+            catch (DuplicateEmailException ex)
+            {
+
+                Logger?.LogWarning("Существующий имейл ");
+
+                MessageBox.Show(ex.GetExistEmail(), string.Empty,
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+
+            catch (Exception ex)
+            {
+                HandleException(ex);
+            }
+        }
+
 
 
         private async Task ExecuteAddUserOperation(UserEntity? newUser, Button button)
@@ -193,28 +233,28 @@ namespace WpfHomeNet
             try
             {
                                                
-                if (await _userService.EmailExistsAsync(newUser?.Email))
+                if (await UserService.EmailExistsAsync(newUser?.Email))
                 {
                     throw new DuplicateEmailException(newUser?.Email);
                 }
 
-                await _userService.AddUserAsync(newUser);
+                await UserService.AddUserAsync(newUser);
 
-                _logger.LogInformation($"Пользователь {newUser?.FirstName} добавлен");
+                Logger.LogInformation($"Пользователь {newUser?.FirstName} добавлен");
 
                 await RefreshDataAsync();
                 
-                _status.SetStatus("Пользователь добавлен");
+                Status.SetStatus("Пользователь добавлен");
 
                 await Task.Delay(2000);
 
-                _status.SetStatus($"Загружено {_mainVm.Users.Count}");
+                Status.SetStatus($"Загружено {MainVm.Users.Count}");
             }
             catch (DuplicateEmailException ex)
             {
-                _logger?.LogWarning("Существующий имейл ");
+                Logger?.LogWarning("Существующий имейл ");
 
-                MessageBox.Show(ex.GetUserMessage(),string.Empty,
+                MessageBox.Show(ex.GetExistEmail(),string.Empty,
                 MessageBoxButton.OK, MessageBoxImage.Information);
         
             }

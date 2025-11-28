@@ -22,7 +22,7 @@
             Email = email;
         }
 
-        public string GetUserMessage()
+        public string GetExistEmail()
         {
             return $"Email {Email} уже существует.\n" + "- Используйте другой email";
                             

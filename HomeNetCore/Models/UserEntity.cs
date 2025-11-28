@@ -28,7 +28,7 @@ namespace HomeNetCore.Models
 
         public string? FullName => $"{FirstName} {LastName}";
 
-        public string? DisplayInfo => $"ID: {Id} - {FullName}";
+        public string? DisplayInfo => $"ID: {Id} - {Email}";
     }
 
    

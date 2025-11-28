@@ -21,16 +21,16 @@ namespace WpfHomeNet
         #region Поля и переменные
         private static readonly string dbPath = DatabasePathHelper.GetDatabasePath("home_net.db");
         private readonly string _connectionString = $"Data Source={dbPath}";
-        public LogWindow _logWindow => LogWindow ?? throw new InvalidOperationException("_logWindow не инициализирован");
-        public LogWindow? LogWindow;
-        private UserService _userService => UserService  ?? throw new InvalidOperationException("_userService не инициализирован");
-        private UserService? UserService;
-        private MainViewModel _mainVm => MainVm?? throw new InvalidOperationException("_mainVm не инициализирован");      
-        private MainViewModel? MainVm;
-        private ILogger _logger => Logger ?? throw new InvalidOperationException("_logger не инициализирован"); 
-        private ILogger? Logger;
-        private IStatusUpdater _status =>  Status ?? throw new InvalidOperationException("_status не инициализирован");
-        private IStatusUpdater? Status; 
+        public LogWindow LogWindow => _logWindow ?? throw new InvalidOperationException("_logWindow не инициализирован");
+        public LogWindow? _logWindow;
+        private UserService UserService => _userService  ?? throw new InvalidOperationException("_userService не инициализирован");
+        private UserService? _userService;
+        private MainViewModel MainVm => _mainVm?? throw new InvalidOperationException("_mainVm не инициализирован");      
+        private MainViewModel? _mainVm;
+        private ILogger Logger => _logger ?? throw new InvalidOperationException("_logger не инициализирован"); 
+        private ILogger? _logger;
+        private IStatusUpdater Status =>  _status ?? throw new InvalidOperationException("_status не инициализирован");
+        private IStatusUpdater? _status; 
         private DbConnection? _connection;
         private DBInitializer? _databaseInitializer;
         private ISchemaProvider? _schemaProvider;
@@ -55,13 +55,13 @@ namespace WpfHomeNet
 
         private void InitializeLogging()
         {
-            Logger = new Logger();
-            LogWindow = new LogWindow(_logger);
-            _logQueueManager = new LogQueueManager(_logWindow);
-            _logger.SetOutput(_logQueueManager.WriteLog);
+            _logger = new Logger();
+            _logWindow = new LogWindow(Logger);
+            _logQueueManager = new LogQueueManager(LogWindow,1);
+            Logger.SetOutput(_logQueueManager.WriteLog);
 
-            _logger.LogInformation($"Путь БД: {dbPath}");
-            _logger.LogInformation("Application started. PID: " + Process.GetCurrentProcess().Id);
+            Logger.LogInformation($"Путь БД: {dbPath}");
+            Logger.LogInformation("Application started. PID: " + Process.GetCurrentProcess().Id);
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -76,7 +76,7 @@ namespace WpfHomeNet
             }
             catch (Exception ex)
             {
-                _logger?.LogError($"Критическая ошибка при запуске: {ex.Message}");
+                Logger?.LogError($"Критическая ошибка при запуске: {ex.Message}");
                 MessageBox.Show(
                     $"Произошла ошибка при запуске приложения: {ex.Message}",
                     "Ошибка",
@@ -93,7 +93,7 @@ namespace WpfHomeNet
             {
                 _tableSchema = new UsersTable().Build();
               
-                var factory = new DatabaseServiceFactory(_connectionString, _logger);
+                var factory = new DatabaseServiceFactory(_connectionString, Logger);
 
                 // 2. Получаем все сервисы одним вызовом
                 var (connection, sqlInit, schemaProvider, schemaAdapter, userSqlGen) =
@@ -109,22 +109,22 @@ namespace WpfHomeNet
                 _databaseInitializer = new DBInitializer(
                     _connection, _schemaProvider,
                     _schemaAdapter, _schemaSqlInit,
-                    _tableSchema, _logger);
+                    _tableSchema, Logger);
 
                 // Асинхронное ожидание инициализации БД
                 await _databaseInitializer.InitializeAsync();
 
-                _userRepository = new UserRepository(_connection, _logger, _userSqlGen);
+                _userRepository = new UserRepository(_connection, Logger, _userSqlGen);
 
-               UserService = new UserService(_userRepository, _logger);
+               _userService = new UserService(_userRepository, Logger);
 
                 // Создание ViewModel
-                MainVm = new MainViewModel(_userService, _logger);
+                _mainVm = new MainViewModel(UserService, Logger);
 
             }
             catch (Exception ex)
             {
-                _logger?.LogError($"Инициализация завершилась с ошибкой: {ex.Message}");
+                Logger?.LogError($"Инициализация завершилась с ошибкой: {ex.Message}");
 
                 MessageBox.Show(
                     $"Произошла критическая ошибка при инициализации: {ex.Message}",
@@ -139,7 +139,7 @@ namespace WpfHomeNet
         public async Task PostInitializeAsync()
         {
             // Проверка критических зависимостей
-            if (_logger is null)
+            if (Logger is null)
             {
                 throw new InvalidOperationException("_logger не инициализирован");
             }
@@ -149,21 +149,21 @@ namespace WpfHomeNet
                 throw new InvalidOperationException("_logQueueManager не инициализирован");
             }
 
-            Status = (IStatusUpdater)_mainVm;
+            _status = (IStatusUpdater)MainVm;
 
-            DataContext = _status;
+            DataContext = Status;
         }
 
         private async Task LoadUsersOnStartupAsync()
         {
             try
             {                
-                    await _mainVm.LoadUsersAsync();                                           
+                    await MainVm.LoadUsersAsync();                                           
             }
            
             catch (Exception ex)
             {
-                _logger?.LogError("Ошибка загрузки пользователей при старте: " + ex.Message);
+                Logger?.LogError("Ошибка загрузки пользователей при старте: " + ex.Message);
                 MessageBox.Show(
                     $"Не удалось загрузить пользователей: {ex.Message}",
                     "Ошибка загрузки",

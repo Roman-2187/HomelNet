@@ -6,27 +6,37 @@ namespace WpfHomeNet.UiHelpers
 {
 
     // Обновленный LogQueueManager
-    public class LogQueueManager
+    public class LogQueueManager : IDisposable
     {
         private readonly ConcurrentQueue<(LogLevel level, string message, LogColor color)> _logQueue = new();
         private bool _isProcessing;
         private readonly LogWindow _logWindow;
         private readonly CancellationTokenSource _cts = new();
+        private readonly int _typingDelayMs; // Настраиваемая задержка
 
-        public LogQueueManager(LogWindow logWindow)
+        /// <summary>
+        /// Инициализирует менеджер логов с заданной задержкой анимации.
+        /// </summary>
+        /// <param name="logWindow">Окно для вывода логов</param>
+        /// <param name="typingDelayMs">Задержка между символами в мс (по умолчанию 30)</param>
+        public LogQueueManager(LogWindow logWindow, int typingDelayMs = 30)
         {
             _logWindow = logWindow ?? throw new ArgumentNullException(nameof(logWindow));
-            StartProcessing(); // Запускаем обработку при создании
+
+            if (typingDelayMs < 0)
+                throw new ArgumentOutOfRangeException(nameof(typingDelayMs), "Задержка должна быть неотрицательной");
+
+            _typingDelayMs = typingDelayMs;
+
+            StartProcessing();
         }
 
         public void WriteLog((string Message, LogColor Color) logEntry)
         {
-            // Обработка сообщения
             string message = logEntry.Message
                 .Replace(Environment.NewLine + Environment.NewLine, Environment.NewLine)
                 .Trim('\r', '\n');
 
-            // Прямое сопоставление цвета и уровня логирования
             LogLevel level = logEntry.Color switch
             {
                 LogColor.Critical => LogLevel.Critical,
@@ -48,13 +58,10 @@ namespace WpfHomeNet.UiHelpers
                 while (!_cts.IsCancellationRequested)
                 {
                     await ProcessLogQueue();
-                    await Task.Delay(10); // Небольшая задержка
+                    await Task.Delay(10);
                 }
             }
-            catch (OperationCanceledException)
-            {
-                // Обработка отмены
-            }
+            catch (OperationCanceledException) { }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Ошибка при обработке лога: {ex.Message}");
@@ -71,17 +78,26 @@ namespace WpfHomeNet.UiHelpers
                 while (_logQueue.TryDequeue(out var logEntry))
                 {
                     string currentText = "";
+
+                    // Посимвольный вывод с настраиваемой задержкой
                     foreach (char c in logEntry.message)
                     {
                         currentText += c;
                         await _logWindow.AddLog(currentText, logEntry.level, logEntry.color, true);
-                        await Task.Delay(30); // Анимация
+
+                        if (_typingDelayMs > 0)
+                            await Task.Delay(_typingDelayMs);
                     }
 
-                    // Добавляем перенос строки если нужно
+                    // Добавляем перенос строки, если его нет в конце сообщения
                     if (!logEntry.message.EndsWith(Environment.NewLine))
                     {
-                        await _logWindow.AddLog(Environment.NewLine, logEntry.level, logEntry.color, false);
+                        await _logWindow.AddLog(
+                            Environment.NewLine,
+                            logEntry.level,
+                            logEntry.color,
+                            false
+                        );
                     }
                 }
             }
@@ -97,10 +113,5 @@ namespace WpfHomeNet.UiHelpers
             _cts.Dispose();
         }
     }
-
-
-
-
-
-
 }
+ 
