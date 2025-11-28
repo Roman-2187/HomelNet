@@ -114,7 +114,7 @@ namespace WpfHomeNet
                 // Асинхронное ожидание инициализации БД
                 await _databaseInitializer.InitializeAsync();
 
-                _userRepository = new UserRepository(_connection, Logger, _userSqlGen);
+                _userRepository = new UserRepository(_connection, _userSqlGen);
 
                _userService = new UserService(_userRepository, Logger);
 

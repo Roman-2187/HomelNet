@@ -9,11 +9,8 @@ namespace WpfHomeNet.ViewModels
 {
 
     // ViewModel для главного окна
-    public class MainViewModel : INotifyPropertyChanged, IStatusUpdater
+    public class MainViewModel(UserService userService, ILogger logger) : INotifyPropertyChanged, IStatusUpdater
     {
-       
-        private readonly UserService _userService; 
-        private readonly ILogger _logger; 
 
         // Событие для уведомления об изменении свойств
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -24,13 +21,6 @@ namespace WpfHomeNet.ViewModels
         private Visibility _scrollViewerVisibility = Visibility.Collapsed; // Видимость ScrollViewer
 
         private string _statusText = string.Empty; // Текстовое сообщение статуса
-
-        
-        public MainViewModel(UserService userService, ILogger logger)
-        {
-            _userService = userService;
-            _logger = logger;
-        }
 
         // Свойства с уведомлениями об изменении
         public ObservableCollection<UserEntity> Users
@@ -97,7 +87,7 @@ namespace WpfHomeNet.ViewModels
 
             try
             {
-                var users = await _userService.GetAllUsersAsync(); // Получаем пользователей
+                var users = await userService.GetAllUsersAsync(); // Получаем пользователей
 
                 if (users == null)
                 {
@@ -130,13 +120,13 @@ namespace WpfHomeNet.ViewModels
         // Вспомогательные методы для обработки результатов
         private void HandleSuccess(string message)
         {
-            _logger?.LogInformation(message);
+            logger?.LogInformation(message);
             StatusText = message;
         }
 
         private void HandleError(string message)
         {
-            _logger?.LogError(message);
+            logger?.LogError(message);
             StatusText = message;
         }
     }

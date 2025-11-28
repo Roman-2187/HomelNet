@@ -4,43 +4,50 @@ using HomeNetCore.Helpers.Exceptions;
 using HomeNetCore.Models;
 namespace HomeNetCore.Services
 {
-    public class UserService
+    public class UserService(UserRepository repo, ILogger logger)
     {
-        private readonly ILogger _logger;
+        private readonly ILogger _logger = logger;
 
-        private readonly UserRepository _repo;
-
-        public UserService(UserRepository repo,ILogger logger) 
-        {
-            _logger = logger;
-            _repo = repo ?? throw new ArgumentNullException(nameof(repo), "Repository не может быть null");
-        }
-
+        private readonly UserRepository _repo = repo
+            ?? throw new ArgumentNullException(nameof(repo), "Repository не может быть null");
 
         public Task<List<UserEntity>> GetAllUsersAsync()
         {
-            return Task.Run(() =>
+            try
             {
-                var users = _repo.GetAllAsync(); // Синхронный вызов
-                if (users == null)
-                    throw new InvalidOperationException("Репозиторий вернул null");
-               
-                return users;
-            });
+                 return Task.Run(async () =>
+                {
+                    var users = await _repo.GetAllAsync()
+                    ?? throw new InvalidOperationException("Репозиторий вернул null");
+                    _logger.LogInformation($"Получено {users.Count} пользователей.");
+                    return users;
+                });
+
+            }
+            catch (Exception ex)
+            {
+                 _logger.LogError("Ошибка при получении пользователей из БД", ex.Message);
+                throw;                
+            }
         }
 
 
-        public async Task AddUserAsync(UserEntity? user)
-        {
-            // Проверяем существование email
+        public async Task AddUserAsync(UserEntity user)
+        {            
+            ArgumentNullException.ThrowIfNull(user.Email);
+                       
             if (await _repo.EmailExistsAsync(user.Email))
             {
-                throw new DuplicateEmailException($"Email {user.Email} уже существует");
+                _logger.LogDebug($"Email  {user.Email}  уже зарегистрирован ");
+              
+                throw new DuplicateEmailException(user.Email);
             }
 
             try
             {
                 await _repo.InsertUserAsync(user);
+
+                _logger.LogDebug($"Пользователь {user.FirstName}: успешно вставлен");
             }
             catch (Exception ex)
             {
@@ -52,10 +59,9 @@ namespace HomeNetCore.Services
 
         public async Task<UserEntity?> FindUserAsync(string email)
         {
-            if (string.IsNullOrWhiteSpace(email))
-                throw new ArgumentException("Email обязателен");
-
-            return await _repo.GetByEmailAsync(email);
+            return string.IsNullOrWhiteSpace(email)
+                ? throw new ArgumentException("Email обязателен") 
+                : await _repo.GetByEmailAsync(email);
         }
 
 
@@ -74,12 +80,14 @@ namespace HomeNetCore.Services
         }
 
 
-        public async Task DeleteUserAsync(int userId)
+        public async Task DeleteUserAsync(int userId,string userName)
         {
             try
             {
                 await _repo.DeleteByIdAsync(userId);
-               
+
+                _logger.LogInformation($"Пользователь{userName} с ID {userId} удалён.");
+
             }
             catch (NotFoundException ex)
             {

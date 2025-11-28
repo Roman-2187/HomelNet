@@ -74,8 +74,7 @@ namespace WpfHomeNet
         }
 
         private void ShowWindowLogs_Click(object sender, RoutedEventArgs e)
-        {
-                                  
+        {                          
             if (LogWindow.IsVisible)
             {                
                 LogWindow.Hide();
@@ -106,9 +105,6 @@ namespace WpfHomeNet
                 Password = dialog.Password
             };
 
-
-
-
             var button = (Button)sender;
             button.IsEnabled = false;
 
@@ -133,18 +129,10 @@ namespace WpfHomeNet
 
             var deleteWindow = new DeleteUserDialog(mainVm.Users, UserService, Logger)
             {
-                Owner = this
-            };
-
-            // Подключаем обработчик статуса
-            deleteWindow.OnStatusUpdated = (message, color) =>
-            {
-                // Здесь вы можете:
-                // - обновить TextBlock в главном окне
-                // - вызвать метод ViewModel
-                // - показать MessageBox
-                mainVm.SetStatus(message) ; // Если в VM есть такое свойство
-                
+                Owner = this,OnStatusUpdated = (message) =>                               
+                    {
+                        mainVm.SetStatus(message);
+                    }
             };
 
             deleteWindow.ShowDialog();
@@ -170,53 +158,25 @@ namespace WpfHomeNet
 
         #region методы логики обработки пользователей добавление удаление обновление
         
-        private async Task RefreshDataAsync()
-        {            
-            try
-            {                
-                Status.SetStatus("Обновление...");
-                
-                await Task.Delay(2000); 
-                await MainVm.LoadUsersAsync();
-                Status.SetStatus("Список обновлён");
-                await Task.Delay(2000);
-
-               
-               
-            }
-            catch (Exception ex)
-            {
-                Status.SetStatus($"Ошибка обновления: {ex.Message}");
-
-                HandleException(ex);
-            }
-        }
+      
 
 
 
         private async void AddUsersList_Click(object sender, RoutedEventArgs e)
         {
-            var testData = new TestUserList().GetUsers();
+            var testData =  TestUserList.Users;
        
             try
             {
                 foreach (var user in testData)
                 {
-
-                    if (await UserService.EmailExistsAsync(user?.Email))
-                    {
-                        throw new DuplicateEmailException(user?.Email);
-                    }
-
                     await UserService.AddUserAsync(user);
                 }
             }
             catch (DuplicateEmailException ex)
-            {
+            {               
 
-                Logger?.LogWarning("Существующий имейл ");
-
-                MessageBox.Show(ex.GetExistEmail(), string.Empty,
+                MessageBox.Show(ex.GetUserMessage(), string.Empty,
                 MessageBoxButton.OK, MessageBoxImage.Information);
             }
 
@@ -228,33 +188,32 @@ namespace WpfHomeNet
 
 
 
-        private async Task ExecuteAddUserOperation(UserEntity? newUser, Button button)
+        private async Task ExecuteAddUserOperation(UserEntity newUser, Button button)
         {
+            ArgumentNullException.ThrowIfNull(newUser.Email);
+            
             try
-            {
-                                               
-                if (await UserService.EmailExistsAsync(newUser?.Email))
+            {                                               
+                if (await UserService.EmailExistsAsync(newUser.Email))
                 {
-                    throw new DuplicateEmailException(newUser?.Email);
+                    throw new DuplicateEmailException(newUser.Email);
                 }
 
                 await UserService.AddUserAsync(newUser);
 
-                Logger.LogInformation($"Пользователь {newUser?.FirstName} добавлен");
+                Logger.LogInformation($"Пользователь {newUser?.FirstName} добавлен"); 
+
+                Status.SetStatus("Пользователь добавлен"); await Task.Delay(1000);
 
                 await RefreshDataAsync();
-                
-                Status.SetStatus("Пользователь добавлен");
-
-                await Task.Delay(2000);
-
+                                              
                 Status.SetStatus($"Загружено {MainVm.Users.Count}");
             }
             catch (DuplicateEmailException ex)
             {
                 Logger?.LogWarning("Существующий имейл ");
 
-                MessageBox.Show(ex.GetExistEmail(),string.Empty,
+                MessageBox.Show(ex.GetUserMessage(),string.Empty,
                 MessageBoxButton.OK, MessageBoxImage.Information);
         
             }
@@ -263,7 +222,28 @@ namespace WpfHomeNet
                 HandleException(ex);
             }
         }
-       
+
+
+
+        private async Task RefreshDataAsync()
+        {
+            try
+            {
+                Status.SetStatus("Обновление...");
+                await Task.Delay(1000);
+                await MainVm.LoadUsersAsync();
+                Status.SetStatus("Список обновлён");
+                await Task.Delay(1000);
+                Status.SetStatus($"Загружено {MainVm.Users.Count}");
+            }
+            catch (Exception ex)
+            {
+                Status.SetStatus($"Ошибка обновления: {ex.Message}");
+
+                _logger?.LogError($"Ошибка обновления: {ex.Message}");
+            }
+        }
+
         private void HandleException(Exception ex)
         {
             if (ex is ArgumentNullException)

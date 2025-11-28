@@ -4,24 +4,22 @@ using HomeNetCore.Services;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
 
 namespace WpfHomeNet
 {
     public partial class DeleteUserDialog : Window
     {
+        private const string DefaultInput = "Введите ID";
+        private const string Found = "Found";
         private readonly ObservableCollection<UserEntity> _users;
         private readonly UserService _userService;
         private readonly ILogger _logger;
         private UserEntity? _selectedUser; 
-        public Action<string, Brush>? OnStatusUpdated;
+        public Action<string>? OnStatusUpdated;
 
-        public DeleteUserDialog(
-            ObservableCollection<UserEntity> users,
-            UserService userService,
-            ILogger logger)
+        public DeleteUserDialog(ObservableCollection<UserEntity> users, UserService userService, ILogger logger)
+                                                                                     
         {
             InitializeComponent();
             _users = users;
@@ -32,11 +30,13 @@ namespace WpfHomeNet
             userListBox.ItemsSource = _users;
         }
 
+       
+
         private async void SearchUser_Click(object sender, RoutedEventArgs e)
         {
             if (!int.TryParse(userIdTextBox.Text, out int userId))
             {
-                MessageBox.Show("Введите корректный ID");
+                MessageBox.Show(DefaultInput);
                 return;
             }
 
@@ -59,7 +59,7 @@ namespace WpfHomeNet
                     ListBoxItem? container = userListBox.ItemContainerGenerator.ContainerFromItem(_selectedUser) as ListBoxItem;
                     if (container != null)
                     {
-                        container.Tag = "Found";
+                        container.Tag = Found;
                         container.Focus();
                     }
                     else
@@ -70,7 +70,7 @@ namespace WpfHomeNet
                         container = userListBox.ItemContainerGenerator.ContainerFromItem(_selectedUser) as ListBoxItem;
                         if (container != null)
                         {
-                            container.Tag = "Found";
+                            container.Tag = Found;
                             container.Focus();
                         }
                         else
@@ -80,7 +80,7 @@ namespace WpfHomeNet
                                 container = userListBox.ItemContainerGenerator.ContainerFromItem(_selectedUser) as ListBoxItem;
                                 if (container != null)
                                 {
-                                    container.Tag = "Found";
+                                    container.Tag = Found;
                                     container.Focus();
                                 }
                             }));
@@ -97,7 +97,7 @@ namespace WpfHomeNet
                     yesButton.IsEnabled = false;
                 }
 
-                userIdTextBox.Text = "Введите ID";
+                userIdTextBox.Text = DefaultInput;
             }
             catch (Exception ex)
             {
@@ -108,120 +108,98 @@ namespace WpfHomeNet
         }
 
 
-
-
-        private void userListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void UserListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // Если выделение изменилось НЕ из-за поиска по ID — блокируем кнопку
             if (userListBox.SelectedItem != _selectedUser)
             {
                 yesButton.IsEnabled = false;
             }
-            // Иначе (если SelectedItem == _selectedUser) — оставляем кнопку активной
-            // (это могло произойти из-за прокрутки/виртуализации, но пользователь тот же)
         }
 
 
-
-
-
-
-        private void userIdTextBox_GotFocus(object sender, RoutedEventArgs e)
+        private void UserIdTextBox_GotFocus(object sender, RoutedEventArgs e)
         {
             // Если текст — это подсказка, очищаем поле и делаем текст чёрным
-            if (userIdTextBox.Text == "Введите ID")
+            if (userIdTextBox.Text == DefaultInput)
             {
-                userIdTextBox.Text = "";
+                userIdTextBox.Text = string.Empty;
                 userIdTextBox.Foreground = Brushes.Black;
             }
         }
 
-        private void userIdTextBox_LostFocus(object sender, RoutedEventArgs e)
+
+        private void UserIdTextBox_LostFocus(object sender, RoutedEventArgs e)
         {
             // Если поле пустое, возвращаем подсказку и серый цвет
             if (string.IsNullOrWhiteSpace(userIdTextBox.Text))
             {
-                userIdTextBox.Text = "Введите ID";
+                userIdTextBox.Text = DefaultInput;
                 userIdTextBox.Foreground = Brushes.DarkSlateGray;
             }
         }
 
-
-        // Метод для сброса выделений
-        private void ClearHighlights()
-        {
-            foreach (var item in userListBox.Items)
-            {
-                ListBoxItem? container = userListBox.ItemContainerGenerator.ContainerFromItem(item) as ListBoxItem;
-                if (container != null)
-                {
-                    container.Tag = null; // Снимаем метку
-                }
-            }
-        }
-
-
-        
-
-
-
-       
-
+      
         private async void YesButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                var selectedUser = userListBox.SelectedItem as UserEntity;
-                if (selectedUser == null)
+                if (userListBox.SelectedItem is not UserEntity selectedUser)
                 {
                     MessageBox.Show("Выберите пользователя для удаления");
                     return;
                 }
 
+                ArgumentNullException.ThrowIfNull(selectedUser.FirstName);
                 // 1. Удаляем из БД
-                await _userService.DeleteUserAsync(selectedUser.Id);
+                await _userService.DeleteUserAsync(selectedUser.Id, selectedUser.FirstName);
 
                 // 2. Удаляем из локальной коллекции (это обновит UI!)
                 _users.Remove(selectedUser);
 
-                _logger.LogInformation($"Пользователь {selectedUser.FirstName} успешно удалён");
-
+                
                 // 3. Сбрасываем выделение
                 userListBox.SelectedItem = null;
                 yesButton.IsEnabled = false;
 
                 // 4. Показываем статус
-                OnStatusUpdated?.Invoke($"Пользователь с ID {selectedUser.Id} удалён", Brushes.Green);
+                OnStatusUpdated?.Invoke($"Пользователь {selectedUser.FirstName} с ID {selectedUser.Id} удалён");
 
-                userIdTextBox.Text = "Введите ID";
+                await Task.Delay(2000);
 
+                OnStatusUpdated?.Invoke("Обновление...");
+                await Task.Delay(1000);
 
+                OnStatusUpdated?.Invoke("Список обновлён");
+                await Task.Delay(1000);
+                OnStatusUpdated?.Invoke($"Загружено {_users.Count} пользователей");
+
+                _logger.LogInformation($"Загружено {_users.Count} пользователей");
+
+                userIdTextBox.Text = DefaultInput;
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Произошла ошибка: {ex.Message}");
-                OnStatusUpdated?.Invoke($"Ошибка: {ex.Message}", Brushes.Red);
+                OnStatusUpdated?.Invoke($"Ошибка: {ex.Message}");
             }
         }
 
-
-
-
-      
-
-
-
-
+   
         private void NoButton_Click(object sender, RoutedEventArgs e) => Close();
+
+
+        private void ClearHighlights()
+        {
+            foreach (var item in userListBox.Items)
+            {
+                if (userListBox.ItemContainerGenerator.ContainerFromItem(item) is ListBoxItem container)
+                {
+                    container.Tag = null; // Снимаем метку
+                }
+            }
+        }// Метод для сброса выделений
        
-
-      
-
-
-
-
     }
-
-
 
 }

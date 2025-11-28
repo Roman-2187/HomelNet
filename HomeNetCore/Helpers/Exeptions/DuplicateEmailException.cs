@@ -4,30 +4,41 @@
     {
         public string Email { get; }
 
-        public DuplicateEmailException(string? email) : this($"Email {email} уже существует", email) { }
-
-
-        public DuplicateEmailException(string email, Exception innerException)
-            : this($"Email {email} уже существует", email, innerException) { }
-
-
-        public DuplicateEmailException(string message, string email) : base(message)
+        // Основной конструктор: только email → сообщение генерируется автоматически
+        public DuplicateEmailException(string email)
+            : base($"Email {email} уже существует")
         {
-            Email = email;
+            Email = email ?? throw new ArgumentNullException(nameof(email));
         }
 
-        public DuplicateEmailException(string message, string email, Exception innerException)
+        // Конструктор с внутренним исключением (message генерируется автоматически)
+        public DuplicateEmailException(string email, Exception innerException)
+            : base($"Email {email} уже существует", innerException)
+        {
+            Email = email ?? throw new ArgumentNullException(nameof(email));
+        }
+
+        // Конструктор с явным сообщением (опционально)
+        public DuplicateEmailException(string email, string message)
+            : base(message)
+        {
+            Email = email ?? throw new ArgumentNullException(nameof(email));
+        }
+
+        // Конструктор с message + innerException (опционально)
+        public DuplicateEmailException(string email, string message, Exception innerException)
             : base(message, innerException)
         {
-            Email = email;
+            Email = email ?? throw new ArgumentNullException(nameof(email));
         }
 
-        public string GetExistEmail()
+        // Метод для получения пользовательского сообщения
+        public string GetUserMessage()
         {
-            return $"Email {Email} уже существует.\n" + "- Используйте другой email";
-                            
+            return $"Email {Email} уже существует. Используйте другой email.";
         }
     }
+
 
 
 

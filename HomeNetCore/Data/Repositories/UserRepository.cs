@@ -12,14 +12,13 @@ namespace HomeNetCore.Data.Repositories
     {
         private readonly DbConnection _connection;
         ISchemaUserSqlGenerator _userSqlGenerator;
-        private readonly ILogger _logger;
+        
 
-        public UserRepository(DbConnection connection, ILogger logger, ISchemaUserSqlGenerator queryGenerator)
+        public UserRepository(DbConnection connection, ISchemaUserSqlGenerator queryGenerator)
         {
             _connection = connection ??
                 throw new ArgumentNullException(nameof(connection));
-            _logger = logger ??
-                throw new ArgumentNullException(nameof(logger));
+           
             _userSqlGenerator = queryGenerator;
         }
 
@@ -27,7 +26,7 @@ namespace HomeNetCore.Data.Repositories
         public async Task<bool> EmailExistsAsync(string? email)
         {
             var sql = _userSqlGenerator.GenerateEmailExists();
-            return await _connection.ExecuteScalarAsync<bool>(sql, new { email = email });
+            return await _connection.ExecuteScalarAsync<bool>(sql, new { email });
         }
 
         public async Task<UserEntity> InsertUserAsync(UserEntity user)
@@ -41,8 +40,8 @@ namespace HomeNetCore.Data.Repositories
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Ошибка при вставке: {ex.Message}");
-                throw;
+                throw new NotFoundException($"Ошибка при вставке: {ex.Message}");
+                               
             }
         }
 
@@ -55,10 +54,10 @@ namespace HomeNetCore.Data.Repositories
 
             if (affectedRows == 0)
             {
-                throw new NotFoundException($"Пользователь с ID {id} не найден.");
+                throw new NotFoundException($"Пользователь  с ID {id} не найден.");
             }
 
-            _logger.LogInformation($"Пользователь с ID {id} удалён.");
+            
         }
 
 
@@ -72,18 +71,12 @@ namespace HomeNetCore.Data.Repositories
                 var users = (await _connection.QueryAsync<UserEntity>(sql)).ToList();
 
                 // Проверяем результат
-                if (users == null)
-                {
-                    throw new InvalidOperationException("Не удалось получить данные из БД");
-                }
-
-                _logger.LogInformation($"Получено {users.Count} пользователей.");
-                return users;
+                return users ?? throw new InvalidOperationException("Не удалось получить данные из БД");
             }
             catch (Exception ex)
             {
-                _logger.LogError("Ошибка при получении пользователей из БД", ex.Message);
-                throw;
+                throw new InvalidOperationException($" не удалось  выполнить запрос получения пользователей {ex.Message} ");
+
             }
         }
 
@@ -107,7 +100,7 @@ namespace HomeNetCore.Data.Repositories
             await _connection.ExecuteAsync
            (_userSqlGenerator.GenerateUpdate(), user);
 
-            _logger.LogInformation($"Пользователь {user.Id} обновлён.");
+            
         }
     }
 }
