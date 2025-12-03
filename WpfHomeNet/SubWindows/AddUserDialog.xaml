@@ -4,8 +4,8 @@
         Title="Добавить пользователя"
         Height="250" Width="410"
         WindowStyle="None" AllowsTransparency="True"
-        BorderThickness="1" BorderBrush="Black"
-        WindowStartupLocation="CenterOwner" Background="#26ABC8AB">
+        
+        WindowStartupLocation="CenterOwner" Background="Transparent">
 
     <Window.Resources>
         <!-- Базовый стиль для TextBox -->
@@ -127,8 +127,8 @@
         </Style>
     </Window.Resources>
 
-
-    <Grid Margin="15,15,15,20">
+    <ContentControl Style="{StaticResource InnerBorderSolidColorStyle}" >
+        <Grid Margin="15,15,15,20">
         <Grid.RowDefinitions>
             <RowDefinition/>
             <RowDefinition Height="30"/>
@@ -235,6 +235,7 @@
 
 
     </Grid>
+        </ContentControl>
 </Window>
 
 

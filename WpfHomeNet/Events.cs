@@ -4,8 +4,6 @@ using HomeSocialNetwork;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Media.Animation;
 using WpfHomeNet.SubWindows;
 using WpfHomeNet.ViewModels;
 
@@ -23,21 +21,7 @@ namespace WpfHomeNet
         /// <param name="sender"></param>
         /// <param name="e"></param>
         /// <exception cref="InvalidOperationException"></exception>
-        private void WindowDrag_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (e.LeftButton == MouseButtonState.Pressed)
-            {
-                DragMove();
-
-                this.Width = 850; this.MaxWidth = 850;
-                this.MaxHeight = 600;
-
-
-                LogWindow.WindowStartupLocation = WindowStartupLocation.Manual;
-                LogWindow.Left = Application.Current.MainWindow.Left + 855;
-                LogWindow.Top = Application.Current.MainWindow.Top + 0;
-            }
-        }
+       
 
 
 
@@ -98,18 +82,7 @@ namespace WpfHomeNet
 
 
 
-        private void ShowWindowLogs_Click(object sender, RoutedEventArgs e)
-        {                          
-            if (LogWindow.IsVisible)
-            {                
-                LogWindow.Hide();
-                CenterMainAndHideLogs();
-            }
-            else
-            {                
-                ShowWindowLogs(LogWindow);                
-            }
-        }
+       
 
 
         private async void AddUsersList_Click(object sender, RoutedEventArgs e)

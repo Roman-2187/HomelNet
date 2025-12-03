@@ -1,14 +1,13 @@
-﻿<Window x:Class="WpfHomeNet.MainWindow"
+﻿<Window x:Class="WpfHomeNet.MainWindow"  WindowStartupLocation="Manual"
         xmlns:controls="clr-namespace:WpfHomeNet.Controls"
         xmlns:local="clr-namespace:WpfHomeNet.UiHelpers"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"     
-        Title="HomeNet"
+       
         WindowStyle="None"
-        ResizeMode="CanResize"
-        MinWidth="850"
-        MinHeight="600"
-        Width="850"
+        ResizeMode="CanResize"   
+        
+        Width="800"
         Height="600"
         AllowsTransparency="True"
         FontFamily="Calibri"
@@ -19,14 +18,15 @@
 
     <!-- Основной контейнер с тройным бордером -->
     <ContentControl Style="{StaticResource TripleBorderStyle}"
-                    Width="850"  MouseDown="WindowDrag_MouseDown"
-                    Height="600"
+                    Width="800"  MouseDown="WindowDrag_MouseDown"
+                    Height="600" MinWidth="800"
+        MinHeight="600"
                     HorizontalAlignment="Center"
-                    VerticalAlignment="Center">
+                    VerticalAlignment="Center">       
         <Grid Margin="3">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"  />
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="245"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="50"/>
             </Grid.RowDefinitions>
@@ -42,9 +42,9 @@
                        Content="HomeNet"
                        FontSize="20"
                        Foreground="Black"/>
-            </Border>
+            </Border >
 
-            <StackPanel x:Name="Menu" Grid.Row="1" Grid.Column="0"
+            <StackPanel x:Name="Menu" Grid.Row="1"  Grid.Column="0" 
                         Orientation="Vertical">
                 <Button Content="Test list Users" Click="AddUsersList_Click"/>
                 <Button Content="Добавить юзера" Click="AddUser_Click"/>
@@ -69,14 +69,21 @@
                                   Grid.ColumnSpan="5"
                                   Margin="2,0,2,0"
                                   Visibility="Collapsed"/>
-            <Border Grid.Row="3" CornerRadius="6" Margin="4"
-                    Background="#66ABC8AB"
-                    Grid.Column="0" Grid.ColumnSpan="5">
-                <StatusBar x:Name="StatusUsers" Margin="4" Background="Transparent">
-                    <TextBlock Name="StatusText" Margin="3"
-                               Text="{Binding StatusText}" FontWeight="Bold"/>
+            <ContentControl Style="{StaticResource InnerBorderSolidColorStyle}"
+               Padding="4"
+               Grid.Row="3"
+               Grid.Column="0"
+               Grid.ColumnSpan="5"
+               Margin="3">
+                <StatusBar x:Name="StatusUsers" Background="Transparent">
+                    <TextBlock Name="StatusText"
+                   Margin="3"
+                   Text="{Binding StatusText}"
+                   FontWeight="Bold"/>
                 </StatusBar>
-            </Border>
+            </ContentControl>
+
+          
         </Grid>
     </ContentControl>
 </Window>

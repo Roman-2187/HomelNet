@@ -5,7 +5,7 @@
              xmlns:converters="clr-namespace:WpfHomeNet.Converters"> 
            
     <Application.Resources>
-        <converters:RelativeCornerRadiusConverter x:Key="RadiusConverter"/>
+        <converters:HeightBattonCornerRadiusConverter x:Key="RadiusConverter"/>
         <converters:BorderCornerRadiusConverter x:Key="BorderRadiusConverter"/>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
        
@@ -15,30 +15,28 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderBrush" Value="AntiqueWhite"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="0"/>
             <Setter Property="Height" Value="Auto"/>
             <Setter Property="Width" Value="Auto"/>
             <Setter Property="Padding" Value="10"/>
-
-
+            <Setter Property="Margin" Value="1"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Foreground" Value="Black"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="border"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"  
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="{Binding ActualWidth,
-                                RelativeSource={RelativeSource TemplatedParent},
-                                Converter={StaticResource RadiusConverter}}"  Padding="{TemplateBinding Padding}">
-
+        Background="{TemplateBinding Background}"
+        BorderBrush="{TemplateBinding BorderBrush}"
+        BorderThickness="{TemplateBinding BorderThickness}"
+        CornerRadius="{Binding ActualHeight,
+            RelativeSource={RelativeSource TemplatedParent},
+            Converter={StaticResource RadiusConverter}}"
+        Padding="{TemplateBinding Padding}">
                             <ContentPresenter x:Name="contentPresenter"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        TextElement.FontWeight="{TemplateBinding FontWeight}"
-                                        TextElement.Foreground="{TemplateBinding Foreground}"/>
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                TextElement.FontWeight="{TemplateBinding FontWeight}"
+                                TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </Border>
                         <!-- Триггеры визуальных состояний -->
                         <ControlTemplate.Triggers>
@@ -46,8 +44,10 @@
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="border" Property="Background" Value="#66ABC8AB"/>
                                 <Setter TargetName="contentPresenter" Property="TextElement.Foreground" Value="Black"/>
-                                <Setter TargetName="border" Property="BorderBrush" Value="#FFCCCCCC"/>
-                                <Setter TargetName="border" Property="CornerRadius" Value="9"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="LightBlue"/>
+                                
+                                <Setter TargetName="border" Property="BorderThickness" Value="0.6"/>
+                                <Setter TargetName="border" Property="Padding" Value="9.4"/>
                             </Trigger>
                             <!-- Нажатие -->
                             <Trigger Property="IsPressed" Value="True">
@@ -70,25 +70,27 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ContentControl">
-                        <Border BorderThickness="0.15"
-                                Margin="1,1,1,0"
-                                BorderBrush="Black"
-                                Padding="2"
-                                CornerRadius="{Binding ActualWidth,
-                                            RelativeSource={RelativeSource TemplatedParent},
-                                            Converter={StaticResource RadiusConverter}}" 
-                         
-                                HorizontalAlignment="{TemplateBinding HorizontalAlignment}">
-                            <TextBlock Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}, StringFormat={}{0}}"
-                           VerticalAlignment="Center"
-                           HorizontalAlignment="Left"
-                           FontSize="14"
-                           />
+                        <Border 
+                    BorderThickness="0.15"
+                    Margin="1,1,1,0"
+                    BorderBrush="Black"
+                    Padding="4"
+                    CornerRadius="{Binding ActualHeight,
+                        RelativeSource={RelativeSource TemplatedParent},
+                        Converter={StaticResource RadiusConverter},
+                        ConverterParameter=0.15}" 
+                            HorizontalAlignment="{TemplateBinding HorizontalAlignment}">
+                            <TextBlock
+                        Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}, StringFormat={}{0}}"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Left"
+                        FontSize="12"/>
                         </Border>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
+
 
         <Style x:Key="TripleBorderStyle" TargetType="ContentControl">
             <Setter Property="Template">
@@ -96,33 +98,33 @@
                     <ControlTemplate TargetType="ContentControl">
                         <Grid>
                             <!-- Внешний Border (только рамка, без градиента) -->
-                            <Border CornerRadius="{Binding ActualWidth,
-                               RelativeSource={RelativeSource TemplatedParent},
-                               Converter={StaticResource BorderRadiusConverter},
-                               ConverterParameter=0.0184}"
-                          BorderThickness="0.6"
-                          BorderBrush="Black"
-                          Background="White">
+                          <Border  CornerRadius="{Binding ActualWidth,
+                                 RelativeSource={RelativeSource TemplatedParent},
+                                 Converter={StaticResource BorderRadiusConverter},
+                                 ConverterParameter=0.0170}"
+                                 BorderThickness="0.8"
+                                 BorderBrush="Black"
+                                 Background="White">    
                                 <!-- Белый фон для всего элемента -->
 
                                 <!-- Контейнер для вложенных Border -->
                                 <Grid>
                                     <!-- Средний Border -->
-                                    <Border BorderThickness="0.6"
-                                    BorderBrush="Silver"
+                                    <Border BorderThickness="1" Margin="-0.20"
+                                    BorderBrush="LightBlue"
                                     CornerRadius="{Binding ActualWidth,
                                         RelativeSource={RelativeSource TemplatedParent},
                                         Converter={StaticResource BorderRadiusConverter},
-                                        ConverterParameter=0.0177}"/>
+                                        ConverterParameter=0.0162}"/>
 
                                     <!-- Внутренний Border (с градиентом) -->
-                                    <Border Margin="0.6"
+                                    <Border Margin="0"  
                                     BorderThickness="0.6"
-                                    BorderBrush="Black"
+                                    BorderBrush="Black" 
                                     CornerRadius="{Binding ActualWidth,
                                         RelativeSource={RelativeSource TemplatedParent},
                                         Converter={StaticResource BorderRadiusConverter},
-                                        ConverterParameter=0.017}">
+                                        ConverterParameter=0.0168}">
 
                                         <!-- Градиентный фон ВНУТРИ внутреннего бордера -->
                                         <Border.Background>
@@ -144,6 +146,89 @@
             </Setter>
         </Style>
 
+        <Style x:Key="InnerBorderSolidColorStyle" TargetType="ContentControl">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContentControl">
+                        <Grid>
+                            <Border 
+                                CornerRadius="{Binding ActualWidth,
+                                RelativeSource={RelativeSource TemplatedParent},
+                                Converter={StaticResource BorderRadiusConverter},
+                                ConverterParameter=0.0170}"
+                                BorderThickness="0.6"
+                                BorderBrush="Black"
+                                Background="Transparent">   
+                                <Grid>
+                                    <Border Margin="-0.3"
+                                        CornerRadius="{Binding ActualWidth,
+                                        RelativeSource={RelativeSource TemplatedParent},
+                                        Converter={StaticResource BorderRadiusConverter},
+                                        ConverterParameter=0.0162}"
+                                        BorderThickness="0.6"
+                                        BorderBrush="LightBlue"
+                                        Background="Transparent">
+                                        <Grid>
+                                            <Border   Margin="-0.15"                            
+                                                 BorderThickness="0.3"
+                                                 BorderBrush="Black"
+                                                 CornerRadius="{Binding ActualWidth,
+                                                 RelativeSource={RelativeSource TemplatedParent},
+                                                 Converter={StaticResource BorderRadiusConverter},
+                                                 ConverterParameter=0.0153}"
+                                                 Background="#66ABC8AB">
+                                                <ContentPresenter Margin="{TemplateBinding Padding}"/>
+
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        
+        <Style x:Key="RoundedListBox" TargetType="ListBox">
+    <Setter Property="Template">
+        <Setter.Value>
+            <ControlTemplate TargetType="ListBox">
+                <Border CornerRadius="5"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        Padding="{TemplateBinding Padding}">
+                    <ScrollViewer Padding="{TemplateBinding Padding}" Focusable="false">
+                        <ItemsPresenter />
+                    </ScrollViewer>
+                </Border>
+            </ControlTemplate>
+        </Setter.Value>
+    </Setter>
+</Style>
+
+
+
+        <Style x:Key="InnerBorderTitleStyle" TargetType="ContentControl">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContentControl">
+                        <Border                        
+                         BorderThickness="0.2"
+                         BorderBrush="Black"
+                         CornerRadius="{Binding ActualWidth,
+                             RelativeSource={RelativeSource TemplatedParent},
+                             Converter={StaticResource BorderRadiusConverter},
+                             ConverterParameter=0.010}"
+                         Background="#66ABC8AB">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
 
 

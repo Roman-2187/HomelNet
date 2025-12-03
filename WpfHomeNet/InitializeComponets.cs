@@ -13,16 +13,23 @@ namespace WpfHomeNet
 {
     public partial class MainWindow
     {
-        private void InitializeLogging()
-        {
-            _logger = new Logger();
-            _logWindow = new LogWindow(Logger);
-            _logQueueManager = new LogQueueManager(LogWindow, 20);
-            Logger.SetOutput(_logQueueManager.WriteLog);
+        
 
-            Logger.LogInformation($"Путь БД: {dbPath}");
-            Logger.LogInformation("Application started. PID: " + Process.GetCurrentProcess().Id);
-        }
+
+
+
+
+
+
+
+
+
+     
+
+
+
+       
+
 
 
         private async Task InitializeAsync(DatabaseType databaseType)

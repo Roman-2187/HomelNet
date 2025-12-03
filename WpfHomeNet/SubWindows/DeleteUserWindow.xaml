@@ -5,52 +5,57 @@
         Height="250"
         Width="400"
         WindowStyle="None"
-        AllowsTransparency="True"
-        BorderThickness="1"
-        BorderBrush="Black"
+        AllowsTransparency="True"              
         WindowStartupLocation="CenterOwner"
-        Background="#26ABC8AB">
-  
-    <Grid Margin="15">
+        Background="Transparent">
+
+    <ContentControl Style="{StaticResource InnerBorderSolidColorStyle}" >
+
+        <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="20"/>
             <RowDefinition Height="20*"/>
             <RowDefinition Height="59*"/>
-            <RowDefinition Height="20*"  />
+            <RowDefinition Height="20*"/>
         </Grid.RowDefinitions>
-        <TextBlock Grid.Row="0" 
-             Text="Выберите пользователя для удаления:"
-             FontWeight="Bold"
-             FontSize="14"
-             HorizontalAlignment="Center"  />
-        <StackPanel Grid.Row="1"
-                    Orientation="Horizontal" Margin="0,0,5,0">
-            <TextBox x:Name="userIdTextBox" Height="30"
-                Width="200"
-                    KeyDown="UserIdTextBox_KeyDown" 
-                Margin="5"
-                Text="Введите ID"
-                Foreground="DarkSlateGray"
-                GotFocus="UserIdTextBox_GotFocus"
-                LostFocus="UserIdTextBox_LostFocus" />
+
+           
+                <TextBlock Grid.Row="0" 
+                Text="Выберите пользователя для удаления:"
+                FontWeight="Bold"
+                FontSize="14"
+                HorizontalAlignment="Center"  />
+           
+        <StackPanel Grid.Row="1" Margin="10,0,0,0"
+                    Orientation="Horizontal" >
+              <Border CornerRadius="5">  
+                  <TextBox x:Name="userIdTextBox"
+                     Width="200"  
+                     KeyDown="UserIdTextBox_KeyDown" 
+                
+                     Text="Введите ID" Margin="0,0,60,0" BorderThickness="2"
+                     Foreground="DarkSlateGray"
+                     GotFocus="UserIdTextBox_GotFocus"
+                     LostFocus="UserIdTextBox_LostFocus" /> 
+              </Border>
             <Button x:Name="searchButton" 
                 Content="Найти" 
-                    Margin="5" Height="30" Width="80"
+                     Width="90" Height="35" FontSize="10"
                 Click="SearchUser_Click" 
-                 Background="#4CDDDDDD"/>
+                 Background="Transparent"/>
         </StackPanel>
         <Border Grid.Row="2"               
         BorderThickness="0.3"
         BorderBrush="Black"
-        CornerRadius="1"  Background="#7FFFFFFF"  Margin="5" >
-           
+        CornerRadius="8"  Background="#7FFFFFFF"  Margin="5" >
 
-            <ListBox x:Name="userListBox"
+
+                <ListBox  Style="{StaticResource RoundedListBox}" x:Name="userListBox"  
              DisplayMemberPath="DisplayInfo"
-             SelectedValuePath="Id"  
+             SelectedValuePath="Id"  Margin="5"  
              SelectionChanged="UserListBox_SelectionChanged"
-            Background="#00000000" 
-             BorderThickness="0">
+            Background="Transparent" 
+            >
                 
 
                 <ListBox.Resources>
@@ -65,7 +70,8 @@
                         <Setter Property="Background" Value="Transparent"/>
                         <Setter Property="BorderBrush" Value="Transparent"/>
                         <Setter Property="FontWeight" Value="Normal"/>
-                        <Style.Triggers>
+                           
+                            <Style.Triggers>
                             <Trigger Property="Tag" Value="Found">
                                 <Setter Property="FontWeight" Value="Bold"/>
                                 <Setter Property="Foreground" Value="Black"/>
@@ -79,19 +85,20 @@
         <StackPanel
             Grid.Row="3" 
             Orientation="Horizontal"
-            HorizontalAlignment="Left" Margin="104,0,0,0" Width="259" >
-            <Button
-                x:Name="yesButton" Height="30" Width="80"
-                Content="Удалить" 
-                Click="YesButton_Click" 
-                Margin="5"
-                IsEnabled="{Binding CanDelete}" Background="#4CDDDDDD"/>
+            HorizontalAlignment="Right"  Width="Auto" >
             <Button 
-                x:Name="noButton" Height="30" Width="80"
-                Content="Отмена" 
+                x:Name="yesButton"  Width="80" 
+                Content="Удалить" Margin="0,0,10,0"  Height="35"
+                Click="YesButton_Click" 
+                
+                IsEnabled="{Binding CanDelete}" Background="#00DDDDDD"/>
+            <Button Margin="0,0,5,0"
+                x:Name="noButton"  
+                Content="Отмена" Width="80" Height="35"
                 Click="NoButton_Click" 
-                Margin="5" Background="#4CDDDDDD"/>
+                Background="Transparent"/>
         </StackPanel>
     </Grid>
+    </ContentControl>
 </Window>
 

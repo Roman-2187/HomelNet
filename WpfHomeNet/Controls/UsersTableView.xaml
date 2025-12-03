@@ -4,13 +4,12 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"  
-             d:DesignHeight="450" Width="Auto"  >
+             d:DesignHeight="460" Width="Auto">
 
-    <!-- Внешний контейнер с управляемой видимостью -->
-    <Border CornerRadius="5" Margin="4"  
-              Padding="0"
-              BorderThickness="1" BorderBrush="Silver" Background="#26ABC8AB" ClipToBounds="True">
-       
+    <!-- Внешний контейнер: ContentControl с новым стилем -->
+    <ContentControl Style="{StaticResource InnerBorderSolidColorStyle}" Padding="4" >
+                    
+                    
 
         <Grid>
             <!-- Две строки: заголовки и данные -->
@@ -20,66 +19,66 @@
                 <RowDefinition Height="*"/>
                 <!-- Данные с прокруткой -->
             </Grid.RowDefinitions>
-            
-            
+
+            <!-- 1. Заголовки с внутренней рамкой -->
+
+            <ContentControl
+              Style="{StaticResource InnerBorderTitleStyle}"
+              Grid.Row="0" Margin="2"
+                
+               
+              Grid.ColumnSpan="7"
+              Padding="8">
+
+                <Grid>
+                    <!-- Ваши колонки и TextBlock-заголовки -->
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="50"/>
+                        <ColumnDefinition MinWidth="90" MaxWidth="170"/>
+                        <ColumnDefinition MinWidth="90" MaxWidth="170"/>
+                        <ColumnDefinition MinWidth="120" MaxWidth="180"/>
+                        <ColumnDefinition MinWidth="220"/>
+                        <ColumnDefinition MinWidth="90"/>
+                        <ColumnDefinition MinWidth="150"/>
+                        <!-- ... остальные колонки ... -->
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" Text="  ID" />
+                    <TextBlock Grid.Column="1" Text="Имя" />
+                    <TextBlock Grid.Column="2" Text="Фамилия" />
+                    <TextBlock Grid.Column="3" Text="Телефон"/>
+                    <TextBlock Grid.Column="4" Text="Email" />
+                    <TextBlock Grid.Column="5" Text="Пароль" />
+                    <TextBlock Grid.Column="6" Text="Дата создания" />
+                    <!-- ... остальные заголовки ... -->
+                </Grid>
+            </ContentControl>
 
 
-            <!-- 1. Заголовки (не прокручиваются) -->
-            <Grid Grid.Row="0" >
-                <Grid.Resources>
-                    <Style TargetType="TextBlock">
-                        <Setter Property="FontWeight" Value="Bold"/>
-                        <Setter Property="FontSize" Value="16"/>
-                        <Setter Property="VerticalAlignment" Value="Center"/>
-                    </Style>
-                </Grid.Resources>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="50"/>
-                    <ColumnDefinition MinWidth="80" MaxWidth="170"/>
-                    <ColumnDefinition MinWidth="100" MaxWidth="170"/>
-                    <ColumnDefinition MinWidth="120" MaxWidth="180"/>
-                    <ColumnDefinition MinWidth="220"/>
-                    <ColumnDefinition MinWidth="90"/>
-                    <ColumnDefinition MinWidth="160"/>
-                </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0" Text="  ID" />
-                <TextBlock Grid.Column="1" Text="Имя" />
-                <TextBlock Grid.Column="2" Text="Фамилия" />
-                <TextBlock Grid.Column="3" Text="Телефон"/>
-                <TextBlock Grid.Column="4" Text="Email" />
-                <TextBlock Grid.Column="5" Text="Пароль" />
-                <TextBlock Grid.Column="6" Text="Дата создания" />
-            </Grid>
-            
-            
-                 
-            <Border Grid.Row="5"
-                    CornerRadius="3" 
-                    BorderThickness="1" BorderBrush="Silver" Margin="3,3,3,4"
-                    Background="Transparent">
 
-                <!-- 2. Прокручиваемые данные -->
+         
+
             <ScrollViewer Grid.Row="1"
-                          x:Name="UserPanel"                                                   
+                          x:Name="UserPanel"
                           HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Hidden"
                           Focusable="False" Background="Transparent">
-                <ItemsControl ItemsSource="{Binding Users}"  
+                <ItemsControl ItemsSource="{Binding Users}"
                               VerticalAlignment="Top"
                               HorizontalAlignment="Stretch">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Grid Margin="2">
                                 <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="50"/>
-                                        <ColumnDefinition MinWidth="80" MaxWidth="170"/>
-                                        <ColumnDefinition MinWidth="100" MaxWidth="170"/>
-                                        <ColumnDefinition MinWidth="120" MaxWidth="180"/>
-                                        <ColumnDefinition MinWidth="220"/>
-                                        <ColumnDefinition MinWidth="90"/>
-                                        <ColumnDefinition MinWidth="160"/>
-                                    </Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="50"/>
+                                    <ColumnDefinition MinWidth="80" MaxWidth="170"/>
+                                    <ColumnDefinition MinWidth="90" MaxWidth="170"/>
+                                    <ColumnDefinition MinWidth="120" MaxWidth="180"/>
+                                    <ColumnDefinition MinWidth="220"/>
+                                    <ColumnDefinition MinWidth="90"/>
+                                    <ColumnDefinition MinWidth="150"/>
+                                </Grid.ColumnDefinitions>
 
                                 <ContentControl Grid.Column="0"
                                         Content="{Binding Id}"
@@ -114,11 +113,13 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </ScrollViewer>
-          </Border>
+            
+            
+            
         </Grid>
-          
-    </Border>
+    </ContentControl>
 </UserControl>
+
 
 
 

@@ -7,7 +7,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using WpfHomeNet.SubWindows;
 
 namespace WpfHomeNet
@@ -95,28 +97,108 @@ namespace WpfHomeNet
 
 
 
+
+
+       
+
+
+
         private void ShowWindowLogs(LogWindow logWindow)
         {
-            double targetLeft = this.Left +20; // offsetX может быть отрицательным (влево)
+            // Целевая позиция главного окна (левый край экрана)
+            double targetMainLeft = SystemParameters.WorkArea.Left;
 
-           
-
-            var animation = new DoubleAnimation(0, TimeSpan.FromSeconds(2))
+            // Анимация сдвига главного окна
+            var mainAnim = new DoubleAnimation
             {
+                To = targetMainLeft,
+                Duration = TimeSpan.FromSeconds(0.9),
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             };
 
-            this.BeginAnimation(Window.LeftProperty, animation);
-
-            logWindow.WindowStartupLocation = WindowStartupLocation.Manual;
-            logWindow.Left = this.Left + 855;
-            logWindow.Top = this.Top;
-
-
-            logWindow.Show();
-
-            btnLogs.Content = "Скрыть логи";
+           
+            // Запускаем анимацию главного окна
+            this.BeginAnimation(Window.LeftProperty, mainAnim);
         }
+
+
+
+
+        private void PositionLogWindowRelativeToMain()
+        {
+            LogWindow.WindowStartupLocation = WindowStartupLocation.Manual;
+
+            const double margin = 20;
+            double targetLeft = this.Left + this.ActualWidth + margin;
+            double targetTop = this.Top;
+
+            var workArea = SystemParameters.WorkArea;
+
+            // Защита от выхода за экран
+            if (targetLeft + 600 > workArea.Right)
+                targetLeft = workArea.Right - 600;
+
+            if (targetTop + 600 > workArea.Bottom)
+                targetTop = workArea.Bottom - 600;
+
+            LogWindow.Left = targetLeft;
+            LogWindow.Top = targetTop;
+        }
+
+
+
+
+
+        private void ShowWindowLogs_Click(object sender, RoutedEventArgs e)
+        {
+            if (LogWindow.IsVisible)
+            {
+                // 1. Отписываемся от событий (даже если подписка была двойной)
+                this.LocationChanged -= SyncLogWindowPosition;
+                this.SizeChanged -= SyncLogWindowPosition;
+
+
+                LogWindow.Hide();
+                btnLogs.Content = "Показать логи";
+            }
+            else
+            {
+                LogWindow.Owner = this;
+
+                // 2. Проверяем загрузку лог‑окна
+                if (!LogWindow.IsLoaded)
+                {
+                    LogWindow.Loaded += (s, ev) =>
+                    {
+                        PositionLogWindowRelativeToMain(); // Позиционируем после загрузки
+                        EnableSync(); // Включаем синхронизацию
+                    };
+                }
+
+                // 3. Показываем окно (это запустит Loaded, если ещё не загружено)
+                LogWindow.Show();
+
+
+                // 4. Если окно уже загружено — сразу позиционируем и подписываемся
+                if (LogWindow.IsLoaded)
+                {
+                    PositionLogWindowRelativeToMain();
+                    EnableSync();
+                }
+
+                btnLogs.Content = "Скрыть логи";
+            }
+        }
+
+        // Метод включения синхронизации (чтобы не дублировать код)
+        private void EnableSync()
+        {
+            this.LocationChanged += SyncLogWindowPosition;
+            this.SizeChanged += SyncLogWindowPosition;
+        }
+
+
+
 
         private void CenterMainAndHideLogs()
         {
@@ -124,5 +206,18 @@ namespace WpfHomeNet
             this.Top = 200;
             btnLogs.Content = "Показать логи";
         }
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        private bool _isAnimating = false;
     }
-}
+
+
+   
+    }

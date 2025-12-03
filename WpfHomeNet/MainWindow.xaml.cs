@@ -6,17 +6,40 @@ using HomeNetCore.Data.Schemes;
 using HomeNetCore.Helpers;
 using HomeNetCore.Services;
 using System.Data.Common;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Input;
+using System.Windows.Threading;
 using WpfHomeNet.UiHelpers;
 using WpfHomeNet.ViewModels;
-
+  
 namespace WpfHomeNet
 {
     
     public partial class MainWindow : Window
     {
-        #region Поля и переменные
-        private static readonly string dbPath = DatabasePathHelper.GetDatabasePath("home_net.db");
+
+
+      
+
+[DllImport("user32.dll")]
+    private static extern bool SetWindowPos(
+    IntPtr hWnd,
+    IntPtr hWndInsertAfter,
+    int X,
+    int Y,
+    int cx,
+    int cy,
+    uint uFlags);
+
+    private const uint SWP_NOZORDER = 0x0004;
+    private const uint SWP_NOACTIVATE = 0x0010;
+
+
+
+    #region Поля и переменные
+    private static readonly string dbPath = DatabasePathHelper.GetDatabasePath("home_net.db");
         private readonly string _connectionString = $"Data Source={dbPath}";
         public LogWindow LogWindow => _logWindow ?? throw new InvalidOperationException("_logWindow не инициализирован");
         public LogWindow? _logWindow;
@@ -43,14 +66,71 @@ namespace WpfHomeNet
         public MainWindow()
         {
             InitializeComponent();
+           
 
             InitializeLogging();
 
             CenterMainAndHideLogs();
         }
 
+        
 
        
+
+
+
+
+        private void InitializeLogging()
+        {
+            _logger = new Logger();
+            _logWindow = new LogWindow(Logger);
+            _logQueueManager = new LogQueueManager(LogWindow, 20);
+
+            Logger.SetOutput(_logQueueManager.WriteLog);
+
+            Logger.LogInformation($"Путь БД: {dbPath}");
+            Logger.LogInformation("Application started. PID: " + Process.GetCurrentProcess().Id);
+        }
+
+
+        private void SyncLogWindowPosition(object sender, EventArgs e)
+        {
+            if (!LogWindow.IsLoaded || !LogWindow.IsVisible) return;
+
+            LogWindow.WindowStartupLocation = WindowStartupLocation.Manual;
+
+            const double margin = 2;
+            double targetLeft = this.Left + this.ActualWidth + margin;
+            double targetTop = this.Top;
+
+            var workArea = SystemParameters.WorkArea;
+           
+            LogWindow.Left = targetLeft;
+            LogWindow.Top = targetTop;                   
+        }
+
+
+
+
+
+
+
+        private void WindowDrag_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                DragMove(); // Перемещаем главное окно
+
+            }
+        }
+
+
+
+
+
+
+
+
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {

@@ -5,11 +5,14 @@
         Title="Логи" Height="600
         " Width="670"
          BorderThickness="3"
-        BorderBrush="Black"
+        Background="Transparent"
+     
          WindowStyle="None"
         AllowsTransparency="True" 
         >
-    <Grid>
+
+    <ContentControl Style="{StaticResource TripleBorderStyle}" >
+        <Grid>
         <!-- Разделение на две области: верхняя для лога, нижняя для дополнительных элементов -->
         <Grid.RowDefinitions>
             <RowDefinition Height="40"/>
@@ -20,12 +23,12 @@
 
         <!-- Панель инструментов (можно добавить кнопки очистки, фильтрации и т.д.) -->
         <StackPanel Grid.Row="0" 
-               Background="#FF668C66" 
+               Background="Transparent" 
                Orientation="Horizontal" 
                >
             <Label Content="Окно логов" FontSize="16"
                 FontWeight="Bold"
-                Background="#FF668C66"
+                
                 HorizontalAlignment="Center"
                 BorderThickness="0"
                 VerticalAlignment="Center" />
@@ -35,7 +38,7 @@
         </StackPanel >
 
         <!-- Область лога -->
-        <RichTextBox x:Name="LogTextBox" 
+        <RichTextBox x:Name="LogTextBox" Margin="5"
                  Grid.Row="1"                 
                  VerticalScrollBarVisibility="Hidden"
                      
@@ -48,5 +51,6 @@
                  BorderBrush="#FFAAADB5">
         </RichTextBox>
     </Grid>
+        </ContentControl>
 
 </Window>
