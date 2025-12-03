@@ -74,51 +74,12 @@ namespace WpfHomeNet
         }
 
         
-
-       
-
-
-
-
-        private void InitializeLogging()
-        {
-            _logger = new Logger();
-            _logWindow = new LogWindow(Logger);
-            _logQueueManager = new LogQueueManager(LogWindow, 20);
-
-            Logger.SetOutput(_logQueueManager.WriteLog);
-
-            Logger.LogInformation($"Путь БД: {dbPath}");
-            Logger.LogInformation("Application started. PID: " + Process.GetCurrentProcess().Id);
-        }
-
-
-        private void SyncLogWindowPosition(object sender, EventArgs e)
-        {
-            if (!LogWindow.IsLoaded || !LogWindow.IsVisible) return;
-
-            LogWindow.WindowStartupLocation = WindowStartupLocation.Manual;
-
-            const double margin = 2;
-            double targetLeft = this.Left + this.ActualWidth + margin;
-            double targetTop = this.Top;
-
-            var workArea = SystemParameters.WorkArea;
-           
-            LogWindow.Left = targetLeft;
-            LogWindow.Top = targetTop;                   
-        }
-
-
-
        
         private async void Window_Loaded(object sender, RoutedEventArgs e)
-        {
-            
+        {            
             try
             {
                
-
                 await InitializeAsync(DatabaseType.SQLite);
 
                 await PostInitializeAsync();
@@ -135,11 +96,7 @@ namespace WpfHomeNet
                     MessageBoxImage.Error);
                 Close();
             }
-        }
-
-
-        
-
+        }       
       
     }
 }

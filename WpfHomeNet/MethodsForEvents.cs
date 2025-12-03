@@ -1,16 +1,12 @@
-﻿using HomeNetCore.Helpers.Exceptions;
+﻿using HomeNetCore.Helpers;
+using HomeNetCore.Helpers.Exceptions;
 using HomeNetCore.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Interop;
 using System.Windows.Media.Animation;
-using System.Windows.Threading;
 using WpfHomeNet.SubWindows;
+using WpfHomeNet.UiHelpers;
 
 namespace WpfHomeNet
 {
@@ -99,16 +95,12 @@ namespace WpfHomeNet
         }
 
 
+        /// <summary>
+        /// перестают работать привязки к окну логов если использовать анимацию для смешения главного окна к левому краю экрана
+        /// </summary>
+        /// <param name="logWindow"></param>
 
-
-
-
-
-       
-
-
-
-        private void ShowWindowLogs(LogWindow logWindow)
+        private void WindowLogsAnimation(LogWindow logWindow)
         {
             // Целевая позиция главного окна (левый край экрана)
             double targetMainLeft = SystemParameters.WorkArea.Left;
@@ -121,19 +113,17 @@ namespace WpfHomeNet
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             };
 
-           
+
             // Запускаем анимацию главного окна
             this.BeginAnimation(Window.LeftProperty, mainAnim);
         }
-
-
 
 
         private void PositionLogWindowRelativeToMain()
         {
             LogWindow.WindowStartupLocation = WindowStartupLocation.Manual;
 
-            const double margin = 20;
+            const double margin = 5;
             double targetLeft = this.Left + this.ActualWidth + margin;
             double targetTop = this.Top;
 
@@ -151,38 +141,22 @@ namespace WpfHomeNet
         }
 
 
-
-
-
-
         // Метод включения синхронизации (чтобы не дублировать код)
         private void EnableSync()
         {
             this.LocationChanged += SyncLogWindowPosition;
             this.SizeChanged += SyncLogWindowPosition;
         }
+     
 
-
-
-
-        private void CenterMainAndHideLogs()
+        private void ShowUsersTable()
         {
-            this.Left = 150;
-            this.Top = 200;
-            btnLogs.Content = "Показать логи";
+            userTableView.Visibility = Visibility.Visible;
         }
-        
-        
-        
-        
-        
-        
-        
-        
-        
-       
-    }
+        private void HideUsersTable()
+        {
+            userTableView.Visibility = Visibility.Collapsed;
+        }
 
-
-   
     }
+}

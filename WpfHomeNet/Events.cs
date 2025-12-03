@@ -51,9 +51,6 @@ namespace WpfHomeNet
 
 
 
-
-
-
         private void ShowWindowLogs_Click(object sender, RoutedEventArgs e)
         {
             if (LogWindow.IsVisible)
@@ -95,6 +92,8 @@ namespace WpfHomeNet
             }
         }
 
+
+
         private void ShowUsers_Click(object sender, RoutedEventArgs e)
         {
             
@@ -119,23 +118,6 @@ namespace WpfHomeNet
             }
         }
 
-
-
-
-        // Где‑то в логике главного окна
-        private void ShowUsersTable()
-        {
-            userTableView.Visibility = Visibility.Visible;
-        }
-
-        private void HideUsersTable()
-        {
-            userTableView.Visibility = Visibility.Collapsed;
-        }
-
-
-
-       
 
 
         private async void AddUsersList_Click(object sender, RoutedEventArgs e)
@@ -241,9 +223,23 @@ namespace WpfHomeNet
             }
         }
 
-       
-        
-       
+
+        private void SyncLogWindowPosition(object sender, EventArgs e)
+        {
+            if (!LogWindow.IsLoaded || !LogWindow.IsVisible) return;
+
+            LogWindow.WindowStartupLocation = WindowStartupLocation.Manual;
+
+            const double margin = 2;
+            double targetLeft = this.Left + this.ActualWidth + margin;
+            double targetTop = this.Top;
+
+            var workArea = SystemParameters.WorkArea;
+
+            LogWindow.Left = targetLeft;
+            LogWindow.Top = targetTop;
+        }
+
     }
 }
 

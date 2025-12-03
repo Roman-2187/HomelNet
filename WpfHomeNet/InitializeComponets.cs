@@ -100,5 +100,28 @@ namespace WpfHomeNet
             }
         }
 
+
+
+        private void InitializeLogging()
+        {
+            _logger = new Logger();
+            _logWindow = new LogWindow(Logger);
+            _logQueueManager = new LogQueueManager(LogWindow, 20);
+
+            Logger.SetOutput(_logQueueManager.WriteLog);
+
+            Logger.LogInformation($"Путь БД: {dbPath}");
+            Logger.LogInformation("Application started. PID: " + Process.GetCurrentProcess().Id);
+        }
+
+
+
+        private void CenterMainAndHideLogs()
+        {
+            this.Left = 200;
+            this.Top = 200;
+            btnLogs.Content = "Показать логи";
+        }
+
     }
 }
