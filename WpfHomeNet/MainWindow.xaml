@@ -1,8 +1,11 @@
-﻿<Window x:Class="WpfHomeNet.MainWindow"  WindowStartupLocation="Manual"
-        xmlns:controls="clr-namespace:WpfHomeNet.Controls"
-        xmlns:local="clr-namespace:WpfHomeNet.UiHelpers"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"            
+﻿<Window x:Class="WpfHomeNet.MainWindow"  WindowStartupLocation="Manual"       
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:controls="clr-namespace:WpfHomeNet.Controls"
+    xmlns:local="clr-namespace:WpfHomeNet.UiHelpers"   
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"        
         WindowStyle="None"
         ResizeMode="CanResize"           
         Width="800"
@@ -12,6 +15,8 @@
         FontSize="14"                             
         Background="Transparent"
         Loaded="Window_Loaded">
+        
+
 
     <!-- Основной контейнер с тройным бордером -->
     <ContentControl Style="{StaticResource TripleBorderStyle}"
@@ -19,8 +24,8 @@
                     Height="600" MinWidth="800"
         MinHeight="600"
                     HorizontalAlignment="Center"
-                    VerticalAlignment="Center">       
-        <Grid Margin="3">
+                    VerticalAlignment="Center">
+        <Grid Margin="4">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"  />
                 <RowDefinition Height="245"/>
@@ -50,14 +55,20 @@
                         <Setter Property="BorderBrush" Value="Transparent"/>
                     </Style>
                 </StackPanel.Resources>
-                <Button Content="Test list Users" Click="AddUsersList_Click"  />
-                <Button Content="Добавить юзера" Click="AddUser_Click"/>
-                <Button x:Name="DeleteButton" Click="RemoveUser_Click"
+                <Button Content="Test list Users"
+                        Click="AddUsersList_Click"  />
+                <Button Content="Добавить юзера"
+                        Click="AddUser_Click"/>
+                <Button x:Name="DeleteButton"
+                        Click="RemoveUser_Click"
                         Content="Удалить юзера"/>
-                <Button x:Name="ShowButton" Click="ShowUsers_Click"
+                <Button x:Name="ShowButton" 
+                        Click="ShowUsers_Click"
                         Content="Показать юзеров"/>
-                <Button Content="Обновить юзеров" Click="RefreshStatus_Click"/>
-                <Button x:Name="btnLogs" Click="ShowWindowLogs_Click"
+                <Button Content="Обновить юзеров"
+                        Click="RefreshStatus_Click"/>
+                <Button x:Name="btnLogs"
+                        Click="ShowWindowLogs_Click"
                         Content="Показать логи"/>
             </StackPanel>
 
@@ -69,19 +80,22 @@
                         <Setter Property="BorderBrush" Value="Transparent"/>
                     </Style>
                 </StackPanel.Resources>
-                    <Button Content="Регистрация" Width="150"/>
-                <Button Content="Вход в профиль" Width="150"/>
-                <Button Grid.Column="4" Click="CloseButton_Click"
+                <Button Content="Регистрация"
+                        Width="150"/>
+                <Button Content="Вход в профиль" 
+                        Width="150" Click="LoginInButton_Click"/>
+                <Button Grid.Column="4"
+                        Click="CloseButton_Click"
                         Content="×" Width="40"/>
             </StackPanel>
 
             <controls:UsersTableView x:Name="userTableView"
-                                  Grid.Row="2"
-                                  Grid.ColumnSpan="5"
-                                  Margin="2,0,2,0"
-                                  Visibility="Collapsed"/>
-            <ContentControl Style="{StaticResource InnerBorderSolidColorStyle}"
-               Padding="4"
+                         Grid.Row="2"
+                         Grid.ColumnSpan="5"
+                         Margin="2,0,2,0"
+                         Visibility="Collapsed"/>
+            <ContentControl Style="{StaticResource InnerBorderSolidColorStyle}" 
+               Padding="4"  Background="#FFB5C098"
                Grid.Row="3"
                Grid.Column="0"
                Grid.ColumnSpan="5"
@@ -94,7 +108,29 @@
                 </StatusBar>
             </ContentControl>
 
-          
+            <ContentControl  x:Name ="LoginIn"
+                 Style="{StaticResource InnerBorderSolidColorStyle}"
+                 Visibility="Collapsed" 
+                 Margin="3"
+                 HorizontalAlignment="Left"                  
+                 Grid.Column="2" Grid.Row="0"
+                 Grid.RowSpan="3" Grid.ColumnSpan="2"
+                 Background="#FFB5C098"
+                 d:Visibility="Visible" 
+                 Width="342">
+                <StackPanel>
+                    <Label HorizontalAlignment="Center"                        
+                        FontWeight="Bold"  Margin="5"                    
+                        Content="Адрес элктронной почты"
+                        FontSize="20" />
+                    <Button Background="White"
+                        Margin="10"
+                        Height="35"
+                        Width="120"
+                        Content="нажми меня" 
+                        Click="LoginInButtonOk_Click"  />
+                </StackPanel>
+            </ContentControl>
         </Grid>
     </ContentControl>
 </Window>

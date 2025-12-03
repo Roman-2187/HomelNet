@@ -34,6 +34,25 @@ namespace WpfHomeNet
 
 
 
+
+        private void LoginInButton_Click(object sender, RoutedEventArgs e)
+        {
+            HideUsersTable();
+            if (LoginIn.Visibility == Visibility.Collapsed)
+            {
+              LoginIn.Visibility = Visibility.Visible;
+            }
+        }
+
+
+
+        private void LoginInButtonOk_Click(object sender, RoutedEventArgs e)
+        {         
+                LoginIn.Visibility = Visibility.Collapsed;           
+        }
+
+
+
         /// <summary>
         /// закрывает главное окно одно временно с окном логов
         /// </summary>
@@ -96,7 +115,8 @@ namespace WpfHomeNet
 
         private void ShowUsers_Click(object sender, RoutedEventArgs e)
         {
-            
+            LoginIn.Visibility = Visibility.Collapsed;
+
             if (DataContext is MainViewModel vm)
 
             {    

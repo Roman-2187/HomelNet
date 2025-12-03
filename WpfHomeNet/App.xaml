@@ -144,39 +144,50 @@
             </Setter>
         </Style>
 
+
         <Style x:Key="InnerBorderSolidColorStyle" TargetType="ContentControl">
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ContentControl">
                         <Grid>
-                            <Border 
-                                CornerRadius="{Binding ActualWidth,
+                            <Border
+                        CornerRadius="{Binding ActualWidth,
                                 RelativeSource={RelativeSource TemplatedParent},
-                                Converter={StaticResource BorderRadiusConverter},
-                                ConverterParameter=0.0170}"
-                                BorderThickness="0.6"
-                                BorderBrush="Black"
-                                Background="Transparent">   
+                                Converter={StaticResource BorderRadiusConverter}, 
+                                ConverterParameter=0.0180}"
+                        BorderThickness="0.6"
+                        BorderBrush="Black"
+                        Background="Transparent"
+                        TextElement.Foreground="{TemplateBinding Foreground}"
+                        TextBlock.Foreground="{TemplateBinding Foreground}">
                                 <Grid>
-                                    <Border Margin="-0.3"
-                                        CornerRadius="{Binding ActualWidth,
+                                    <Border
+                                Margin="-0.3"
+                                CornerRadius="{Binding ActualWidth,
                                         RelativeSource={RelativeSource TemplatedParent},
                                         Converter={StaticResource BorderRadiusConverter},
-                                        ConverterParameter=0.0162}"
-                                        BorderThickness="0.6"
-                                        BorderBrush="LightBlue"
-                                        Background="Transparent">
+                                        ConverterParameter=0.0172}"
+                                BorderThickness="0.6"
+                                BorderBrush="LightBlue"
+                                Background="Transparent"
+                                TextElement.Foreground="{TemplateBinding Foreground}"
+                                TextBlock.Foreground="{TemplateBinding Foreground}">
                                         <Grid>
-                                            <Border   Margin="-0.15"                            
-                                                 BorderThickness="0.3"
-                                                 BorderBrush="Black"
-                                                 CornerRadius="{Binding ActualWidth,
-                                                 RelativeSource={RelativeSource TemplatedParent},
-                                                 Converter={StaticResource BorderRadiusConverter},
-                                                 ConverterParameter=0.0153}"
-                                                 Background="#66ABC8AB">
-                                                <ContentPresenter Margin="{TemplateBinding Padding}"/>
-
+                                            <Border
+                                        Margin="-0.15"
+                                        BorderThickness="0.3"
+                                        BorderBrush="Black"
+                                        CornerRadius="{Binding ActualWidth,
+                                                RelativeSource={RelativeSource TemplatedParent},
+                                                Converter={StaticResource BorderRadiusConverter},
+                                                ConverterParameter=0.0163}"
+                                        Background="{TemplateBinding Background}"
+                                        TextElement.Foreground="{TemplateBinding Foreground}"
+                                        TextBlock.Foreground="{TemplateBinding Foreground}">
+                                                <ContentPresenter
+                                            Margin="{TemplateBinding Padding}"
+                                            TextElement.Foreground="{TemplateBinding Foreground}"
+                                            TextBlock.Foreground="{TemplateBinding Foreground}"/>
                                             </Border>
                                         </Grid>
                                     </Border>
@@ -188,7 +199,9 @@
             </Setter>
         </Style>
 
-        
+
+
+
         <Style x:Key="RoundedListBox" TargetType="ListBox">
             <Setter Property="Template">
                 <Setter.Value>
