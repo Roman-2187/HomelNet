@@ -33,17 +33,10 @@ namespace HomeNetCore.Services
         }
 
 
-
-
-
-
-
-
-        public async Task<(bool success, string userName)> ValidateCredentialsAsync(string email, string password)
+       public async Task<(bool success, string userName)> ValidateCredentialsAsync(string email, string password)
         {
             try
-            {
-                // Базовая валидация входных данных
+            {            
                 if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
                 {
                     _logger.LogWarning("Попытка авторизации с пустыми учетными данными");
@@ -57,14 +50,14 @@ namespace HomeNetCore.Services
                     _logger.LogInformation($"Попытка входа с несуществующим email: {email}");
                     return (false, string.Empty);
                 }
-
-                // Сравнение паролей
+                               
                 bool isValid = user.Password == password;
 
                 if (isValid)
-                {
+                {                   
                     _logger.LogInformation($"Успешная авторизация пользователя: {user.FullName}");
-                    return (true, user.FullName);
+
+                    return (true, user.FullName??"Null impossible");
                 }
                 else
                 {
@@ -72,8 +65,7 @@ namespace HomeNetCore.Services
 
                     return (false, string.Empty);
                 }
-
-                
+               
             }
             catch (Exception ex)
             {
@@ -161,8 +153,6 @@ namespace HomeNetCore.Services
                 throw;
             }
         }
-
-
 
 
         public async Task<UserEntity?> GetUserByEmailAsync(string userEmail)

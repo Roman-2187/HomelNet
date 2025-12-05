@@ -24,7 +24,7 @@ namespace WpfHomeNet
 
                 // 2. Получаем все сервисы одним вызовом
                 var (connection, sqlInit, schemaProvider, schemaAdapter, userSqlGen) =
-                    factory.CreateServices(databaseType, _tableSchema);
+                factory.CreateServices(databaseType, _tableSchema);
 
                 // 3. Сохраняем в поля класса 
                 _connection = connection;
@@ -111,8 +111,8 @@ namespace WpfHomeNet
             _logger = new Logger();
             _logWindow = new LogWindow(Logger);
             _logQueueManager = new LogQueueManager(LogWindow, 20);
-
-            Logger.SetOutput(_logQueueManager.WriteLog);
+           
+           Logger.SetOutput(_logQueueManager.WriteLog);
 
             Logger.LogInformation($"Путь БД: {dbPath}");
             Logger.LogInformation("Application started. PID: " + Process.GetCurrentProcess().Id);

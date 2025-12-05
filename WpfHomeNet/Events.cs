@@ -13,10 +13,7 @@ namespace WpfHomeNet
 {
     public partial class MainWindow
     {
-        /// <summary>
-        ///  авторизация ввода для проверки существования  email 
-        /// </summary>
-        private string _savedEmail;
+       
 
       
         #region управление оконами
@@ -107,7 +104,6 @@ namespace WpfHomeNet
         }
 
 
-
         private async Task HandleEmailValidation(string email, IInputHelper inputHelper)
         {
             try
@@ -118,13 +114,13 @@ namespace WpfHomeNet
                     return;
                 }
 
-                if (!_authManager.IsValidEmailFormat(email))
+                if (!AuthManager.IsValidEmailFormat(email))
                 {
                     inputHelper.ShowError("Ошибка: некорректный формат email");
                     return;
                 }
 
-                bool emailExists = await _authManager.ValidateEmailAsync(email);
+                bool emailExists = await AuthManager.ValidateEmailAsync(email);
                 if (!emailExists)
                 {
                     inputHelper.ShowError("Ошибка: аккаунт с таким email не найден");
@@ -140,6 +136,7 @@ namespace WpfHomeNet
             }
         }
 
+
         private async Task HandlePasswordValidation(string password, IInputHelper inputHelper)
         {
             try
@@ -150,7 +147,7 @@ namespace WpfHomeNet
                     return;
                 }
 
-                var (success, userName) = await _authManager.ValidatePasswordAsync(_savedEmail, password);
+                var (success, userName) = await AuthManager.ValidatePasswordAsync(SavedEmail, password);
 
                 if (!success)
                 {
@@ -204,11 +201,10 @@ namespace WpfHomeNet
         {
             if (LogWindow.IsVisible)
             {
-                // 1. Отписываемся от событий (даже если подписка была двойной)
-                this.LocationChanged -= SyncLogWindowPosition;
+               
+                
+                this.LocationChanged -= SyncLogWindowPosition;                
                 this.SizeChanged -= SyncLogWindowPosition;
-
-
                 LogWindow.Hide();
                 btnLogs.Content = "Показать логи";
             }
@@ -235,6 +231,9 @@ namespace WpfHomeNet
                 {
                     PositionLogWindowRelativeToMain();
                     EnableSync();
+
+                    _logQueueManager.SetReady();
+                   
                 }
 
                 btnLogs.Content = "Скрыть логи";
@@ -376,21 +375,22 @@ namespace WpfHomeNet
         }
 
 
-        private void SyncLogWindowPosition(object sender, EventArgs e)
-        {
-            if (!LogWindow.IsLoaded || !LogWindow.IsVisible) return;
+      private void SyncLogWindowPosition(object? sender, EventArgs e)
+{
+    if (!LogWindow.IsLoaded || !LogWindow.IsVisible) return;
 
-            LogWindow.WindowStartupLocation = WindowStartupLocation.Manual;
+    LogWindow.WindowStartupLocation = WindowStartupLocation.Manual;
 
-            const double margin = 2;
-            double targetLeft = this.Left + this.ActualWidth + margin;
-            double targetTop = this.Top;
+    const double margin = 2;
+    double targetLeft = this.Left + this.ActualWidth + margin;
+    double targetTop = this.Top;
 
-            var workArea = SystemParameters.WorkArea;
+    var workArea = SystemParameters.WorkArea;
 
-            LogWindow.Left = targetLeft;
-            LogWindow.Top = targetTop;
-        }
+    LogWindow.Left = targetLeft;
+    LogWindow.Top = targetTop;
+}
+
 
     }
 }

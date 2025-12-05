@@ -69,7 +69,7 @@
             </Border >
 
             <!--  контейнер меню  -->
-            <StackPanel x:Name="Menu" Visibility="Collapsed"
+            <StackPanel x:Name="Menu" Visibility="Visible"
                         d:Visibility="Visible"
                  Grid.Column="0" Grid.Row="1"
                  Grid.RowSpan="3" Margin="0,0,0,0"  >

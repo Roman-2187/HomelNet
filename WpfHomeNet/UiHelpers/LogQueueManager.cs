@@ -8,19 +8,18 @@ namespace WpfHomeNet.UiHelpers
     /// <summary>
     /// менеджер  посимвольного вывода логов в окно
     /// </summary>
+
+
+
     public class LogQueueManager : IDisposable
     {
         private readonly ConcurrentQueue<(LogLevel level, string message, LogColor color)> _logQueue = new();
         private bool _isProcessing;
         private readonly LogWindow _logWindow;
         private readonly CancellationTokenSource _cts = new();
-        private readonly int _typingDelayMs; // Настраиваемая задержка
+        private readonly int _typingDelayMs;
+        private bool _isReady = false; // Флаг готовности
 
-        /// <summary>
-        /// Инициализирует менеджер логов с заданной задержкой анимации.
-        /// </summary>
-        /// <param name="logWindow">Окно для вывода логов</param>
-        /// <param name="typingDelayMs">Задержка между символами в мс (по умолчанию 30)</param>
         public LogQueueManager(LogWindow logWindow, int typingDelayMs = 30)
         {
             _logWindow = logWindow ?? throw new ArgumentNullException(nameof(logWindow));
@@ -29,8 +28,13 @@ namespace WpfHomeNet.UiHelpers
                 throw new ArgumentOutOfRangeException(nameof(typingDelayMs), "Задержка должна быть неотрицательной");
 
             _typingDelayMs = typingDelayMs;
+        }
 
-            StartProcessing();
+        // Метод для установки готовности
+        public void SetReady()
+        {
+            _isReady = true;
+            StartProcessing(); // Запускаем обработку после установки готовности
         }
 
         public void WriteLog((string Message, LogColor Color) logEntry)
@@ -59,7 +63,10 @@ namespace WpfHomeNet.UiHelpers
             {
                 while (!_cts.IsCancellationRequested)
                 {
-                    await ProcessLogQueue();
+                    if (_isReady) // Обрабатываем только если готовы
+                    {
+                        await ProcessLogQueue();
+                    }
                     await Task.Delay(10);
                 }
             }
@@ -81,7 +88,6 @@ namespace WpfHomeNet.UiHelpers
                 {
                     string currentText = "";
 
-                    // Посимвольный вывод с настраиваемой задержкой
                     foreach (char c in logEntry.message)
                     {
                         currentText += c;
@@ -91,7 +97,6 @@ namespace WpfHomeNet.UiHelpers
                             await Task.Delay(_typingDelayMs);
                     }
 
-                    // Добавляем перенос строки, если его нет в конце сообщения
                     if (!logEntry.message.EndsWith(Environment.NewLine))
                     {
                         await _logWindow.AddLog(
@@ -116,4 +121,4 @@ namespace WpfHomeNet.UiHelpers
         }
     }
 }
- 
+

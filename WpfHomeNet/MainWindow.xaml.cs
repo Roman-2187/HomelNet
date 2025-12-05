@@ -33,7 +33,17 @@ namespace WpfHomeNet
         private ILogger Logger => _logger ?? throw new InvalidOperationException("_logger не инициализирован"); 
         private ILogger? _logger;
         private IStatusUpdater Status =>  _status ?? throw new InvalidOperationException("_status не инициализирован");
-        private IStatusUpdater? _status; 
+        private IStatusUpdater? _status;       
+        
+        /// <summary>
+        ///  авторизация ввода для проверки существования  email 
+        /// </summary>
+        private string SavedEmail => _savedEmail ?? throw new InvalidOperationException("_savedEmail; не инициализирован");
+
+        private string? _savedEmail;        
+        private AuthManager AuthManager => _authManager ?? throw new InvalidOperationException("AuthManager? _authManager; не инициализирован");
+        private  AuthManager? _authManager;
+
         private DbConnection? _connection;
         private DBInitializer? _databaseInitializer;
         private ISchemaProvider? _schemaProvider;
@@ -43,7 +53,8 @@ namespace WpfHomeNet
         private ISchemaAdapter? _schemaAdapter;
         private LogQueueManager? _logQueueManager;
         private UserRepository? _userRepository;
-        private  AuthManager _authManager;
+        bool pause;
+        
         #endregion
 
 

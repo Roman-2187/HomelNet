@@ -2,15 +2,9 @@
 
 namespace WpfHomeNet.UiHelpers
 {
-    public class AuthManager
+    public class AuthManager(UserService userService)
     {
-        private readonly UserService _userService;
-        
-
-        public AuthManager(UserService userService)
-        {
-            _userService = userService;
-        }
+        private readonly UserService _userService = userService;
 
         // Этап 1: Проверка email
         public async Task<bool> ValidateEmailAsync(string email)
@@ -37,10 +31,7 @@ namespace WpfHomeNet.UiHelpers
         public bool IsValidEmailFormat(string email)
         {
             return new System.Text.RegularExpressions.Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$").IsMatch(email);
-        }
-
-        
-
+        }        
     }
 
 
