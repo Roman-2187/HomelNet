@@ -1,4 +1,4 @@
-﻿using HomeNetCore.Services;
+﻿using HomeNetCore.Services.UsersServices;
 
 namespace WpfHomeNet.UiHelpers
 {

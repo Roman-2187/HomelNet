@@ -2,7 +2,6 @@
 using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Helpers.Exceptions;
 using HomeNetCore.Models;
-using Microsoft.Data.SqlClient;
 using System.Data.Common;
 
 

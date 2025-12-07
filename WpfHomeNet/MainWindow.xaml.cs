@@ -4,7 +4,7 @@ using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Data.Repositories;
 using HomeNetCore.Data.Schemes;
 using HomeNetCore.Helpers;
-using HomeNetCore.Services;
+using HomeNetCore.Services.UsersServices;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -13,7 +13,7 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using WpfHomeNet.UiHelpers;
 using WpfHomeNet.ViewModels;
-  
+
 namespace WpfHomeNet
 {
     

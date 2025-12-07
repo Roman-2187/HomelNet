@@ -2,7 +2,7 @@
 using HomeNetCore.Data.Repositories;
 using HomeNetCore.Helpers.Exceptions;
 using HomeNetCore.Models;
-namespace HomeNetCore.Services
+namespace HomeNetCore.Services.UsersServices
 {
     public class UserService(UserRepository repo, ILogger logger)
     {
@@ -169,5 +169,10 @@ namespace HomeNetCore.Services
         }
 
     }
+
+
+
+
+
 
 }

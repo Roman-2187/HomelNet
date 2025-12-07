@@ -34,14 +34,6 @@ namespace WpfHomeNet.Converters
             => throw new NotImplementedException();
     }
 
-
-
-
-
-
-
-
-
 }
 
 

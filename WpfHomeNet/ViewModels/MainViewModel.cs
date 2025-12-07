@@ -1,6 +1,6 @@
 ﻿using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Models;
-using HomeNetCore.Services;
+using HomeNetCore.Services.UsersServices;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
