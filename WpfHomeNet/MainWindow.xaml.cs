@@ -17,10 +17,8 @@ namespace WpfHomeNet
     
     public partial class MainWindow : Window
     {
-
-
-    #region Поля и переменные
-    private static readonly string dbPath = DatabasePathHelper.GetDatabasePath("home_net.db");
+         #region Поля и переменные
+        private static readonly string dbPath = DatabasePathHelper.GetDatabasePath("home_net.db");
         private readonly string _connectionString = $"Data Source={dbPath}";
         public LogWindow LogWindow => _logWindow ?? throw new InvalidOperationException("_logWindow не инициализирован");
         public LogWindow? _logWindow;

@@ -1,34 +1,63 @@
-﻿using HomeNetCore.Data.Enums;
-using HomeNetCore.Data.Interfaces;
+﻿using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Services;
 using HomeNetCore.Services.UsersServices;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
-using WpfHomeNet.ViewModels.WpfHomeNet;
 
 namespace WpfHomeNet.ViewModels
 {
     public class RegistrationViewModel : INotifyPropertyChanged
     {
+        #region поля и переменные
         private readonly RegisterService _registerService;
-        private readonly IUserRepository _userRepository;
+        private readonly IUserRepository? _userRepository;
 
-        // Свойство с полной моделью (как обсуждали)
-        public CreateUserInput UserData { get; set; } = new CreateUserInput();
+        public CreateUserInput UserData { get; set; } = new();
+        public ICommand RegisterCommand { get; }
+        public ICommand CancelCommand { get; }
+        public ICommand ToggleRegistrationCommand { get; }
 
-        private RelayCommand _registerCommand;
-        public ICommand RegisterCommand => _registerCommand;
-
-        public ICommand ToggleRegistrationCommand { get; private set; }
-
-
-        private RelayCommand _cancelCommand;
-        public ICommand CancelCommand => _cancelCommand;
+        #endregion
 
 
+        public RegistrationViewModel(IUserRepository userRepository)
+        {
+            _userRepository = userRepository;
+            _registerService = new RegisterService(_userRepository);
 
+            RegisterCommand = new RelayCommand(
+                execute: async (obj) => await ExecuteRegisterCommand(),
+                canExecute: (obj) => true
+            );
+
+            CancelCommand = new RelayCommand(
+                execute: (obj) =>
+                {
+                    ResetRegistrationForm();
+                    ControlVisibility = Visibility.Collapsed;
+                },
+                canExecute: (obj) => true
+            );
+
+            ToggleRegistrationCommand = new RelayCommand(
+                execute: async (parameter) =>
+                {
+                    if (!IsRegistrationComplete)
+                        await ExecuteRegisterCommand();
+                    else
+                    {
+                        ResetRegistrationForm();
+                        ControlVisibility = Visibility.Collapsed;
+                    }
+                },
+                canExecute: (parameter) => !IsRegistrationComplete || true
+            );
+        }
+
+
+        #region свойсва  управления регистрацией
 
         private bool _isRegistrationComplete;
         public bool IsRegistrationComplete
@@ -37,22 +66,19 @@ namespace WpfHomeNet.ViewModels
             private set => SetField(ref _isRegistrationComplete, value);
         }
 
-
         private Visibility _controlVisibility = Visibility.Collapsed;
         public Visibility ControlVisibility
         {
             get => _controlVisibility;
-            set => SetField(ref _controlVisibility, value); 
+            set => SetField(ref _controlVisibility, value);
         }
 
-
-        private string _statusMessage;
+        private string _statusMessage = string.Empty;
         public string StatusMessage
         {
             get => _statusMessage;
             set => SetField(ref _statusMessage, value);
         }
-
 
         private string _registerButtonText = "Зарегистрироваться";
         public string RegisterButtonText
@@ -61,148 +87,70 @@ namespace WpfHomeNet.ViewModels
             private set => SetField(ref _registerButtonText, value);
         }
 
+        private bool _areFieldsEnabled = true;
+        public bool AreFieldsEnabled
+        {
+            get => _areFieldsEnabled;
+            private set => SetField(ref _areFieldsEnabled, value);
+        }
+
+        private IReadOnlyDictionary<TypeField, ValidationResult> _validationResults = new Dictionary<TypeField, ValidationResult>();
+        public IReadOnlyDictionary<TypeField, ValidationResult> ValidationResults
+        {
+            get => _validationResults;
+            private set => SetField(ref _validationResults, value);
+        }
+
+        #endregion
+
+
+
+        #region методы формы регистрации
+
+        public void UpdateValidation(IEnumerable<ValidationResult> results)
+        {
+            ValidationResults = results.ToDictionary(r => r.Field, r => r);
+        }
+
         private void ResetRegistrationForm()
         {
-            // Очищаем поля ввода
-            UserData = new CreateUserInput(); // или обнуляем свойства вручную
-
-            // Сбрасываем сообщения и состояния валидации
+            UserData = new();
             StatusMessage = string.Empty;
-            EmailMessage = string.Empty;
-            PasswordMessage = string.Empty;
-            NameMessage = string.Empty;
-            PhoneMessage = string.Empty;
-
-            EmailValidationState = ValidationState.None;
-            PasswordValidationState = ValidationState.None;
-            NameValidationState = ValidationState.None;
-            PhoneValidationState = ValidationState.None;
-
-            // Включаем поля
+            ValidationResults = new Dictionary<TypeField, ValidationResult>();
             AreFieldsEnabled = true;
-
-            // Возвращаем текст кнопки
             RegisterButtonText = "Зарегистрироваться";
-
-            // Снимаем флаг завершения
             IsRegistrationComplete = false;
         }
 
-
-        public RegistrationViewModel(IUserRepository userRepository)
-        {
-            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
-            _registerService = new RegisterService(_userRepository);
-
-            // Внутренняя команда (как было)
-            _registerCommand = new RelayCommand(
-                execute: async (obj) => await ExecuteRegisterCommand(),
-                canExecute: (obj) => true
-            );
-
-
-
-            // В конструкторе:
-            _cancelCommand = new RelayCommand(
-                execute: (obj) =>
-                {
-                    // Сбрасываем все состояния
-                    ResetRegistrationForm();
-
-                    // Скрываем контрол (если нужно)
-                    ControlVisibility = Visibility.Collapsed;
-                },
-                canExecute: (obj) => true
-            );
-
-            ToggleRegistrationCommand = new RelayCommand(
-      execute: async (parameter) =>
-      {
-          if (!IsRegistrationComplete)
-          {
-              // Первый режим: выполняем регистрацию
-              await ExecuteRegisterCommand();
-          }
-          else
-          {
-              // Второй режим: кнопка "Выйти"
-              ResetRegistrationForm(); // Сброс формы
-              ControlVisibility = Visibility.Collapsed; // Скрываем контрол
-          }
-      },
-      canExecute: (parameter) =>
-      {
-          if (!IsRegistrationComplete)
-              return RegisterCommand.CanExecute(null);
-          return true; // После регистрации всегда можно выйти
-      }
-  );
-        }
-
-
         private async Task ExecuteRegisterCommand()
         {
-            
+            StatusMessage = string.Empty;
+            ValidationResults = new Dictionary<TypeField, ValidationResult>();
+
             try
             {
-                StatusMessage = string.Empty;
-                EmailMessage = string.Empty;
-                PasswordMessage = string.Empty;
-                NameMessage = string.Empty;
-                PhoneMessage = string.Empty;
-
                 var (isSuccess, messages) = await _registerService.RegisterUserAsync(UserData);
-
-                    foreach (var result in messages)
-                    {
-                        switch (result.Field)
-                        {
-                            case TypeField.EmailType:
-                                EmailMessage = result.Message;
-                                EmailValidationState = result.State;
-                                break;
-
-                            case TypeField.PasswordType:
-                                PasswordMessage = result.Message;
-                                PasswordValidationState = result.State;
-                                break;
-
-                            case TypeField.NameType:
-                                NameMessage = result.Message;
-                                NameValidationState = result.State;
-                                break;
-
-                            case TypeField.PhoneType:
-                                PhoneMessage = result.Message;
-                                PhoneValidationState = result.State;
-                                break;
-                        }
-                    }
-
+                ValidationResults = messages.ToDictionary(r => r.Field, r => r);
 
                 if (isSuccess)
-                { 
+                {
                     StatusMessage = "Вы успешно зарегистрированы";
-
                     AreFieldsEnabled = false;
-
-                    RegisterButtonText = "Выйти";
-
                     IsRegistrationComplete = true;
-
+                    RegisterButtonText = "Выйти";
                 }
-
-                else StatusMessage = "есть ошибки в полях"; 
-               
+                else
+                {
+                    StatusMessage = "Есть ошибки в полях";
+                }
             }
             catch (Exception ex)
             {
-                // Обработка критических ошибок (например, потеря соединения)
-                StatusMessage = $"При регистрации произошла ошибка {ex.Message} ";
-
+                StatusMessage = $"При регистрации произошла ошибка: {ex.Message}";
                 AreFieldsEnabled = true;
             }
         }
+
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -214,81 +162,10 @@ namespace WpfHomeNet.ViewModels
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
             }
         }
-
-
-        #region свойства результов валидации
-
-
-        private bool _areFieldsEnabled = true;
-        public bool AreFieldsEnabled
-        {
-            get => _areFieldsEnabled;
-            private set => SetField(ref _areFieldsEnabled, value);
-        }
-
-
-        // Свойства для отображения ошибок в UI
-        private string _emailMessage;
-        public string EmailMessage
-        {
-            get => _emailMessage;
-            set => SetField(ref _emailMessage, value);
-        }
-
-        private string _passwordMessage;
-        public string PasswordMessage
-        {
-            get => _passwordMessage;
-            set => SetField(ref _passwordMessage, value);
-        }
-
-        private string _nameMessage;
-        public string NameMessage
-        {
-            get => _nameMessage;
-            set => SetField(ref _nameMessage, value);
-        }
-
-        private string _phoneMessage;
-        public string PhoneMessage
-        {
-            get => _phoneMessage;
-            set => SetField(ref _phoneMessage, value);
-        }
-
-
-        private ValidationState _emailValidationState;
-        public ValidationState EmailValidationState
-        {
-            get => _emailValidationState;
-            set => SetField(ref _emailValidationState, value);
-        }
-
-
-        private ValidationState _passwordValidationState;
-        public ValidationState PasswordValidationState
-        {
-            get => _passwordValidationState;
-            set => SetField(ref _passwordValidationState, value);
-        }
-
-        private ValidationState _nameValidationState;
-        public ValidationState NameValidationState
-        {
-            get => _nameValidationState;
-            set => SetField(ref _nameValidationState, value);
-        }
-
-        private ValidationState _phoneValidationState;
-        public ValidationState PhoneValidationState
-        {
-            get => _phoneValidationState;
-            set => SetField(ref _phoneValidationState, value);
-        }
+    }
 
         #endregion
 
-    }
 }
 
 

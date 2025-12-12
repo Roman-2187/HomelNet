@@ -1,7 +1,6 @@
 ﻿using HomeNetCore.Helpers.Exceptions;
 using HomeNetCore.Models;
 using HomeNetCore.Services;
-using HomeNetCore.Services.UsersServices;
 using HomeSocialNetwork;
 using System.Diagnostics;
 using System.Windows;
@@ -51,33 +50,6 @@ namespace WpfHomeNet
 
 
         #endregion
-
-
-
-
-
-
-
-        private void ShowOrHideControl()
-        {
-
-            _registrationControl.Visibility =
-          _registrationControl.Visibility == Visibility.Visible
-          ? Visibility.Collapsed
-          : Visibility.Visible;
-        }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
         private void ShowWindowLogs_Click(object sender, RoutedEventArgs e)

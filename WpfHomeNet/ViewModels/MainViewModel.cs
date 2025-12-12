@@ -6,33 +6,31 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 using WpfHomeNet.Interfaces;
-using WpfHomeNet.ViewModels;
-using WpfHomeNet.ViewModels.WpfHomeNet;
 
 namespace WpfHomeNet.ViewModels
 {
     public class MainViewModel : INotifyPropertyChanged, IStatusUpdater
     {
-
-
-       
-
         public RegistrationViewModel RegistrationViewModel { get; private set; }
 
         public event PropertyChangedEventHandler? PropertyChanged;
-
         private ObservableCollection<UserEntity> _users = new();
         private string _statusText = string.Empty;
         private readonly UserService userService;
         private readonly ILogger logger;
 
-        public MainViewModel(UserService userService, ILogger logger,RegistrationViewModel registrationVm)
+        public MainViewModel
+            (
+              UserService userService,
+              ILogger logger,
+              RegistrationViewModel registrationVm
+            )
 
-        {
-            this.userService = userService;
-            this.logger = logger;
-            RegistrationViewModel = registrationVm;
-        }
+                {
+                    this.userService = userService;
+                    this.logger = logger;
+                    RegistrationViewModel = registrationVm;
+                }
 
 
 
@@ -42,11 +40,12 @@ namespace WpfHomeNet.ViewModels
             if (RegistrationViewModel != null)
             {
                 RegistrationViewModel.ControlVisibility =
-    RegistrationViewModel.ControlVisibility == Visibility.Collapsed
-        ? Visibility.Visible
-        : Visibility.Collapsed;
+                RegistrationViewModel.ControlVisibility == Visibility.Collapsed
+                ? Visibility.Visible
+                : Visibility.Collapsed;
             }
         });
+
 
         public ObservableCollection<UserEntity> Users
         {
@@ -58,6 +57,7 @@ namespace WpfHomeNet.ViewModels
                 OnPropertyChanged(nameof(Users));
             }
         }
+
 
         public string StatusText
         {
@@ -76,6 +76,8 @@ namespace WpfHomeNet.ViewModels
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
+
 
         public async Task LoadUsersAsync()
         {

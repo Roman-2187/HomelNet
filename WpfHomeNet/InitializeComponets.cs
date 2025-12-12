@@ -4,7 +4,6 @@ using HomeNetCore.Data.Repositories;
 using HomeNetCore.Helpers;
 using HomeNetCore.Models;
 using HomeNetCore.Services;
-using HomeNetCore.Services.UsersServices;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
@@ -72,21 +71,17 @@ namespace WpfHomeNet
         }
 
 
-        
-
+       
         private async Task InitializeRegistrationControlAsync()
         {
-            if (_userRepository == null)
+            if (UserRepository == null)
                 throw new InvalidOperationException("UserRepository не инициализирован!");
 
             if (_registrationViewModel == null)
                 throw new InvalidOperationException("RegistrationViewModel не инициализирована!");
-
-            // 1. Создаём контрол
+          
             _registrationControl = new RegistrationViewControl();
 
-
-            // 2. Добавляем в Grid
             MainGrid.Children.Add(_registrationControl);
             Grid.SetColumn(_registrationControl, 1);
             Grid.SetColumnSpan(_registrationControl, 4);
@@ -97,13 +92,11 @@ namespace WpfHomeNet
             _registrationControl.DataContext = _registrationViewModel;
 
             // 4. Настраиваем привязку Visibility
-            var binding = new Binding("ControlVisibility");
-            binding.Source = _registrationViewModel;
+            var binding = new Binding("ControlVisibility")
+            {
+                Source = _registrationViewModel
+            };
             _registrationControl.SetBinding(UIElement.VisibilityProperty, binding);
-
-            // 5. Отладка (можно убрать в релизе)
-            Debug.WriteLine($"Контрол зарегистрирован. DataContext: {_registrationControl.DataContext?.GetType().Name}");
-            Debug.WriteLine($"Привязка Visibility установлена. Текущее: {_registrationControl.Visibility}");
         }
 
 

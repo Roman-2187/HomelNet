@@ -38,98 +38,77 @@
             </Grid.ColumnDefinitions>
 
             <!-- EMAIL -->
-
             <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Vertical" Margin="0,0,0,10">
-               
                 <Label Content="Email:" VerticalAlignment="Center"/>
-                <TextBox Text="{Binding UserData.Email, UpdateSourceTrigger=PropertyChanged}" 
-                         BorderBrush="{Binding Path=EmailValidationState,
-                   Converter={StaticResource StateToBrushConverter}}" 
-                         IsEnabled="{Binding AreFieldsEnabled}"
-                    Margin="0,0,0,5"
-                    Padding="5">
-                  
-                </TextBox>
+                <TextBox 
+        Text="{Binding UserData.Email, UpdateSourceTrigger=PropertyChanged}"
+        BorderBrush="{Binding ValidationResults[EmailType].State, Converter={StaticResource StateToBrushConverter}}"
+        IsEnabled="{Binding AreFieldsEnabled}"
+        Margin="0,0,0,5"
+        Padding="5"/>
                 <Label
-                    Content="{Binding EmailMessage}"
-                    Foreground="{Binding Path=EmailValidationState,
-                   Converter={StaticResource StateToBrushConverter}}"
-                    FontSize="11"
-                    HorizontalAlignment="Center"                                              >
-                  
-                </Label>
+        Content="{Binding ValidationResults[EmailType].Message}"
+        Foreground="{Binding ValidationResults[EmailType].State, Converter={StaticResource StateToBrushConverter}}"
+        FontSize="11"
+        HorizontalAlignment="Center"/>
             </StackPanel>
 
-
-
             <!-- PASSWORD -->
-            
-            
             <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Vertical" Margin="0,0,0,10">
-                
-
-                <Label  Content="Пароль:" VerticalAlignment="Center"/>
-               
-                     <TextBox
-                x:Name="passwordTextBox"   IsEnabled="{Binding AreFieldsEnabled}"
-                Text="{Binding UserData.Password, UpdateSourceTrigger=PropertyChanged}"
-                     BorderBrush="{Binding Path=PasswordValidationState,
-                     Converter={StaticResource StateToBrushConverter}}"
-                Margin="0,0,0,5"
-                Padding="5"/>
-                    
-               
+                <Label Content="Пароль:" VerticalAlignment="Center"/>
+                <TextBox
+        Text="{Binding UserData.Password, UpdateSourceTrigger=PropertyChanged}"
+        BorderBrush="{Binding ValidationResults[PasswordType].State, Converter={StaticResource StateToBrushConverter}}"
+        IsEnabled="{Binding AreFieldsEnabled}"
+        Margin="0,0,0,5"
+        Padding="5"/>
                 <Label
-                Content="{Binding PasswordMessage}"
-                 Foreground="{Binding Path=PasswordValidationState,
-                 Converter={StaticResource StateToBrushConverter}}"
-                FontSize="11"
-                HorizontalAlignment="Center"
-               />
+        Content="{Binding ValidationResults[PasswordType].Message}"
+        Foreground="{Binding ValidationResults[PasswordType].State, Converter={StaticResource StateToBrushConverter}}"
+        FontSize="11"
+        HorizontalAlignment="Center"/>
             </StackPanel>
 
             <!-- USER NAME -->
-            
             <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Vertical" Margin="0,0,0,10">
-               
-                <Label  Content="Имя пользователя:" VerticalAlignment="Center"/>
-                <TextBox Text="{Binding UserData.UserName, UpdateSourceTrigger=PropertyChanged}"
-                BorderBrush="{Binding Path=NameValidationState,
-                           Converter={StaticResource StateToBrushConverter}}"  IsEnabled="{Binding AreFieldsEnabled}"
-                Margin="0,0,0,5"
-                Padding="5"/>
-                
+                <Label Content="Имя пользователя:" VerticalAlignment="Center"/>
+                <TextBox
+        Text="{Binding UserData.UserName, UpdateSourceTrigger=PropertyChanged}"
+        BorderBrush="{Binding ValidationResults[NameType].State, Converter={StaticResource StateToBrushConverter}}"
+        IsEnabled="{Binding AreFieldsEnabled}"
+        Margin="0,0,0,5"
+        Padding="5"/>
                 <Label
-                Content="{Binding NameMessage}"
-                 Foreground="{Binding Path=NameValidationState,
-                           Converter={StaticResource StateToBrushConverter}}"
-                FontSize="11"
-                HorizontalAlignment="Center"
-                />
+        Content="{Binding ValidationResults[NameType].Message}"
+        Foreground="{Binding ValidationResults[NameType].State, Converter={StaticResource StateToBrushConverter}}"
+        FontSize="11"
+        HorizontalAlignment="Center"/>
             </StackPanel>
 
             <!-- PHONE -->
-           
             <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Vertical" Margin="0,0,0,10">
-               
-                <Label  Content="Телефон:" VerticalAlignment="Center"/>
+                <Label Content="Телефон:" VerticalAlignment="Center"/>
                 <TextBox
-                Text="{Binding UserData.PhoneNumber, UpdateSourceTrigger=PropertyChanged}"
-                Margin="0,0,0,5" IsEnabled="{Binding AreFieldsEnabled}"
-                Padding="5" BorderBrush="{Binding Path=PhoneValidationState,
-                          Converter={StaticResource StateToBrushConverter}}"/>
-
+        Text="{Binding UserData.PhoneNumber, UpdateSourceTrigger=PropertyChanged}"
+        BorderBrush="{Binding ValidationResults[PhoneType].State, Converter={StaticResource StateToBrushConverter}}"
+        IsEnabled="{Binding AreFieldsEnabled}"
+        Margin="0,0,0,5"
+        Padding="5"/>
                 <Label
-                Content="{Binding PhoneMessage}"
-                Foreground="{Binding Path=PhoneValidationState,
-                        Converter={StaticResource StateToBrushConverter}}"  
-              
-                FontSize="11"
-                HorizontalAlignment="Center"
-                />
+        Content="{Binding ValidationResults[PhoneType].Message}"
+        Foreground="{Binding ValidationResults[PhoneType].State, Converter={StaticResource StateToBrushConverter}}"
+        FontSize="11"
+        HorizontalAlignment="Center"/>
             </StackPanel>
-            
-             <Label Grid.Row="4" 
+
+
+
+
+
+
+
+
+            <Label Grid.Row="4" 
                     Content="{Binding StatusMessage}" />
 
             <!-- BUTTONS -->
