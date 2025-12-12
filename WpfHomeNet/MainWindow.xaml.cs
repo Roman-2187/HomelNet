@@ -17,7 +17,7 @@ namespace WpfHomeNet
     
     public partial class MainWindow : Window
     {
-         #region Поля и переменные
+        #region Поля и переменные
         private static readonly string dbPath = DatabasePathHelper.GetDatabasePath("home_net.db");
         private readonly string _connectionString = $"Data Source={dbPath}";
         public LogWindow LogWindow => _logWindow ?? throw new InvalidOperationException("_logWindow не инициализирован");
@@ -40,16 +40,13 @@ namespace WpfHomeNet
 
         private RegistrationViewControl _registrationControl;
 
-
         private DbConnection? _connection;
         private DBInitializer? _databaseInitializer;
         private ISchemaProvider? _schemaProvider;
         private ISchemaSqlInitializer? _schemaSqlInit;
         private TableSchema? _tableSchema;
         private ISchemaUserSqlGenerator? _userSqlGen;
-        private ISchemaAdapter? _schemaAdapter;
-        
-        
+        private ISchemaAdapter? _schemaAdapter;       
         private RegistrationViewModel _registrationViewModel;
        
         
@@ -60,21 +57,16 @@ namespace WpfHomeNet
         {
             InitializeComponent();
            
-
             InitializeLogging();
 
             CenterMainAndHideLogs();
-
-
         }
 
-        
-       
+         
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {            
             try
-            {
-               
+            {       
                 await InitializeAsync(DatabaseType.SQLite);
 
                 await  InitializeRegistrationControlAsync();

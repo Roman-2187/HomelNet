@@ -57,8 +57,6 @@ namespace WpfHomeNet
             if (LogWindow.IsVisible)
             {
                 
-
-
                 this.LocationChanged -= SyncLogWindowPosition;                
                 this.SizeChanged -= SyncLogWindowPosition;
                 LogWindow.Hide();

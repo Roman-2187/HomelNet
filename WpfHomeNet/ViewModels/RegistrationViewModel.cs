@@ -1,4 +1,5 @@
-﻿using HomeNetCore.Data.Interfaces;
+﻿using HomeNetCore.Data.Enums;
+using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Services;
 using HomeNetCore.Services.UsersServices;
 using System.ComponentModel;
@@ -26,6 +27,8 @@ namespace WpfHomeNet.ViewModels
         {
             _userRepository = userRepository;
             _registerService = new RegisterService(_userRepository);
+
+            InitializeInitialHints();
 
             RegisterCommand = new RelayCommand(
                 execute: async (obj) => await ExecuteRegisterCommand(),
@@ -106,6 +109,22 @@ namespace WpfHomeNet.ViewModels
 
 
         #region методы формы регистрации
+
+
+
+
+        private void InitializeInitialHints()
+        {
+            var initialHints = new List<ValidationResult>
+    {
+        new ValidationResult(TypeField.EmailType, "Введите email", ValidationState.Info, true),
+        new ValidationResult(TypeField.PasswordType, "Пароль от 6 символов", ValidationState.Info, true),
+        new ValidationResult(TypeField.NameType, "Имя пользователя", ValidationState.Info, true),
+        new ValidationResult(TypeField.PhoneType, "Формат: +7 XXX XXX-XX-XX", ValidationState.Info, true)
+    };
+
+            UpdateValidation(initialHints);
+        }
 
         public void UpdateValidation(IEnumerable<ValidationResult> results)
         {
