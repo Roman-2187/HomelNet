@@ -12,7 +12,7 @@ namespace WpfHomeNet.ViewModels
     public class MainViewModel : INotifyPropertyChanged, IStatusUpdater
     {
         public RegistrationViewModel RegistrationViewModel { get; private set; }
-
+        public LoginViewModel LoginViewModel { get; private set; }
         public event PropertyChangedEventHandler? PropertyChanged;
         private ObservableCollection<UserEntity> _users = new();
         private string _statusText = string.Empty;
@@ -23,34 +23,71 @@ namespace WpfHomeNet.ViewModels
             (
               UserService userService,
               ILogger logger,
-              RegistrationViewModel registrationVm
+              RegistrationViewModel registrationVm,
+              LoginViewModel loginViewModel
             )
 
-                {
-                    this.userService = userService;
-                    this.logger = logger;
-                    RegistrationViewModel = registrationVm;
-                }
+        {
+            this.userService = userService;
+            this.logger = logger;
+            RegistrationViewModel = registrationVm;
+            LoginViewModel = loginViewModel;
+
+
+            RegistrationViewModel.PropertyChanged += OnChildVmPropertyChanged;
+            LoginViewModel.PropertyChanged += OnChildVmPropertyChanged;
+        }
 
 
 
 
-        public ICommand ShowRegistrationCommand => new RelayCommand((parameter) =>
+
+        public ICommand ShowRegistrationCommand => new RelayCommand(_ =>
         {
             if (RegistrationViewModel != null)
             {
                 RegistrationViewModel.ControlVisibility =
-                RegistrationViewModel.ControlVisibility == Visibility.Collapsed
-                ? Visibility.Visible
-                : Visibility.Collapsed;
+                    RegistrationViewModel.ControlVisibility == Visibility.Collapsed
+                        ? Visibility.Visible
+                        : Visibility.Collapsed;               
+                OnPropertyChanged(nameof(IsButtonsPanelEnabled));
             }
         });
+
+        public ICommand ShowLoginCommand => new RelayCommand(_ =>
+        {
+            if (LoginViewModel != null)
+            {
+                LoginViewModel.ControlVisibility =
+                    LoginViewModel.ControlVisibility == Visibility.Collapsed
+                        ? Visibility.Visible
+                        : Visibility.Collapsed;
+                OnPropertyChanged(nameof(IsButtonsPanelEnabled));
+            }
+        });
+
+
+        public bool IsButtonsPanelEnabled =>
+              !(RegistrationViewModel?.ControlVisibility == Visibility.Visible ||
+                LoginViewModel?.ControlVisibility == Visibility.Visible);
+
+
+        private void OnChildVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName is nameof(RegistrationViewModel.ControlVisibility) or
+                                   nameof(LoginViewModel.ControlVisibility))
+            {
+                OnPropertyChanged(nameof(IsButtonsPanelEnabled));
+            }
+        }
+
 
 
         public ObservableCollection<UserEntity> Users
         {
             get => _users;
-            private set
+
+            set
             {
                 if (_users == value) return;
                 _users = value;
@@ -69,6 +106,8 @@ namespace WpfHomeNet.ViewModels
                 OnPropertyChanged(nameof(StatusText));
             }
         }
+
+
 
         public void SetStatus(string message) => StatusText = message;
 

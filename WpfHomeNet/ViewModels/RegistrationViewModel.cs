@@ -1,32 +1,28 @@
 ﻿using HomeNetCore.Data.Enums;
-using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Services;
 using HomeNetCore.Services.UsersServices;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
 
 namespace WpfHomeNet.ViewModels
 {
-    public class RegistrationViewModel : INotifyPropertyChanged
+    public class RegistrationViewModel :FormViewModelBase
     {
         #region поля и переменные
         private readonly RegisterService _registerService;
-        private readonly IUserRepository? _userRepository;
-
+        private readonly UserService _userService;
         public CreateUserInput UserData { get; set; } = new();
         public ICommand RegisterCommand { get; }
         public ICommand CancelCommand { get; }
         public ICommand ToggleRegistrationCommand { get; }
-
         #endregion
 
 
-        public RegistrationViewModel(IUserRepository userRepository)
+        public RegistrationViewModel(UserService userService)
         {
-            _userRepository = userRepository;
-            _registerService = new RegisterService(_userRepository);
+           
+           _userService = userService;
+            _registerService = new RegisterService(_userService);
 
             InitializeInitialHints();
 
@@ -39,6 +35,7 @@ namespace WpfHomeNet.ViewModels
                 execute: (obj) =>
                 {
                     ResetRegistrationForm();
+                    InitializeInitialHints();
                     ControlVisibility = Visibility.Collapsed;
                 },
                 canExecute: (obj) => true
@@ -47,89 +44,38 @@ namespace WpfHomeNet.ViewModels
             ToggleRegistrationCommand = new RelayCommand(
                 execute: async (parameter) =>
                 {
-                    if (!IsRegistrationComplete)
+                    if (!IsComplete)
                         await ExecuteRegisterCommand();
                     else
                     {
                         ResetRegistrationForm();
+                        InitializeInitialHints();
                         ControlVisibility = Visibility.Collapsed;
                     }
                 },
-                canExecute: (parameter) => !IsRegistrationComplete || true
+                canExecute: (parameter) => !IsComplete || true
             );
         }
 
 
-        #region свойсва  управления регистрацией
-
-        private bool _isRegistrationComplete;
-        public bool IsRegistrationComplete
-        {
-            get => _isRegistrationComplete;
-            private set => SetField(ref _isRegistrationComplete, value);
-        }
-
-        private Visibility _controlVisibility = Visibility.Collapsed;
-        public Visibility ControlVisibility
-        {
-            get => _controlVisibility;
-            set => SetField(ref _controlVisibility, value);
-        }
-
-        private string _statusMessage = string.Empty;
-        public string StatusMessage
-        {
-            get => _statusMessage;
-            set => SetField(ref _statusMessage, value);
-        }
-
-        private string _registerButtonText = "Зарегистрироваться";
-        public string RegisterButtonText
-        {
-            get => _registerButtonText;
-            private set => SetField(ref _registerButtonText, value);
-        }
-
-        private bool _areFieldsEnabled = true;
-        public bool AreFieldsEnabled
-        {
-            get => _areFieldsEnabled;
-            private set => SetField(ref _areFieldsEnabled, value);
-        }
-
-        private IReadOnlyDictionary<TypeField, ValidationResult> _validationResults = new Dictionary<TypeField, ValidationResult>();
-        public IReadOnlyDictionary<TypeField, ValidationResult> ValidationResults
-        {
-            get => _validationResults;
-            private set => SetField(ref _validationResults, value);
-        }
-
-        #endregion
-
-
-
-        #region методы формы регистрации
-
-
-
+ 
 
         private void InitializeInitialHints()
         {
-            var initialHints = new List<ValidationResult>
-    {
-        new ValidationResult(TypeField.EmailType, "Введите email", ValidationState.Info, true),
-        new ValidationResult(TypeField.PasswordType, "Пароль от 6 символов", ValidationState.Info, true),
-        new ValidationResult(TypeField.NameType, "Имя пользователя", ValidationState.Info, true),
-        new ValidationResult(TypeField.PhoneType, "Формат: +7 XXX XXX-XX-XX", ValidationState.Info, true)
-    };
+                    var initialHints = new List<ValidationResult>
+            {
+                new(TypeField.EmailType, "Введите email например 'User@example.com'", ValidationState.Info, true),
+                new(TypeField.PasswordType, "Пароль должен содержать 8 символов  буквы и цифры", ValidationState.Info, true),
+                new(TypeField.NameType, "Имя пользователя должно содержать 3 буквы подряд", ValidationState.Info, true),
+                new(TypeField.PhoneType, "Формат: +7 XXX XXX-XX-XX", ValidationState.Info, true)
+            };
 
             UpdateValidation(initialHints);
+
+            SubmitButtonText = "Зарегистрироваться";
         }
 
-        public void UpdateValidation(IEnumerable<ValidationResult> results)
-        {
-            ValidationResults = results.ToDictionary(r => r.Field, r => r);
-        }
+        
 
         private void ResetRegistrationForm()
         {
@@ -137,12 +83,13 @@ namespace WpfHomeNet.ViewModels
             StatusMessage = string.Empty;
             ValidationResults = new Dictionary<TypeField, ValidationResult>();
             AreFieldsEnabled = true;
-            RegisterButtonText = "Зарегистрироваться";
-            IsRegistrationComplete = false;
+            SubmitButtonText = "Зарегистрироваться";
+            IsComplete = false;
         }
 
         private async Task ExecuteRegisterCommand()
         {
+
             StatusMessage = string.Empty;
             ValidationResults = new Dictionary<TypeField, ValidationResult>();
 
@@ -155,8 +102,8 @@ namespace WpfHomeNet.ViewModels
                 {
                     StatusMessage = "Вы успешно зарегистрированы";
                     AreFieldsEnabled = false;
-                    IsRegistrationComplete = true;
-                    RegisterButtonText = "Выйти";
+                    IsComplete = true;
+                    SubmitButtonText = "Выйти";
                 }
                 else
                 {
@@ -169,21 +116,8 @@ namespace WpfHomeNet.ViewModels
                 AreFieldsEnabled = true;
             }
         }
-
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        protected virtual void SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-        {
-            if (!EqualityComparer<T>.Default.Equals(field, value))
-            {
-                field = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-            }
-        }
+       
     }
-
-        #endregion
 
 }
 

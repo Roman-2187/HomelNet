@@ -56,7 +56,7 @@ namespace HomeNetCore.Services
         }
 
 
-        public async Task<UserEntity?> FindUserAsync(string email)
+        public async Task<UserEntity?> FindUserByEmailAsync(string email)
         {
             return string.IsNullOrWhiteSpace(email)
                 ? throw new ArgumentException("Email обязателен") 

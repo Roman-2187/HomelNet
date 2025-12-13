@@ -47,26 +47,26 @@ namespace WpfHomeNet
 
                 _userRepository = new UserRepository(_connection, _userSqlGen);
                 
-                _userService = new UserService(_userRepository, Logger);
+               _userService = new UserService(_userRepository, Logger);
 
 
-                // Создаём VM регистрации (ещё без контрола)
-                _registrationViewModel = new RegistrationViewModel(_userRepository);
+                
+               _registrationViewModel = new RegistrationViewModel(_userService);
+
+                _loginViewModel= new LoginViewModel(_userService);
 
                 // Создание ViewModel
-                _mainVm = new MainViewModel(UserService, Logger,_registrationViewModel);
+                _mainVm = new MainViewModel(UserService, Logger,_registrationViewModel,_loginViewModel);
             }
 
             catch (Exception ex)
             {
-                Logger?.LogError($"Инициализация завершилась с ошибкой: {ex.Message}");
+                Logger?.LogError($"Инициализация завершилась с ошибкой: {ex.Message}   stackTrace {ex.StackTrace}");
 
-                MessageBox.Show(
-                    $"Произошла критическая ошибка при инициализации: {ex.Message}",
-                    "Ошибка инициализации",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error
-                );
+                Debug.WriteLine($"Список: сообщение{ex.Message} stackTrace{ex.StackTrace}");
+
+                
+                
             }
         }
 
@@ -74,8 +74,8 @@ namespace WpfHomeNet
        
         private async Task InitializeRegistrationControlAsync()
         {
-            if (UserRepository == null)
-                throw new InvalidOperationException("UserRepository не инициализирован!");
+            if (_userService == null)
+                throw new InvalidOperationException("_userService не инициализирован!");
 
             if (_registrationViewModel == null)
                 throw new InvalidOperationException("RegistrationViewModel не инициализирована!");
@@ -84,9 +84,12 @@ namespace WpfHomeNet
 
             MainGrid.Children.Add(_registrationControl);
             Grid.SetColumn(_registrationControl, 1);
-            Grid.SetColumnSpan(_registrationControl, 4);
+            Grid.SetColumnSpan(_registrationControl, 3);
             Grid.SetRow(_registrationControl, 1);
-            Grid.SetRowSpan(_registrationControl, 5);
+            Grid.SetRowSpan(_registrationControl, 4);
+
+           
+            _registrationControl.VerticalAlignment = VerticalAlignment.Top;
 
             // 3. Назначаем DataContext
             _registrationControl.DataContext = _registrationViewModel;
@@ -97,6 +100,37 @@ namespace WpfHomeNet
                 Source = _registrationViewModel
             };
             _registrationControl.SetBinding(UIElement.VisibilityProperty, binding);
+        }
+
+
+
+        private async Task InitializeAuthenticationControlAsync()
+        {
+            if (_userService == null)
+                throw new InvalidOperationException("_userService не инициализирован!");
+
+            if (_loginViewModel == null)
+                throw new InvalidOperationException("_loginViewModel не инициализирована!");
+
+           _loginViewControl = new LoginViewControl();
+
+            MainGrid.Children.Add(_loginViewControl);
+            Grid.SetColumn(_loginViewControl, 1);
+            Grid.SetColumnSpan(_loginViewControl, 3);
+            Grid.SetRow(_loginViewControl, 1);
+            Grid.SetRowSpan(_loginViewControl,3);
+            _registrationControl.VerticalAlignment = VerticalAlignment.Top;
+           
+
+            // 3. Назначаем DataContext
+            _loginViewControl.DataContext = _loginViewModel;
+
+            // 4. Настраиваем привязку Visibility
+            var binding = new Binding("ControlVisibility")
+            {
+                Source = _loginViewModel
+            };
+            _loginViewControl.SetBinding(UIElement.VisibilityProperty, binding);
         }
 
 

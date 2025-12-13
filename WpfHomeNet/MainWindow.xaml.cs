@@ -24,22 +24,17 @@ namespace WpfHomeNet
         public LogWindow? _logWindow;
         private UserService UserService => _userService  ?? throw new InvalidOperationException("_userService не инициализирован");
         private UserService? _userService;       
-
         private MainViewModel MainVm => _mainVm?? throw new InvalidOperationException("_mainVm не инициализирован");      
         private MainViewModel? _mainVm;
         private ILogger Logger => _logger ?? throw new InvalidOperationException("_logger не инициализирован"); 
         private ILogger? _logger;
         private IStatusUpdater Status =>  _status ?? throw new InvalidOperationException("_status не инициализирован");
         private IStatusUpdater? _status;
-
         private LogQueueManager LogQueueManager=> _logQueueManager ?? throw new InvalidOperationException("_logQueueManager не инициализирован");
-        private LogQueueManager? _logQueueManager;
-
-        private IUserRepository UserRepository =>_userRepository ?? throw new InvalidOperationException("_userRepository? не инициализирован");
+        private LogQueueManager? _logQueueManager;      
         private UserRepository? _userRepository;
-
         private RegistrationViewControl _registrationControl;
-
+        private LoginViewControl _loginViewControl;
         private DbConnection? _connection;
         private DBInitializer? _databaseInitializer;
         private ISchemaProvider? _schemaProvider;
@@ -48,8 +43,7 @@ namespace WpfHomeNet
         private ISchemaUserSqlGenerator? _userSqlGen;
         private ISchemaAdapter? _schemaAdapter;       
         private RegistrationViewModel _registrationViewModel;
-       
-        
+        private LoginViewModel _loginViewModel;
         #endregion
 
 
@@ -60,6 +54,7 @@ namespace WpfHomeNet
             InitializeLogging();
 
             CenterMainAndHideLogs();
+
         }
 
          
@@ -71,6 +66,8 @@ namespace WpfHomeNet
 
                 await  InitializeRegistrationControlAsync();
 
+                await InitializeAuthenticationControlAsync();
+
                 await PostInitializeAsync();
 
                 await LoadUsersOnStartupAsync();
@@ -78,12 +75,13 @@ namespace WpfHomeNet
             catch (Exception ex)
             {
                 Logger?.LogError($"Критическая ошибка при запуске: {ex.Message}");
+
                 MessageBox.Show(
                     $"Произошла ошибка при запуске приложения: {ex.Message}",
                     "Ошибка",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
-                Close();
+               Application.Current.Shutdown();
             }
         }       
       

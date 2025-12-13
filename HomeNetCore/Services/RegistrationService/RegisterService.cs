@@ -7,14 +7,14 @@ namespace HomeNetCore.Services
 {
    
 
-    public partial class RegisterService
+    public  class RegisterService
     {
-        private readonly IUserRepository _userRepository;
+        private readonly UserService _userService;
         private readonly ValidationFormat _validateField = new();
 
-        public RegisterService(IUserRepository userRepository)
+        public RegisterService(UserService userService)
         {
-            _userRepository = userRepository;
+           _userService = userService;
         }
 
         public async Task<(bool IsSuccess, List<ValidationResult> Messages)> RegisterUserAsync(CreateUserInput userInput)
@@ -30,7 +30,7 @@ namespace HomeNetCore.Services
             // 3. Сохранение
             try
             {
-                await _userRepository.InsertUserAsync(user);
+                await _userService.AddUserAsync(user);
                 return (true, validationResults);
             }
             catch (Exception ex)
@@ -166,7 +166,7 @@ namespace HomeNetCore.Services
                     return result;
                 }
 
-                if (await _userRepository.EmailExistsAsync(email))
+                if (await _userService.CheckEmailExistsAsync(email))
                 {
                     result.State = ValidationState.Error;
                     result.Message = "Email уже зарегистрирован";

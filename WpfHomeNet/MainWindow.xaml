@@ -51,8 +51,8 @@
                 <ColumnDefinition Width="140"/>
                 <ColumnDefinition Width="50"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="150"/>
-                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="80"/>
                 <ColumnDefinition Width="40"/>
             </Grid.ColumnDefinitions>
 
@@ -89,7 +89,7 @@
            
 
             <!-- Верхний меню -->
-            <StackPanel x:Name="UpperMenu" Visibility="Visible"
+            <StackPanel x:Name="UpperMenu" Visibility="Visible" IsEnabled="{Binding IsButtonsPanelEnabled}"
                         HorizontalAlignment="Right"
                         Grid.Row="0"               
                         Grid.Column="3"                        
@@ -97,10 +97,13 @@
                         Grid.ColumnSpan="2">
                 
                 <Button MinWidth="120"   
-                         Command="{Binding ShowRegistrationCommand}" 
+                         Command="{Binding ShowRegistrationCommand}"
+                        
                        Content="Регистрация"
                        />
-                <Button Width="Auto"
+                <Button Width="Auto"                       
+                         Command="{Binding ShowLoginCommand}"
+                        
                        Content="Вход в профиль" 
                        MinWidth="120"
                        />
