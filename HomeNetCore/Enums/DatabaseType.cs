@@ -1,8 +1,8 @@
-﻿namespace HomeNetCore.Data.Enums
+﻿namespace HomeNetCore.Enums
 {
     public enum DatabaseType
     {
         SQLite,
-        PostgreSQL
+        PostGreSQL
     }
 }

@@ -11,25 +11,22 @@ namespace HomeNetCore.Services
         private readonly UserRepository _repo = repo
             ?? throw new ArgumentNullException(nameof(repo), "Repository не может быть null");
 
-        public Task<List<UserEntity>> GetAllUsersAsync()
+        public async Task<List<UserEntity>> GetAllUsersAsync()
         {
             try
-            {
-                 return Task.Run(async () =>
-                {
+            {              
                     var users = await _repo.GetAllAsync()
                     ?? throw new InvalidOperationException("Репозиторий вернул null");
                     _logger.LogInformation($"Получено {users.Count} пользователей.");
-                    return users;
-                });
-
+                    return users;              
             }
             catch (Exception ex)
             {
                  _logger.LogError("Ошибка при получении пользователей из БД", ex.Message);
                 throw;                
             }
-        }      
+        }
+        
 
         public async Task AddUserAsync(UserEntity user)
         {            

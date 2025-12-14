@@ -14,7 +14,7 @@ namespace WpfHomeNet.ViewModels
         public RegistrationViewModel RegistrationViewModel { get; private set; }
         public LoginViewModel LoginViewModel { get; private set; }
         public event PropertyChangedEventHandler? PropertyChanged;
-        private ObservableCollection<UserEntity> _users = new();
+        private ObservableCollection<UserEntity> _users = [];
         private string _statusText = string.Empty;
         private readonly UserService userService;
         private readonly ILogger logger;
@@ -32,7 +32,6 @@ namespace WpfHomeNet.ViewModels
             this.logger = logger;
             RegistrationViewModel = registrationVm;
             LoginViewModel = loginViewModel;
-
 
             RegistrationViewModel.PropertyChanged += OnChildVmPropertyChanged;
             LoginViewModel.PropertyChanged += OnChildVmPropertyChanged;

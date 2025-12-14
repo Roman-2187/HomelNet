@@ -1,5 +1,5 @@
-﻿using HomeNetCore.Data.Enums;
-using HomeNetCore.Data.Interfaces;
+﻿using HomeNetCore.Data.Interfaces;
+using HomeNetCore.Enums;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 

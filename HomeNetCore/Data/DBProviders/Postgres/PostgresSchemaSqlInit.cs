@@ -1,7 +1,7 @@
 ﻿using HomeNetCore.Data.Adapters;
-using HomeNetCore.Data.Enums;
 using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Data.Schemes;
+using HomeNetCore.Enums;
 using WpfHomeNet.Data.DBProviders.Postgres;
 
 namespace HomeNetCore.Data.DBProviders.Postgres

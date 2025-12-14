@@ -1,4 +1,4 @@
-﻿namespace HomeNetCore.Data.Enums
+﻿namespace HomeNetCore.Enums
 {
     public enum ColumnType 
     { 

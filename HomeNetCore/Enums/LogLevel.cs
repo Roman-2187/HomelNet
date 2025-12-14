@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace HomeNetCore.Data.Enums
+namespace HomeNetCore.Enums
 {
     public enum LogLevel
     {

@@ -1,6 +1,6 @@
-﻿using HomeNetCore.Data.Enums;
-using HomeNetCore.Data.Interfaces;
+﻿using HomeNetCore.Enums;
 using HomeNetCore.Models;
+using HomeNetCore.Models.InputUserData;
 using HomeNetCore.Services.UsersServices;
 
 namespace HomeNetCore.Services
@@ -51,11 +51,12 @@ namespace HomeNetCore.Services
 
         private async Task<List<ValidationResult>> ValidateInputAsync(CreateUserInput input)
         {
-            var results = new List<ValidationResult>();
-
-            results.Add(ValidatePassword(input.Password));
-            results.Add(ValidateUserName(input.UserName));
-            results.Add(ValidatePhone(input.PhoneNumber));
+            var results = new List<ValidationResult>
+            {
+                ValidatePassword(input.Password),
+                ValidateUserName(input.UserName),
+                ValidateConfirmedPassword(input.Password, input.ConfirmPassword)
+            };
 
             var emailResult = await ValidateEmailAsync(input.Email);
             results.Add(emailResult);
@@ -69,8 +70,7 @@ namespace HomeNetCore.Services
             return new UserEntity
             {
                 FirstName = input.UserName,
-                Email = input.Email,
-                PhoneNumber = input.PhoneNumber,
+                Email = input.Email,               
                 Password = input.Password
             };
         }
@@ -100,6 +100,36 @@ namespace HomeNetCore.Services
         }
 
 
+        private ValidationResult ValidateConfirmedPassword(string password, string confirmedPassword)
+        {
+            var result = new ValidationResult { Field = TypeField.ConfirmedPasswordType };
+
+            if (string.IsNullOrWhiteSpace(confirmedPassword))
+            {
+                result.State = ValidationState.Error;
+                result.Message = "пароль  не может быть пустым";
+                return result;
+            }
+
+
+            if(confirmedPassword == password)
+            {
+                result.State = ValidationState.Success;
+                result.Message = "пароли совпадают";
+                return result; 
+            }
+
+            else
+            {
+                result.State = ValidationState.Error;
+                result.Message = "пароли не совпадают";
+                return result;
+            }
+
+
+        }
+
+
         private ValidationResult ValidateUserName(string userName)
         {
             var result = new ValidationResult { Field = TypeField.NameType };
@@ -123,29 +153,7 @@ namespace HomeNetCore.Services
             return result;
         }
 
-        private ValidationResult ValidatePhone(string phone)
-        {
-            var result = new ValidationResult { Field = TypeField.PhoneType };
-
-            if (string.IsNullOrWhiteSpace(phone))
-            {
-                result.State = ValidationState.Error;
-                result.Message = "Номер телефона не может быть пустым";
-                return result;
-            }
-
-            if (!_validateField.ValidatePhoneFormat(phone))
-            {
-                result.State = ValidationState.Error;
-                result.Message = "Некорректный формат телефона (допустимо: +79991234567)";
-                return result;
-            }
-
-            result.State = ValidationState.Success;
-            result.Message = "Номер телефона принят";
-            return result;
-        }
-
+       
         private async Task<ValidationResult> ValidateEmailAsync(string email)
         {
             var result = new ValidationResult { Field = TypeField.EmailType };

@@ -1,4 +1,4 @@
-﻿using HomeNetCore.Data.Enums;
+﻿using HomeNetCore.Enums;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -19,7 +19,7 @@ namespace WpfHomeNet.Converters
                 ValidationState.None => Brushes.DarkBlue,
                 ValidationState.Success => Brushes.DarkGreen,             
                 ValidationState.Error => Brushes.Red,
-                 ValidationState.Info => Brushes.Black,             
+                 ValidationState.Info => Brushes.DarkSlateGray,             
             _ => Brushes.Gray
             } : Brushes.Transparent;
         }

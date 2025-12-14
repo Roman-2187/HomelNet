@@ -1,6 +1,6 @@
-﻿using HomeNetCore.Data.Enums;
-using HomeNetCore.Data.Interfaces;
+﻿using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Data.Schemes;
+using HomeNetCore.Enums;
 using Microsoft.Data.Sqlite;
 using Npgsql;
 using NpgsqlTypes;

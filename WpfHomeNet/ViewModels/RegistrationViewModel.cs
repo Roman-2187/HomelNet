@@ -1,4 +1,5 @@
-﻿using HomeNetCore.Data.Enums;
+﻿using HomeNetCore.Enums;
+using HomeNetCore.Models.InputUserData;
 using HomeNetCore.Services;
 using HomeNetCore.Services.UsersServices;
 using System.Windows;
@@ -67,7 +68,7 @@ namespace WpfHomeNet.ViewModels
                 new(TypeField.EmailType, "Введите email например 'User@example.com'", ValidationState.Info, true),
                 new(TypeField.PasswordType, "Пароль должен содержать 8 символов  буквы и цифры", ValidationState.Info, true),
                 new(TypeField.NameType, "Имя пользователя должно содержать 3 буквы подряд", ValidationState.Info, true),
-                new(TypeField.PhoneType, "Формат: +7 XXX XXX-XX-XX", ValidationState.Info, true)
+                new(TypeField.ConfirmedPasswordType, "Пароли должны совпадать", ValidationState.Info, true)
             };
 
             UpdateValidation(initialHints);
@@ -104,7 +105,7 @@ namespace WpfHomeNet.ViewModels
                     StatusMessage = "Вы успешно зарегистрированы";
                     AreFieldsEnabled = false;
                     IsComplete = true;
-                    SubmitButtonText = "Выйти";
+                    SubmitButtonText = "Завершить";
                 }
                 else
                 {

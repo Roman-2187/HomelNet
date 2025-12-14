@@ -10,43 +10,9 @@
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
 
 
-        <Style x:Key="ValidatedTextBoxStyle" TargetType="TextBox">
-            <Setter Property="BorderBrush" Value="Gray"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="5"/>
-            <Setter Property="Margin" Value="0,0,0,5"/>
+      
 
-
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ValidationState, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="Error">
-                    <Setter Property="BorderBrush" Value="Red"/>
-                    <Setter Property="BorderThickness" Value="2"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding ValidationState, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="Success">
-                    <Setter Property="BorderBrush" Value="Green"/>
-                    <Setter Property="BorderThickness" Value="2"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style x:Key="PasswordTextBoxStyle" TargetType="TextBox">
-            <Setter Property="Height" Value="30"/>
-            <Setter Property="Padding" Value="5"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="Gray"/>
-            <Setter Property="Background" Value="WhiteSmoke"/>
-            <Setter Property="Foreground" Value="Black"/>
-            <Setter Property="CaretBrush" Value="Black"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-
-            <Style.Triggers>
-                <Trigger Property="IsFocused" Value="True">
-                    <Setter Property="BorderBrush" Value="DodgerBlue"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-
+     
         <Style TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderBrush" Value="AntiqueWhite"/>
@@ -79,7 +45,7 @@
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="border" Property="Background" Value="#66ABC8AB"/>
                                 <Setter TargetName="contentPresenter" Property="TextElement.Foreground" Value="Black"/>
-                                <Setter TargetName="border" Property="BorderBrush" Value="LightBlue"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="DimGray"/>
                                 <Setter TargetName="border" Property="BorderThickness" Value="0.6"/>
                             </Trigger>
 
@@ -133,7 +99,7 @@
                         <Grid>
                             <!-- Внешний Border (только рамка, без градиента) -->
                           <Border  CornerRadius="8"
-                                 BorderThickness="0.8"
+                                 BorderThickness="0.65"
                                  BorderBrush="Black"
                                  Background="White">    
                                 <!-- Белый фон для всего элемента -->
@@ -141,15 +107,15 @@
                                 <!-- Контейнер для вложенных Border -->
                                 <Grid>
                                     <!-- Средний Border -->
-                                    <Border BorderThickness="1" Margin="-0.20"
+                                    <Border BorderThickness="1.1" Margin="-0.15"
                                     BorderBrush="LightBlue"
-                                    CornerRadius="8"/>
+                                    CornerRadius="7.4"/>
 
                                     <!-- Внутренний Border (с градиентом) -->
-                                    <Border Margin="0"  
+                                    <Border Margin="0.35"  
                                     BorderThickness="0.6"
                                     BorderBrush="Black" 
-                                    CornerRadius="8">
+                                    CornerRadius="7.35">
 
                                         <!-- Градиентный фон ВНУТРИ внутреннего бордера -->
                                         <Border.Background>
@@ -200,7 +166,39 @@
         </Style>
 
 
+        <Style TargetType="TextBox">
+            <Setter Property="BorderThickness" Value="1.2"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Background" Value="#66ABC8AB"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="0,8,0,8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="border"
+                      CornerRadius="5"
+                      BorderBrush="{TemplateBinding BorderBrush}"
+                      BorderThickness="{TemplateBinding BorderThickness}"
+                      Background="{TemplateBinding Background}">
+                            <Grid Margin="5,0,0,0">
+                                <ScrollViewer x:Name="PART_ContentHost"
+                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="DimGray"/>
+                                <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
 
+                </Setter.Value>
+            </Setter>
+        </Style>
 
 
         <Style x:Key="RoundedListBox" TargetType="ListBox">
@@ -228,7 +226,7 @@
                         <Border                        
                          BorderThickness="0.3"
                          BorderBrush="Black"
-                         CornerRadius="3"
+                         CornerRadius="7"
                          Background="#66ABC8AB">
                             <ContentPresenter Margin="{TemplateBinding Padding}"/>
                         </Border>

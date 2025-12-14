@@ -34,7 +34,7 @@ namespace HomeNetCore.Data.DBProviders.Sqlite
 
         public string GenerateInsert()
         {
-            // В PostgreSQL можно использовать более короткий синтаксис
+            // В PostGreSQL можно использовать более короткий синтаксис
             return $"INSERT INTO {_originalTable.TableName} ({_originalTable.InsertFields}) VALUES ({_originalTable.InsertParameters})";
         }
 
@@ -63,7 +63,7 @@ namespace HomeNetCore.Data.DBProviders.Sqlite
             return $"SELECT {_originalTable.AllFields} FROM {_originalTable.TableName}";
         }
 
-        // Дополнительные методы для PostgreSQL
+        // Дополнительные методы для PostGreSQL
         public string GenerateUpsert()
         {
             return $@"

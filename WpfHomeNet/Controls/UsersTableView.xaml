@@ -17,7 +17,7 @@
             </Grid.RowDefinitions>
 
             <!-- 1. Заголовки с внутренней рамкой -->
-            <ContentControl Style="{StaticResource InnerBorderTitleStyle}" Grid.Row="0" Margin="2" Grid.ColumnSpan="7" Padding="8">
+            <ContentControl Style="{StaticResource InnerBorderTitleStyle}" Grid.Row="0" Margin="2" Grid.ColumnSpan="7" Padding="8"  >
                 <Grid>
                     <!-- Ваши колонки и TextBlock-заголовки -->
                     <Grid.ColumnDefinitions>

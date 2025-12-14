@@ -1,5 +1,5 @@
-﻿using HomeNetCore.Data.Enums;
-using HomeNetCore.Data.Schemes;
+﻿using HomeNetCore.Data.Schemes;
+using HomeNetCore.Enums;
 
 namespace HomeNetCore.Data.Interfaces
 {

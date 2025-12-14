@@ -1,4 +1,5 @@
-﻿using HomeNetCore.Data.Enums;
+﻿using HomeNetCore.Enums;
+using HomeNetCore.Models.InputUserData;
 using HomeNetCore.Services;
 using HomeNetCore.Services.AuthenticationService;
 using HomeNetCore.Services.UsersServices;
@@ -14,7 +15,7 @@ namespace WpfHomeNet.ViewModels
         private readonly AuthenticateService _loginService;
         private readonly UserService _userService;
 
-        public AuthenticatesUserInput UserData { get; set; } = new();
+        public LoginInUserInput UserData { get; set; } = new();
         public ICommand LoginCommand { get; }
         public ICommand CancelCommand { get; }
         public RelayCommand ToggleRegistrationCommand { get; private set; }
@@ -61,10 +62,6 @@ namespace WpfHomeNet.ViewModels
                 },
                 canExecute: (parameter) => !IsComplete || true
             );
-
-
-
-
         }
 
         
@@ -74,7 +71,7 @@ namespace WpfHomeNet.ViewModels
             var initialHints = new List<ValidationResult>
             {
                 new(TypeField.EmailType, "Введите email", ValidationState.Info, true),
-                new(TypeField.PasswordType, "Пароль от 6 символов", ValidationState.Info, true)
+                new(TypeField.PasswordType, "Текущий пароль", ValidationState.Info, true)
             };          
             UpdateValidation(initialHints);
 
@@ -111,7 +108,7 @@ namespace WpfHomeNet.ViewModels
                 {
                     StatusMessage = "Вход выполнен успешно";
                     AreFieldsEnabled = false;
-                    SubmitButtonText = "Выйти";
+                    SubmitButtonText = "OK";
                     IsComplete = true;
                 }
                 else

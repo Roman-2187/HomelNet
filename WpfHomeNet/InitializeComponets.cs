@@ -1,6 +1,6 @@
 ﻿using HomeNetCore.Data;
-using HomeNetCore.Data.Enums;
 using HomeNetCore.Data.Repositories;
+using HomeNetCore.Enums;
 using HomeNetCore.Helpers;
 using HomeNetCore.Models;
 using HomeNetCore.Services;

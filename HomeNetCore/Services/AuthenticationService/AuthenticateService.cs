@@ -1,4 +1,5 @@
-﻿using HomeNetCore.Data.Enums;
+﻿using HomeNetCore.Enums;
+using HomeNetCore.Models.InputUserData;
 using HomeNetCore.Services.UsersServices;
 
 namespace HomeNetCore.Services.AuthenticationService
@@ -14,7 +15,7 @@ namespace HomeNetCore.Services.AuthenticationService
             _userService = userService;
         }
 
-        public async Task<(bool IsSuccess, List<ValidationResult> Messages)> CheckUserAsync(AuthenticatesUserInput userInput)
+        public async Task<(bool IsSuccess, List<ValidationResult> Messages)> CheckUserAsync(LoginInUserInput userInput)
         {
             var validationResults = await ValidateInputAsync(userInput);
 
@@ -25,7 +26,7 @@ namespace HomeNetCore.Services.AuthenticationService
             return (!hasCriticalErrors, validationResults);
         }
 
-        private async Task<List<ValidationResult>> ValidateInputAsync(AuthenticatesUserInput input)
+        private async Task<List<ValidationResult>> ValidateInputAsync(LoginInUserInput input)
         {
             var results = new List<ValidationResult>();
 

@@ -1,4 +1,4 @@
-﻿using HomeNetCore.Data.Enums;
+﻿using HomeNetCore.Enums;
 namespace HomeNetCore.Services.UsersServices
 {
     public class ValidationResult

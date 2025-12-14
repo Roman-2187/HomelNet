@@ -1,4 +1,4 @@
-﻿using HomeNetCore.Data.Enums;
+﻿using HomeNetCore.Enums;
 using System;
 
 namespace HomeNetCore.Data.Schemes

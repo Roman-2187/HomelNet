@@ -1,11 +1,11 @@
 ﻿using HomeNetCore.Data.Adapters;
 using HomeNetCore.Data.DBProviders.Postgres;
 using HomeNetCore.Data.DBProviders.Sqlite;
-using HomeNetCore.Data.Enums;
 using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Data.PostgreClasses;
 using HomeNetCore.Data.Schemes;
 using HomeNetCore.Data.SqliteClasses;
+using HomeNetCore.Enums;
 using Microsoft.Data.Sqlite;
 using Npgsql;
 using System.Data.Common;
@@ -33,7 +33,7 @@ namespace HomeNetCore.Data
         /// <summary>
         /// Создаёт набор сервисов для работы с указанной СУБД.
         /// </summary>
-        /// <param name="databaseType">Тип СУБД (SQLite/PostgreSQL).</param>
+        /// <param name="databaseType">Тип СУБД (SQLite/PostGreSQL).</param>
         /// <param name="tableSchema">Схема таблицы для генерации SQL.</param>
         /// <returns>Кортеж из: соединения, инициализатора, провайдера схемы, адаптера и генератора SQL.</returns>
         public (DbConnection connection,
@@ -61,7 +61,7 @@ namespace HomeNetCore.Data
                         new SqliteUserSqlGen(tableSchema, sqliteAdapter, _logger)
                     );
 
-                case DatabaseType.PostgreSQL:
+                case DatabaseType.PostGreSQL:
                     var pgConnection = new NpgsqlConnection(_connectionString);
                     var pgAdapter = new PostgresSchemaAdapter();
                     var pgSqlInit = new PostgresSchemaSqlInit(_logger, pgAdapter);

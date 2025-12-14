@@ -1,11 +1,7 @@
-﻿using HomeNetCore.Services.UsersServices;
-using System;
-using System.Collections.Generic;
+﻿using HomeNetCore.Enums;
+using HomeNetCore.Services.UsersServices;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace WpfHomeNet.ViewModels
@@ -35,17 +31,14 @@ namespace WpfHomeNet.ViewModels
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-
-
-
         private bool _isOpen;
         public bool IsOpen
         {
             get => _isOpen;
-            set => SetField(ref _isOpen, value); // Вот и вся магия!
+            set => SetField(ref _isOpen, value);
         }
 
-        // Общие свойства для всех форм
+        
         private bool _isComplete;
         public bool IsComplete
         {
