@@ -35,6 +35,16 @@ namespace WpfHomeNet.ViewModels
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
+
+
+
+        private bool _isOpen;
+        public bool IsOpen
+        {
+            get => _isOpen;
+            set => SetField(ref _isOpen, value); // Вот и вся магия!
+        }
+
         // Общие свойства для всех форм
         private bool _isComplete;
         public bool IsComplete

@@ -105,8 +105,8 @@
                     Width="Auto" MinWidth="120"/>
                 <Button
                     Content="{Binding SubmitButtonText}"
-                    Command="{Binding LoginCommand}"
-                    IsEnabled="{Binding LoginCommand.CanExecute}"
+                     Command="{Binding ToggleRegistrationCommand}"  
+                     IsEnabled="{Binding ToggleRegistrationCommand.CanExecute}"
                     Width="Auto" MinWidth="120"/>
             </StackPanel>
         </Grid>

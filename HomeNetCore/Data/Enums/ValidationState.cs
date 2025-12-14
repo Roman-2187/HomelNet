@@ -2,7 +2,9 @@
 {
     public enum ValidationState
     {
-        None, Success, Error,
+        None,
+        Success,
+        Error,
         Info
     }
 }

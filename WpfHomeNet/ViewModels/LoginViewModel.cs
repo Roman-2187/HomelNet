@@ -17,37 +17,57 @@ namespace WpfHomeNet.ViewModels
         public AuthenticatesUserInput UserData { get; set; } = new();
         public ICommand LoginCommand { get; }
         public ICommand CancelCommand { get; }
-
-       
+        public RelayCommand ToggleRegistrationCommand { get; private set; }
         #endregion
+
 
         public LoginViewModel(UserService userService)
         {
+
             ControlVisibility = Visibility.Collapsed;
            
             _userService = userService;
-            _loginService = new AuthenticateService(_userService);  SubmitButtonText = "Войти";
+            _loginService = new AuthenticateService(_userService);
 
             InitializeInitialHints();
 
+            
             LoginCommand = new RelayCommand(
-                execute: async (obj) => await ExecuteLoginCommand(),
-                canExecute: (obj) => true
-            );
+               execute: async (obj) => await ExecuteLoginCommand(),
+               canExecute: (obj) => true
+           );
 
             CancelCommand = new RelayCommand(
                 execute: (obj) =>
                 {
-                    ResetLoginForm();
+                    ResetForm();
+                    InitializeInitialHints();
                     ControlVisibility = Visibility.Collapsed;
                 },
                 canExecute: (obj) => true
             );
+
+            ToggleRegistrationCommand = new RelayCommand(
+                execute: async (parameter) =>
+                {
+                    if (!IsComplete)
+                        await ExecuteLoginCommand();
+                    else
+                    {
+                        ResetForm();
+                        InitializeInitialHints();
+                        ControlVisibility = Visibility.Collapsed;
+                    }
+                },
+                canExecute: (parameter) => !IsComplete || true
+            );
+
+
+
+
         }
 
-       
-
-        #region Методы формы входа
+        
 
         private void InitializeInitialHints()
         {
@@ -55,25 +75,27 @@ namespace WpfHomeNet.ViewModels
             {
                 new(TypeField.EmailType, "Введите email", ValidationState.Info, true),
                 new(TypeField.PasswordType, "Пароль от 6 символов", ValidationState.Info, true)
-            };
-
-
-
+            };          
             UpdateValidation(initialHints);
 
-          
+            StatusMessage = string.Empty;
+
+            AreFieldsEnabled = true;    
         }
 
-        
 
-        private void ResetLoginForm()
+
+        private void ResetForm()
         {
-            UserData = new();
+            UserData = new();       
+            OnPropertyChanged(nameof(UserData));
             StatusMessage = string.Empty;
             ValidationResults = new Dictionary<TypeField, ValidationResult>();
             AreFieldsEnabled = true;
-            SubmitButtonText = "Войти";
+            SubmitButtonText = "войти";
+           IsComplete = false;
         }
+
 
         private async Task ExecuteLoginCommand()
         {
@@ -90,6 +112,7 @@ namespace WpfHomeNet.ViewModels
                     StatusMessage = "Вход выполнен успешно";
                     AreFieldsEnabled = false;
                     SubmitButtonText = "Выйти";
+                    IsComplete = true;
                 }
                 else
                 {
@@ -101,13 +124,7 @@ namespace WpfHomeNet.ViewModels
                 StatusMessage = $"При входе произошла ошибка: {ex.Message}";
                 AreFieldsEnabled = true;
             }
-        }
-
-        #endregion
-
-       
-    }
-
-   
+        }   
+    }  
 }
 

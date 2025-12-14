@@ -52,7 +52,7 @@
                 <ColumnDefinition Width="50"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="80"/>
+                <ColumnDefinition Width="100"/>
                 <ColumnDefinition Width="40"/>
             </Grid.ColumnDefinitions>
 
@@ -65,7 +65,7 @@
                        Foreground="Black"/>
             </Border>
 
-            <!-- Контейнер меню -->
+            <!-- Контейнер админ меню -->
             <StackPanel x:Name="Menu" Visibility="Visible"
                        Grid.Column="0" Grid.Row="1"
                        Grid.RowSpan="3" Margin="0,0,0,0">
@@ -88,50 +88,48 @@
 
            
 
-            <!-- Верхний меню -->
-            <StackPanel x:Name="UpperMenu" Visibility="Visible" IsEnabled="{Binding IsButtonsPanelEnabled}"
+            <!-- Верхнее меню -->
+            <StackPanel x:Name="UpperMenu" Visibility="Visible" 
+                        IsEnabled="{Binding IsButtonsPanelEnabled}"
                         HorizontalAlignment="Right"
                         Grid.Row="0"               
                         Grid.Column="3"                        
                         Orientation="Horizontal"                        
                         Grid.ColumnSpan="2">
-                
                 <Button MinWidth="120"   
-                         Command="{Binding ShowRegistrationCommand}"
-                        
-                       Content="Регистрация"
-                       />
+                         Command="{Binding ShowRegistrationCommand}"                        
+                         Content="Регистрация" />
                 <Button Width="Auto"                       
-                         Command="{Binding ShowLoginCommand}"
-                        
-                       Content="Вход в профиль" 
-                       MinWidth="120"
-                       />
+                         Command="{Binding ShowLoginCommand}"                       
+                         Content="Вход в профиль" 
+                         MinWidth="120" />
             </StackPanel>
-
+            
+            <!-- Кнопка выхода -->
             <Button Grid.Column="5"              
                     Click="CloseButton_Click"
                     Content="×" Width="Auto"/>
 
-            <!-- Кнопка выхода -->
+            <!-- Кнопка выхода из аккаунта-->
             <Button x:Name="ButtonExit" Grid.Column="4"
                     Content="Выйти из аккаунта"
                     Visibility="Collapsed"/>
 
+            <!-- Контрол регистрации реализован в коде позади -->
 
+            <!-- Контрол входа в профиль реализован в коде позади -->
 
-           
-
-            
 
             <controls:UsersTableView x:Name="userTableView" 
-                        Visibility="Collapsed" Grid.RowSpan="2"
+                        Visibility="Collapsed"
+                        Grid.RowSpan="2"
                         Grid.ColumnSpan="6" 
                         Grid.Row="3"/>
-
+                       
             <!-- Контейнер статус бар -->
             <ContentControl
-                    Style="{StaticResource InnerBorderSolidColorStyle}" 
+                    Style="{StaticResource
+                    InnerBorderSolidColorStyle}" 
                     Padding="4"  
                     Background="#FFA4B291"
                     Grid.Row="4"

@@ -80,6 +80,7 @@ namespace WpfHomeNet.ViewModels
         private void ResetRegistrationForm()
         {
             UserData = new();
+            OnPropertyChanged(nameof(UserData));
             StatusMessage = string.Empty;
             ValidationResults = new Dictionary<TypeField, ValidationResult>();
             AreFieldsEnabled = true;

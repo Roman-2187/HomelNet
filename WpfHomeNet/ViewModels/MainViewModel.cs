@@ -49,7 +49,8 @@ namespace WpfHomeNet.ViewModels
                 RegistrationViewModel.ControlVisibility =
                     RegistrationViewModel.ControlVisibility == Visibility.Collapsed
                         ? Visibility.Visible
-                        : Visibility.Collapsed;               
+                        : Visibility.Collapsed;
+               
                 OnPropertyChanged(nameof(IsButtonsPanelEnabled));
             }
         });
@@ -61,7 +62,7 @@ namespace WpfHomeNet.ViewModels
                 LoginViewModel.ControlVisibility =
                     LoginViewModel.ControlVisibility == Visibility.Collapsed
                         ? Visibility.Visible
-                        : Visibility.Collapsed;
+                        : Visibility.Collapsed;                
                 OnPropertyChanged(nameof(IsButtonsPanelEnabled));
             }
         });
@@ -107,7 +108,7 @@ namespace WpfHomeNet.ViewModels
             }
         }
 
-
+       
 
         public void SetStatus(string message) => StatusText = message;
 

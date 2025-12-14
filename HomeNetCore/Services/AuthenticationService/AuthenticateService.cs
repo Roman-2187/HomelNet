@@ -1,14 +1,9 @@
 ﻿using HomeNetCore.Data.Enums;
 using HomeNetCore.Services.UsersServices;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace HomeNetCore.Services.AuthenticationService
 {
-   
+
     public class AuthenticateService
     {
         private readonly UserService _userService;
@@ -23,23 +18,21 @@ namespace HomeNetCore.Services.AuthenticationService
         {
             var validationResults = await ValidateInputAsync(userInput);
 
-            if (validationResults.Any(r => r.State == ValidationState.Error))
-                return (false, validationResults);
+            var hasCriticalErrors = validationResults
+                .Where(r => r.Field == TypeField.EmailType || r.Field == TypeField.PasswordType)
+                .Any(r => r.State == ValidationState.Error);
 
-            
-            var passwordMatch = await VerifyPasswordPlainTextAsync(userInput.Email, userInput.Password);
-            validationResults.Add(passwordMatch);
-
-            return (!validationResults.Any(r => r.State == ValidationState.Error), validationResults);
+            return (!hasCriticalErrors, validationResults);
         }
-
 
         private async Task<List<ValidationResult>> ValidateInputAsync(AuthenticatesUserInput input)
         {
             var results = new List<ValidationResult>();
 
             results.Add(await ValidateEmailAsync(input.Email));
-            results.Add(await ValidatePasswordFormatAsync(input.Password));
+
+            var passwordMatch = await VerifyPasswordPlainTextAsync(input.Email, input.Password);
+            results.Add(passwordMatch);
 
             return results;
         }
@@ -84,7 +77,7 @@ namespace HomeNetCore.Services.AuthenticationService
             return result;
         }
 
-        private async Task<ValidationResult> ValidatePasswordFormatAsync(string password)
+        private async Task<ValidationResult> VerifyPasswordPlainTextAsync(string email, string password)
         {
             var result = new ValidationResult { Field = TypeField.PasswordType };
 
@@ -97,32 +90,6 @@ namespace HomeNetCore.Services.AuthenticationService
                     return result;
                 }
 
-                if (!_validateField.ValidatePasswordFormat(password))
-                {
-                    result.State = ValidationState.Error;
-                    result.Message = "Пароль должен содержать минимум 8 символов, буквы и цифры";
-                    return result;
-                }
-
-                result.State = ValidationState.Success;
-                result.Message = "Формат пароля корректен";
-            }
-            catch (Exception ex)
-            {
-                result.State = ValidationState.Error;
-                result.Message = ex.Message;
-            }
-
-            return result;
-        }
-
-        
-        private async Task<ValidationResult> VerifyPasswordPlainTextAsync(string email, string password)
-        {
-            var result = new ValidationResult { Field = TypeField.PasswordType };
-
-            try
-            {
                 var user = await _userService.GetUserByEmailAsync(email);
                 if (user == null)
                 {
@@ -131,7 +98,6 @@ namespace HomeNetCore.Services.AuthenticationService
                     return result;
                 }
 
-              
                 if (user.Password == password)
                 {
                     result.State = ValidationState.Success;
