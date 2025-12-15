@@ -188,12 +188,7 @@ namespace WpfHomeNet
 
 
 
-        private void CenterMainAndHideLogs()
-        {
-            this.Left = 200;
-            this.Top = 200;
-            btnLogs.Content = "Показать логи";
-        }
+      
 
     }
 }

@@ -27,14 +27,13 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
                   
                
             </Grid.RowDefinitions>
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-               
             </Grid.ColumnDefinitions> 
             
             <!-- USER NAME -->
@@ -104,10 +103,9 @@
                 <TextBox
                 Text="{Binding UserData.ConfirmPassword, UpdateSourceTrigger=PropertyChanged}"
                 BorderBrush="{Binding ValidationResults[ConfirmedPasswordType].State, Converter={StaticResource StateToBrushConverter}}"
-                IsEnabled="{Binding AreFieldsEnabled}"              
+                IsEnabled="{Binding AreFieldsEnabled}"/>              
                 
-                />
-                
+                               
                 <Label
                 Content="{Binding ValidationResults[ConfirmedPasswordType].Message}"
                 Foreground="{Binding ValidationResults[ConfirmedPasswordType].State, Converter={StaticResource StateToBrushConverter}}"
@@ -116,31 +114,45 @@
             </StackPanel>
 
 
-
-            <Label Grid.Row="4" Content="{Binding StatusMessage}" />
-                    
-
-            <!-- BUTTONS -->
-            <StackPanel
-                Grid.Row="5"
-                Grid.ColumnSpan="2"
+            <Grid Grid.Row="4" >
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                
+                 <Label Grid.Column="0"
+                  Content="{Binding StatusMessage}"
+                  MinWidth="50"
+                        VerticalContentAlignment="Center"
+                  HorizontalContentAlignment="Left"/>
+                       
+                
+                <!-- BUTTONS -->
+                <StackPanel Grid.Column="1"                            
                 Orientation="Horizontal"
                 HorizontalAlignment="Right"
-                Margin="0,0,0,5">
-               
+                >
+                    
                 <Button
                 Content="Отмена"
                 Command="{Binding CancelCommand}"
-                Margin="0,0,0,0"  MinWidth="120"
+                MinWidth="120"
                />
 
                 <Button MinWidth="120"
                 Content="{Binding SubmitButtonText}"
                 Command="{Binding ToggleRegistrationCommand}"  
-                IsEnabled="{Binding ToggleRegistrationCommand.CanExecute}"
+                IsEnabled="{Binding ToggleRegistrationCommand.CanExecute}"/>
                
-                />
+                
             </StackPanel>
+                
+                
+                
+            </Grid>
+
+
+          
         </Grid>
     </ContentControl>
 

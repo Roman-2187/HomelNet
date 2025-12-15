@@ -56,15 +56,15 @@
                     Text="{Binding UserData.Password, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                     BorderBrush="{Binding ValidationResults[PasswordType].State, Converter={StaticResource StateToBrushConverter}}"
                     IsEnabled="{Binding AreFieldsEnabled}"
-                    Margin="0,0,0,5"
+                    Margin="0,0,0,5" />
                      
                    
-                    />
+                   
                 <Label
                     Content="{Binding ValidationResults[PasswordType].Message}"
                     Foreground="{Binding ValidationResults[PasswordType].State, Converter={StaticResource StateToBrushConverter}}"
-                    FontSize="11"
-                    HorizontalAlignment="Center"/>
+                    FontSize="10"
+                    HorizontalContentAlignment="Center"/>
             </StackPanel>
 
             <Label Grid.Row="2" Content="{Binding StatusMessage}" />
@@ -76,11 +76,11 @@
                 Grid.ColumnSpan="2"
                 Orientation="Horizontal"
                 HorizontalAlignment="Right"
-                Margin="0,5,0,0">
+                >
                 <Button
                     Content="Отмена"
                     Command="{Binding CancelCommand}"
-                    Margin="0,0,10,0"
+                    
                     Width="Auto" MinWidth="120"/>
                 <Button
                     Content="{Binding SubmitButtonText}"

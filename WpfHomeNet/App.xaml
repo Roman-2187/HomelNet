@@ -5,13 +5,9 @@
    
 
     <Application.Resources>
-        
-        
+       
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
-
-
-      
-
+        
      
         <Style TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>

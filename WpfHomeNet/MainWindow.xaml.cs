@@ -53,7 +53,7 @@ namespace WpfHomeNet
            
             InitializeLogging();
 
-            CenterMainAndHideLogs();
+          
 
         }
 
