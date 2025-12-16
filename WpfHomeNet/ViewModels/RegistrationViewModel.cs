@@ -12,16 +12,30 @@ namespace WpfHomeNet.ViewModels
         #region поля и переменные
         private readonly RegisterService _registerService;
         private readonly UserService _userService;
+
+        private List<ValidationResult>? _validationResult;
+
+        public List<ValidationResult> ValidationResult
+        {
+            get => _validationResult ?? throw new InvalidOperationException("пустая коллекция");
+            set => _validationResult = value;
+        }
+
         public CreateUserInput UserData { get; set; } = new();
         public ICommand RegisterCommand { get; }
         public ICommand CancelCommand { get; }
         public ICommand ToggleRegistrationCommand { get; }
+
+
+        
+
+       
+       
         #endregion
 
 
         public RegistrationViewModel(UserService userService)
-        {
-           
+        {          
            _userService = userService;
             _registerService = new RegisterService(_userService);
 
@@ -37,11 +51,9 @@ namespace WpfHomeNet.ViewModels
                 {
                     ResetRegistrationForm();
                     InitializeInitialHints();
-                    ControlVisibility = Visibility.Collapsed;
-                   
-                   
-                },
-                canExecute: (obj) => true
+                    ControlVisibility = Visibility.Collapsed;                                     
+                }
+                
             );
 
             ToggleRegistrationCommand = new RelayCommand(
@@ -99,10 +111,11 @@ namespace WpfHomeNet.ViewModels
 
             try
             {
-                var (isSuccess, messages) = await _registerService.RegisterUserAsync(UserData);
-                ValidationResults = messages.ToDictionary(r => r.Field, r => r);
+                 (IsComplete,ValidationResult) = await _registerService.RegisterUserAsync(UserData);
 
-                if (isSuccess)
+                 ValidationResults = ValidationResult.ToDictionary(r => r.Field, r => r);
+
+                if (IsComplete)
                 {
                     StatusMessage = "Вы успешно зарегистрированы";
                     AreFieldsEnabled = false;

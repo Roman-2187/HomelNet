@@ -9,7 +9,8 @@
 
 
 
-    <StackPanel x:Name="Menu" Visibility="Visible"  IsEnabled="{Binding IsButtonsPanelEnabled}"> 
+    <StackPanel x:Name="Menu" Visibility="Visible" 
+                IsEnabled="{Binding IsButtonsPanelEnabled}"> 
             
              <Button Content="User Profile"
                Command="{Binding ToggleFormVisibilityCommand}"

@@ -19,10 +19,8 @@ namespace HomeNetCore.Services.AuthenticationService
         {
             var validationResults = await ValidateInputAsync(userInput);
 
-            var hasCriticalErrors = validationResults
-                .Where(r => r.Field == TypeField.EmailType || r.Field == TypeField.PasswordType)
-                .Any(r => r.State == ValidationState.Error);
-
+            var hasCriticalErrors = validationResults.Any(r => r.State == ValidationState.Error);
+                              
             return (!hasCriticalErrors, validationResults);
         }
 

@@ -25,9 +25,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
-               
             </Grid.RowDefinitions>
-
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
@@ -38,9 +36,7 @@
                 <TextBox
                     Text="{Binding UserData.Email, UpdateSourceTrigger=PropertyChanged}"
                     BorderBrush="{Binding ValidationResults[EmailType].State, Converter={StaticResource StateToBrushConverter}}"
-                    IsEnabled="{Binding AreFieldsEnabled}"
-                    
-                    />
+                    IsEnabled="{Binding AreFieldsEnabled}" />
                 <Label
                     Content="{Binding ValidationResults[EmailType].Message}"
                     Foreground="{Binding ValidationResults[EmailType].State, Converter={StaticResource StateToBrushConverter}}"
@@ -57,16 +53,14 @@
                     BorderBrush="{Binding ValidationResults[PasswordType].State, Converter={StaticResource StateToBrushConverter}}"
                     IsEnabled="{Binding AreFieldsEnabled}"
                     Margin="0,0,0,5" />
-                     
-                   
-                   
                 <Label
                     Content="{Binding ValidationResults[PasswordType].Message}"
                     Foreground="{Binding ValidationResults[PasswordType].State, Converter={StaticResource StateToBrushConverter}}"
                     FontSize="10"
                     HorizontalContentAlignment="Center"/>
             </StackPanel>
-
+            
+            
             <Label Grid.Row="2" Content="{Binding StatusMessage}" />
 
 
@@ -75,12 +69,10 @@
                 Grid.Row="3"
                 Grid.ColumnSpan="2"
                 Orientation="Horizontal"
-                HorizontalAlignment="Right"
-                >
+                HorizontalAlignment="Right" >
                 <Button
                     Content="Отмена"
-                    Command="{Binding CancelCommand}"
-                    
+                    Command="{Binding CancelCommand}"                   
                     Width="Auto" MinWidth="120"/>
                 <Button
                     Content="{Binding SubmitButtonText}"

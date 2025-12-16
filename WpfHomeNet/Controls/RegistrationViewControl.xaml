@@ -42,7 +42,7 @@
                 <Label Content="Имя пользователя:" VerticalAlignment="Center"/>
                 
                 <TextBox
-                Text="{Binding UserData.UserName, UpdateSourceTrigger=PropertyChanged}"
+                Text="{Binding UserData.UserName}"
                 BorderBrush="{Binding ValidationResults[NameType].State, Converter={StaticResource StateToBrushConverter}}"
                 IsEnabled="{Binding AreFieldsEnabled}"/>
                 
@@ -61,7 +61,7 @@
                 <Label Content="Email:" VerticalAlignment="Center"/>
 
                 <TextBox 
-                Text="{Binding UserData.Email, UpdateSourceTrigger=PropertyChanged}"
+                Text="{Binding UserData.Email}"
                 BorderBrush="{Binding ValidationResults[EmailType].State, Converter={StaticResource StateToBrushConverter}}"
                 IsEnabled="{Binding AreFieldsEnabled}"   >
                 </TextBox>
@@ -80,7 +80,7 @@
                 <Label Content="Пароль:" VerticalAlignment="Center"/>
                 
                 <TextBox
-                Text="{Binding UserData.Password, UpdateSourceTrigger=PropertyChanged}"
+                Text="{Binding UserData.Password}"
                 BorderBrush="{Binding ValidationResults[PasswordType].State, Converter={StaticResource StateToBrushConverter}}"
                 IsEnabled="{Binding AreFieldsEnabled}"
                 
@@ -101,7 +101,7 @@
 
                 <Label Content="Повторите пароль:" VerticalAlignment="Center"/>
                 <TextBox
-                Text="{Binding UserData.ConfirmPassword, UpdateSourceTrigger=PropertyChanged}"
+                Text="{Binding UserData.ConfirmPassword}"
                 BorderBrush="{Binding ValidationResults[ConfirmedPasswordType].State, Converter={StaticResource StateToBrushConverter}}"
                 IsEnabled="{Binding AreFieldsEnabled}"/>              
                 
@@ -119,40 +119,32 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                
-                 <Label Grid.Column="0"
+
+                <Label Grid.Column="0"
                   Content="{Binding StatusMessage}"
                   MinWidth="50"
                         VerticalContentAlignment="Center"
                   HorizontalContentAlignment="Left"/>
-                       
-                
+
+
                 <!-- BUTTONS -->
                 <StackPanel Grid.Column="1"                            
                 Orientation="Horizontal"
-                HorizontalAlignment="Right"
-                >
-                    
-                <Button
+                HorizontalAlignment="Right"   >
+             
+                    <Button
                 Content="Отмена"
                 Command="{Binding CancelCommand}"
-                MinWidth="120"
-               />
-
-                <Button MinWidth="120"
+                MinWidth="120"  />
+             
+                    <Button MinWidth="120"
                 Content="{Binding SubmitButtonText}"
                 Command="{Binding ToggleRegistrationCommand}"  
                 IsEnabled="{Binding ToggleRegistrationCommand.CanExecute}"/>
-               
-                
-            </StackPanel>
-                
-                
-                
+
+                </StackPanel>
+
             </Grid>
-
-
-          
         </Grid>
     </ContentControl>
 

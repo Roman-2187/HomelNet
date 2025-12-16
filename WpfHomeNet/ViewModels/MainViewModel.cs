@@ -19,14 +19,9 @@ namespace WpfHomeNet.ViewModels
         private readonly UserService userService;
         private readonly ILogger logger;
 
-        public MainViewModel
-            (
-              UserService userService,
-              ILogger logger,
-              RegistrationViewModel registrationVm,
-              LoginViewModel loginViewModel
-            )
-
+        public MainViewModel( UserService userService, ILogger logger,
+            RegistrationViewModel registrationVm, LoginViewModel loginViewModel)
+          
         {
             this.userService = userService;
             this.logger = logger;

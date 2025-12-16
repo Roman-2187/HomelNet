@@ -17,7 +17,7 @@
     FontFamily="Calibri"
     FontSize="14"                             
     Background="Transparent"
-    Loaded="Window_Loaded">
+   >
     <Window.Resources>
        
         <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
@@ -97,10 +97,26 @@
                     Content="Выйти из аккаунта"
                     Visibility="Collapsed"/>
 
-            <!-- Контрол регистрации реализован в коде позади -->
-            
 
-            <!-- Контрол входа в профиль реализован в коде позади -->
+            <controls:RegistrationViewControl 
+                Grid.Row="1" Grid.Column="1"
+                Grid.ColumnSpan="4"
+                Grid.RowSpan="4" 
+              DataContext="{Binding RegistrationViewModel}" 
+            Visibility="{Binding ControlVisibility}"
+           />
+
+
+
+            <controls:LoginViewControl
+             Grid.Row="1" Grid.Column="1"
+             Grid.ColumnSpan="4"
+             Grid.RowSpan="4" 
+   
+             
+              DataContext="{Binding LoginViewModel}" Visibility="{Binding ControlVisibility}"/>
+
+
 
 
             <controls:UsersTableView x:Name="userTableView" 
@@ -108,6 +124,8 @@
                         Grid.RowSpan="2"
                         Grid.ColumnSpan="6" 
                         Grid.Row="3"/>
+            
+            
                        
             <!-- Контейнер статус бар -->
             <ContentControl
