@@ -28,7 +28,9 @@
             
              <Button Content="Обновить юзеров" />
                         
-             <Button x:Name="ShowLogs" Content="Показать логи"/>           
+             <Button x:Name="ShowLogs" 
+                     Content="{Binding ToggleButtonText}"
+    Command="{Binding ToggleLogWindowCommand}"/>           
               
         </StackPanel>
 

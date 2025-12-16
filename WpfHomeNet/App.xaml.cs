@@ -59,9 +59,14 @@ namespace HomeSocialNetwork
         private ISchemaAdapter? _schemaAdapter;
         private RegistrationViewModel? _registrationViewModel;
         public RegistrationViewModel RegistrationViewModel =>_registrationViewModel ?? throw new InvalidOperationException("_registrationViewModel  не инициализирован");
-
         private LoginViewModel? _loginViewModel;
         public LoginViewModel LoginViewModel => _loginViewModel ?? throw new InvalidOperationException("LoginViewModel не инициализирован");
+
+        MainWindow? _mainWindow;
+
+        private AdminMenuViewModel? _adminMenuViewModel;
+
+        public AdminMenuViewModel AdminMenuViewModel => _adminMenuViewModel ?? throw new InvalidOperationException("_adminMenuViewModel не инициализирован");
         #endregion
 
         protected override void OnStartup(StartupEventArgs e)
@@ -79,8 +84,8 @@ namespace HomeSocialNetwork
                 // Ключевая инициализация
                 InitializeApplication(provider, DatabaseType.SQLite).GetAwaiter().GetResult();
 
-                var mainWindow = provider.GetRequiredService<MainWindow>();
-                mainWindow.Show();
+                 _mainWindow = provider.GetRequiredService<MainWindow>();
+                _mainWindow.Show();
             }
             catch (Exception ex)
             {
@@ -98,8 +103,15 @@ namespace HomeSocialNetwork
         {
             try
             {
-                
                 _logger = provider.GetRequiredService<ILogger>();
+
+                _logWindow = new LogWindow(_logger);
+
+                _logQueueManager = new LogQueueManager(LogWindow, 20);
+                
+                Logger.SetOutput(_logQueueManager.WriteLog);
+
+          
                 _logger.LogInformation("Начало инициализации приложения...");
 
                 // 2. Создаём схему
@@ -132,22 +144,14 @@ namespace HomeSocialNetwork
 
                 // 7. Создаём VM
                 _registrationViewModel = new RegistrationViewModel(_userService);
+
                 _loginViewModel = new LoginViewModel(_userService);
 
-                _mainVm = new MainViewModel(
-                UserService, _logger, RegistrationViewModel, LoginViewModel);
+              _adminMenuViewModel  = new AdminMenuViewModel(LogWindow,_mainWindow,_logQueueManager);
 
+               _mainVm = new MainViewModel(UserService, _logger, RegistrationViewModel, LoginViewModel,AdminMenuViewModel,LogWindow);
+                
                 _logger.LogInformation("Инициализация завершена");
-
-                LogWindow logWindow = new LogWindow(_logger);
-
-                _logQueueManager = new LogQueueManager(logWindow, 20);Logger.SetOutput(_logQueueManager.WriteLog);
-
-                _logQueueManager.SetReady();
-
-                logWindow.Show();
-
-
                 
             }
             catch (Exception ex)

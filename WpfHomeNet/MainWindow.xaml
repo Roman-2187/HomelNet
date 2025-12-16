@@ -66,7 +66,9 @@
 
             <controls:AdminMenu Grid.Row="1"
                                 Grid.RowSpan="3"
-                                Visibility="Visible"/>
+                                Visibility="Visible" 
+                                DataContext="{Binding AdminMenuViewModel}"
+                                />
 
             <!-- Верхнее меню -->
             <StackPanel x:Name="UpperMenu" Visibility="Visible" 
@@ -113,7 +115,6 @@
              Grid.ColumnSpan="4"
              Grid.RowSpan="4" 
    
-             
               DataContext="{Binding LoginViewModel}" Visibility="{Binding ControlVisibility}"/>
 
 

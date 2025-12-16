@@ -12,26 +12,37 @@ namespace WpfHomeNet.ViewModels
     public class MainViewModel : INotifyPropertyChanged, IStatusUpdater
     {
         public RegistrationViewModel RegistrationViewModel { get; private set; }
+        public LogWindow LogWindow { get;  set; }
         public LoginViewModel LoginViewModel { get; private set; }
         public event PropertyChangedEventHandler? PropertyChanged;
         private ObservableCollection<UserEntity> _users = [];
         private string _statusText = string.Empty;
         private readonly UserService userService;
         private readonly ILogger logger;
+        public AdminMenuViewModel AdminMenuViewModel { get; }
 
-        public MainViewModel( UserService userService, ILogger logger,
-            RegistrationViewModel registrationVm, LoginViewModel loginViewModel)
-          
+        public MainViewModel(
+            UserService userService,
+            ILogger logger,
+            RegistrationViewModel registrationVm,
+            LoginViewModel loginViewModel,
+            AdminMenuViewModel adminMenuViewModel,
+            LogWindow logWindow)
+
         {
             this.userService = userService;
             this.logger = logger;
             RegistrationViewModel = registrationVm;
             LoginViewModel = loginViewModel;
+            AdminMenuViewModel = adminMenuViewModel;
+            LogWindow = logWindow;
 
             RegistrationViewModel.PropertyChanged += OnChildVmPropertyChanged;
             LoginViewModel.PropertyChanged += OnChildVmPropertyChanged;
         }
 
+
+      
 
 
         public ICommand ToggleFormVisibilityCommand => new RelayCommand(parameter =>
@@ -89,7 +100,7 @@ namespace WpfHomeNet.ViewModels
             }
         }
 
-       
+
 
         public void SetStatus(string message) => StatusText = message;
 
@@ -97,54 +108,7 @@ namespace WpfHomeNet.ViewModels
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-
-
-
-        public async Task LoadUsersAsync()
-        {
-            StatusText = "Загрузка...";
-
-            try
-            {
-                var users = await userService.GetAllUsersAsync();
-
-                if (users == null)
-                {
-                    HandleError("Получены пустые данные");
-                    return;
-                }
-
-                Users.Clear();
-                Users = new ObservableCollection<UserEntity>(users);
-
-                var userCount = users.Count;
-
-                if (userCount == 0)
-                {
-                    HandleSuccess($"Список пользователей пуст");
-                }
-                else
-                {
-                    HandleSuccess($"Загружено {userCount} пользователей");
-                }
-            }
-            catch (Exception ex)
-            {
-                HandleError($"Ошибка загрузки: {ex.Message}");
-            }
-        }
-
-        private void HandleSuccess(string message)
-        {
-            logger?.LogInformation(message);
-            StatusText = message;
-        }
-
-        private void HandleError(string message)
-        {
-            logger?.LogError(message);
-            StatusText = message;
-        }
     }
 }
+
 

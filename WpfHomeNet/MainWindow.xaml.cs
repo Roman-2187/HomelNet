@@ -15,16 +15,37 @@ namespace WpfHomeNet
 
         public MainWindow()
         {                  
-            InitializeComponent(); 
+           
 
             var app = (App)Application.Current;
             _userService = app.UserService;
-            _mainVm = app.MainVm;
-             DataContext = _mainVm;  
+
+            _mainVm = app.MainVm; 
+
+            _mainVm.LogWindow= app.LogWindow;
+            _mainVm.AdminMenuViewModel.ConnectMainWindow(this);
+            DataContext = _mainVm;
+             InitializeComponent(); 
+           
         }
 
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e) => this.Close();
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            // 1. Закрываем LogWindow (если он открыт как отдельное окно)
+            if (_mainVm.LogWindow != null)
+            {
+                _mainVm.LogWindow.Close();
+            }
+
+            // 2. Закрываем главное окно
+            this.Close();
+        }
+
+
+
+       
+
 
         private void WindowDrag_MouseDown(object sender, MouseButtonEventArgs e) => this.DragMove();
     }
