@@ -58,9 +58,6 @@ namespace WpfHomeNet.ViewModels
             );
         }
 
-
- 
-
         private void InitializeInitialHints()
         {
                     var initialHints = new List<ValidationResult>

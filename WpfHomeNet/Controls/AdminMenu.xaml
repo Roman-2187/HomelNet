@@ -7,32 +7,23 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="200">
 
-
-
     <StackPanel x:Name="Menu" Visibility="Visible"  
-    IsEnabled="{Binding DataContext.IsButtonsPanelEnabled,
-               RelativeSource={RelativeSource AncestorType=Window}}" > 
-                
-                
-            
-             <Button Content="User Profile"
-
-                     
-           Command="{Binding DataContext.ToggleFormVisibilityCommand,
-               RelativeSource={RelativeSource AncestorType=Window}}"
-    CommandParameter="{Binding DataContext.LoginViewModel,
-                       RelativeSource={RelativeSource AncestorType=Window}}"
-             />
-                       
+                IsEnabled="{Binding DataContext.IsButtonsPanelEnabled,
+                RelativeSource={RelativeSource AncestorType=Window}}" > 
+        
+             <Button Content="User Profile"   
+              Command="{Binding DataContext.ToggleFormVisibilityCommand,
+              RelativeSource={RelativeSource AncestorType=Window}}"
+              CommandParameter="{Binding DataContext.LoginViewModel,
+              RelativeSource={RelativeSource AncestorType=Window}}" />
+                                
              <Button Content="Test list Users"/>
 
-             <Button Content="Добавить юзера"
-              
-                     
-                            Command="{Binding DataContext.ToggleFormVisibilityCommand,
-           RelativeSource={RelativeSource AncestorType=Window}}"
-CommandParameter="{Binding DataContext.RegistrationViewModel,
-                   RelativeSource={RelativeSource AncestorType=Window}}"/> 
+             <Button Content="Добавить юзера"                     
+              Command="{Binding DataContext.ToggleFormVisibilityCommand,
+              RelativeSource={RelativeSource AncestorType=Window}}"
+              CommandParameter="{Binding DataContext.RegistrationViewModel,
+              RelativeSource={RelativeSource AncestorType=Window}}"/> 
         
              <Button x:Name="DeleteUsers" Content="Удалить юзера"/>
       

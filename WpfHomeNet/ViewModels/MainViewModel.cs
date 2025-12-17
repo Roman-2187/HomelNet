@@ -15,6 +15,8 @@ namespace WpfHomeNet.ViewModels
         public LoginViewModel LoginViewModel { get;  set; }
         public LogWindow LogWindow { get;  set; }
 
+        public LogViewModel LogVm { get; set; }
+
         MainWindow? _mainWindow;
 
          public  MainWindow MainWindow
@@ -35,7 +37,7 @@ namespace WpfHomeNet.ViewModels
             RegistrationViewModel registrationVm,
             LoginViewModel loginViewModel,
             AdminMenuViewModel adminMenuViewModel,
-            LogWindow logWindow)
+            LogWindow logWindow,LogViewModel logView)
 
         {
             this.userService = userService;
@@ -44,22 +46,33 @@ namespace WpfHomeNet.ViewModels
             LoginViewModel = loginViewModel;
             AdminMenuViewModel = adminMenuViewModel;
             LogWindow = logWindow;
+            LogVm = logView;
             
-
             RegistrationViewModel.PropertyChanged += OnChildVmPropertyChanged;
             LoginViewModel.PropertyChanged += OnChildVmPropertyChanged;
         }
 
 
+        public void ConnectToMainWindow(MainWindow mainWindow) => MainWindow = mainWindow;
 
 
-        public void ConnectToMainWindow(MainWindow mainWindow)
+        public void ToggleLogWindow()
         {
-            MainWindow = mainWindow;
+            if (LogVm.IsVisible) 
+            {
+                LogVm.Hide(); 
+            }
+               
+            else
+            {
+                LogVm.PositionLogWindow();
+                LogVm.Show();
+            }
+               
         }
 
+        public void Dispose() => LogVm?.Dispose();
 
-      
 
 
         public ICommand ToggleFormVisibilityCommand => new RelayCommand(parameter =>
@@ -117,14 +130,9 @@ namespace WpfHomeNet.ViewModels
             }
         }
 
-
-
         public void SetStatus(string message) => StatusText = message;
 
-        protected void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+        protected void OnPropertyChanged(string propertyName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }
 

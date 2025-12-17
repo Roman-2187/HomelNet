@@ -8,12 +8,10 @@ namespace WpfHomeNet
 {
     
     public partial class MainWindow : Window
-    {
-        
+    {        
         private UserService? _userService;
-        private MainViewModel? _mainVm;
+        private MainViewModel _mainVm;
        
-
         public MainWindow()
 
         { 
@@ -27,20 +25,16 @@ namespace WpfHomeNet
 
             _mainVm.LogWindow= app.LogWindow;
 
-           _mainVm.ConnectToMainWindow(this);           
+           _mainVm.ConnectToMainWindow(this);
 
             DataContext = _mainVm;                        
         }
 
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
-        {
-            
-            if (_mainVm?.LogWindow != null)
-            {
-                _mainVm.LogWindow.Close();
-            }
-
+        {                                  
+           _mainVm.LogWindow.Close();
+           
             Close();
         }
 

@@ -23,33 +23,10 @@ namespace HomeSocialNetwork
 
     public partial class App : Application
     {
-        #region Поля и переменные (как у вас)
+        #region Поля и переменные 
         private static readonly string dbPath = DatabasePathHelper.GetDatabasePath("home_net.db");
         private readonly string _connectionString = $"Data Source={dbPath}";
-
-        public LogWindow LogWindow => _logWindow ?? throw new InvalidOperationException("_logWindow не инициализирован");
-        public LogWindow? _logWindow;
-
-        public UserService UserService => _userService ?? throw new InvalidOperationException("_userService не инициализирован");
-        private UserService? _userService;
-
-        public MainViewModel MainVm => _mainVm ?? throw new InvalidOperationException("_mainVm не инициализирован");
-        private MainViewModel? _mainVm;
-
-        public ILogger Logger => _logger ?? throw new InvalidOperationException("_logger не инициализирован");
-        private ILogger? _logger;
-
-        public IStatusUpdater Status => _status ?? throw new InvalidOperationException("_status не инициализирован");
-        private IStatusUpdater? _status;
-
-        private LogQueueManager LogQueueManager => _logQueueManager ?? throw new InvalidOperationException("_logQueueManager не инициализирован");
-        private LogQueueManager? _logQueueManager;
-
-        private UserRepository? _userRepository;
-        private RegistrationViewControl? _registrationControl;
-        public RegistrationViewControl RegistrationViewControl => _registrationControl ?? throw new InvalidOperationException("_registrationControl не инициализирован");
-        private LoginViewControl? _loginViewControl;
-        public LoginViewControl LoginViewControl => _loginViewControl ?? throw new InvalidOperationException("_loginViewControl не инициализирован");
+        private UserRepository? _userRepository;              
         private DbConnection? _connection;
         private DBInitializer? _databaseInitializer;
         private ISchemaProvider? _schemaProvider;
@@ -57,18 +34,37 @@ namespace HomeSocialNetwork
         private TableSchema? _tableSchema;
         private ISchemaUserSqlGenerator? _userSqlGen;
         private ISchemaAdapter? _schemaAdapter;
+        private MainWindow? _mainWindow;
+
+        public LogWindow LogWindow => _logWindow ?? throw new InvalidOperationException($"{nameof(_logWindow)} не инициализирован");
+        public LogWindow? _logWindow;
+
+        public UserService UserService => _userService ?? throw new InvalidOperationException($"{nameof(_userService)} не инициализирован");
+        private UserService? _userService;
+
+        public MainViewModel MainVm => _mainVm ?? throw new InvalidOperationException($"{nameof(_mainVm)} не инициализирован");
+        private MainViewModel? _mainVm;
+
+        public ILogger Logger => _logger ?? throw new InvalidOperationException($"{nameof(_logger)} не инициализирован");
+        private ILogger? _logger;
+
+        public IStatusUpdater Status => _status ?? throw new InvalidOperationException($"{nameof(_status)} не инициализирован");
+        private IStatusUpdater? _status;
+
+        private LogQueueManager LogQueueManager => _logQueueManager ?? throw new InvalidOperationException($"{nameof(_logQueueManager)} не инициализирован");
+        private LogQueueManager? _logQueueManager;
+
         private RegistrationViewModel? _registrationViewModel;
-        public RegistrationViewModel RegistrationViewModel =>_registrationViewModel ?? throw new InvalidOperationException("_registrationViewModel  не инициализирован");
+        public RegistrationViewModel RegistrationViewModel =>_registrationViewModel ?? throw new InvalidOperationException($"{nameof(_registrationViewModel)} не инициализирован");
+
         private LoginViewModel? _loginViewModel;
-        public LoginViewModel LoginViewModel => _loginViewModel ?? throw new InvalidOperationException("LoginViewModel не инициализирован");
-
-        MainWindow? _mainWindow;
-
-        new MainWindow MainWindow=>_mainWindow ?? throw new InvalidOperationException($"{nameof(_mainWindow)} не инициализирован");
+        public LoginViewModel LoginViewModel => _loginViewModel ?? throw new InvalidOperationException($"{nameof(_loginViewModel)} не инициализирован");
+       
+        LogViewModel? _logViewModel;
+        LogViewModel LogViewModel =>_logViewModel ?? throw new InvalidOperationException($"{nameof(_logViewModel)} не инициализирован");
 
         private AdminMenuViewModel? _adminMenuViewModel;
-
-        public AdminMenuViewModel AdminMenuViewModel => _adminMenuViewModel ?? throw new InvalidOperationException("_adminMenuViewModel не инициализирован");
+        public AdminMenuViewModel AdminMenuViewModel => _adminMenuViewModel ?? throw new InvalidOperationException($"{nameof(_adminMenuViewModel)} не инициализирован");
         #endregion
 
         protected override void OnStartup(StartupEventArgs e)
@@ -87,6 +83,11 @@ namespace HomeSocialNetwork
                 InitializeApplication(provider, DatabaseType.SQLite).GetAwaiter().GetResult();
 
                  _mainWindow = provider.GetRequiredService<MainWindow>();
+
+                LogViewModel.ConnectToMainViewModel(MainVm);
+
+                AdminMenuViewModel.ConnectToMainViewModel(MainVm);
+
                 _mainWindow.Show();
             }
             catch (Exception ex)
@@ -106,8 +107,11 @@ namespace HomeSocialNetwork
             try
             {
                 _logger = provider.GetRequiredService<ILogger>();
+               
 
                 _logWindow = new LogWindow(_logger);
+
+               
 
                 _logQueueManager = new LogQueueManager(LogWindow, 20);
                 
@@ -150,14 +154,12 @@ namespace HomeSocialNetwork
 
                 _loginViewModel = new LoginViewModel(_userService);
 
-                _adminMenuViewModel  = new AdminMenuViewModel(LogQueueManager); 
+                _logViewModel = new LogViewModel();
 
-                _mainVm = new MainViewModel(UserService, Logger, RegistrationViewModel, LoginViewModel,AdminMenuViewModel,LogWindow);
+                _adminMenuViewModel  = new AdminMenuViewModel(LogQueueManager);
 
-               _adminMenuViewModel.ConnectToMainViewModel(MainVm);
+                _mainVm = new MainViewModel(UserService, Logger, RegistrationViewModel, LoginViewModel,AdminMenuViewModel,LogWindow,_logViewModel);
 
-               
-                
                 _logger.LogInformation("Инициализация завершена");
                 
             }
@@ -179,6 +181,7 @@ namespace HomeSocialNetwork
             services.AddTransient<MainWindow>();
             services.AddTransient<RegistrationViewControl>();
             services.AddTransient<LoginViewControl>();
+            services.AddTransient<LoginViewModel>();
         }
     }
 

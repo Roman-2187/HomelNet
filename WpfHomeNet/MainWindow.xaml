@@ -1,6 +1,6 @@
 ﻿<Window x:Class="WpfHomeNet.MainWindow"  WindowStartupLocation="Manual"       
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-     xmlns:controls="clr-namespace:WpfHomeNet.Controls"     
+    xmlns:controls="clr-namespace:WpfHomeNet.Controls"     
     xmlns:local="clr-namespace:WpfHomeNet.UiHelpers"   
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -65,11 +65,12 @@
                        Foreground="Black"/>
             </Border>
 
-            <controls:AdminMenu Grid.Row="1"
-                                Grid.RowSpan="3"
-                                Visibility="Visible" 
-                                DataContext="{Binding AdminMenuViewModel}"
-                                />
+            <controls:AdminMenu
+                Grid.Row="1"
+                Grid.RowSpan="3"
+                Visibility="Visible" 
+                DataContext="{Binding AdminMenuViewModel}" />
+                               
 
             <!-- Верхнее меню -->
             <StackPanel x:Name="UpperMenu" Visibility="Visible" 
@@ -100,7 +101,6 @@
                     Content="Выйти из аккаунта"
                     Visibility="Collapsed"/>
 
-
             <controls:RegistrationViewControl 
             Grid.Row="1" Grid.Column="1"
             Grid.ColumnSpan="4"
@@ -108,29 +108,19 @@
             DataContext="{Binding RegistrationViewModel}" 
             Visibility="{Binding ControlVisibility}"  />
          
-
-
-
             <controls:LoginViewControl
              DataContext="{Binding LoginViewModel}" 
              Visibility="{Binding ControlVisibility}"
              Grid.Row="1" Grid.Column="1"
              Grid.ColumnSpan="4"
-             Grid.RowSpan="4" 
+             Grid.RowSpan="4"/>
    
-             />
-
-
-
-
             <controls:UsersTableView x:Name="userTableView" 
                         Visibility="Collapsed"
                         Grid.RowSpan="2"
                         Grid.ColumnSpan="6" 
                         Grid.Row="3"/>
-            
-            
-                       
+                                   
             <!-- Контейнер статус бар -->
             <ContentControl
                     Style="{StaticResource
