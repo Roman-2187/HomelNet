@@ -64,6 +64,8 @@ namespace HomeSocialNetwork
 
         MainWindow? _mainWindow;
 
+        new MainWindow MainWindow=>_mainWindow ?? throw new InvalidOperationException($"{nameof(_mainWindow)} не инициализирован");
+
         private AdminMenuViewModel? _adminMenuViewModel;
 
         public AdminMenuViewModel AdminMenuViewModel => _adminMenuViewModel ?? throw new InvalidOperationException("_adminMenuViewModel не инициализирован");
@@ -148,11 +150,11 @@ namespace HomeSocialNetwork
 
                 _loginViewModel = new LoginViewModel(_userService);
 
-                _adminMenuViewModel  = new AdminMenuViewModel(_mainWindow,_logQueueManager);
+                _adminMenuViewModel  = new AdminMenuViewModel(LogQueueManager); 
 
-                _mainVm = new MainViewModel(UserService, _logger, RegistrationViewModel, LoginViewModel,AdminMenuViewModel,LogWindow);
+                _mainVm = new MainViewModel(UserService, Logger, RegistrationViewModel, LoginViewModel,AdminMenuViewModel,LogWindow);
 
-                _adminMenuViewModel.ConnectToMainViewModel(_mainVm);
+               _adminMenuViewModel.ConnectToMainViewModel(MainVm);
 
                
                 

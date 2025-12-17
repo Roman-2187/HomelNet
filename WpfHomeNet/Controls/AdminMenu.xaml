@@ -9,22 +9,30 @@
 
 
 
-    <StackPanel x:Name="Menu" Visibility="Visible" IsEnabled="{Binding IsButtonsPanelEnabled}"> 
+    <StackPanel x:Name="Menu" Visibility="Visible"  
+    IsEnabled="{Binding DataContext.IsButtonsPanelEnabled,
+               RelativeSource={RelativeSource AncestorType=Window}}" > 
                 
                 
             
              <Button Content="User Profile"
 
                      
-             Command="{Binding ToggleFormVisibilityCommand}"
-             CommandParameter="{Binding LoginViewModel}"
+           Command="{Binding DataContext.ToggleFormVisibilityCommand,
+               RelativeSource={RelativeSource AncestorType=Window}}"
+    CommandParameter="{Binding DataContext.LoginViewModel,
+                       RelativeSource={RelativeSource AncestorType=Window}}"
              />
                        
              <Button Content="Test list Users"/>
 
              <Button Content="Добавить юзера"
-              Command="{Binding ToggleFormVisibilityCommand}"
-              CommandParameter="{Binding RegistrationViewModel}"/> 
+              
+                     
+                            Command="{Binding DataContext.ToggleFormVisibilityCommand,
+           RelativeSource={RelativeSource AncestorType=Window}}"
+CommandParameter="{Binding DataContext.RegistrationViewModel,
+                   RelativeSource={RelativeSource AncestorType=Window}}"/> 
         
              <Button x:Name="DeleteUsers" Content="Удалить юзера"/>
       

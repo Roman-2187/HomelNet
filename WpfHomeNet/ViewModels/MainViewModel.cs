@@ -14,7 +14,14 @@ namespace WpfHomeNet.ViewModels
         public RegistrationViewModel RegistrationViewModel { get;  set; }
         public LoginViewModel LoginViewModel { get;  set; }
         public LogWindow LogWindow { get;  set; }
-        
+
+        MainWindow? _mainWindow;
+
+         public  MainWindow MainWindow
+         {       get => _mainWindow ?? throw new InvalidOperationException($"{nameof(_mainWindow)} не инициализирован");
+                 set => _mainWindow = value;
+         }
+       
         public event PropertyChangedEventHandler? PropertyChanged;
         private ObservableCollection<UserEntity> _users = [];
         private string _statusText = string.Empty;
@@ -37,9 +44,18 @@ namespace WpfHomeNet.ViewModels
             LoginViewModel = loginViewModel;
             AdminMenuViewModel = adminMenuViewModel;
             LogWindow = logWindow;
+            
 
             RegistrationViewModel.PropertyChanged += OnChildVmPropertyChanged;
             LoginViewModel.PropertyChanged += OnChildVmPropertyChanged;
+        }
+
+
+
+
+        public void ConnectToMainWindow(MainWindow mainWindow)
+        {
+            MainWindow = mainWindow;
         }
 
 

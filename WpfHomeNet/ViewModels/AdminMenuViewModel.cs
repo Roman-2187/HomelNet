@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
+using WpfHomeNet.Controls;
 using WpfHomeNet.UiHelpers;
 
 
@@ -8,16 +9,20 @@ using WpfHomeNet.UiHelpers;
 namespace WpfHomeNet.ViewModels
 {
     public class AdminMenuViewModel : INotifyPropertyChanged
-    {
-       
-        private Window _mainWindow;
-        private MainViewModel _mainViewModel;
-        
-
-        private readonly LogQueueManager _logQueueManager;
+    { 
         private bool _isSubscribedToMainWindowEvents;
-        // Команда-переключатель
+
+        private MainViewModel? _mainVm;
+        public MainViewModel MainVm => _mainVm ?? throw new InvalidOperationException("_mainVm не инициализирован");
+       
+        private readonly LogQueueManager _logQueueManager;
+
+       
+
+
+
         public ICommand ToggleLogWindowCommand { get; }
+
 
         // Свойство для текста кнопки
         private string _toggleButtonText = "Показать лог";
@@ -31,50 +36,29 @@ namespace WpfHomeNet.ViewModels
             }
         }
 
-        public AdminMenuViewModel( Window mainWindow, LogQueueManager logQueueManager
+        public AdminMenuViewModel( LogQueueManager logQueueManager
             )
         {
-           
-
             _logQueueManager = logQueueManager;
 
-            _mainWindow = mainWindow;
-
-            ToggleLogWindowCommand = new RelayCommand(ExecuteToggleLogWindow);
-
-       
+            ToggleLogWindowCommand = new RelayCommand(ExecuteToggleLogWindow); 
         }
 
 
-        public void ConnectToMainViewModel(MainViewModel mainVm)
-        {
-            if (mainVm == null)
-                throw new ArgumentNullException(nameof(mainVm));
-
-            _mainViewModel = mainVm;
-        }
-
-
-
-
-
-
-
-
+        public void ConnectToMainViewModel(MainViewModel mainVm) => _mainVm = mainVm;
 
         private void ExecuteToggleLogWindow(object? parameter)
         {
-            if (_mainViewModel.LogWindow.Visibility == Visibility.Visible)
-            {
-                // Скрываем окно
-                _mainViewModel.LogWindow.Hide();
-                // Логика при скрытии
-                ToggleButtonText = "Показать лог"; // Меняем текст кнопки
+            if (MainVm.LogWindow.Visibility == Visibility.Visible)
+            {              
+                MainVm.LogWindow.Hide();
+              
+                ToggleButtonText = "Показать лог"; 
 
                 if (_isSubscribedToMainWindowEvents)
                 {
-                    _mainWindow.LocationChanged -= OnMainWindowMoved;
-                    _mainWindow.SizeChanged -= OnMainWindowResized;
+                    MainVm.MainWindow.LocationChanged -= OnMainWindowMoved;
+                    MainVm.MainWindow.SizeChanged -= OnMainWindowResized;
                     _isSubscribedToMainWindowEvents = false;
                 }
             }
@@ -83,68 +67,45 @@ namespace WpfHomeNet.ViewModels
                 // При первом показе — подписываемся на события
                 if (!_isSubscribedToMainWindowEvents)
                 {
-                    _mainWindow.LocationChanged += OnMainWindowMoved;
-                    _mainWindow.SizeChanged += OnMainWindowResized;
+                    MainVm.MainWindow.LocationChanged += OnMainWindowMoved;
+                    MainVm.MainWindow.SizeChanged += OnMainWindowResized;
                     _isSubscribedToMainWindowEvents = true;
                 }
 
                 PositionLogWindow();
-                _mainViewModel.LogWindow.Show();
+                MainVm.LogWindow.Show();
                 _logQueueManager.SetReady();
                 ToggleButtonText = "Скрыть лог";
             }
         }
 
-
-
-        public void ConnectMainWindow(Window mainWindow)
-        {
-            _mainWindow = mainWindow;
-
-            // Только теперь подписываемся на события
-            _mainWindow.LocationChanged += OnMainWindowMoved;
-            _mainWindow.SizeChanged += OnMainWindowResized;
-
-            // Если лог-окно уже видно — сразу позиционируем
-            if (_mainViewModel.LogWindow.Visibility == Visibility.Visible)
-                PositionLogWindow();
-        }
-
-
-
-
-        // INotifyPropertyChanged
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        protected virtual void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+        
+       
 
 
         private void PositionLogWindow()
         {
-            _mainViewModel.LogWindow.Left = _mainWindow.Left + _mainWindow.Width +5;
-            _mainViewModel.LogWindow.Top = _mainWindow.Top;
-            _mainViewModel.LogWindow.Height = _mainWindow.Height;
-            _mainViewModel.LogWindow.Width = 600;
+            MainVm.LogWindow.Left = MainVm.MainWindow.Left + MainVm.MainWindow.Width +5;
+            MainVm.LogWindow.Top = MainVm.MainWindow.Top;
+            MainVm.LogWindow.Height = MainVm.MainWindow.Height;
+            MainVm.LogWindow.Width = 600;
         }
 
-        private void OnMainWindowMoved(object sender, EventArgs e)
+        private void OnMainWindowMoved(object? sender, EventArgs e)
         {
-            if (_mainViewModel.LogWindow.Visibility == Visibility.Visible) PositionLogWindow();
+            if (MainVm.LogWindow.Visibility == Visibility.Visible) PositionLogWindow();
         }
 
         private void OnMainWindowResized(object sender, SizeChangedEventArgs e)
         {
-            if (_mainViewModel.LogWindow.Visibility == Visibility.Visible) PositionLogWindow();
+            if (MainVm.LogWindow.Visibility == Visibility.Visible) PositionLogWindow();
         }
 
 
         public void Dispose()
         {
-            _mainWindow.LocationChanged -= OnMainWindowMoved;
-            _mainWindow.SizeChanged -= OnMainWindowResized;
+            MainVm.MainWindow.LocationChanged -= OnMainWindowMoved;
+            MainVm.MainWindow.SizeChanged -= OnMainWindowResized;
         }
     }
 }

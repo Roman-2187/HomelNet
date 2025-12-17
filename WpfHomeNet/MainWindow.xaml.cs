@@ -12,9 +12,13 @@ namespace WpfHomeNet
         
         private UserService? _userService;
         private MainViewModel? _mainVm;
+       
 
         public MainWindow()
-        {   InitializeComponent();                            
+
+        { 
+            InitializeComponent();  
+                          
             var app = (App)Application.Current;
 
             _userService = app.UserService;
@@ -23,19 +27,16 @@ namespace WpfHomeNet
 
             _mainVm.LogWindow= app.LogWindow;
 
-            _mainVm.AdminMenuViewModel.ConnectMainWindow(this);
+           _mainVm.ConnectToMainWindow(this);           
 
-            DataContext = _mainVm;   
-
-           
-           
+            DataContext = _mainVm;                        
         }
 
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
             
-            if (_mainVm.LogWindow != null)
+            if (_mainVm?.LogWindow != null)
             {
                 _mainVm.LogWindow.Close();
             }

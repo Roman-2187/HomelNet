@@ -102,21 +102,23 @@
 
 
             <controls:RegistrationViewControl 
-                Grid.Row="1" Grid.Column="1"
-                Grid.ColumnSpan="4"
-                Grid.RowSpan="4" 
-              DataContext="{Binding RegistrationViewModel}" 
-            Visibility="{Binding ControlVisibility}"
-           />
+            Grid.Row="1" Grid.Column="1"
+            Grid.ColumnSpan="4"
+            Grid.RowSpan="4" 
+            DataContext="{Binding RegistrationViewModel}" 
+            Visibility="{Binding ControlVisibility}"  />
+         
 
 
 
             <controls:LoginViewControl
+             DataContext="{Binding LoginViewModel}" 
+             Visibility="{Binding ControlVisibility}"
              Grid.Row="1" Grid.Column="1"
              Grid.ColumnSpan="4"
              Grid.RowSpan="4" 
    
-              DataContext="{Binding LoginViewModel}" Visibility="{Binding ControlVisibility}"/>
+             />
 
 
 
