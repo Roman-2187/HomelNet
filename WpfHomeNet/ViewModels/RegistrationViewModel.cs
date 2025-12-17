@@ -13,26 +13,12 @@ namespace WpfHomeNet.ViewModels
         private readonly RegisterService _registerService;
         private readonly UserService _userService;
 
-        private List<ValidationResult>? _validationResult;
-
-        public List<ValidationResult> ValidationResult
-        {
-            get => _validationResult ?? throw new InvalidOperationException("пустая коллекция");
-            set => _validationResult = value;
-        }
-
         public CreateUserInput UserData { get; set; } = new();
         public ICommand RegisterCommand { get; }
         public ICommand CancelCommand { get; }
-        public ICommand ToggleRegistrationCommand { get; }
-
-
-        
-
-       
+        public ICommand ToggleRegistrationCommand { get; } 
        
         #endregion
-
 
         public RegistrationViewModel(UserService userService)
         {          
@@ -43,7 +29,7 @@ namespace WpfHomeNet.ViewModels
 
             RegisterCommand = new RelayCommand(
                 execute: async (obj) => await ExecuteRegisterCommand(),
-                canExecute: (obj) => true
+                canExecute: (parameter) => true
             );
 
             CancelCommand = new RelayCommand(
@@ -97,8 +83,7 @@ namespace WpfHomeNet.ViewModels
             UserData = new();
             OnPropertyChanged(nameof(UserData));
             StatusMessage = string.Empty;
-            ValidationResults = new Dictionary<TypeField, ValidationResult>();
-            AreFieldsEnabled = true;
+            ValidationResults = new Dictionary<TypeField, ValidationResult>();          
             SubmitButtonText = "Зарегистрироваться";
             IsComplete = false;
         }
@@ -118,7 +103,7 @@ namespace WpfHomeNet.ViewModels
                 if (IsComplete)
                 {
                     StatusMessage = "Вы успешно зарегистрированы";
-                    AreFieldsEnabled = false;
+                    
                     IsComplete = true;
                     SubmitButtonText = "Завершить";
                 }
@@ -129,8 +114,7 @@ namespace WpfHomeNet.ViewModels
             }
             catch (Exception ex)
             {
-                StatusMessage = $"При регистрации произошла ошибка: {ex.Message}";
-                AreFieldsEnabled = true;
+                StatusMessage = $"При регистрации произошла ошибка: {ex.Message}";               
             }
         }
        

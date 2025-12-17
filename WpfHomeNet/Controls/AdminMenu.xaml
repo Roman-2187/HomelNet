@@ -9,18 +9,17 @@
 
 
 
-    <StackPanel x:Name="Menu" Visibility="Visible" 
-                IsEnabled="{Binding IsButtonsPanelEnabled}"> 
+    <StackPanel x:Name="Menu" Visibility="Visible" > 
+                
+                
             
              <Button Content="User Profile"
-               Command="{Binding ToggleFormVisibilityCommand}"
-               CommandParameter="{Binding LoginViewModel}" />
+             />
                        
              <Button Content="Test list Users"/>
 
              <Button Content="Добавить юзера"
-                Command="{Binding ToggleFormVisibilityCommand}"
-                CommandParameter="{Binding RegistrationViewModel}"  /> 
+              /> 
         
              <Button x:Name="DeleteUsers" Content="Удалить юзера"/>
       
@@ -29,8 +28,7 @@
              <Button Content="Обновить юзеров" />
                         
              <Button x:Name="ShowLogs" 
-                     Content="{Binding ToggleButtonText}"
-    Command="{Binding ToggleLogWindowCommand}"/>           
+                     />           
               
         </StackPanel>
 

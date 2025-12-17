@@ -24,15 +24,11 @@ namespace WpfHomeNet.ViewModels
 
         public LoginViewModel(UserService userService)
         {
-
-            ControlVisibility = Visibility.Collapsed;
-           
             _userService = userService;
             _loginService = new AuthenticateService(_userService);
 
             InitializeInitialHints();
-
-            
+           
             LoginCommand = new RelayCommand(
                execute: async (obj) => await ExecuteLoginCommand(),
                canExecute: (obj) => true
@@ -75,21 +71,17 @@ namespace WpfHomeNet.ViewModels
             };          
             UpdateValidation(initialHints);
 
-            StatusMessage = string.Empty;
-
-            AreFieldsEnabled = true;    
+            StatusMessage = string.Empty;           
         }
-
 
 
         private void ResetForm()
         {
-            UserData = new();       
-            OnPropertyChanged(nameof(UserData));
-            StatusMessage = string.Empty;
-            ValidationResults = new Dictionary<TypeField, ValidationResult>();
-            AreFieldsEnabled = true;
-            SubmitButtonText = "войти";
+           UserData = new();       
+           OnPropertyChanged(nameof(UserData));
+           StatusMessage = string.Empty;
+           ValidationResults = new Dictionary<TypeField, ValidationResult>();           
+           SubmitButtonText = "войти";
            IsComplete = false;
         }
 
@@ -101,13 +93,12 @@ namespace WpfHomeNet.ViewModels
 
             try
             {
-                var (isSuccess, messages) = await _loginService.CheckUserAsync(UserData);
-                ValidationResults = messages.ToDictionary(r => r.Field, r => r);
+                 (IsComplete, ValidationResult) = await _loginService.CheckUserAsync(UserData);
+                ValidationResults = ValidationResult.ToDictionary(r => r.Field, r => r);
 
-                if (isSuccess)
+                if (IsComplete)
                 {
-                    StatusMessage = "Вход выполнен успешно";
-                    AreFieldsEnabled = false;
+                    StatusMessage = "Вход выполнен успешно";                  
                     SubmitButtonText = "OK";
                     IsComplete = true;
                 }
@@ -119,7 +110,7 @@ namespace WpfHomeNet.ViewModels
             catch (Exception ex)
             {
                 StatusMessage = $"При входе произошла ошибка: {ex.Message}";
-                AreFieldsEnabled = true;
+               
             }
         }   
     }  

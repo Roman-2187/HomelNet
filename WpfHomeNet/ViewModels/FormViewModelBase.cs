@@ -12,6 +12,15 @@ namespace WpfHomeNet.ViewModels
         // События
         public event PropertyChangedEventHandler? PropertyChanged;
 
+
+        private List<ValidationResult>? _validationResult;
+
+        public List<ValidationResult> ValidationResult
+        {
+            get => _validationResult ?? throw new InvalidOperationException("пустая коллекция");
+            set => _validationResult = value;
+        }
+
         // Защищённый метод для установки полей с оповещением
         protected bool SetField<T>(
             ref T field,
@@ -67,12 +76,7 @@ namespace WpfHomeNet.ViewModels
             protected set => SetField(ref _submitButtonText, value);
         }
 
-        private bool _areFieldsEnabled = true;
-        public bool AreFieldsEnabled
-        {
-            get => _areFieldsEnabled;
-            protected set => SetField(ref _areFieldsEnabled, value);
-        }
+       
 
         private IReadOnlyDictionary<TypeField, ValidationResult> _validationResults
             = new Dictionary<TypeField, ValidationResult>();

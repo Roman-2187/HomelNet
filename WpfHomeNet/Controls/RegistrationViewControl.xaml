@@ -17,6 +17,8 @@
            
     <UserControl.Resources>
         <converter:StateToBrushConverter x:Key="StateToBrushConverter"/>
+        <converter:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+        
     </UserControl.Resources>
 
     <ContentControl Style="{StaticResource TripleBorderStyle}" Padding="4" Background="#00000000">
@@ -44,7 +46,7 @@
                 <TextBox
                 Text="{Binding UserData.UserName}"
                 BorderBrush="{Binding ValidationResults[NameType].State, Converter={StaticResource StateToBrushConverter}}"
-                IsEnabled="{Binding AreFieldsEnabled}"/>
+                IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"/>
                 
                
                 
@@ -63,7 +65,7 @@
                 <TextBox 
                 Text="{Binding UserData.Email}"
                 BorderBrush="{Binding ValidationResults[EmailType].State, Converter={StaticResource StateToBrushConverter}}"
-                IsEnabled="{Binding AreFieldsEnabled}"   >
+                IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"   >
                 </TextBox>
 
                     <Label
@@ -82,7 +84,7 @@
                 <TextBox
                 Text="{Binding UserData.Password}"
                 BorderBrush="{Binding ValidationResults[PasswordType].State, Converter={StaticResource StateToBrushConverter}}"
-                IsEnabled="{Binding AreFieldsEnabled}"
+                IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"
                 
                
                 />
@@ -103,7 +105,7 @@
                 <TextBox
                 Text="{Binding UserData.ConfirmPassword}"
                 BorderBrush="{Binding ValidationResults[ConfirmedPasswordType].State, Converter={StaticResource StateToBrushConverter}}"
-                IsEnabled="{Binding AreFieldsEnabled}"/>              
+                IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"/>              
                 
                                
                 <Label
@@ -135,12 +137,13 @@
                     <Button
                 Content="Отмена"
                 Command="{Binding CancelCommand}"
+                IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"
                 MinWidth="120"  />
              
                     <Button MinWidth="120"
                 Content="{Binding SubmitButtonText}"
                 Command="{Binding ToggleRegistrationCommand}"  
-                IsEnabled="{Binding ToggleRegistrationCommand.CanExecute}"/>
+               />
 
                 </StackPanel>
 

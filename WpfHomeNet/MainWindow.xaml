@@ -5,7 +5,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:viewmodels="clr-namespace:WpfHomeNet.ViewModels"   
+    xmlns:viewmodels="clr-namespace:WpfHomeNet.ViewModels"  
+    xmlns:relayComand="clr-namespace:WpfHomeNet"    
     mc:Ignorable="d"        
     WindowStyle="None"
     ResizeMode="CanResize"           
@@ -79,14 +80,14 @@
                         Orientation="Horizontal"                        
                         Grid.ColumnSpan="2">
                 <Button MinWidth="120"   
-                         Command="{Binding ToggleFormVisibilityCommand}"
+                        Command="{Binding ToggleFormVisibilityCommand}"
                         CommandParameter="{Binding RegistrationViewModel}"                      
-                         Content="Регистрация" />
+                        Content="Регистрация" />
                 <Button Width="Auto"                       
                         Command="{Binding ToggleFormVisibilityCommand}"
-                         CommandParameter="{Binding LoginViewModel}"                    
-                         Content="Вход в профиль" 
-                         MinWidth="120" />
+                        CommandParameter="{Binding LoginViewModel}"                    
+                        Content="Вход в профиль" 
+                        MinWidth="120" />
             </StackPanel>
             
             <!-- Кнопка выхода -->

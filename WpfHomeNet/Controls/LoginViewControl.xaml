@@ -16,6 +16,7 @@
 
     <UserControl.Resources>
         <converter:StateToBrushConverter x:Key="StateToBrushConverter"/>
+        <converter:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
     </UserControl.Resources>
     
 
@@ -36,7 +37,7 @@
                 <TextBox
                     Text="{Binding UserData.Email, UpdateSourceTrigger=PropertyChanged}"
                     BorderBrush="{Binding ValidationResults[EmailType].State, Converter={StaticResource StateToBrushConverter}}"
-                    IsEnabled="{Binding AreFieldsEnabled}" />
+                    IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}" />
                 <Label
                     Content="{Binding ValidationResults[EmailType].Message}"
                     Foreground="{Binding ValidationResults[EmailType].State, Converter={StaticResource StateToBrushConverter}}"
@@ -51,7 +52,7 @@
                     x:Name="PasswordBox"
                     Text="{Binding UserData.Password, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                     BorderBrush="{Binding ValidationResults[PasswordType].State, Converter={StaticResource StateToBrushConverter}}"
-                    IsEnabled="{Binding AreFieldsEnabled}"
+                    IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"
                     Margin="0,0,0,5" />
                 <Label
                     Content="{Binding ValidationResults[PasswordType].Message}"
@@ -72,12 +73,13 @@
                 HorizontalAlignment="Right" >
                 <Button
                     Content="Отмена"
-                    Command="{Binding CancelCommand}"                   
+                    Command="{Binding CancelCommand}"   
+                    IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"
                     Width="Auto" MinWidth="120"/>
                 <Button
                     Content="{Binding SubmitButtonText}"
                      Command="{Binding ToggleRegistrationCommand}"  
-                     IsEnabled="{Binding ToggleRegistrationCommand.CanExecute}"
+                     
                     Width="Auto" MinWidth="120"/>
             </StackPanel>
         </Grid>
