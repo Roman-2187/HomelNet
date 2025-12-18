@@ -16,8 +16,8 @@ namespace WpfHomeNet.Converters
             return value is bool boolValue ? !boolValue : false;
         }
     }
-}
 
+}
 
 
 

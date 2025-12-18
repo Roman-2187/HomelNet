@@ -64,6 +64,14 @@ namespace WpfHomeNet.ViewModels
             set => SetField(ref _controlVisibility, value);
         }
 
+
+        private Visibility _panelVisibility = Visibility.Collapsed;
+        public Visibility PanelVisibility
+        {
+            get => _panelVisibility;
+            set => SetField(ref _panelVisibility, value);
+        }
+
         private string _statusMessage = string.Empty;
         public string StatusMessage
         {

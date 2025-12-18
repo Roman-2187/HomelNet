@@ -1,4 +1,5 @@
 ﻿using HomeNetCore.Enums;
+using HomeNetCore.Models;
 using HomeNetCore.Models.InputUserData;
 using HomeNetCore.Services;
 using HomeNetCore.Services.UsersServices;
@@ -12,7 +13,11 @@ namespace WpfHomeNet.ViewModels
         #region поля и переменные
         private readonly RegisterService _registerService;
         private readonly UserService _userService;
+        private MainViewModel? _mainViewModel;
+        private UserEntity? _createdUser { get; set; }
 
+
+        
         public CreateUserInput UserData { get; set; } = new();
         public ICommand RegisterCommand { get; }
         public ICommand CancelCommand { get; }
@@ -25,6 +30,7 @@ namespace WpfHomeNet.ViewModels
            _userService = userService;
             _registerService = new RegisterService(_userService);
 
+           
             InitializeInitialHints();
 
             RegisterCommand = new RelayCommand(
@@ -60,7 +66,7 @@ namespace WpfHomeNet.ViewModels
 
         private void InitializeInitialHints()
         {
-                    var initialHints = new List<ValidationResult>
+                var initialHints = new List<ValidationResult>
             {
                 new(TypeField.EmailType, "Введите email например 'User@example.com'", ValidationState.Info, true),
                 new(TypeField.PasswordType, "Пароль должен содержать 8 символов  буквы и цифры", ValidationState.Info, true),
@@ -73,7 +79,7 @@ namespace WpfHomeNet.ViewModels
             SubmitButtonText = "Зарегистрироваться";
         }
 
-        
+        public void ConnectToMainViewModel(MainViewModel mainVm) => _mainViewModel = mainVm;
 
         private void ResetRegistrationForm()
         {
@@ -85,20 +91,19 @@ namespace WpfHomeNet.ViewModels
 
             ValidationResults = new Dictionary<TypeField, ValidationResult>();       
             
-            SubmitButtonText = "Зарегистрироваться"; 
-
-            IsComplete = false;           
+            SubmitButtonText = "Зарегистрироваться";                     
         }
 
         private async Task ExecuteRegisterCommand()
         {
 
             StatusMessage = string.Empty;
+
             ValidationResults = new Dictionary<TypeField, ValidationResult>();
 
             try
             {
-                 (IsComplete,ValidationResult) = await _registerService.RegisterUserAsync(UserData);
+                 (IsComplete,ValidationResult,_createdUser) = await _registerService.RegisterUserAsync(UserData);
 
                  ValidationResults = ValidationResult.ToDictionary(r => r.Field, r => r);
 
@@ -106,7 +111,13 @@ namespace WpfHomeNet.ViewModels
                 {
                     StatusMessage = "Вы успешно зарегистрированы";   
                     
-                    SubmitButtonText = "Завершить";     
+                    SubmitButtonText = "Завершить";
+
+                    if (_createdUser != null) 
+                    {
+                        _mainViewModel?.AddUserAction?.Invoke(_createdUser);                       
+                    }
+
                 }
                 else
                 {

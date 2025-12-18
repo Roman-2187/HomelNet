@@ -5,7 +5,13 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:WpfHomeNet.Controls"
              mc:Ignorable="d" 
+             xmlns:converter="clr-namespace:WpfHomeNet.Converters"
              d:DesignHeight="450" d:DesignWidth="200">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converter:InverseBooleanToVisibilityConverter x:Key="InverseBooleanVisibleConverter"/>
+        <converter:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+    </UserControl.Resources>
 
     <StackPanel x:Name="Menu" Visibility="Visible"  
                 IsEnabled="{Binding DataContext.IsButtonsPanelEnabled,
@@ -15,14 +21,20 @@
               Command="{Binding DataContext.ToggleFormVisibilityCommand,
               RelativeSource={RelativeSource AncestorType=Window}}"
               CommandParameter="{Binding DataContext.LoginViewModel,
-              RelativeSource={RelativeSource AncestorType=Window}}" />
-                                
-             <Button Content="Test list Users"/>
+              RelativeSource={RelativeSource AncestorType=Window}}" 
+                     
+              />
+        
+        
+        <Button Content="Test list Users"/>
 
              <Button Content="Добавить юзера"                     
               Command="{Binding DataContext.ToggleFormVisibilityCommand,
               RelativeSource={RelativeSource AncestorType=Window}}"
               CommandParameter="{Binding DataContext.RegistrationViewModel,
+              RelativeSource={RelativeSource AncestorType=Window}}"
+              IsEnabled="{Binding DataContext.RegistrationViewModel.IsComplete,
+              Converter={StaticResource InverseBooleanConverter},
               RelativeSource={RelativeSource AncestorType=Window}}"/> 
         
              <Button x:Name="DeleteUsers" Content="Удалить юзера"/>

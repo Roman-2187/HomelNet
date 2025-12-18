@@ -9,8 +9,9 @@
         WindowStartupLocation="CenterOwner"
         Background="Transparent">
 
-    <ContentControl Style="{StaticResource InnerBorderSolidColorStyle}"
-                    Background="#FFA4B291" >
+    <ContentControl 
+        Style="{StaticResource InnerBorderSolidColorStyle}"
+        Background="#FFA4B291" >
 
         <Grid Margin="15">
             <Grid.RowDefinitions>
@@ -19,7 +20,6 @@
                 <RowDefinition Height="59*"/>
                 <RowDefinition Height="20*"/>
             </Grid.RowDefinitions>
-
 
             <TextBlock Grid.Row="0" 
                 Text="Выберите пользователя для удаления:"
@@ -36,15 +36,6 @@
                          GotFocus="UserIdTextBox_GotFocus"
                          LostFocus="UserIdTextBox_LostFocus"
                          Padding="5">
-                    <TextBox.Template>
-                        <ControlTemplate TargetType="TextBox">
-                            <Border CornerRadius="5"
-                                    BorderBrush="DarkSlateGray"
-                                    BorderThickness="0.5" Background="{TemplateBinding Background}">
-                                <ScrollViewer x:Name="PART_ContentHost" />
-                            </Border>
-                        </ControlTemplate>
-                    </TextBox.Template>
                 </TextBox>
 
                 <Button x:Name="searchButton" 

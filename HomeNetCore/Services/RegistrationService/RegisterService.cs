@@ -17,12 +17,12 @@ namespace HomeNetCore.Services
            _userService = userService;
         }
 
-        public async Task<(bool IsSuccess, List<ValidationResult> Messages)> RegisterUserAsync(CreateUserInput userInput)
+        public async Task<(bool IsSuccess, List<ValidationResult> Messages, UserEntity? CreatedUser)> RegisterUserAsync(CreateUserInput userInput)
         {
             // 1. Валидация
             var validationResults = await ValidateInputAsync(userInput);
             if (validationResults.Any(r => r.State == ValidationState.Error))
-                return (false, validationResults);
+                return (false, validationResults,null);
 
             // 2. Создание модели
             var user = CreateUserEntity(userInput);
@@ -31,7 +31,7 @@ namespace HomeNetCore.Services
             try
             {
                 await _userService.AddUserAsync(user);
-                return (true, validationResults);
+                return (true, validationResults,user);
             }
             catch (Exception ex)
             {
@@ -40,7 +40,7 @@ namespace HomeNetCore.Services
                     State = ValidationState.Error,
                     Message = $"Ошибка сохранения пользователя: {ex.Message}"
                 };
-                return (false, new List<ValidationResult> { errorResult });
+                return (false, new List<ValidationResult> { errorResult },null);
             }
         }
 

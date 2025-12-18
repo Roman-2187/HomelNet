@@ -88,6 +88,8 @@ namespace HomeSocialNetwork
 
                 AdminMenuViewModel.ConnectToMainViewModel(MainVm);
 
+                _registrationViewModel.ConnectToMainViewModel(MainVm);
+
                 _mainWindow.Show();
             }
             catch (Exception ex)
@@ -148,7 +150,7 @@ namespace HomeSocialNetwork
                 _userRepository = new UserRepository(_connection, _userSqlGen);
                 _userService = new UserService(_userRepository, _logger);
 
-                // 7. Создаём VM
+               
                 _registrationViewModel = new RegistrationViewModel(_userService);
 
 
@@ -161,6 +163,8 @@ namespace HomeSocialNetwork
                 _mainVm = new MainViewModel(UserService, Logger, RegistrationViewModel, LoginViewModel,AdminMenuViewModel,LogWindow,_logViewModel);
 
                 _logger.LogInformation("Инициализация завершена");
+
+              
                 
             }
             catch (Exception ex)

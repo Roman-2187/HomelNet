@@ -7,6 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:viewmodels="clr-namespace:WpfHomeNet.ViewModels"  
     xmlns:relayComand="clr-namespace:WpfHomeNet"    
+        xmlns:converter="clr-namespace:WpfHomeNet.Converters"
     mc:Ignorable="d"        
     WindowStyle="None"
     ResizeMode="CanResize"           
@@ -26,6 +27,8 @@
             <Setter Property="BorderThickness" Value="0.6"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
         </Style>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converter:InverseBooleanToVisibilityConverter x:Key="InverseBooleanVisibleConverter"/>
     </Window.Resources>
 
     <ContentControl 
@@ -73,7 +76,9 @@
                                
 
             <!-- Верхнее меню -->
-            <StackPanel x:Name="UpperMenu" Visibility="Visible" 
+            <StackPanel x:Name="UpperMenu" 
+                         Visibility="{Binding RegistrationViewModel.IsComplete,
+                   Converter={StaticResource InverseBooleanVisibleConverter}}"
                         IsEnabled="{Binding IsButtonsPanelEnabled}"
                         HorizontalAlignment="Right"
                         Grid.Row="0"               
@@ -97,10 +102,15 @@
                     Content="×" Width="Auto"/>
 
             <!-- Кнопка выхода из аккаунта-->
-            <Button x:Name="ButtonExit" Grid.Column="4"
-                    Content="Выйти из аккаунта"
-                    Visibility="Collapsed"/>
-
+            <Button x:Name="ButtonExit" Grid.Column="3" Grid.ColumnSpan="2" HorizontalAlignment="Right"
+                    Content="Выйти из аккаунта"  
+                    
+                          Visibility="{Binding RegistrationViewModel.IsComplete,
+                          Converter={StaticResource BooleanToVisibilityConverter}}"
+     
+                  
+     />
+            
             <controls:RegistrationViewControl 
             Grid.Row="1" Grid.Column="1"
             Grid.ColumnSpan="4"
