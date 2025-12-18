@@ -16,6 +16,7 @@
 
     <UserControl.Resources>
         <converter:StateToBrushConverter x:Key="StateToBrushConverter"/>
+        <converter:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
     </UserControl.Resources>
     
 
@@ -25,9 +26,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
-               
             </Grid.RowDefinitions>
-
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
@@ -38,9 +37,7 @@
                 <TextBox
                     Text="{Binding UserData.Email, UpdateSourceTrigger=PropertyChanged}"
                     BorderBrush="{Binding ValidationResults[EmailType].State, Converter={StaticResource StateToBrushConverter}}"
-                    IsEnabled="{Binding AreFieldsEnabled}"
-                    
-                    />
+                    IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}" />
                 <Label
                     Content="{Binding ValidationResults[EmailType].Message}"
                     Foreground="{Binding ValidationResults[EmailType].State, Converter={StaticResource StateToBrushConverter}}"
@@ -55,18 +52,16 @@
                     x:Name="PasswordBox"
                     Text="{Binding UserData.Password, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                     BorderBrush="{Binding ValidationResults[PasswordType].State, Converter={StaticResource StateToBrushConverter}}"
-                    IsEnabled="{Binding AreFieldsEnabled}"
+                    IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"
                     Margin="0,0,0,5" />
-                     
-                   
-                   
                 <Label
                     Content="{Binding ValidationResults[PasswordType].Message}"
                     Foreground="{Binding ValidationResults[PasswordType].State, Converter={StaticResource StateToBrushConverter}}"
                     FontSize="10"
                     HorizontalContentAlignment="Center"/>
             </StackPanel>
-
+            
+            
             <Label Grid.Row="2" Content="{Binding StatusMessage}" />
 
 
@@ -75,17 +70,16 @@
                 Grid.Row="3"
                 Grid.ColumnSpan="2"
                 Orientation="Horizontal"
-                HorizontalAlignment="Right"
-                >
+                HorizontalAlignment="Right" >
                 <Button
                     Content="Отмена"
-                    Command="{Binding CancelCommand}"
-                    
+                    Command="{Binding CancelCommand}"   
+                    IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"
                     Width="Auto" MinWidth="120"/>
                 <Button
                     Content="{Binding SubmitButtonText}"
                      Command="{Binding ToggleRegistrationCommand}"  
-                     IsEnabled="{Binding ToggleRegistrationCommand.CanExecute}"
+                     
                     Width="Auto" MinWidth="120"/>
             </StackPanel>
         </Grid>

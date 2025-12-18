@@ -1,12 +1,13 @@
 ﻿<Window x:Class="WpfHomeNet.MainWindow"  WindowStartupLocation="Manual"       
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-     xmlns:controls="clr-namespace:WpfHomeNet.Controls"     
+    xmlns:controls="clr-namespace:WpfHomeNet.Controls"     
     xmlns:local="clr-namespace:WpfHomeNet.UiHelpers"   
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:viewmodels="clr-namespace:WpfHomeNet.ViewModels"
-       
+    xmlns:viewmodels="clr-namespace:WpfHomeNet.ViewModels"  
+    xmlns:relayComand="clr-namespace:WpfHomeNet"    
+        xmlns:converter="clr-namespace:WpfHomeNet.Converters"
     mc:Ignorable="d"        
     WindowStyle="None"
     ResizeMode="CanResize"           
@@ -18,7 +19,7 @@
     FontFamily="Calibri"
     FontSize="14"                             
     Background="Transparent"
-    Loaded="Window_Loaded">
+   >
     <Window.Resources>
        
         <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
@@ -26,6 +27,8 @@
             <Setter Property="BorderThickness" Value="0.6"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
         </Style>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converter:InverseBooleanToVisibilityConverter x:Key="InverseBooleanVisibleConverter"/>
     </Window.Resources>
 
     <ContentControl 
@@ -65,31 +68,17 @@
                        Foreground="Black"/>
             </Border>
 
-            <!-- Контейнер админ меню -->
-            <StackPanel x:Name="Menu" Visibility="Visible"
-                       Grid.Column="0" Grid.Row="1"
-                       Grid.RowSpan="3" Margin="0,0,0,0">
-                <Button Content="Test list Users"
-                        Click="AddUsersList_Click"  />
-                <Button Content="Добавить юзера"
-                        Click="AddUser_Click"/>
-                <Button x:Name="DeleteButton"
-                        Click="RemoveUser_Click"
-                        Content="Удалить юзера"/>
-                <Button x:Name="ShowButton" 
-                        Click="ShowUsers_Click"
-                        Content="Показать юзеров"/>
-                <Button Content="Обновить юзеров"
-                        Click="RefreshStatus_Click"/>
-                <Button x:Name="btnLogs"
-                        Click="ShowWindowLogs_Click"
-                        Content="Показать логи"/>
-            </StackPanel>
-
-           
+            <controls:AdminMenu
+                Grid.Row="1"
+                Grid.RowSpan="3"
+                Visibility="Visible" 
+                DataContext="{Binding AdminMenuViewModel}" />
+                               
 
             <!-- Верхнее меню -->
-            <StackPanel x:Name="UpperMenu" Visibility="Visible" 
+            <StackPanel x:Name="UpperMenu" 
+                         Visibility="{Binding RegistrationViewModel.IsComplete,
+                   Converter={StaticResource InverseBooleanVisibleConverter}}"
                         IsEnabled="{Binding IsButtonsPanelEnabled}"
                         HorizontalAlignment="Right"
                         Grid.Row="0"               
@@ -97,12 +86,14 @@
                         Orientation="Horizontal"                        
                         Grid.ColumnSpan="2">
                 <Button MinWidth="120"   
-                         Command="{Binding ShowRegistrationCommand}"                        
-                         Content="Регистрация" />
+                        Command="{Binding ToggleFormVisibilityCommand}"
+                        CommandParameter="{Binding RegistrationViewModel}"                      
+                        Content="Регистрация" />
                 <Button Width="Auto"                       
-                         Command="{Binding ShowLoginCommand}"                       
-                         Content="Вход в профиль" 
-                         MinWidth="120" />
+                        Command="{Binding ToggleFormVisibilityCommand}"
+                        CommandParameter="{Binding LoginViewModel}"                    
+                        Content="Вход в профиль" 
+                        MinWidth="120" />
             </StackPanel>
             
             <!-- Кнопка выхода -->
@@ -111,22 +102,35 @@
                     Content="×" Width="Auto"/>
 
             <!-- Кнопка выхода из аккаунта-->
-            <Button x:Name="ButtonExit" Grid.Column="4"
-                    Content="Выйти из аккаунта"
-                    Visibility="Collapsed"/>
-
-            <!-- Контрол регистрации реализован в коде позади -->
+            <Button x:Name="ButtonExit" Grid.Column="3" Grid.ColumnSpan="2" HorizontalAlignment="Right"
+                    Content="Выйти из аккаунта"  
+                    
+                          Visibility="{Binding RegistrationViewModel.IsComplete,
+                          Converter={StaticResource BooleanToVisibilityConverter}}"
+     
+                  
+     />
             
-
-            <!-- Контрол входа в профиль реализован в коде позади -->
-
-
+            <controls:RegistrationViewControl 
+            Grid.Row="1" Grid.Column="1"
+            Grid.ColumnSpan="4"
+            Grid.RowSpan="4" 
+            DataContext="{Binding RegistrationViewModel}" 
+            Visibility="{Binding ControlVisibility}"  />
+         
+            <controls:LoginViewControl
+             DataContext="{Binding LoginViewModel}" 
+             Visibility="{Binding ControlVisibility}"
+             Grid.Row="1" Grid.Column="1"
+             Grid.ColumnSpan="4"
+             Grid.RowSpan="4"/>
+   
             <controls:UsersTableView x:Name="userTableView" 
                         Visibility="Collapsed"
                         Grid.RowSpan="2"
                         Grid.ColumnSpan="6" 
                         Grid.Row="3"/>
-                       
+                                   
             <!-- Контейнер статус бар -->
             <ContentControl
                     Style="{StaticResource

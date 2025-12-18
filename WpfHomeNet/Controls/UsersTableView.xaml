@@ -5,21 +5,21 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"  
              Height="Auto" Width="Auto">
-    <!-- Внешний контейнер: ContentControl с новым стилем -->
+   
     <ContentControl Style="{StaticResource InnerBorderSolidColorStyle}" Padding="4" >
         <Grid>
             <!-- Две строки: заголовки и данные -->
             <Grid.RowDefinitions>
                 <RowDefinition Height="40"/>
-                <!-- Заголовки -->
+               
                 <RowDefinition MinHeight="100" Height="*"/>
-                <!-- Данные с прокруткой -->
+               
             </Grid.RowDefinitions>
 
             <!-- 1. Заголовки с внутренней рамкой -->
             <ContentControl Style="{StaticResource InnerBorderTitleStyle}" Grid.Row="0" Margin="2" Grid.ColumnSpan="7" Padding="8"  >
                 <Grid>
-                    <!-- Ваши колонки и TextBlock-заголовки -->
+                 
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="50"/>
                         <ColumnDefinition MinWidth="90" MaxWidth="170"/>
@@ -36,7 +36,7 @@
                     <TextBlock Grid.Column="4" Text="Email" />
                     <TextBlock Grid.Column="5" Text="Пароль" />
                     <TextBlock Grid.Column="6" Text="Дата создания" />
-                    <!-- ... остальные заголовки ... -->
+               
                 </Grid>
             </ContentControl>
             <ScrollViewer Grid.Row="1" x:Name="UserPanel" HorizontalScrollBarVisibility="Disabled"
