@@ -135,6 +135,7 @@ namespace WpfHomeNet.ViewModels
 
             if (vm?.ControlVisibility != null)
             {
+                if (PanelVisibility == Visibility.Visible) return;
                 vm.ControlVisibility = vm.ControlVisibility == Visibility.Collapsed
                     ? Visibility.Visible
                     : Visibility.Collapsed;
