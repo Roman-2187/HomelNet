@@ -102,7 +102,8 @@ namespace WpfHomeNet.Data.DBProviders.Postgres
                             break;
                         case ColumnType.Integer:
                         case ColumnType.Boolean:
-                            defaultValue = col.DefaultValue.ToString();  // Числа и булевы без кавычек
+                            defaultValue = col.DefaultValue.ToString() 
+                            ?? throw new InvalidOperationException($"Некорректное дефолтное значение для колонки {col.Name}"); 
                             break;
                         default:
                             defaultValue = $"'{col.DefaultValue}'";
@@ -178,28 +179,6 @@ namespace WpfHomeNet.Data.DBProviders.Postgres
             return builder.ToString();
         }
 
-        // Добавим методы для создания индексов и ограничений
-        //public string CreateIndex(string tableName, string columnName)
-        //{
-        //    return $"CREATE INDEX idx_{ToSnakeCase(tableName)}_{ToSnakeCase(columnName)} " +
-        //           $"ON \"{ConvertTableName(tableName)}\"(\"{GetColumnName(columnName)}\")";
-        //}
-
-        //public string CreateForeignKey(string tableName, string columnName, string referencedTable, string referencedColumn)
-        //{
-        //    return $"ALTER TABLE \"{GetTableName(tableName)}\" " +
-        //           $"ADD CONSTRAINT fk_{ToSnakeCase(tableName)}_{ToSnakeCase(columnName)} " +
-        //           $"FOREIGN KEY (\"{GetColumnName(columnName)}\") " +
-        //           $"REFERENCES \"{GetTableName(referencedTable)}\"(\"{GetColumnName(referencedColumn)}\")";
-        //}
-
-        //// Метод для создания таблицы
-        //public string CreateTable(TableSchema schema)
-        //{
-        //    var columns = GetColumnDefinitions(schema);
-        //    var columnDefinitions = string.Join(",\n    ", columns);
-
-        //    return $"CREATE TABLE \"{GetTableName(schema.TableName)}\" (\n    {columnDefinitions}\n)";
-        //}
+       
     }
 }

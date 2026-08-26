@@ -14,6 +14,11 @@ namespace WpfHomeNet.ViewModels
 
         public Action<UserEntity?>? AddUserAction { get; private set; }
         public RegistrationViewModel RegistrationViewModel { get; set; }
+       
+
+        // Внутри MainViewModel.cs
+        public DeleteUsersViewModel DeleteUsersViewModel { get; set; }
+
         public LoginViewModel LoginViewModel { get; set; }
         public LogWindow LogWindow { get; set; }
 
@@ -41,7 +46,7 @@ namespace WpfHomeNet.ViewModels
             RegistrationViewModel registrationVm,
             LoginViewModel loginViewModel,
             AdminMenuViewModel adminMenuViewModel,
-            LogWindow logWindow, LogViewModel logView)
+            LogWindow logWindow, LogViewModel logView,DeleteUsersViewModel deleteUsersModel)
 
         {
             this.userService = userService;
@@ -51,6 +56,8 @@ namespace WpfHomeNet.ViewModels
             AdminMenuViewModel = adminMenuViewModel;
             LogWindow = logWindow;
             LogVm = logView;
+            DeleteUsersViewModel = deleteUsersModel;
+
 
 
             AddUserAction = async (user) =>

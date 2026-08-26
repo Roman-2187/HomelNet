@@ -124,7 +124,14 @@
              Grid.Row="1" Grid.Column="1"
              Grid.ColumnSpan="4"
              Grid.RowSpan="4"/>
-   
+
+            <controls:DeleteUsers
+             DataContext="{Binding DeleteUsersViewModel}" 
+             Visibility="{Binding ControlVisibility}"
+             Grid.Row="1" Grid.Column="1"
+             Grid.ColumnSpan="4"
+             Grid.RowSpan="4"/>
+
             <controls:UsersTableView x:Name="userTableView" 
                       Visibility="{Binding PanelVisibility}" 
                         Grid.RowSpan="2"

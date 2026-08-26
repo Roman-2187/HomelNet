@@ -36,6 +36,9 @@ namespace HomeSocialNetwork
         private ISchemaAdapter? _schemaAdapter;
         private MainWindow? _mainWindow;
 
+        public DeleteUsersViewModel? _deleteUsersModel;
+        public DeleteUsersViewModel? DeleteUsersModel => _deleteUsersModel ?? throw new InvalidOperationException($"{nameof(_deleteUsersModel)} не инициализирован");
+
         public LogWindow LogWindow => _logWindow ?? throw new InvalidOperationException($"{nameof(_logWindow)} не инициализирован");
         public LogWindow? _logWindow;
 
@@ -112,8 +115,7 @@ namespace HomeSocialNetwork
                
 
                 _logWindow = new LogWindow(_logger);
-
-               
+           
 
                 _logQueueManager = new LogQueueManager(LogWindow, 20);
                 
@@ -160,7 +162,11 @@ namespace HomeSocialNetwork
 
                 _adminMenuViewModel  = new AdminMenuViewModel();
 
-                _mainVm = new MainViewModel(UserService, Logger, RegistrationViewModel, LoginViewModel,AdminMenuViewModel,LogWindow,_logViewModel);
+                _deleteUsersModel = new DeleteUsersViewModel(_userService);
+
+                _mainVm = new MainViewModel(
+                    UserService, Logger, RegistrationViewModel,
+                    LoginViewModel,AdminMenuViewModel,LogWindow,_logViewModel,_deleteUsersModel);
 
                 _logger.LogInformation("Инициализация завершена");
 

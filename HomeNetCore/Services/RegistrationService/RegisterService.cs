@@ -44,11 +44,6 @@ namespace HomeNetCore.Services
             }
         }
 
-
-
-
-
-
         private async Task<List<ValidationResult>> ValidateInputAsync(CreateUserInput input)
         {
             var results = new List<ValidationResult>
@@ -128,7 +123,6 @@ namespace HomeNetCore.Services
 
 
         }
-
 
         private ValidationResult ValidateUserName(string userName)
         {

@@ -35,9 +35,15 @@
               RelativeSource={RelativeSource AncestorType=Window}}"
               IsEnabled="{Binding DataContext.RegistrationViewModel.IsComplete,
               Converter={StaticResource InverseBooleanConverter},
-              RelativeSource={RelativeSource AncestorType=Window}}"/> 
-        
-             <Button x:Name="DeleteUsers" Content="Удалить юзера"/>
+              RelativeSource={RelativeSource AncestorType=Window}}"/>
+
+        <Button x:Name="DeleteUsers" Content="Удалить юзера"                     
+        Command="{Binding DataContext.ToggleFormVisibilityCommand, 
+            RelativeSource={RelativeSource AncestorType=Window}}"
+        CommandParameter="{Binding DataContext.DeleteUsersViewModel,
+            RelativeSource={RelativeSource AncestorType=Window}}"/>
+
+
 
         <Button x:Name="ShowUsers" Content="{Binding TableButtonText}"                     
               Command="{Binding UserTableViewCommand}"/>
