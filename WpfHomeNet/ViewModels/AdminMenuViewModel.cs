@@ -1,8 +1,9 @@
-﻿using System.ComponentModel;
-using System.Diagnostics;
+﻿using HomeNetCore.Services;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 using static WpfHomeNet.ViewModels.LogViewModel;
+using HomeNetCore.Models;
 
 
 
@@ -11,6 +12,12 @@ namespace WpfHomeNet.ViewModels
     public class AdminMenuViewModel : INotifyPropertyChanged
     {       
         private MainViewModel? _mainVm;
+       
+        private UserService _userService;
+
+        // Сюда главная модель передаст команду на обновление списка
+        public Action? OnDataSeeded { get; set; }
+
 
         public MainViewModel MainVm
         {
@@ -47,11 +54,15 @@ namespace WpfHomeNet.ViewModels
         }
 
 
-        public AdminMenuViewModel()
+        public AdminMenuViewModel(UserService userService)
         {
             ToggleLogWindowCommand = new RelayCommand(ExecuteToggleLogWindow);
 
             UserTableViewCommand = new RelayCommand(parameter => ExecuteUserTableViewVisible());
+
+            _userService = userService;
+
+           
         }
 
         public void ConnectToMainViewModel(MainViewModel mainVm) => MainVm = mainVm;
@@ -88,6 +99,43 @@ namespace WpfHomeNet.ViewModels
         }
 
 
+        // Команда для кнопки
+        public ICommand SeedDataCommand => new RelayCommand(async _ => await ExecuteSeedDataAsync());
+
+        private async Task ExecuteSeedDataAsync()
+        {
+            int addedCount = 0;
+
+            try
+            {
+                foreach (var user in DbSeedData.Users)
+                {
+                    // Проверяем email на уникальность перед заливкой
+                    bool emailExists = await _userService.CheckEmailExistsAsync(user.Email);
+
+                    if (!emailExists)
+                    {
+                        await _userService.AddUserAsync(user);
+                        addedCount++;
+                    }
+                }
+
+                if (addedCount > 0)
+                {
+                    // Дергаем за ниточку Главную модель, чтобы она перечитала базу данных!
+                    OnDataSeeded?.Invoke();
+                }
+                else
+                {
+                    // Если добавлено 0 (нажали второй раз) — пишем в дебаг, что все уже там
+                    System.Diagnostics.Debug.WriteLine("Все пользователи уже добавлены!");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Ошибка генерации: {ex.Message}");
+            }
+        }
 
 
 

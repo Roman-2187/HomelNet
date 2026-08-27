@@ -12,6 +12,11 @@ namespace WpfHomeNet.ViewModels
         // События
         public event PropertyChangedEventHandler? PropertyChanged;
 
+        public void ResetSession()
+        {
+            IsComplete = false;
+            OnPropertyChanged(nameof(IsComplete)); // Сам пинает свой XAML
+        }
 
         private List<ValidationResult>? _validationResult;
 

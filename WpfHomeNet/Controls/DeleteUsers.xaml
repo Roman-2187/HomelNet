@@ -53,6 +53,8 @@
                 <ListBox Style="{StaticResource RoundedListBox}" 
                          x:Name="userListBox"  
                          DisplayMemberPath="DisplayInfo"
+                          ItemsSource="{Binding MainUsersList}"
+                         SelectedItem="{Binding SelectedUser}"
                          SelectedValuePath="Id"  
                          Margin="5"  
                          Background="Transparent" >

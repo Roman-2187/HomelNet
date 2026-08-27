@@ -1,4 +1,6 @@
-﻿using HomeNetCore.Services;
+﻿using HomeNetCore.Models;
+using HomeNetCore.Services;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Input;
 
@@ -10,7 +12,39 @@ namespace WpfHomeNet.ViewModels
         private readonly UserService _userService;
         private MainViewModel? _mainViewModel;
 
-       
+        // Обязательно public! С точным соблюдением регистра букв!
+        private ObservableCollection<UserEntity>? _mainUsersList;
+        public ObservableCollection<UserEntity>? MainUsersList
+        {
+            get => _mainUsersList;
+            set
+            {
+                _mainUsersList = value;
+                OnPropertyChanged(nameof(MainUsersList)); // Пинаем XAML, чтобы он перерисовал список!
+            }
+        }
+
+
+        private UserEntity? _selectedUser;
+        public UserEntity? SelectedUser
+        {
+            get => _selectedUser;
+            set
+            {
+                _selectedUser = value;
+                OnPropertyChanged(nameof(SelectedUser));
+
+                // Если админ выбрал юзера из списка — автоматом подставляем ID и включаем кнопку!
+                if (_selectedUser != null)
+                {
+                    TargetUserId = _selectedUser.Id.ToString();
+                    CanDelete = true;
+                }
+            }
+        }
+
+
+
 
         // 1. НАСТОЯЩЕЕ СВОЙСТВО ДЛЯ ТЕКСТБОКСА ИЗ ТВОЕЙ РАЗМЕТКИ!
         private string _targetUserId = string.Empty;
@@ -116,21 +150,26 @@ namespace WpfHomeNet.ViewModels
         // Логика удаления
         private async Task ExecuteDeleteCommandAsync()
         {
-            if (!int.TryParse(TargetUserId, out int id)) return;
+            // Берем ID либо из выделенного юзера, либо из текстового поля (если вбили руками)
+            int id = _selectedUser?.Id ?? (int.TryParse(TargetUserId, out int parsedId) ? parsedId : -1);
+
+            if (id == -1) return;
 
             StatusMessage = $"Удаление пользователя с ID {id}...";
 
             try
             {
-                // Вызываем метод из сервиса (передаём только ID)
+                // 1. Стираем из базы данных
                 await _userService.DeleteUserAsync(id);
 
                 StatusMessage = $"Пользователь с ID {id} успешно удален из системы.";
                 CanDelete = false;
 
-                // ИСПРАВЛЕНО: Вместо null-объекта вызываем наш рабочий делегат!
+                // 2. Дергаем наш безотказный делегат-провод, чтобы обновить Главный экран и статус-бар!
                 OnUserDeletedFromDb?.Invoke(id);
 
+                // 3. Сбрасываем выделение, чтобы очистить твой модный ListBox
+                SelectedUser = null;
                 TargetUserId = string.Empty;
             }
             catch (Exception ex)

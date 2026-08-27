@@ -1,6 +1,6 @@
 ﻿namespace HomeNetCore.Models
 {
-    public class TestUserList
+    public class DbSeedData
     {
 
       

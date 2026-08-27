@@ -24,11 +24,12 @@
               RelativeSource={RelativeSource AncestorType=Window}}" 
                      
               />
-        
-        
-             <Button Content="Test list Users"/>
 
-             <Button Content="Добавить юзера"                     
+
+        <Button Content="Test list Users" Command="{Binding SeedDataCommand}"/>
+
+
+        <Button Content="Добавить юзера"                     
               Command="{Binding DataContext.ToggleFormVisibilityCommand,
               RelativeSource={RelativeSource AncestorType=Window}}"
               CommandParameter="{Binding DataContext.RegistrationViewModel,

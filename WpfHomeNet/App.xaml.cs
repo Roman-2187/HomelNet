@@ -161,7 +161,7 @@ namespace HomeSocialNetwork
 
                 _logViewModel = new LogViewModel(LogQueueManager);
 
-                _adminMenuViewModel  = new AdminMenuViewModel();
+                _adminMenuViewModel  = new AdminMenuViewModel(_userService);
 
                 _deleteUsersModel = new DeleteUsersViewModel(_userService);
 

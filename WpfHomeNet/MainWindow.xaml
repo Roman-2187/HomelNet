@@ -106,6 +106,7 @@
                     Grid.Column="3" 
                     Grid.ColumnSpan="2" 
                     HorizontalAlignment="Right"
+                    Command="{Binding LogoutCommand}"
                     Content="Выйти из аккаунта"                     
                     Visibility="{Binding RegistrationViewModel.IsComplete,
                     Converter={StaticResource BooleanToVisibilityConverter}}" />

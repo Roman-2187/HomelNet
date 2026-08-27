@@ -87,6 +87,7 @@ namespace WpfHomeNet.ViewModels
                     Application.Current.Dispatcher.Invoke(() => Users.Remove(userToRemove));
 
                     await UpdateStatusText($"Пользователь {name} удален");
+              
                 }
             };
 
@@ -108,8 +109,30 @@ namespace WpfHomeNet.ViewModels
             LoginViewModel.PropertyChanged += OnChildVmPropertyChanged;
             DeleteUsersViewModel.PropertyChanged += OnChildVmPropertyChanged;
 
-            // Запускаем безопасную асинхронную инициализацию данных
-            _ = InitializeAsync();
+
+            // ... твои старые подписки в конце конструктора MainViewModel:
+            RegistrationViewModel.PropertyChanged += OnChildVmPropertyChanged;
+            LoginViewModel.PropertyChanged += OnChildVmPropertyChanged;
+            DeleteUsersViewModel.PropertyChanged += OnChildVmPropertyChanged;
+
+            // ДОБАВЛЯЕМ СЮДА ЖЕЛЕЗНУЮ ПОДПИСКУ НА КНОПКУ АДМИНКИ:
+            AdminMenuViewModel.OnDataSeeded = async () =>
+            {
+                // Возвращаемся в UI-поток WPF, чтобы безопасно перерисовать таблицу
+                await Application.Current.Dispatcher.InvokeAsync(async () =>
+                {
+                    // 1. Просим главную модель заново перечитать базу данных
+                    await LoadUsersAsync();
+
+                    // 2. Включаем красивую цепочку анимации твоего статус-бара
+                    await UpdateStatusText("Тестовые пользователи успешно добавлены!");
+                });
+            };
+         // конец конструктора
+
+
+        // Запускаем безопасную асинхронную инициализацию данных
+        _ = InitializeAsync();
         }
 
         // Безопасный запуск первичной загрузки данных при старте программы
@@ -135,12 +158,12 @@ namespace WpfHomeNet.ViewModels
             await Task.Delay(1000);
 
             StatusText = text;
-            await Task.Delay(1500);
+            await Task.Delay(3000);
 
             StatusText = $"Загружено {_users.Count} пользователей";
         }
 
-        private async Task LoadUsersAsync()
+        public async Task LoadUsersAsync()
         {
             var usersList = await this.userService.GetAllUsersAsync();
 
@@ -150,6 +173,27 @@ namespace WpfHomeNet.ViewModels
                 Users = new ObservableCollection<UserEntity>(usersList);
             });
         }
+
+        public ICommand LogoutCommand => new RelayCommand(_ =>
+        {
+            // 1. Сбрасываем флаг успешного входа в RegistrationViewModel (или где он у тебя хранится)
+            if (RegistrationViewModel != null)
+            {
+                RegistrationViewModel.ResetSession();
+                // Пинаем интерфейс, чтобы скрылась кнопка Выхода и вернулось меню Входа/Регистрации
+                OnPropertyChanged(nameof(RegistrationViewModel.IsComplete));
+            }
+
+            // 2. Схлопываем видимость всех панелей и таблиц обратно в Collapsed
+            PanelVisibility = Visibility.Collapsed;
+            if (DeleteUsersViewModel != null) DeleteUsersViewModel.ControlVisibility = Visibility.Collapsed;
+            if (RegistrationViewModel != null) RegistrationViewModel.ControlVisibility = Visibility.Collapsed;
+            if (LoginViewModel != null) LoginViewModel.ControlVisibility = Visibility.Collapsed;
+
+            // 3. Выводим красивый статус на прощание
+            _ = UpdateStatusText("Выход из аккаунта выполнен успешно");
+        });
+
 
         public ICommand ToggleFormVisibilityCommand => new RelayCommand(parameter =>
         {
@@ -181,6 +225,11 @@ namespace WpfHomeNet.ViewModels
                 if (sender is FormViewModelBase form)
                 {
                     string formName = "Форма";
+
+                    if (form.ControlVisibility == Visibility.Visible)
+                    {
+                        DeleteUsersViewModel.MainUsersList = this.Users;
+                    }
 
                     if (sender is DeleteUsersViewModel)
                         formName = "Удаление пользователей";
