@@ -39,6 +39,7 @@ namespace WpfHomeNet.ViewModels
         public ICommand SearchCommand { get; }
         public ICommand DeleteCommand { get; }
         public ICommand CancelCommand { get; }
+        public Action<int>? OnUserDeletedFromDb { get; internal set; }
 
         public DeleteUsersViewModel(UserService userService)
         {
@@ -121,14 +122,14 @@ namespace WpfHomeNet.ViewModels
 
             try
             {
-                // Вызываем твой метод из сервиса (передаём только ID)
+                // Вызываем метод из сервиса (передаём только ID)
                 await _userService.DeleteUserAsync(id);
 
                 StatusMessage = $"Пользователь с ID {id} успешно удален из системы.";
                 CanDelete = false;
 
-                // Пинаем таблицу на главном экране через экшн, чтобы строка пропала
-                _mainViewModel?.RemoveUserAction?.Invoke(id);
+                // ИСПРАВЛЕНО: Вместо null-объекта вызываем наш рабочий делегат!
+                OnUserDeletedFromDb?.Invoke(id);
 
                 TargetUserId = string.Empty;
             }
@@ -137,6 +138,7 @@ namespace WpfHomeNet.ViewModels
                 StatusMessage = $"Ошибка удаления: {ex.Message}";
             }
         }
+
     }
 }
 
