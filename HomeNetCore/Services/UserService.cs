@@ -75,21 +75,27 @@ namespace HomeNetCore.Services
         }
 
 
-        public async Task DeleteUserAsync(int userId,string userName)
+        // Сделали userName необязательным (= null)
+        public async Task DeleteUserAsync(int userId, string? userName = null)
         {
             try
             {
                 await _repo.DeleteByIdAsync(userId);
 
-                _logger.LogInformation($"Пользователь{userName} с ID {userId} удалён.");
+                // Формируем красивый лог в зависимости от того, есть имя или нет
+                string logMessage = string.IsNullOrEmpty(userName)
+                    ? $"Пользователь с ID {userId} удалён."
+                    : $"Пользователь {userName} с ID {userId} удалён.";
 
+                _logger.LogInformation(logMessage);
             }
             catch (NotFoundException ex)
             {
-                _logger.LogWarning("Попытка удалить несуществующего пользователя",ex.Message );
+                _logger.LogWarning("Попытка удалить несуществующего пользователя", ex.Message);
                 throw;
             }
         }
+
 
 
         public async Task<UserEntity?> GetUserByIdAsync(int userId)

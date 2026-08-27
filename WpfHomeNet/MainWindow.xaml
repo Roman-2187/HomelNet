@@ -102,15 +102,14 @@
                     Content="×" Width="Auto"/>
 
             <!-- Кнопка выхода из аккаунта-->
-            <Button x:Name="ButtonExit" Grid.Column="3" Grid.ColumnSpan="2" HorizontalAlignment="Right"
-                    Content="Выйти из аккаунта"  
-                    
-                          Visibility="{Binding RegistrationViewModel.IsComplete,
-                          Converter={StaticResource BooleanToVisibilityConverter}}"
-     
-                  
-     />
-            
+            <Button x:Name="ButtonExit"
+                    Grid.Column="3" 
+                    Grid.ColumnSpan="2" 
+                    HorizontalAlignment="Right"
+                    Content="Выйти из аккаунта"                     
+                    Visibility="{Binding RegistrationViewModel.IsComplete,
+                    Converter={StaticResource BooleanToVisibilityConverter}}" />
+                 
             <controls:RegistrationViewControl 
             Grid.Row="1" Grid.Column="1"
             Grid.ColumnSpan="4"
@@ -130,13 +129,13 @@
              Visibility="{Binding ControlVisibility}"
              Grid.Row="1" Grid.Column="1"
              Grid.ColumnSpan="4"
-             Grid.RowSpan="4"/>
+             Grid.RowSpan="3" Margin="2"/>
 
             <controls:UsersTableView x:Name="userTableView" 
-                      Visibility="{Binding PanelVisibility}" 
-                        Grid.RowSpan="2"
-                        Grid.ColumnSpan="6" 
-                        Grid.Row="3"/>
+            Visibility="{Binding PanelVisibility}" 
+            Grid.RowSpan="2"
+            Grid.ColumnSpan="6" 
+             Grid.Row="3"/>
                                    
             <!-- Контейнер статус бар -->
             <ContentControl

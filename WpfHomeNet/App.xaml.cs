@@ -52,7 +52,8 @@ namespace HomeSocialNetwork
         private ILogger? _logger;
 
         public IStatusUpdater Status => _status ?? throw new InvalidOperationException($"{nameof(_status)} не инициализирован");
-        private IStatusUpdater? _status;
+        private IStatusUpdater? _status = null;
+
 
         private LogQueueManager LogQueueManager => _logQueueManager ?? throw new InvalidOperationException($"{nameof(_logQueueManager)} не инициализирован");
         private LogQueueManager? _logQueueManager;

@@ -14,9 +14,9 @@ namespace WpfHomeNet.ViewModels
 
         public Action<UserEntity?>? AddUserAction { get; private set; }
         public RegistrationViewModel RegistrationViewModel { get; set; }
-       
 
-        // Внутри MainViewModel.cs
+        public Action<int>? RemoveUserAction { get; set; }
+
         public DeleteUsersViewModel DeleteUsersViewModel { get; set; }
 
         public LoginViewModel LoginViewModel { get; set; }
@@ -28,7 +28,8 @@ namespace WpfHomeNet.ViewModels
 
         public MainWindow MainWindow
         {
-            get => _mainWindow ?? throw new InvalidOperationException($"{nameof(_mainWindow)} не инициализирован");
+            get => _mainWindow ??
+                throw new InvalidOperationException($"{nameof(_mainWindow)} не инициализирован");
             set => _mainWindow = value;
         }
 
@@ -46,7 +47,8 @@ namespace WpfHomeNet.ViewModels
             RegistrationViewModel registrationVm,
             LoginViewModel loginViewModel,
             AdminMenuViewModel adminMenuViewModel,
-            LogWindow logWindow, LogViewModel logView,DeleteUsersViewModel deleteUsersModel)
+            LogWindow logWindow, LogViewModel logView,
+            DeleteUsersViewModel deleteUsersViewModel)
 
         {
             this.userService = userService;
@@ -56,7 +58,29 @@ namespace WpfHomeNet.ViewModels
             AdminMenuViewModel = adminMenuViewModel;
             LogWindow = logWindow;
             LogVm = logView;
-            DeleteUsersViewModel = deleteUsersModel;
+            DeleteUsersViewModel = deleteUsersViewModel;
+
+
+            // Модернизируем экшн удаления (делаем его асинхронным через async)
+            RemoveUserAction = async (id) =>
+            {
+                // Ищем пользователя в твоей ObservableCollection по его ID
+                var userToRemove = Users.FirstOrDefault(u => u.Id == id);
+
+                if (userToRemove != null)
+                {
+                    // Сохраняем имя для красивого статуса перед тем, как стереть
+                    string name = userToRemove.FirstName??"в имени Null";
+
+                    // Удаляем из коллекции — WPF сам мгновенно уберет строку из таблицы!
+                    Users.Remove(userToRemove);
+
+                    // Запускаем твой фирменный метод обновления статус-бара с анимацией!
+                    await UpdateStatusText($"Пользователь {name} удален");
+                }
+            };
+
+
 
 
 
@@ -79,7 +103,7 @@ namespace WpfHomeNet.ViewModels
                     await UpdateStatusText("инициализация пользователей");
 
                 }
-                catch (Exception ex)
+                catch (Exception )
                 {
                     // Логирование или уведомление пользователя
                 }
@@ -88,10 +112,11 @@ namespace WpfHomeNet.ViewModels
 
             RegistrationViewModel.PropertyChanged += OnChildVmPropertyChanged;
             LoginViewModel.PropertyChanged += OnChildVmPropertyChanged;
+            DeleteUsersViewModel.PropertyChanged += OnChildVmPropertyChanged; 
 
         }
 
-         public void ConnectToMainWindow(MainWindow mainWindow) => MainWindow = mainWindow;
+        public void ConnectToMainWindow(MainWindow mainWindow) => MainWindow = mainWindow;
 
 
         private async Task UpdateStatusText(string text)
@@ -131,7 +156,7 @@ namespace WpfHomeNet.ViewModels
                 return false;
 
             field = value;
-            OnPropertyChanged(propertyName);
+            OnPropertyChanged(propertyName??string.Empty);
             return true;
         }
 
@@ -151,8 +176,9 @@ namespace WpfHomeNet.ViewModels
 
 
         public bool IsButtonsPanelEnabled =>
-              !(RegistrationViewModel?.ControlVisibility == Visibility.Visible ||
-                LoginViewModel?.ControlVisibility == Visibility.Visible);
+     !(RegistrationViewModel?.ControlVisibility == Visibility.Visible ||
+       LoginViewModel?.ControlVisibility == Visibility.Visible ||
+       DeleteUsersViewModel?.ControlVisibility == Visibility.Visible);
 
 
         private void OnChildVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -188,7 +214,8 @@ namespace WpfHomeNet.ViewModels
         }
 
 
-        public void OnPropertyChanged(string propertyName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        public void OnPropertyChanged(string propertyName) =>
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         public void Dispose() => LogVm?.Dispose();
     }
 }
