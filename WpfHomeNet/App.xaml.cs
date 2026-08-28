@@ -18,6 +18,7 @@ using WpfHomeNet.UiHelpers;
 using WpfHomeNet.ViewModels;
 
 
+
 namespace HomeSocialNetwork 
 {
 
@@ -61,8 +62,8 @@ namespace HomeSocialNetwork
         private RegistrationViewModel? _registrationViewModel;
         public RegistrationViewModel RegistrationViewModel =>_registrationViewModel ?? throw new InvalidOperationException($"{nameof(_registrationViewModel)} не инициализирован");
 
-        private LoginViewModel? _loginViewModel;
-        public LoginViewModel LoginViewModel => _loginViewModel ?? throw new InvalidOperationException($"{nameof(_loginViewModel)} не инициализирован");
+        private LoginInViewModel? _loginViewModel;
+        public LoginInViewModel LoginViewModel => _loginViewModel ?? throw new InvalidOperationException($"{nameof(_loginViewModel)} не инициализирован");
        
         LogViewModel? _logViewModel;
         LogViewModel LogViewModel =>_logViewModel ?? throw new InvalidOperationException($"{nameof(_logViewModel)} не инициализирован");
@@ -154,10 +155,10 @@ namespace HomeSocialNetwork
                 _userService = new UserService(_userRepository, _logger);
 
                
-                _registrationViewModel = new RegistrationViewModel(_userService);
+                _registrationViewModel = new RegistrationViewModel(_userService,_logger);
 
 
-                _loginViewModel = new LoginViewModel(_userService);
+                _loginViewModel = new LoginInViewModel(_userService);
 
                 _logViewModel = new LogViewModel(LogQueueManager);
 
@@ -186,13 +187,13 @@ namespace HomeSocialNetwork
         {
             services.AddSingleton<ILogger, Logger>();           
             services.AddSingleton<LogQueueManager>();
-            services.AddTransient<LoginViewModel>();
+            services.AddTransient<LoginInViewModel>();
             services.AddTransient<RegistrationViewModel>();
             services.AddTransient<MainViewModel>();
             services.AddTransient<MainWindow>();
             services.AddTransient<RegistrationViewControl>();
             services.AddTransient<LoginViewControl>();
-            services.AddTransient<LoginViewModel>();
+            services.AddTransient<LoginInViewModel>();
         }
     }
 

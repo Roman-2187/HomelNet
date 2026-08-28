@@ -61,14 +61,11 @@ namespace WpfHomeNet.ViewModels
             UserTableViewCommand = new RelayCommand(parameter => ExecuteUserTableViewVisible());
 
             _userService = userService;
-
            
         }
 
         public void ConnectToMainViewModel(MainViewModel mainVm) => MainVm = mainVm;
 
-
-       
         private void ExecuteToggleLogWindow(object? parameter)
         {
             if (MainVm.LogVm.ShowLogWindowDelegate == null)
@@ -89,7 +86,6 @@ namespace WpfHomeNet.ViewModels
                 TableButtonText = "Скрыть users";
             }
                 
-
             else
             {
                 MainVm.PanelVisibility = Visibility.Collapsed;
@@ -97,7 +93,6 @@ namespace WpfHomeNet.ViewModels
                 TableButtonText = "Показать users";
             }
         }
-
 
         // Команда для кнопки
         public ICommand SeedDataCommand => new RelayCommand(async _ => await ExecuteSeedDataAsync());
@@ -137,15 +132,11 @@ namespace WpfHomeNet.ViewModels
             }
         }
 
-
-
-
         public event PropertyChangedEventHandler? PropertyChanged;
 
         protected virtual void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
- 
     }
 }

@@ -3,184 +3,139 @@ using HomeNetCore.Services;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Input;
+using HomeNetCore.Services.DeleteService;
 
-namespace WpfHomeNet.ViewModels
-{
-    // Наследуемся от FormViewModelBase, чтобы была доступна магия ControlVisibility
-    public class DeleteUsersViewModel : FormViewModelBase
+
+
+
+
+   
+
+    namespace WpfHomeNet.ViewModels
     {
-        private readonly UserService _userService;
-        private MainViewModel? _mainViewModel;
-
-        // Обязательно public! С точным соблюдением регистра букв!
-        private ObservableCollection<UserEntity>? _mainUsersList;
-        public ObservableCollection<UserEntity>? MainUsersList
+        public class DeleteUsersViewModel : FormViewModelBase
         {
-            get => _mainUsersList;
-            set
+            private readonly DeleteService _deleteService;
+            private MainViewModel? _mainViewModel;
+
+            private ObservableCollection<UserEntity>? _mainUsersList;
+            public ObservableCollection<UserEntity>? MainUsersList
             {
-                _mainUsersList = value;
-                OnPropertyChanged(nameof(MainUsersList)); // Пинаем XAML, чтобы он перерисовал список!
+                get => _mainUsersList;
+                set => SetField(ref _mainUsersList, value); // Базовый метод мгновенно обновит XAML!
             }
-        }
 
-
-        private UserEntity? _selectedUser;
-        public UserEntity? SelectedUser
-        {
-            get => _selectedUser;
-            set
+            private UserEntity? _selectedUser;
+            public UserEntity? SelectedUser
             {
-                _selectedUser = value;
-                OnPropertyChanged(nameof(SelectedUser));
-
-                // Если админ выбрал юзера из списка — автоматом подставляем ID и включаем кнопку!
-                if (_selectedUser != null)
+                get => _selectedUser;
+                set
                 {
-                    TargetUserId = _selectedUser.Id.ToString();
-                    CanDelete = true;
+                    if (SetField(ref _selectedUser, value) && _selectedUser != null)
+                    {
+                        TargetUserId = _selectedUser.Id.ToString();
+                        CanDelete = true;
+                    }
                 }
             }
-        }
 
-
-
-
-        // 1. НАСТОЯЩЕЕ СВОЙСТВО ДЛЯ ТЕКСТБОКСА ИЗ ТВОЕЙ РАЗМЕТКИ!
-        private string _targetUserId = string.Empty;
-        public string TargetUserId
-        {
-            get => _targetUserId;
-            set
+            private string _targetUserId = string.Empty;
+            public string TargetUserId
             {
-                // Используем SetField из FormViewModelBase для оповещения XAML
-                if (SetField(ref _targetUserId, value))
+                get => _targetUserId;
+                set
                 {
-                    // Активируем кнопку "Найти" только если поле не пустое
-                    ((RelayCommand)SearchCommand).RaiseCanExecuteChanged();
+                    if (SetField(ref _targetUserId, value))
+                    {
+                        // Сообщаем кнопке поиска, что текст изменился
+                        (SearchCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                    }
                 }
             }
-        }
 
-        // 2. СВОЙСТВО ДЛЯ АКТИВАЦИИ КНОПКИ "УДАЛИТЬ"
-        private bool _canDelete;
-        public bool CanDelete
-        {
-            get => _canDelete;
-            set => SetField(ref _canDelete, value);
-        }
-
-        public ICommand SearchCommand { get; }
-        public ICommand DeleteCommand { get; }
-        public ICommand CancelCommand { get; }
-        public Action<int>? OnUserDeletedFromDb { get; internal set; }
-
-        public DeleteUsersViewModel(UserService userService)
-        {
-
-            StatusMessage = "Введите ID ";
-
-            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
-            ControlVisibility = Visibility.Collapsed;
-
-            // Команда поиска по базе данных
-            SearchCommand = new RelayCommand(
-                execute: async (obj) => await ExecuteSearchCommandAsync(),
-                canExecute: (param) => !string.IsNullOrWhiteSpace(TargetUserId)
-                
-            );
-
-            // Команда удаления из базы данных
-            DeleteCommand = new RelayCommand(
-                execute: async (obj) => await ExecuteDeleteCommandAsync(),
-                canExecute: (param) => CanDelete
-            );
-
-            // Команда отмены (схлопывание формы)
-            CancelCommand = new RelayCommand(
-                execute: (obj) =>
-                {
-                    ResetForm();
-                    ControlVisibility = Visibility.Collapsed;
-                }
-            );
-        }
-
-        public void ConnectToMainViewModel(MainViewModel mainVm) => _mainViewModel = mainVm;
-
-        private void ResetForm()
-        {
-            TargetUserId = string.Empty;
-            StatusMessage = "Введите ID ";
-            CanDelete = false;
-        }
-
-        // Логика поиска через UserService
-        private async Task ExecuteSearchCommandAsync()
-        {
-            StatusMessage = "Поиск пользователя в базе данных...";
-            CanDelete = false;
-
-            if (!int.TryParse(TargetUserId, out int id))
+            private bool _canDelete;
+            public bool CanDelete
             {
-                StatusMessage = "Ошибка: ID должен состоять только из цифр!";
-                return;
+                get => _canDelete;
+                set => SetField(ref _canDelete, value);
             }
 
-            try
-            {
-                var user = await _userService.GetUserByIdAsync(id);
+            public ICommand SearchCommand { get; }
+            public ICommand DeleteCommand { get; }
+            public ICommand CancelCommand { get; }
+            public Action<int>? OnUserDeletedFromDb { get; internal set; }
 
-                if (user != null)
-                {
-                    StatusMessage = $"Найден: {user.FirstName} {user.LastName} ({user.Email})";
-                    CanDelete = true; // Зажигаем кнопку "Удалить"
-                }
-                else
-                {
-                    StatusMessage = $"Пользователь с ID {id} не существует.";
-                }
+            // Принимаем UserService, но внутри собираем наш чистый DeleteService
+            public DeleteUsersViewModel(UserService userService)
+            {
+                if (userService == null) throw new ArgumentNullException(nameof(userService));
+                _deleteService = new DeleteService(userService);
+
+                ControlVisibility = Visibility.Collapsed;
+                SubmitButtonText = "Удалить";
+                StatusMessage = "Введите ID "; // Используем базовое свойство
+
+                SearchCommand = new RelayCommand(
+                    execute: async (_) => await ExecuteSearchCommandAsync(),
+                    canExecute: (_) => !string.IsNullOrWhiteSpace(TargetUserId)
+                );
+
+                DeleteCommand = new RelayCommand(
+                    execute: async (_) => await ExecuteDeleteCommandAsync(),
+                    canExecute: (_) => CanDelete
+                );
+
+                CancelCommand = new RelayCommand(
+                    execute: (_) =>
+                    {
+                        ResetForm();
+                        ControlVisibility = Visibility.Collapsed;
+                    }
+                );
             }
-            catch (Exception ex)
+
+            public void ConnectToMainViewModel(MainViewModel mainVm) => _mainViewModel = mainVm;
+
+            private void ResetForm()
             {
-                StatusMessage = $"Ошибка SQLite: {ex.Message}";
+                TargetUserId = string.Empty;
+                StatusMessage = "Введите ID ";
+                CanDelete = false;
+                SelectedUser = null;
             }
-        }
 
-        // Логика удаления
-        private async Task ExecuteDeleteCommandAsync()
-        {
-            // Берем ID либо из выделенного юзера, либо из текстового поля (если вбили руками)
-            int id = _selectedUser?.Id ?? (int.TryParse(TargetUserId, out int parsedId) ? parsedId : -1);
-
-            if (id == -1) return;
-
-            StatusMessage = $"Удаление пользователя с ID {id}...";
-
-            try
+            // Чистый асинхронный поиск без единого блока try-catch!
+            private async Task ExecuteSearchCommandAsync()
             {
-                // 1. Стираем из базы данных
-                await _userService.DeleteUserAsync(id);
-
-                StatusMessage = $"Пользователь с ID {id} успешно удален из системы.";
+                StatusMessage = "Поиск пользователя в базе данных...";
                 CanDelete = false;
 
-                // 2. Дергаем наш безотказный делегат-провод, чтобы обновить Главный экран и статус-бар!
-                OnUserDeletedFromDb?.Invoke(id);
+                // Вызываем наш сервис ядра и забираем готовый кортеж результатов
+                var (isSuccess, message, _) = await _deleteService.SearchUserAsync(TargetUserId);
 
-                // 3. Сбрасываем выделение, чтобы очистить твой модный ListBox
-                SelectedUser = null;
-                TargetUserId = string.Empty;
+                // Вью-модель просто выводит на экран то, что решило ядро
+                StatusMessage = message;
+                CanDelete = isSuccess;
             }
-            catch (Exception ex)
+
+            // Чистое асинхронное удаление без шума и каши!
+            private async Task ExecuteDeleteCommandAsync()
             {
-                StatusMessage = $"Ошибка удаления: {ex.Message}";
+                int id = _selectedUser?.Id ?? (int.TryParse(TargetUserId, out int parsedId) ? parsedId : -1);
+                if (id == -1) return;
+
+                StatusMessage = $"Удаление пользователя с ID {id}...";
+
+                // Дёргаем метод удаления из ядра
+                var (isSuccess, message) = await _deleteService.DeleteUserAsync(id);
+
+                StatusMessage = message;
+
+                if (isSuccess)
+                {
+                    OnUserDeletedFromDb?.Invoke(id); // Наш любимый телефонный провод-делегат
+                    ResetForm(); // Чистим поля и сбрасываем выделение ListBox
+                }
             }
         }
-
     }
-}
-
-
-
-

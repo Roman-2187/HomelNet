@@ -9,6 +9,7 @@ namespace WpfHomeNet.ViewModels
 
     public abstract class FormViewModelBase : INotifyPropertyChanged
     {
+
         // События
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -63,7 +64,7 @@ namespace WpfHomeNet.ViewModels
         }
 
         private Visibility _controlVisibility = Visibility.Collapsed;
-        public Visibility ControlVisibility
+        public virtual Visibility ControlVisibility
         {
             get => _controlVisibility;
             set => SetField(ref _controlVisibility, value);

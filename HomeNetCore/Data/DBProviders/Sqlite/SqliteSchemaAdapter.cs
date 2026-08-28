@@ -7,7 +7,17 @@ using System.Text.RegularExpressions;
 namespace HomeNetCore.Data.DBProviders.Sqlite
 {
     public class SqliteSchemaAdapter : ISchemaAdapter
-    {
+    {           
+        private const string TypeText = "TEXT";
+        private const string TypeInteger = "INTEGER";
+        private const string TypeTimestamp = "TIMESTAMP";
+        private const string DefaultCurrentTimestamp = "DEFAULT CURRENT_TIMESTAMP";
+        private const string NotNull = "NOT NULL";
+        private const string PrimaryKey = "PRIMARY KEY";
+        private const string Unique = "UNIQUE";
+        private const string AutoIncrement = "AUTOINCREMENT";
+        
+
         public string ConvertTableName(string? rawName, NameFormat format)
         {
             if (string.IsNullOrEmpty(rawName))
@@ -93,38 +103,40 @@ namespace HomeNetCore.Data.DBProviders.Sqlite
 
                 string sqlType = col.Type switch
                 {
-                    ColumnType.Varchar => "TEXT",
-                    ColumnType.Integer => "INTEGER",
-                    ColumnType.DateTime => "TIMESTAMP",
-                    ColumnType.Boolean => "INTEGER",
+                    ColumnType.Varchar => TypeText,       
+                    ColumnType.Integer => TypeInteger,    
+                    ColumnType.DateTime => TypeTimestamp, 
+                    ColumnType.Boolean => TypeInteger,    
                     _ => throw new NotSupportedException($"Тип {col.Type} не поддерживается")
                 };
 
                 var constraints = new List<string>();
 
+                
+
                 if (col.IsCreatedAt)
                 {
-                    constraints.Add("DEFAULT CURRENT_TIMESTAMP");
+                    constraints.Add(DefaultCurrentTimestamp);
                 }
 
                 if (!col.IsNullable)
                 {
-                    constraints.Add("NOT NULL");
+                    constraints.Add(NotNull); 
                 }
 
                 if (col.IsPrimaryKey)
                 {
-                    constraints.Add("PRIMARY KEY");
+                    constraints.Add(PrimaryKey); 
                 }
 
                 if (col.IsUnique)
                 {
-                    constraints.Add("UNIQUE");
+                    constraints.Add(Unique); 
                 }
 
                 if (col.IsAutoIncrement)
                 {
-                    constraints.Add("AUTOINCREMENT");
+                    constraints.Add(AutoIncrement); 
                 }
 
                 var parts = new List<string> { name, sqlType };

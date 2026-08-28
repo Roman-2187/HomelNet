@@ -1,4 +1,5 @@
-﻿using HomeNetCore.Enums;
+﻿using HomeNetCore.Data.Interfaces;
+using HomeNetCore.Enums;
 using HomeNetCore.Models;
 using HomeNetCore.Models.InputUserData;
 using HomeNetCore.Services;
@@ -14,28 +15,28 @@ namespace WpfHomeNet.ViewModels
         private readonly RegisterService _registerService;
         private readonly UserService _userService;
         private MainViewModel? _mainViewModel;
-        private UserEntity? _createdUser { get; set; }
-
-
-        
+        private UserEntity? _createdUser { get; set; }    
         public CreateUserInput UserData { get; set; } = new();
         public ICommand RegisterCommand { get; }
         public ICommand CancelCommand { get; }
         public ICommand ToggleRegistrationCommand { get; } 
+
+        public ILogger Logger { get; }
        
         #endregion
 
-        public RegistrationViewModel(UserService userService)
+        public RegistrationViewModel(UserService userService,ILogger logger)
         {          
            _userService = userService;
-            _registerService = new RegisterService(_userService);
+            Logger= logger;
 
+            _registerService = new RegisterService(_userService);
            
             InitializeInitialHints();
 
             RegisterCommand = new RelayCommand(
                 execute: async (obj) => await ExecuteRegisterCommand(),
-                canExecute: (parameter) => true
+                canExecute: (parameter) => true 
             );
 
             CancelCommand = new RelayCommand(
@@ -66,8 +67,10 @@ namespace WpfHomeNet.ViewModels
 
         private void InitializeInitialHints()
         {
+            
                 var initialHints = new List<ValidationResult>
             {
+
                 new(TypeField.EmailType, "Введите email например 'User@example.com'", ValidationState.Info, true),
                 new(TypeField.PasswordType, "Пароль должен содержать 8 символов  буквы и цифры", ValidationState.Info, true),
                 new(TypeField.NameType, "Имя пользователя должно содержать 3 буквы подряд", ValidationState.Info, true),
@@ -83,6 +86,7 @@ namespace WpfHomeNet.ViewModels
 
         private void ResetRegistrationForm()
         {
+           
             UserData = new();
 
             OnPropertyChanged(nameof(UserData));
@@ -96,8 +100,9 @@ namespace WpfHomeNet.ViewModels
 
         private async Task ExecuteRegisterCommand()
         {
-
             StatusMessage = string.Empty;
+
+             Logger.LogInformation("Зашли в регистрацию");
 
             ValidationResults = new Dictionary<TypeField, ValidationResult>();
 
@@ -117,7 +122,6 @@ namespace WpfHomeNet.ViewModels
                     {
                         _mainViewModel?.AddUserAction?.Invoke(_createdUser);                       
                     }
-
                 }
                 else
                 {
@@ -129,9 +133,28 @@ namespace WpfHomeNet.ViewModels
                 StatusMessage = $"При регистрации произошла ошибка: {ex.Message}";               
             }
         }
-       
-    }
 
+
+        public override Visibility ControlVisibility
+        {
+            get => base.ControlVisibility;
+            set
+            {
+                // Сначала отдаем команду базовому классу изменить видимость
+                if (base.ControlVisibility != value)
+                {
+                    base.ControlVisibility = value;
+
+                    // Если форма стала видимой — пишем лог!
+                    if (value == Visibility.Visible)
+                    {
+                        Logger.LogInformation("Окно регистрации развёрнуто пользователем");
+                    }
+                }
+            }
+        }
+
+    }
 }
 
 

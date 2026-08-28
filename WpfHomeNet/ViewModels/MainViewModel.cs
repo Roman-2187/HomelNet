@@ -3,40 +3,36 @@ using HomeNetCore.Models;
 using HomeNetCore.Services;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
 
 namespace WpfHomeNet.ViewModels
 {
-   
-
-    public class MainViewModel : INotifyPropertyChanged, IDisposable
+    
+    public class MainViewModel : FormViewModelBase, IDisposable
     {
         public Action<UserEntity?>? AddUserAction { get; private set; }
         public Action<int>? RemoveUserAction { get; set; }
 
         public RegistrationViewModel RegistrationViewModel { get; set; }
         public DeleteUsersViewModel DeleteUsersViewModel { get; set; }
-        public LoginViewModel LoginViewModel { get; set; }
+        public LoginInViewModel LoginViewModel { get; set; }
         public AdminMenuViewModel AdminMenuViewModel { get; }
         public LogWindow LogWindow { get; set; }
         public LogViewModel LogVm { get; set; }
 
-        MainWindow? _mainWindow;
+        private MainWindow? _mainWindow;
         public MainWindow MainWindow
         {
             get => _mainWindow ?? throw new InvalidOperationException($"{nameof(_mainWindow)} не инициализирован");
             set => _mainWindow = value;
         }
 
-        public event PropertyChangedEventHandler? PropertyChanged;
-
         private ObservableCollection<UserEntity> _users = new ObservableCollection<UserEntity>();
         public ObservableCollection<UserEntity> Users
         {
             get => _users;
-            set => SetField(ref _users, value); // Безопасное обновление через SetField
+            set => SetField(ref _users, value);
         }
 
         private string _statusText = "Инициализация...";
@@ -60,7 +56,7 @@ namespace WpfHomeNet.ViewModels
             UserService userService,
             ILogger logger,
             RegistrationViewModel registrationVm,
-            LoginViewModel loginViewModel,
+            LoginInViewModel loginViewModel,
             AdminMenuViewModel adminMenuViewModel,
             LogWindow logWindow,
             LogViewModel logView,
@@ -87,7 +83,6 @@ namespace WpfHomeNet.ViewModels
                     Application.Current.Dispatcher.Invoke(() => Users.Remove(userToRemove));
 
                     await UpdateStatusText($"Пользователь {name} удален");
-              
                 }
             };
 
@@ -104,38 +99,25 @@ namespace WpfHomeNet.ViewModels
                 await UpdateStatusText($"Пользователь {user.FirstName} добавлен");
             };
 
-            // Подписываемся на изменения свойств дочерних окон
+            // ИСПРАВЛЕНО: Убрали дубликаты! Оставляем строго одну подписку на каждую форму
             RegistrationViewModel.PropertyChanged += OnChildVmPropertyChanged;
             LoginViewModel.PropertyChanged += OnChildVmPropertyChanged;
             DeleteUsersViewModel.PropertyChanged += OnChildVmPropertyChanged;
 
-
-            // ... твои старые подписки в конце конструктора MainViewModel:
-            RegistrationViewModel.PropertyChanged += OnChildVmPropertyChanged;
-            LoginViewModel.PropertyChanged += OnChildVmPropertyChanged;
-            DeleteUsersViewModel.PropertyChanged += OnChildVmPropertyChanged;
-
-            // ДОБАВЛЯЕМ СЮДА ЖЕЛЕЗНУЮ ПОДПИСКУ НА КНОПКУ АДМИНКИ:
+            // Железная подписка на сигнал пакетной заливки админки
             AdminMenuViewModel.OnDataSeeded = async () =>
             {
-                // Возвращаемся в UI-поток WPF, чтобы безопасно перерисовать таблицу
                 await Application.Current.Dispatcher.InvokeAsync(async () =>
                 {
-                    // 1. Просим главную модель заново перечитать базу данных
                     await LoadUsersAsync();
-
-                    // 2. Включаем красивую цепочку анимации твоего статус-бара
                     await UpdateStatusText("Тестовые пользователи успешно добавлены!");
                 });
             };
-         // конец конструктора
 
-
-        // Запускаем безопасную асинхронную инициализацию данных
-        _ = InitializeAsync();
+            // Запускаем безопасную асинхронную инициализацию данных
+            _ = InitializeAsync();
         }
 
-        // Безопасный запуск первичной загрузки данных при старте программы
         private async Task InitializeAsync()
         {
             try
@@ -143,7 +125,7 @@ namespace WpfHomeNet.ViewModels
                 await LoadUsersAsync();
                 await UpdateStatusText("Инициализация пользователей успешна");
             }
-            catch (Exception )
+            catch (Exception)
             {
                 logger.LogError("Ошибка при старте приложения");
                 StatusText = "Ошибка загрузки данных при старте";
@@ -167,7 +149,6 @@ namespace WpfHomeNet.ViewModels
         {
             var usersList = await this.userService.GetAllUsersAsync();
 
-            // Передаем коллекцию в UI поток безопасно для WPF
             Application.Current.Dispatcher.Invoke(() =>
             {
                 Users = new ObservableCollection<UserEntity>(usersList);
@@ -176,24 +157,19 @@ namespace WpfHomeNet.ViewModels
 
         public ICommand LogoutCommand => new RelayCommand(_ =>
         {
-            // 1. Сбрасываем флаг успешного входа в RegistrationViewModel (или где он у тебя хранится)
             if (RegistrationViewModel != null)
             {
                 RegistrationViewModel.ResetSession();
-                // Пинаем интерфейс, чтобы скрылась кнопка Выхода и вернулось меню Входа/Регистрации
                 OnPropertyChanged(nameof(RegistrationViewModel.IsComplete));
             }
 
-            // 2. Схлопываем видимость всех панелей и таблиц обратно в Collapsed
             PanelVisibility = Visibility.Collapsed;
             if (DeleteUsersViewModel != null) DeleteUsersViewModel.ControlVisibility = Visibility.Collapsed;
             if (RegistrationViewModel != null) RegistrationViewModel.ControlVisibility = Visibility.Collapsed;
             if (LoginViewModel != null) LoginViewModel.ControlVisibility = Visibility.Collapsed;
 
-            // 3. Выводим красивый статус на прощание
             _ = UpdateStatusText("Выход из аккаунта выполнен успешно");
         });
-
 
         public ICommand ToggleFormVisibilityCommand => new RelayCommand(parameter =>
         {
@@ -207,7 +183,6 @@ namespace WpfHomeNet.ViewModels
             }
         });
 
-        // Панель кнопок блокируется, если открыта ЛЮБАЯ из трех форм
         public bool IsButtonsPanelEnabled =>
              !(RegistrationViewModel?.ControlVisibility == Visibility.Visible ||
                LoginViewModel?.ControlVisibility == Visibility.Visible ||
@@ -215,13 +190,10 @@ namespace WpfHomeNet.ViewModels
 
         private void OnChildVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            // Ловим изменение видимости у любой формы
             if (e.PropertyName == "ControlVisibility" || e.PropertyName == nameof(FormViewModelBase.ControlVisibility))
             {
-                // Обновляем доступность кнопок на главной панели
                 OnPropertyChanged(nameof(IsButtonsPanelEnabled));
 
-                // Заставляем статус-бар говорить, какая именно форма открылась/закрылась
                 if (sender is FormViewModelBase form)
                 {
                     string formName = "Форма";
@@ -235,9 +207,8 @@ namespace WpfHomeNet.ViewModels
                         formName = "Удаление пользователей";
                     else if (sender is RegistrationViewModel)
                         formName = "Регистрация";
-                    else if (sender is LoginViewModel)
+                    else if (sender is LoginInViewModel)
                         formName = "Авторизация";
-
 
                     if (form.ControlVisibility == Visibility.Visible)
                         _ = UpdateStatusText($"Открыта форма: {formName}");
@@ -247,22 +218,9 @@ namespace WpfHomeNet.ViewModels
             }
         }
 
-        protected bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-        {
-            if (EqualityComparer<T>.Default.Equals(field, value))
-                return false;
-
-            field = value;
-            OnPropertyChanged(propertyName ?? string.Empty);
-            return true;
-        }
-
-        public void OnPropertyChanged(string propertyName) =>
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
         public void Dispose() => LogVm?.Dispose();
     }
-
 }
+
 
 

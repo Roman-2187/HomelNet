@@ -9,7 +9,7 @@ using System.Windows.Input;
 
 namespace WpfHomeNet.ViewModels
 {
-    public class LoginViewModel :FormViewModelBase
+    public class LoginInViewModel :FormViewModelBase
     {
         #region Поля и переменные
         private readonly AuthenticateService _loginService;
@@ -22,7 +22,7 @@ namespace WpfHomeNet.ViewModels
         #endregion
 
 
-        public LoginViewModel(UserService userService)
+        public LoginInViewModel(UserService userService)
         {
             _userService = userService;
             _loginService = new AuthenticateService(_userService);
