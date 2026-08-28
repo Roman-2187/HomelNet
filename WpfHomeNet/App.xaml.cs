@@ -7,6 +7,7 @@ using HomeNetCore.Enums;
 using HomeNetCore.Helpers;
 using HomeNetCore.Models;
 using HomeNetCore.Services;
+using HomeNetCore.Services.AuthenticationService;
 using HomeNetCore.Services.ListUsersServise;
 using Microsoft.Extensions.DependencyInjection;
 using System.Data.Common;
@@ -18,17 +19,14 @@ using WpfHomeNet.Interfaces;
 using WpfHomeNet.UiHelpers;
 using WpfHomeNet.ViewModels;
 
-
-
-namespace HomeSocialNetwork 
+namespace HomeSocialNetwork
 {
-
     public partial class App : Application
     {
         #region Поля и переменные 
         private static readonly string dbPath = DatabasePathHelper.GetDatabasePath("home_net.db");
         private readonly string _connectionString = $"Data Source={dbPath}";
-        private UserRepository? _userRepository;              
+        private UserRepository? _userRepository;
         private DbConnection? _connection;
         private DBInitializer? _databaseInitializer;
         private ISchemaProvider? _schemaProvider;
@@ -38,14 +36,14 @@ namespace HomeSocialNetwork
         private ISchemaAdapter? _schemaAdapter;
         private MainWindow? _mainWindow;
 
-        
-        ListUsersService ListUsersService => _listUsersService ?? throw new InvalidOperationException($"{nameof(_listUsersService)} не инициализирован");
-        ListUsersService? _listUsersService;
-        public DeleteUsersViewModel? _deleteUsersModel;
-        public DeleteUsersViewModel? DeleteUsersModel => _deleteUsersModel ?? throw new InvalidOperationException($"{nameof(_deleteUsersModel)} не инициализирован");
+        public ListUsersService ListUsersService => _listUsersService ?? throw new InvalidOperationException($"{nameof(_listUsersService)} не инициализирован");
+        private ListUsersService? _listUsersService;
+
+        public DeleteUsersViewModel DeleteUsersModel => _deleteUsersModel ?? throw new InvalidOperationException($"{nameof(_deleteUsersModel)} не инициализирован");
+        private DeleteUsersViewModel? _deleteUsersModel;
 
         public LogWindow LogWindow => _logWindow ?? throw new InvalidOperationException($"{nameof(_logWindow)} не инициализирован");
-        public LogWindow? _logWindow;
+        private LogWindow? _logWindow;
 
         public UserService UserService => _userService ?? throw new InvalidOperationException($"{nameof(_userService)} не инициализирован");
         private UserService? _userService;
@@ -59,21 +57,20 @@ namespace HomeSocialNetwork
         public IStatusUpdater Status => _status ?? throw new InvalidOperationException($"{nameof(_status)} не инициализирован");
         private IStatusUpdater? _status = null;
 
-
         private LogQueueManager LogQueueManager => _logQueueManager ?? throw new InvalidOperationException($"{nameof(_logQueueManager)} не инициализирован");
         private LogQueueManager? _logQueueManager;
 
+        public RegistrationViewModel RegistrationViewModel => _registrationViewModel ?? throw new InvalidOperationException($"{nameof(_registrationViewModel)} не инициализирован");
         private RegistrationViewModel? _registrationViewModel;
-        public RegistrationViewModel RegistrationViewModel =>_registrationViewModel ?? throw new InvalidOperationException($"{nameof(_registrationViewModel)} не инициализирован");
 
-        private LoginInViewModel? _loginViewModel;
         public LoginInViewModel LoginViewModel => _loginViewModel ?? throw new InvalidOperationException($"{nameof(_loginViewModel)} не инициализирован");
-       
-        LogViewModel? _logViewModel;
-        LogViewModel LogViewModel =>_logViewModel ?? throw new InvalidOperationException($"{nameof(_logViewModel)} не инициализирован");
+        private LoginInViewModel? _loginViewModel;
 
-        private AdminMenuViewModel? _adminMenuViewModel;
+        private LogViewModel LogViewModel => _logViewModel ?? throw new InvalidOperationException($"{nameof(_logViewModel)} не инициализирован");
+        private LogViewModel? _logViewModel;
+
         public AdminMenuViewModel AdminMenuViewModel => _adminMenuViewModel ?? throw new InvalidOperationException($"{nameof(_adminMenuViewModel)} не инициализирован");
+        private AdminMenuViewModel? _adminMenuViewModel;
         #endregion
 
         protected override void OnStartup(StartupEventArgs e)
@@ -88,26 +85,23 @@ namespace HomeSocialNetwork
 
                 Debug.WriteLine("DI-контейнер создан");
 
-                // Ключевая инициализация
                 InitializeApplication(provider, DatabaseType.SQLite).GetAwaiter().GetResult();
 
-                 _mainWindow = provider.GetRequiredService<MainWindow>();
+                _mainWindow = provider.GetRequiredService<MainWindow>();
 
                 LogViewModel.ConnectToMainViewModel(MainVm);
-
                 AdminMenuViewModel.ConnectToMainViewModel(MainVm);
-
-               RegistrationViewModel.ConnectToMainViewModel(MainVm);
+                RegistrationViewModel.ConnectToMainViewModel(MainVm);
 
                 _mainWindow.Show();
             }
             catch (Exception ex)
             {
                 MessageBox.Show(
-                $"Ошибка запуска: {ex.Message}",
-                "Критическая ошибка",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
+                    $"Ошибка запуска: {ex.Message}",
+                    "Критическая ошибка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
 
                 Shutdown();
             }
@@ -118,25 +112,15 @@ namespace HomeSocialNetwork
             try
             {
                 _logger = provider.GetRequiredService<ILogger>();
-               
-
                 _logWindow = new LogWindow(_logger);
-           
-
                 _logQueueManager = new LogQueueManager(LogWindow, 20);
-                
-                Logger.SetOutput(_logQueueManager.WriteLog);
 
-          
+                Logger.SetOutput(_logQueueManager.WriteLog);
                 _logger.LogInformation("Начало инициализации приложения...");
 
-                // 2. Создаём схему
                 _tableSchema = new UsersTable().Build();
-
-                // 3. Создаём factory
                 var factory = new DatabaseServiceFactory(_connectionString, _logger);
 
-                // 4. Получаем сервисы БД
                 var (connection, sqlInit, schemaProvider, schemaAdapter, userSqlGen) =
                     factory.CreateServices(databaseType, _tableSchema);
 
@@ -146,7 +130,6 @@ namespace HomeSocialNetwork
                 _schemaAdapter = schemaAdapter;
                 _userSqlGen = userSqlGen;
 
-                // 5. Инициализируем БД
                 _databaseInitializer = new DBInitializer(
                     _connection, _schemaProvider, _schemaAdapter,
                     _schemaSqlInit, _tableSchema, _logger);
@@ -154,30 +137,26 @@ namespace HomeSocialNetwork
 
                 _logger.LogInformation("БД инициализирована");
 
-                // 6. Создаём репозиторий и сервис
                 _userRepository = new UserRepository(_connection, _userSqlGen);
                 _userService = new UserService(_userRepository, _logger);
                 _listUsersService = new ListUsersService(_userService);
-               
-                _registrationViewModel = new RegistrationViewModel(_userService,_logger);
 
+                // Создаем наши новые сервисы ядра строго в нужном порядке
+                var registerService = new RegisterService(_userService);
+                var authenticateService = new AuthenticateService(_userService);
 
-                _loginViewModel = new LoginInViewModel(_userService);
-
+                // Инициализируем вьюмодели
+                _registrationViewModel = new RegistrationViewModel(registerService);
+                _loginViewModel = new LoginInViewModel(authenticateService);
                 _logViewModel = new LogViewModel(LogQueueManager);
-
-                _adminMenuViewModel  = new AdminMenuViewModel(_userService);
-
+                _adminMenuViewModel = new AdminMenuViewModel(_userService);
                 _deleteUsersModel = new DeleteUsersViewModel(_userService);
 
                 _mainVm = new MainViewModel(
                     Logger, RegistrationViewModel,
-                    LoginViewModel,AdminMenuViewModel,LogWindow,_logViewModel,_deleteUsersModel,ListUsersService);
+                    LoginViewModel, AdminMenuViewModel, LogWindow, LogViewModel, DeleteUsersModel, ListUsersService);
 
                 _logger.LogInformation("Инициализация завершена");
-
-              
-                
             }
             catch (Exception ex)
             {
@@ -189,20 +168,18 @@ namespace HomeSocialNetwork
 
         private void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton<ILogger, Logger>();           
+            services.AddSingleton<ILogger, Logger>();
             services.AddSingleton<LogQueueManager>();
-            services.AddTransient<LoginInViewModel>();
-            services.AddTransient<RegistrationViewModel>();
-            services.AddTransient<MainViewModel>();
+
+            // Передаем фабричные методы, чтобы контейнер не ругался на nullable-свойства во время компиляции
+            services.AddSingleton<RegistrationViewModel>(_ => RegistrationViewModel);
+            services.AddSingleton<LoginInViewModel>(_ => LoginViewModel);
+            services.AddSingleton<MainViewModel>(_ => MainVm);
+
             services.AddTransient<MainWindow>();
             services.AddTransient<RegistrationViewControl>();
             services.AddTransient<LoginViewControl>();
-            services.AddTransient<LoginInViewModel>();
-           
         }
     }
-
-
-
 }
 

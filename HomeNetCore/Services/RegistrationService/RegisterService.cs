@@ -3,189 +3,145 @@ using HomeNetCore.Models;
 using HomeNetCore.Models.InputUserData;
 using HomeNetCore.Services.UsersServices;
 
-namespace HomeNetCore.Services
-{
-   
 
-    public  class RegisterService
+    namespace HomeNetCore.Services
     {
-        private readonly UserService _userService;
-        private readonly ValidationFormat _validateField = new();
-
-        public RegisterService(UserService userService)
+        public class RegisterService
         {
-           _userService = userService;
-        }
+            private readonly UserService _userService;
+            private readonly ValidationFormat _validateField = new();
 
-        public async Task<(bool IsSuccess, List<ValidationResult> Messages, UserEntity? CreatedUser)> RegisterUserAsync(CreateUserInput userInput)
-        {
-            // 1. Валидация
-            var validationResults = await ValidateInputAsync(userInput);
-            if (validationResults.Any(r => r.State == ValidationState.Error))
-                return (false, validationResults,null);
-
-            // 2. Создание модели
-            var user = CreateUserEntity(userInput);
-
-            // 3. Сохранение
-            try
+            public RegisterService(UserService userService)
             {
-                await _userService.AddUserAsync(user);
-                return (true, validationResults,user);
+                _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             }
-            catch (Exception ex)
+
+            public async Task<(bool IsSuccess, List<ValidationResult> Messages, UserEntity? CreatedUser)> RegisterUserAsync(CreateUserInput userInput)
             {
-                var errorResult = new ValidationResult
+                // 1. Пошаговая валидация
+                var validationResults = await ValidateInputAsync(userInput);
+                if (validationResults.Any(r => r.State == ValidationState.Error))
+                    return (false, validationResults, null);
+
+                // 2. Создание и сохранение модели
+                try
                 {
-                    State = ValidationState.Error,
-                    Message = $"Ошибка сохранения пользователя: {ex.Message}"
-                };
-                return (false, new List<ValidationResult> { errorResult },null);
+                    var user = CreateUserEntity(userInput);
+                    await _userService.AddUserAsync(user);
+                    return (true, validationResults, user);
+                }
+                catch (Exception ex)
+                {
+                    var errorResult = new ValidationResult
+                    {
+                        State = ValidationState.Error,
+                        Message = $"Ошибка сохранения пользователя: {ex.Message}"
+                    };
+                    return (false, new List<ValidationResult> { errorResult }, null);
+                }
             }
-        }
 
-        private async Task<List<ValidationResult>> ValidateInputAsync(CreateUserInput input)
-        {
-            var results = new List<ValidationResult>
+            private async Task<List<ValidationResult>> ValidateInputAsync(CreateUserInput input)
             {
-                ValidatePassword(input.Password),
-                ValidateUserName(input.UserName),
-                ValidateConfirmedPassword(input.Password, input.ConfirmPassword)
-            };
+                var results = new List<ValidationResult>();
 
-            var emailResult = await ValidateEmailAsync(input.Email);
-            results.Add(emailResult);
+                // ШАГ 1: Локальные быстрые проверки (Имя, Пароль, Подтверждение)
+                var nameRes = ValidateUserName(input.UserName);
+                var passRes = ValidatePassword(input.Password);
+                var confirmRes = ValidateConfirmedPassword(input.Password, input.ConfirmPassword);
 
-            return results;
-        }
+                results.AddRange(new[] { nameRes, passRes, confirmRes });
 
+                // ШАГ 2: Магия switch. Проверяем, есть ли ошибки на первом шаге
+                var dynamicEmailResult = results.Any(r => r.State == ValidationState.Error) switch
+                {
+                    // Если локальные поля уже с ошибками — базу по поводу Email НЕ дёргаем!
+                    true => new ValidationResult
+                    {
+                        Field = TypeField.EmailType,
+                        State = ValidationState.Info,
+                        Message = "Введите email"
+                    },
 
-        private UserEntity CreateUserEntity(CreateUserInput input)
-        {
-            return new UserEntity
+                    // Если локально всё чисто — только тогда идём асинхронно проверять базу
+                    false => await ValidateEmailAsync(input.Email)
+                };
+
+                results.Add(dynamicEmailResult);
+                return results;
+            }
+
+            private UserEntity CreateUserEntity(CreateUserInput input) => new()
             {
                 FirstName = input.UserName,
-                Email = input.Email,               
+                Email = input.Email,
                 Password = input.Password
             };
-        }
 
-
-        private ValidationResult ValidatePassword(string password)
-        {
-            var result = new ValidationResult { Field = TypeField.PasswordType };
-
-            if (string.IsNullOrWhiteSpace(password))
+            private ValidationResult ValidateUserName(string userName)
             {
-                result.State = ValidationState.Error;
-                result.Message = "Пароль не может быть пустым";
-                return result;
+                var res = new ValidationResult { Field = TypeField.NameType };
+
+                if (string.IsNullOrWhiteSpace(userName))
+                    return SetResult(res, ValidationState.Error, "Имя пользователя не может быть пустым");
+
+                return !_validateField.ValidateUserNameFormat(userName)
+                    ? SetResult(res, ValidationState.Error, "Допустимо минимум 3 буквы подряд без пробелов")
+                    : SetResult(res, ValidationState.Success, "Имя пользователя принято");
             }
 
-            if (!_validateField.ValidatePasswordFormat(password))
+            private ValidationResult ValidatePassword(string password)
             {
-                result.State = ValidationState.Error;
-                result.Message = "Пароль должен содержать минимум 8 символов, буквы и цифры";
-                return result;
+                var res = new ValidationResult { Field = TypeField.PasswordType };
+
+                if (string.IsNullOrWhiteSpace(password))
+                    return SetResult(res, ValidationState.Error, "Пароль не может быть пустым");
+
+                return !_validateField.ValidatePasswordFormat(password)
+                    ? SetResult(res, ValidationState.Error, "Пароль должен содержать минимум 8 символов, буквы и цифры")
+                    : SetResult(res, ValidationState.Success, "Пароль принято");
             }
 
-            result.State = ValidationState.Success;
-            result.Message = "Пароль принят";
-            return result;
-        }
-
-
-        private ValidationResult ValidateConfirmedPassword(string password, string confirmedPassword)
-        {
-            var result = new ValidationResult { Field = TypeField.ConfirmedPasswordType };
-
-            if (string.IsNullOrWhiteSpace(confirmedPassword))
+            private ValidationResult ValidateConfirmedPassword(string password, string confirmedPassword)
             {
-                result.State = ValidationState.Error;
-                result.Message = "пароль  не может быть пустым";
-                return result;
+                var res = new ValidationResult { Field = TypeField.ConfirmedPasswordType };
+
+                if (string.IsNullOrWhiteSpace(confirmedPassword))
+                    return SetResult(res, ValidationState.Error, "Пароль не может быть пустым");
+
+                return confirmedPassword != password
+                    ? SetResult(res, ValidationState.Error, "пароли не совпадают")
+                    : SetResult(res, ValidationState.Success, "пароли совпадают");
             }
 
-
-            if(confirmedPassword == password)
+            private async Task<ValidationResult> ValidateEmailAsync(string email)
             {
-                result.State = ValidationState.Success;
-                result.Message = "пароли совпадают";
-                return result; 
-            }
+                var res = new ValidationResult { Field = TypeField.EmailType };
 
-            else
-            {
-                result.State = ValidationState.Error;
-                result.Message = "пароли не совпадают";
-                return result;
-            }
-
-
-        }
-
-        private ValidationResult ValidateUserName(string userName)
-        {
-            var result = new ValidationResult { Field = TypeField.NameType };
-
-            if (string.IsNullOrWhiteSpace(userName))
-            {
-                result.State = ValidationState.Error;
-                result.Message = "Имя пользователя не может быть пустым";
-                return result;
-            }
-
-            if (!_validateField.ValidateUserNameFormat(userName))
-            {
-                result.State = ValidationState.Error;
-                result.Message = "Допустимо минимум 3 буквы подряд без пробелов";
-                return result;
-            }
-
-            result.State = ValidationState.Success;
-            result.Message = "Имя пользователя принято";
-            return result;
-        }
-
-       
-        private async Task<ValidationResult> ValidateEmailAsync(string email)
-        {
-            var result = new ValidationResult { Field = TypeField.EmailType };
-
-            try
-            {
-                if (string.IsNullOrWhiteSpace(email))
+                try
                 {
-                    result.State = ValidationState.Error;
-                    result.Message = "Email не может быть пустым";
-                    return result;
-                }
+                    if (string.IsNullOrWhiteSpace(email))
+                        return SetResult(res, ValidationState.Error, "Email не может быть пустым");
 
-                if (!_validateField.IsValidEmailFormat(email))
+                    if (!_validateField.IsValidEmailFormat(email))
+                        return SetResult(res, ValidationState.Error, "Некорректный формат email");
+
+                    return await _userService.CheckEmailExistsAsync(email)
+                        ? SetResult(res, ValidationState.Error, "Email уже зарегистрирован")
+                        : SetResult(res, ValidationState.Success, "Email принят");
+                }
+                catch (Exception ex)
                 {
-                    result.State = ValidationState.Error;
-                    result.Message = "Некорректный формат email";
-                    return result;
+                    return SetResult(res, ValidationState.Error, $"Ошибка проверки email: {ex.Message}");
                 }
-
-                if (await _userService.CheckEmailExistsAsync(email))
-                {
-                    result.State = ValidationState.Error;
-                    result.Message = "Email уже зарегистрирован";
-                    return result;
-                }
-
-                result.State = ValidationState.Success;
-                result.Message = "Email принят";
-                return result;
             }
-            catch (Exception ex)
+
+            private ValidationResult SetResult(ValidationResult res, ValidationState state, string message)
             {
-                result.State = ValidationState.Error;
-                result.Message = $"Ошибка проверки email: {ex.Message}";
-                return result;
+                res.State = state;
+                res.Message = message;
+                return res;
             }
         }
     }
 
-}

@@ -9,44 +9,32 @@ using System.Windows.Input;
 
 namespace WpfHomeNet.ViewModels
 {
-    public class RegistrationViewModel :FormViewModelBase
+    public class RegistrationViewModel : FormViewModelBase
     {
-        #region поля и переменные
         private readonly RegisterService _registerService;
-        private readonly UserService _userService;
         private MainViewModel? _mainViewModel;
-        private UserEntity? _createdUser { get; set; }    
+        private UserEntity? _createdUser;
+
         public CreateUserInput UserData { get; set; } = new();
         public ICommand RegisterCommand { get; }
         public ICommand CancelCommand { get; }
-        public ICommand ToggleRegistrationCommand { get; } 
-
-        public ILogger Logger { get; }
+        public ICommand ToggleRegistrationCommand { get; }
        
-        #endregion
 
-        public RegistrationViewModel(UserService userService,ILogger logger)
-        {          
-           _userService = userService;
-            Logger= logger;
+        // Сервис регистрации теперь прилетает напрямую из контейнера!
+        public RegistrationViewModel(RegisterService registerService)
+        {
+            _registerService = registerService ?? throw new ArgumentNullException(nameof(registerService));
+          
 
-            _registerService = new RegisterService(_userService);
-           
             InitializeInitialHints();
 
             RegisterCommand = new RelayCommand(
-                execute: async (obj) => await ExecuteRegisterCommand(),
-                canExecute: (parameter) => true 
+                execute: async (obj) => await ExecuteRegisterCommand()
             );
 
             CancelCommand = new RelayCommand(
-                execute: (obj) =>
-                {
-                    ResetRegistrationForm();
-                    InitializeInitialHints();
-                    ControlVisibility = Visibility.Collapsed;                                     
-                }
-                
+                execute: (obj) => CloseForm()
             );
 
             ToggleRegistrationCommand = new RelayCommand(
@@ -55,11 +43,7 @@ namespace WpfHomeNet.ViewModels
                     if (!IsComplete)
                         await ExecuteRegisterCommand();
                     else
-                    {
-                        ResetRegistrationForm();
-                        InitializeInitialHints();
-                        ControlVisibility = Visibility.Collapsed;
-                    }
+                        CloseForm();
                 },
                 canExecute: (parameter) => !IsComplete || true
             );
@@ -67,60 +51,48 @@ namespace WpfHomeNet.ViewModels
 
         private void InitializeInitialHints()
         {
-            
-                var initialHints = new List<ValidationResult>
+            var initialHints = new List<ValidationResult>
             {
-
                 new(TypeField.EmailType, "Введите email например 'User@example.com'", ValidationState.Info, true),
-                new(TypeField.PasswordType, "Пароль должен содержать 8 символов  буквы и цифры", ValidationState.Info, true),
+                new(TypeField.PasswordType, "Пароль должен содержать 8 символов буквы и цифры", ValidationState.Info, true),
                 new(TypeField.NameType, "Имя пользователя должно содержать 3 буквы подряд", ValidationState.Info, true),
                 new(TypeField.ConfirmedPasswordType, "Пароли должны совпадать", ValidationState.Info, true)
             };
 
             UpdateValidation(initialHints);
-
             SubmitButtonText = "Зарегистрироваться";
         }
 
         public void ConnectToMainViewModel(MainViewModel mainVm) => _mainViewModel = mainVm;
 
-        private void ResetRegistrationForm()
+        private void CloseForm()
         {
-           
             UserData = new();
-
             OnPropertyChanged(nameof(UserData));
-
             StatusMessage = string.Empty;
-
-            ValidationResults = new Dictionary<TypeField, ValidationResult>();       
-            
-            SubmitButtonText = "Зарегистрироваться";                     
+            ValidationResults = new Dictionary<TypeField, ValidationResult>();
+            InitializeInitialHints();
+            ControlVisibility = Visibility.Collapsed;
         }
 
         private async Task ExecuteRegisterCommand()
         {
             StatusMessage = string.Empty;
-
-             Logger.LogInformation("Зашли в регистрацию");
-
             ValidationResults = new Dictionary<TypeField, ValidationResult>();
 
             try
             {
-                 (IsComplete,ValidationResult,_createdUser) = await _registerService.RegisterUserAsync(UserData);
-
-                 ValidationResults = ValidationResult.ToDictionary(r => r.Field, r => r);
+                (IsComplete, ValidationResult, _createdUser) = await _registerService.RegisterUserAsync(UserData);
+                ValidationResults = ValidationResult.ToDictionary(r => r.Field, r => r);
 
                 if (IsComplete)
                 {
-                    StatusMessage = "Вы успешно зарегистрированы";   
-                    
+                    StatusMessage = "Вы успешно зарегистрированы";
                     SubmitButtonText = "Завершить";
 
-                    if (_createdUser != null) 
+                    if (_createdUser != null)
                     {
-                        _mainViewModel?.AddUserAction?.Invoke(_createdUser);                       
+                        _mainViewModel?.AddUserAction?.Invoke(_createdUser);
                     }
                 }
                 else
@@ -130,32 +102,8 @@ namespace WpfHomeNet.ViewModels
             }
             catch (Exception ex)
             {
-                StatusMessage = $"При регистрации произошла ошибка: {ex.Message}";               
+                StatusMessage = $"При регистрации произошла ошибка: {ex.Message}";
             }
         }
-
-
-        public override Visibility ControlVisibility
-        {
-            get => base.ControlVisibility;
-            set
-            {
-                // Сначала отдаем команду базовому классу изменить видимость
-                if (base.ControlVisibility != value)
-                {
-                    base.ControlVisibility = value;
-
-                    // Если форма стала видимой — пишем лог!
-                    if (value == Visibility.Visible)
-                    {
-                        Logger.LogInformation("Окно регистрации развёрнуто пользователем");
-                    }
-                }
-            }
-        }
-
     }
 }
-
-
-

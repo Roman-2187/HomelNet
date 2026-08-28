@@ -1,19 +1,16 @@
 ﻿using HomeNetCore.Enums;
 using HomeNetCore.Models.InputUserData;
-using HomeNetCore.Services;
 using HomeNetCore.Services.AuthenticationService;
 using HomeNetCore.Services.UsersServices;
 using System.Windows;
 using System.Windows.Input;
 
-
 namespace WpfHomeNet.ViewModels
 {
-    public class LoginInViewModel :FormViewModelBase
+    public class LoginInViewModel : FormViewModelBase
     {
         #region Поля и переменные
         private readonly AuthenticateService _loginService;
-        private readonly UserService _userService;
 
         public LoginInUserInput UserData { get; set; } = new();
         public ICommand LoginCommand { get; }
@@ -21,18 +18,17 @@ namespace WpfHomeNet.ViewModels
         public RelayCommand ToggleRegistrationCommand { get; private set; }
         #endregion
 
-
-        public LoginInViewModel(UserService userService)
+        // КОНСТРУКТОР: Теперь строго принимает только AuthenticateService
+        public LoginInViewModel(AuthenticateService loginService)
         {
-            _userService = userService;
-            _loginService = new AuthenticateService(_userService);
+            _loginService = loginService ?? throw new ArgumentNullException(nameof(loginService));
 
             InitializeInitialHints();
-           
+
             LoginCommand = new RelayCommand(
                execute: async (obj) => await ExecuteLoginCommand(),
                canExecute: (obj) => true
-           );
+            );
 
             CancelCommand = new RelayCommand(
                 execute: (obj) =>
@@ -60,31 +56,27 @@ namespace WpfHomeNet.ViewModels
             );
         }
 
-        
-
         private void InitializeInitialHints()
         {
             var initialHints = new List<ValidationResult>
             {
                 new(TypeField.EmailType, "Введите email", ValidationState.Info, true),
                 new(TypeField.PasswordType, "Текущий пароль", ValidationState.Info, true)
-            };          
+            };
             UpdateValidation(initialHints);
 
-            StatusMessage = string.Empty;           
+            StatusMessage = string.Empty;
         }
-
 
         private void ResetForm()
         {
-           UserData = new();       
-           OnPropertyChanged(nameof(UserData));
-           StatusMessage = string.Empty;
-           ValidationResults = new Dictionary<TypeField, ValidationResult>();           
-           SubmitButtonText = "войти";
-           IsComplete = false;
+            UserData = new();
+            OnPropertyChanged(nameof(UserData));
+            StatusMessage = string.Empty;
+            ValidationResults = new Dictionary<TypeField, ValidationResult>();
+            SubmitButtonText = "войти";
+            IsComplete = false;
         }
-
 
         private async Task ExecuteLoginCommand()
         {
@@ -93,12 +85,14 @@ namespace WpfHomeNet.ViewModels
 
             try
             {
-                 (IsComplete, ValidationResult) = await _loginService.CheckUserAsync(UserData);
-                ValidationResults = ValidationResult.ToDictionary(r => r.Field, r => r);
+                var (isSuccess, validationList) = await _loginService.CheckUserAsync(UserData);
+                IsComplete = isSuccess;
+
+                ValidationResults = validationList.ToDictionary(r => r.Field, r => r);
 
                 if (IsComplete)
                 {
-                    StatusMessage = "Вход выполнен успешно";                  
+                    StatusMessage = "Вход выполнен успешно";
                     SubmitButtonText = "OK";
                     IsComplete = true;
                 }
@@ -110,9 +104,8 @@ namespace WpfHomeNet.ViewModels
             catch (Exception ex)
             {
                 StatusMessage = $"При входе произошла ошибка: {ex.Message}";
-               
             }
-        }   
-    }  
+        }
+    }
 }
 
