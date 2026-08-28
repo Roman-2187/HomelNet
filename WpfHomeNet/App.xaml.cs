@@ -7,6 +7,7 @@ using HomeNetCore.Enums;
 using HomeNetCore.Helpers;
 using HomeNetCore.Models;
 using HomeNetCore.Services;
+using HomeNetCore.Services.ListUsersServise;
 using Microsoft.Extensions.DependencyInjection;
 using System.Data.Common;
 using System.Diagnostics;
@@ -37,6 +38,9 @@ namespace HomeSocialNetwork
         private ISchemaAdapter? _schemaAdapter;
         private MainWindow? _mainWindow;
 
+        
+        ListUsersService ListUsersService => _listUsersService ?? throw new InvalidOperationException($"{nameof(_listUsersService)} не инициализирован");
+        ListUsersService? _listUsersService;
         public DeleteUsersViewModel? _deleteUsersModel;
         public DeleteUsersViewModel? DeleteUsersModel => _deleteUsersModel ?? throw new InvalidOperationException($"{nameof(_deleteUsersModel)} не инициализирован");
 
@@ -153,7 +157,7 @@ namespace HomeSocialNetwork
                 // 6. Создаём репозиторий и сервис
                 _userRepository = new UserRepository(_connection, _userSqlGen);
                 _userService = new UserService(_userRepository, _logger);
-
+                _listUsersService = new ListUsersService(_userService);
                
                 _registrationViewModel = new RegistrationViewModel(_userService,_logger);
 
@@ -167,8 +171,8 @@ namespace HomeSocialNetwork
                 _deleteUsersModel = new DeleteUsersViewModel(_userService);
 
                 _mainVm = new MainViewModel(
-                    UserService, Logger, RegistrationViewModel,
-                    LoginViewModel,AdminMenuViewModel,LogWindow,_logViewModel,_deleteUsersModel);
+                    Logger, RegistrationViewModel,
+                    LoginViewModel,AdminMenuViewModel,LogWindow,_logViewModel,_deleteUsersModel,ListUsersService);
 
                 _logger.LogInformation("Инициализация завершена");
 
@@ -194,6 +198,7 @@ namespace HomeSocialNetwork
             services.AddTransient<RegistrationViewControl>();
             services.AddTransient<LoginViewControl>();
             services.AddTransient<LoginInViewModel>();
+           
         }
     }
 
