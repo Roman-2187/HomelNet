@@ -1,153 +1,167 @@
 ﻿using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Models;
+using HomeNetCore.Services.ListUsersServise;
+using System;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using HomeNetCore.Services.ListUsersServise;
+using WpfHomeNet.Messaging;
 
-    namespace WpfHomeNet.ViewModels
+namespace WpfHomeNet.ViewModels
+{
+    public class MainViewModel : FormViewModelBase, IDisposable
     {
-        public class MainViewModel : FormViewModelBase, IDisposable
+        #region Поля и свойства (Только то, что реально нужно ядру)
+        private readonly ListUsersService _listUsersService;
+        private readonly ILogger _logger;
+        private readonly EventBus _eventBus;
+        private MainWindow? _mainWindow;
+        private string _statusText = "Инициализация...";
+        private Visibility _panelVisibility = Visibility.Collapsed;
+
+        public MainWindow MainWindow
         {
-            public MainWindow MainWindow
+            get => _mainWindow ?? throw new InvalidOperationException($"{nameof(_mainWindow)} не инициализирован");
+            set
             {
-                get => _mainWindow ?? throw new InvalidOperationException($"{nameof(_mainWindow)} не инициализирован");
-                set => _mainWindow = value;
-            }
-            private readonly ListUsersService _listUsersService; 
-            private readonly ILogger logger;
-
-            public Action<UserEntity?>? AddUserAction { get; private set; }
-            public Action<int>? RemoveUserAction { get; set; }
-
-            public RegistrationViewModel RegistrationViewModel { get; set; }
-            public DeleteUsersViewModel DeleteUsersViewModel { get; set; }
-            public LoginInViewModel LoginViewModel { get; set; }
-            public AdminMenuViewModel AdminMenuViewModel { get; }
-            public LogWindow LogWindow { get; set; }
-            public LogViewModel LogVm { get; set; }
-
-            private MainWindow? _mainWindow;
-            
-
-            public bool IsButtonsPanelEnabled =>
-                !(RegistrationViewModel?.ControlVisibility == Visibility.Visible ||
-                LoginViewModel?.ControlVisibility == Visibility.Visible ||
-                DeleteUsersViewModel?.ControlVisibility == Visibility.Visible);
-            public ObservableCollection<UserEntity> Users => _listUsersService.Users;
-
-            private string _statusText = "Инициализация...";
-            public string StatusText
-            {
-                get => _statusText;
-                private set => SetField(ref _statusText, value);
-            }
-
-            private Visibility _panelVisibility = Visibility.Collapsed;
-            public Visibility PanelVisibility
-            {
-                get => _panelVisibility;
-                set => SetField(ref _panelVisibility, value);
-            }
-
-            public MainViewModel(
-                ILogger logger,
-                RegistrationViewModel registrationVm,
-                LoginInViewModel loginViewModel,
-                AdminMenuViewModel adminMenuViewModel,
-                LogWindow logWindow,
-                LogViewModel logView,
-                DeleteUsersViewModel deleteUsersViewModel,
-                ListUsersService listUsersService) // Добавили деталь
-            {
-                this.logger = logger;
-                RegistrationViewModel = registrationVm;
-                LoginViewModel = loginViewModel;
-                AdminMenuViewModel = adminMenuViewModel;
-                LogWindow = logWindow;
-                LogVm = logView;
-                DeleteUsersViewModel = deleteUsersViewModel;
-                _listUsersService = listUsersService ??
-                throw new ArgumentNullException(nameof(listUsersService));
-
-                // Настройка экшна удаления пользователей
-                RemoveUserAction = async (id) =>
+                if (SetField(ref _mainWindow, value) && _mainWindow != null)
                 {
-                    var userToRemove = Users.FirstOrDefault(u => u.Id == id);
-                    if (userToRemove != null)
-                    {
-                        string name = userToRemove.FirstName ?? "в имени Null";
-
-                        // Контролируем потоки UI строго на стороне WPF!
-                        Application.Current.Dispatcher.Invoke(() => Users.Remove(userToRemove));
-                        await UpdateStatusText($"Пользователь {name} удален");
-                    }
-                };
-
-                DeleteUsersViewModel.OnUserDeletedFromDb = RemoveUserAction;
-
-                // Настройка экшна добавления пользователей
-                AddUserAction = async (user) =>
-                {
-                    if (user == null) return;
-
-                    // Контролируем потоки UI строго на стороне WPF!
-                    Application.Current.Dispatcher.Invoke(() => Users.Add(user));
-                    await UpdateStatusText($"Пользователь {user.FirstName} добавлен");
-                };
-
-                OnFormVisibilityChanged += OnGlobalFormVisibilityChanged;
-
-                AdminMenuViewModel.OnDataSeeded = async () =>
-                {
-                    // Заливка тестовых юзеров админки теперь дергает сервис ядра!
-                    await Application.Current.Dispatcher.InvokeAsync(async () =>
-                    {
-                        await _listUsersService.RefreshUsersAsync();
-                        await UpdateStatusText("Тестовые пользователи успешно добавлены!");
-                    });
-                };
-
-                _ = InitializeAsync();
-            }
-
-            private async Task InitializeAsync()
-            {
-                try
-                {              
-                    await Application.Current.Dispatcher.InvokeAsync(async () =>
-                    {
-                        await _listUsersService.RefreshUsersAsync();
-                    });
-
-                    await UpdateStatusText("Инициализация пользователей успешна");
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError($"Ошибка при старте приложения: {ex.Message}");
-                    StatusText = "Ошибка загрузки данных при старте";
+                    _mainWindow.LocationChanged += OnMainWindowCoordinatesChanged;
+                    _mainWindow.SizeChanged += OnMainWindowCoordinatesChanged;
                 }
             }
+        }
 
-            public void ConnectToMainWindow(MainWindow mainWindow) => MainWindow = mainWindow;
+        // Автоматические свойства для XAML-биндингов (заполняются через DI)
+        public RegistrationViewModel? RegistrationViewModel { get; set; }
+        public DeletionUsersViewModel? DeleteUsersViewModel { get; set; }
+        public AuthenticationViewModel? LoginViewModel { get; set; }
+        public AdminMenuViewModel? AdminMenuViewModel { get; set; }
+        public LogWindow? LogWindow { get; set; }
+        public LogViewModel? LogVm { get; set; }
 
-            private async Task UpdateStatusText(string text)
+        public EventBus EventBus => _eventBus;
+
+
+        public bool IsButtonsPanelEnabled =>
+            !(RegistrationViewModel?.ControlVisibility == Visibility.Visible ||
+            LoginViewModel?.ControlVisibility == Visibility.Visible ||
+            DeleteUsersViewModel?.ControlVisibility == Visibility.Visible);
+
+        public ObservableCollection<UserEntity> Users => _listUsersService.Users;
+
+        public string StatusText
+        {
+            get => _statusText;
+            private set => SetField(ref _statusText, value);
+        }
+
+        public Visibility PanelVisibility
+        {
+            get => _panelVisibility;
+            set => SetField(ref _panelVisibility, value);
+        }
+        #endregion
+
+        #region Конструктор (РАЗГРУЖЕННЫЙ: Только 3 базовые зависимости!)
+        public MainViewModel(
+            ILogger logger,
+            EventBus eventBus,
+            ListUsersService listUsersService)
+        {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+            _listUsersService = listUsersService ?? throw new ArgumentNullException(nameof(listUsersService));
+
+            InitializeBusSubscriptions();
+            InitializeEventHandlers();
+
+            _ = InitializeAsync();
+        }
+        #endregion
+
+        #region Инициализация подписок шины сообщений
+        private void InitializeBusSubscriptions()
+        {
+            _eventBus.Subscribe<UserDeletedMessage>(async msg =>
             {
-                StatusText = "Загрузка";
-                await Task.Delay(1000);
-                StatusText = text;
-                await Task.Delay(3000);
-                StatusText = $"Загружено {Users.Count} пользователей";
-            }
-
-            public ICommand LogoutCommand => new RelayCommand(_ =>
-            {
-                PanelVisibility = Visibility.Collapsed;
-                OnGlobalResetRequested?.Invoke();
-                _ = UpdateStatusText("Выход из аккаунта выполнен успешно");
+                var userToRemove = Users.FirstOrDefault(u => u.Id == msg.UserId);
+                if (userToRemove != null)
+                {
+                    string name = userToRemove.FirstName ?? "в имени Null";
+                    Application.Current.Dispatcher.Invoke(() => Users.Remove(userToRemove));
+                    await UpdateStatusText($"Пользователь {name} удален");
+                }
             });
 
-            public ICommand ToggleFormVisibilityCommand => new RelayCommand(parameter =>
+            _eventBus.Subscribe<UserAddedMessage>(async msg =>
+            {
+                if (msg.User == null) return;
+                Application.Current.Dispatcher.Invoke(() => Users.Add(msg.User));
+                await UpdateStatusText($"Пользователь {msg.User.FirstName} добавлен");
+            });
+        }
+
+        private void InitializeEventHandlers()
+        {
+            OnFormVisibilityChanged += OnGlobalFormVisibilityChanged;
+        }
+        #endregion
+
+        #region Логика работы
+        private async Task InitializeAsync()
+        {
+            try
+            {
+                await _listUsersService.RefreshUsersAsync();
+                await Application.Current.Dispatcher.InvokeAsync(async () =>
+                {
+                    await UpdateStatusText("Инициализация пользователей успешна");
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Ошибка при старте приложения: {ex.Message}");
+                StatusText = "Ошибка загрузки данных при старте";
+            }
+        }
+
+        public void ConnectToMainWindow(MainWindow mainWindow) => MainWindow = mainWindow;
+
+        private void OnMainWindowCoordinatesChanged(object? sender, EventArgs e)
+        {
+            if (_mainWindow == null) return;
+
+            _eventBus.Publish(new WindowPositionChangedMessage(
+                _mainWindow.Left,
+                _mainWindow.Top,
+                _mainWindow.Width,
+                _mainWindow.Height,
+                _mainWindow.IsLoaded
+            ));
+        }
+
+        private async Task UpdateStatusText(string text)
+        {
+            StatusText = "Загрузка";
+            await Task.Delay(1000);
+            StatusText = text;
+            await Task.Delay(3000);
+            StatusText = $"Загружено {Users.Count} пользователей";
+        }
+        #endregion
+
+        #region Команды
+        public ICommand LogoutCommand => new RelayCommand(_ =>
+        {
+            PanelVisibility = Visibility.Collapsed;
+            OnGlobalResetRequested?.Invoke();
+            _ = UpdateStatusText("Выход из аккаунта выполнен успешно");
+        });
+
+        public ICommand ToggleFormVisibilityCommand => new RelayCommand(parameter =>
         {
             var vm = parameter as FormViewModelBase;
             if (vm?.ControlVisibility != null)
@@ -159,32 +173,40 @@ using HomeNetCore.Services.ListUsersServise;
             }
         });
 
-            private void OnGlobalFormVisibilityChanged(FormViewModelBase activeForm, Visibility visibility)
+        private void OnGlobalFormVisibilityChanged(FormViewModelBase activeForm, Visibility visibility)
+        {
+            OnPropertyChanged(nameof(IsButtonsPanelEnabled));
+
+            // ИСПРАВЛЕНИЕ: Используем приведенную activeForm вместо nullable-свойства DeleteUsersViewModel!
+            if (activeForm is DeletionUsersViewModel deleteVm && visibility == Visibility.Visible)
             {
-                OnPropertyChanged(nameof(IsButtonsPanelEnabled));
-
-                if (activeForm is DeleteUsersViewModel && visibility == Visibility.Visible)
-                {
-                    DeleteUsersViewModel.MainUsersList = this.Users;
-                }
-
-                string formName = activeForm switch
-                {
-                    DeleteUsersViewModel _ => "Удаление пользователей",
-                    RegistrationViewModel _ => "Регистрация",
-                    LoginInViewModel _ => "Авторизация",
-                    _ => "Форма"
-                };
-
-                if (visibility == Visibility.Visible)
-                    _ = UpdateStatusText($"Открыта форма: {formName}");
-                else
-                    _ = UpdateStatusText($"Cold close: {formName}");
+                deleteVm.MainUsersList = Users;
             }
-            public void Dispose()
+
+            string formName = activeForm switch
             {
-                OnFormVisibilityChanged -= OnGlobalFormVisibilityChanged;
-                LogVm?.Dispose();
+                DeletionUsersViewModel _ => "Удаление пользователей",
+                RegistrationViewModel _ => "Регистрация",
+                AuthenticationViewModel _ => "Авторизация",
+                _ => "Форма"
+            };
+
+            if (visibility == Visibility.Visible)
+                _ = UpdateStatusText($"Открыта форма: {formName}");
+            else
+                _ = UpdateStatusText($"Cold close: {formName}");
+        }
+
+        #endregion
+
+        public void Dispose()
+        {
+            OnFormVisibilityChanged -= OnGlobalFormVisibilityChanged;
+            if (_mainWindow != null)
+            {
+                _mainWindow.LocationChanged -= OnMainWindowCoordinatesChanged;
+                _mainWindow.SizeChanged -= OnMainWindowCoordinatesChanged;
             }
         }
-    } 
+    }
+}

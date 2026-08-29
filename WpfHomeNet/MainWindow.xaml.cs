@@ -1,40 +1,53 @@
-﻿using HomeNetCore.Services;
-using HomeSocialNetwork;
+﻿using System;
 using System.Windows;
 using System.Windows.Input;
+using WpfHomeNet.Messaging;
 using WpfHomeNet.ViewModels;
 
 namespace WpfHomeNet
 {
-    
     public partial class MainWindow : Window
-    {        
-        private UserService? _userService;
-        private MainViewModel _mainVm;
-       
-        public MainWindow()
+    {
+        private readonly MainViewModel _mainVm;
 
-        { 
-            InitializeComponent();  
-                          
-            var app = (App)Application.Current;
+        // Чистый DI: Контейнер сам передает готовую MainViewModel в конструктор окна!
+        public MainWindow(MainViewModel mainVm)
+        {
+            InitializeComponent();
 
-            _userService = app.UserService;
+            _mainVm = mainVm ?? throw new ArgumentNullException(nameof(mainVm));
 
-            _mainVm = app.MainVm; 
+            // Соединяем окно и вьюмодель
+            _mainVm.ConnectToMainWindow(this);
 
-            _mainVm.LogWindow= app.LogWindow;
+            // Назначаем контекст данных
+            DataContext = _mainVm;
 
-           _mainVm.ConnectToMainWindow(this);
+           
+            this.ContentRendered += MainWindow_ContentRendered;
+            
+        }
 
-            DataContext = _mainVm;                        
+
+        private void MainWindow_ContentRendered(object? sender, EventArgs e)
+        {
+            if (double.IsNaN(this.Left) || double.IsNaN(this.Top) || double.IsNaN(this.Width)) return;
+
+            // Просто уведомляем систему, что главное окно готово
+            _mainVm.EventBus.Publish(new WindowPositionChangedMessage(
+                this.Left,
+                this.Top,
+                this.Width,
+                this.Height,
+                this.IsLoaded
+            ));
         }
 
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
-        {                                  
-           _mainVm.LogWindow.Close();
-           
+        {
+            // Закрываем окно логов через свойство вьюмодели безопасно
+            _mainVm.LogWindow?.Close();
             Close();
         }
 

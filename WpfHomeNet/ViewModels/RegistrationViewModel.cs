@@ -1,31 +1,30 @@
-﻿using HomeNetCore.Data.Interfaces;
-using HomeNetCore.Enums;
+﻿using HomeNetCore.Enums;
 using HomeNetCore.Models;
 using HomeNetCore.Models.InputUserData;
 using HomeNetCore.Services;
 using HomeNetCore.Services.UsersServices;
 using System.Windows;
 using System.Windows.Input;
+using WpfHomeNet.Messaging; 
 
 namespace WpfHomeNet.ViewModels
 {
     public class RegistrationViewModel : FormViewModelBase
     {
         private readonly RegisterService _registerService;
-        private MainViewModel? _mainViewModel;
+        private readonly EventBus _eventBus; // Внедряем автобус
         private UserEntity? _createdUser;
 
         public CreateUserInput UserData { get; set; } = new();
         public ICommand RegisterCommand { get; }
         public ICommand CancelCommand { get; }
         public ICommand ToggleRegistrationCommand { get; }
-       
 
-        // Сервис регистрации теперь прилетает напрямую из контейнера!
-        public RegistrationViewModel(RegisterService registerService)
+        // DI ПРАВКА: Принимаем RegisterService и EventBus напрямую из контейнера
+        public RegistrationViewModel(RegisterService registerService, EventBus eventBus)
         {
             _registerService = registerService ?? throw new ArgumentNullException(nameof(registerService));
-          
+            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
 
             InitializeInitialHints();
 
@@ -62,9 +61,7 @@ namespace WpfHomeNet.ViewModels
             UpdateValidation(initialHints);
             SubmitButtonText = "Зарегистрироваться";
         }
-
-        public void ConnectToMainViewModel(MainViewModel mainVm) => _mainViewModel = mainVm;
-
+ 
         private void CloseForm()
         {
             UserData = new();
@@ -92,7 +89,8 @@ namespace WpfHomeNet.ViewModels
 
                     if (_createdUser != null)
                     {
-                        _mainViewModel?.AddUserAction?.Invoke(_createdUser);
+                        // ИСПРАВЛЕНИЕ: Вместо вызова чужого экшена швыряем сообщение в автобус!
+                        _eventBus.Publish(new UserAddedMessage(_createdUser));
                     }
                 }
                 else

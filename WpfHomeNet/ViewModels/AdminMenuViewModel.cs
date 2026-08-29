@@ -1,128 +1,98 @@
-﻿using HomeNetCore.Services;
+﻿using HomeNetCore.Models;
+using HomeNetCore.Services;
 using System.ComponentModel;
-using System.Windows;
+using System.Runtime.CompilerServices;
 using System.Windows.Input;
-using static WpfHomeNet.ViewModels.LogViewModel;
-using HomeNetCore.Models;
-
-
+using WpfHomeNet.Messaging;
 
 namespace WpfHomeNet.ViewModels
 {
+    
     public class AdminMenuViewModel : INotifyPropertyChanged
-    {       
-        private MainViewModel? _mainVm;
-       
-        private UserService _userService;
+    {
+        #region Поля и переменные
+        private readonly UserService _userService;
+        private readonly EventBus _eventBus;
 
-        // Сюда главная модель передаст команду на обновление списка
-        public Action? OnDataSeeded { get; set; }
-
-
-        public MainViewModel MainVm
-        {
-            get => _mainVm ?? throw new InvalidOperationException($"{nameof(_mainVm)} не инициализирован");
-            set => _mainVm = value;
-        }
-       
-        public ICommand ToggleLogWindowCommand { get; }
-
-        public ICommand UserTableViewCommand { get; private set; }
-
-        // Свойство для текста кнопки
         private string _toggleButtonText = "Показать лог";
         private string _tableButtonText = "Показать users";
+        private bool _isTableVisible;
+        private bool _isLogVisible;
+        #endregion
+
+        #region Свойства и Команды
+        public ICommand ToggleLogWindowCommand { get; }
+        public ICommand UserTableViewCommand { get; }
+        public ICommand SeedDataCommand { get; }
 
         public string ToggleButtonText
         {
             get => _toggleButtonText;
-            set
-            {
-                _toggleButtonText = value;
-                OnPropertyChanged(nameof(ToggleButtonText));
-            }
+            set => SetField(ref _toggleButtonText, value);
         }
 
         public string TableButtonText
         {
             get => _tableButtonText;
-            set
-            {
-                _tableButtonText = value;
-                OnPropertyChanged(nameof(TableButtonText));
-            }
+            set => SetField(ref _tableButtonText, value);
         }
+        #endregion
 
-
-        public AdminMenuViewModel(UserService userService)
+        #region Конструктор
+        public AdminMenuViewModel(UserService userService, EventBus eventBus)
         {
-            ToggleLogWindowCommand = new RelayCommand(ExecuteToggleLogWindow);
+            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
 
-            UserTableViewCommand = new RelayCommand(parameter => ExecuteUserTableViewVisible());
-
-            _userService = userService;
-           
-        }
-
-        public void ConnectToMainViewModel(MainViewModel mainVm) => MainVm = mainVm;
-
-        private void ExecuteToggleLogWindow(object? parameter)
-        {
-            if (MainVm.LogVm.ShowLogWindowDelegate == null)
-                return;
-
-            var state = MainVm.LogVm.ShowLogWindowDelegate();
-
-            ToggleButtonText = state == LogWindowState.Visible ? "Скрыть лог" : "Показать лог";
-        }
-
-
-        private void ExecuteUserTableViewVisible()
-        {
-
-            if (MainVm.PanelVisibility == Visibility.Collapsed)
+            ToggleLogWindowCommand = new RelayCommand(_ =>
             {
-                MainVm.PanelVisibility = Visibility.Visible;
-                TableButtonText = "Скрыть users";
-            }
-                
-            else
+                // Оставляем ТОЛЬКО публикацию в автобус. Старый вызов делегата удаляем!
+                _eventBus.Publish(new LogWindowVisibilityChangedMessage(!_isLogVisible));
+            });
+
+            UserTableViewCommand = new RelayCommand(_ =>
+                _eventBus.Publish(new UserTableVisibilityChangedMessage(!_isTableVisible)));
+
+            SeedDataCommand = new RelayCommand(async _ => await ExecuteSeedDataAsync());
+
+            // Подписываемся на события изменения видимости окон из воздуха
+            _eventBus.Subscribe<LogWindowVisibilityChangedMessage>(msg =>
             {
-                MainVm.PanelVisibility = Visibility.Collapsed;
+                _isLogVisible = msg.IsVisible;
+                ToggleButtonText = _isLogVisible ? "Скрыть лог" : "Показать лог";
+            });
 
-                TableButtonText = "Показать users";
-            }
+            _eventBus.Subscribe<UserTableVisibilityChangedMessage>(msg =>
+            {
+                _isTableVisible = msg.IsVisible;
+                TableButtonText = _isTableVisible ? "Скрыть users" : "Показать users";
+            });
         }
+        #endregion
 
-        // Команда для кнопки
-        public ICommand SeedDataCommand => new RelayCommand(async _ => await ExecuteSeedDataAsync());
-
+        #region Логика сидинга данных
         private async Task ExecuteSeedDataAsync()
         {
             int addedCount = 0;
-
             try
             {
                 foreach (var user in DbSeedData.Users)
                 {
-                    // Проверяем email на уникальность перед заливкой
                     bool emailExists = await _userService.CheckEmailExistsAsync(user.Email);
-
                     if (!emailExists)
                     {
                         await _userService.AddUserAsync(user);
+                        _eventBus.Publish(new UserAddedMessage(user));
                         addedCount++;
                     }
                 }
 
                 if (addedCount > 0)
                 {
-                    // Дергаем за ниточку Главную модель, чтобы она перечитала базу данных!
-                    OnDataSeeded?.Invoke();
+                    System.Diagnostics.Debug.WriteLine($"Успешно добавлено {addedCount} тестовых юзеров.");
                 }
                 else
                 {
-                    // Если добавлено 0 (нажали второй раз) — пишем в дебаг, что все уже там
                     System.Diagnostics.Debug.WriteLine("Все пользователи уже добавлены!");
                 }
             }
@@ -131,12 +101,24 @@ namespace WpfHomeNet.ViewModels
                 System.Diagnostics.Debug.WriteLine($"Ошибка генерации: {ex.Message}");
             }
         }
+        #endregion
 
+        #region INotifyPropertyChanged
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        protected virtual void OnPropertyChanged(string propertyName)
+        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
+        protected bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+        {
+            if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+            field = value;
+            OnPropertyChanged(propertyName);
+            return true;
+        }
+        #endregion
     }
 }
+

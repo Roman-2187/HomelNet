@@ -1,105 +1,76 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using WpfHomeNet.Messaging;
 using WpfHomeNet.UiHelpers;
+
 
 namespace WpfHomeNet.ViewModels
 {
-    public class LogViewModel : INotifyPropertyChanged, IDisposable
+    public class LogViewModel : INotifyPropertyChanged
     {
-        LogQueueManager _queueManager;
-        public MainViewModel MainVm
-        {
-            get => _mainVm ?? throw new InvalidOperationException($"{nameof(_mainVm)} не инициализирован");
-            set => _mainVm = value;
-        }
+        #region Поля и переменные
+        private readonly LogQueueManager _queueManager;
+        private readonly EventBus _eventBus;
+        private readonly LogWindow _logWindow;
+        #endregion
 
-        public Func<LogWindowState>? ShowLogWindowDelegate { get; private set; }
-        public LogViewModel(LogQueueManager logQueueManager) => _queueManager = logQueueManager;
-
-        private MainViewModel? _mainVm;
-
-        private bool _isSubscribed;
-
+        #region Свойства
         public double Offset { get; set; } = 5;
+        public bool IsVisible => _logWindow.Visibility == Visibility.Visible;
+        #endregion
 
-        public void ConnectToMainViewModel(MainViewModel mainVm)
+        #region Конструктор
+        public LogViewModel(EventBus eventBus, LogQueueManager logQueueManager, LogWindow logWindow)
         {
-            MainVm = mainVm;
+            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+            _queueManager = logQueueManager ?? throw new ArgumentNullException(nameof(logQueueManager));
+            _logWindow = logWindow ?? throw new ArgumentNullException(nameof(logWindow));
 
-            PositionLogWindow();
-            StartBinding();
+           
 
-
-            ShowLogWindowDelegate = ToggleLogWindow;
+            // ИСПРАВЛЕНИЕ: Передаем как прямые ссылки на методы! 
+            // Теперь защита .Contains() в EventBus сработает идеально.
+            _eventBus.Subscribe<WindowPositionChangedMessage>(PositionLogWindow);
+            _eventBus.Subscribe<LogWindowVisibilityChangedMessage>(OnVisibilityCommandReceived);
         }
+        #endregion
 
-
-        private void StartBinding()
+        #region Логика управления окном
+        private void OnVisibilityCommandReceived(LogWindowVisibilityChangedMessage msg)
         {
-            if (!_isSubscribed)
+            if (msg.IsVisible)
             {
-                MainVm.MainWindow.LocationChanged += OnMainWindowMoved;
-                MainVm.MainWindow.SizeChanged += OnMainWindowResized;
-                _isSubscribed = true;
-            }
-
-        }
-
-        private void PositionLogWindow()
-        {          
-            var mainWindow = MainVm.MainWindow;
-            if (!mainWindow.IsLoaded) return;
-
-            MainVm.LogWindow.Left = mainWindow.Left + mainWindow.Width + Offset;
-            MainVm.LogWindow.Top = mainWindow.Top;
-            MainVm.LogWindow.Height = mainWindow.Height;
-            MainVm.LogWindow.Width = 600;
-        }
-
-        private void OnMainWindowMoved(object? sender, EventArgs e) => PositionLogWindow();
-        private void OnMainWindowResized(object sender, SizeChangedEventArgs e) => PositionLogWindow();
-
-        public void Show() => MainVm.LogWindow.Show();
-        public void Hide() => MainVm.LogWindow.Hide();
-        public bool IsVisible => MainVm.LogWindow.Visibility == Visibility.Visible;
-
-
-
-        private LogWindowState ToggleLogWindow()
-        {
-            if (IsVisible)
-            {
-                Hide();
-                return LogWindowState.Hidden;
+                _logWindow.Show();
+                _queueManager.SetReady();
             }
             else
             {
-                PositionLogWindow();
-                Show();
-                _queueManager.SetReady();
-                return LogWindowState.Visible;
+                _logWindow.Hide();
             }
+
+            OnPropertyChanged(nameof(IsVisible));
         }
 
-        public enum LogWindowState { Visible, Hidden }
 
 
-
-
-        public void Dispose()
+        private void PositionLogWindow(WindowPositionChangedMessage msg)
         {
-            if (_isSubscribed)
-            {
-                MainVm.MainWindow.LocationChanged -= OnMainWindowMoved;
-                MainVm.MainWindow.SizeChanged -= OnMainWindowResized;
-                _isSubscribed = false;
-            }
-        }
+            if (!msg.IsLoaded) return;
 
+            _logWindow.Left = msg.Left + msg.Width + Offset;
+            _logWindow.Top = msg.Top;
+            _logWindow.Height = msg.Height;
+            _logWindow.Width = 600;
+        }
+        #endregion
+
+        #region INotifyPropertyChanged
         public event PropertyChangedEventHandler? PropertyChanged;
         protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        #endregion
     }
-
 }
+
