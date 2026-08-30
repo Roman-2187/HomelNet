@@ -1,117 +1,84 @@
-﻿using HomeNetCore.Models;
+﻿using CommunityToolkit.Mvvm.ComponentModel; // Нано-штамповщик свойств ✨
+using CommunityToolkit.Mvvm.Input;        // Нано-штамповщик команд 🚀
+using HomeNetCore.Models;
 using HomeNetCore.Services.DeleteService;
+using System;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using WpfHomeNet.Messaging;
 
 namespace WpfHomeNet.ViewModels
 {
-    public class DeletionUsersViewModel : FormViewModelBase
+    // ОБЯЗАТЕЛЬНО пишем partial, чтобы Студия дорисовала кишки! 🧼
+    public partial class DeletionUsersViewModel : FormViewModelBase
     {
-        #region Поля и переменные
+        #region Поля (Штамповочный цех автоматических свойств) 🦾
         private readonly DeleteService _deleteService;
-        
 
-        private ObservableCollection<UserEntity>? _mainUsersList;
-        private UserEntity? _selectedUser;
-        private string _targetUserId = string.Empty;
-        private bool _canDelete;
+        [ObservableProperty]
+        private ObservableCollection<UserEntity>? _mainUsersList; 
+
+        [ObservableProperty]
+        private UserEntity? _selectedUser; 
+
+        [ObservableProperty]
+        private string _targetUserId = string.Empty; 
+
+        [ObservableProperty]
+        private bool _canDelete; 
         #endregion
 
-        #region Свойства и Команды
-        public ObservableCollection<UserEntity>? MainUsersList
-        {
-            get => _mainUsersList;
-            set => SetField(ref _mainUsersList, value);
-        }
+        #region ХИТРЫЕ ХУКИ: Реакция на изменение полей (Твоя логика перенесена сюда!) ⚙️
 
-        public UserEntity? SelectedUser
+        // Этот метод сам вызовется внутри скрытого сеттера, когда выберут юзера в таблице!
+        partial void OnSelectedUserChanged(UserEntity? value)
         {
-            get => _selectedUser;
-            set
-            {
-                if (SetField(ref _selectedUser, value) && _selectedUser != null)
-                {
-                    // Автоматически переносим ID выбранного юзера в поле поиска
-                    TargetUserId = _selectedUser.DisplayInfo.ToString();
-                    CanDelete = true;
-                }
+            if (value != null)
+            {         
+                TargetUserId = value.DisplayInfo.ToString();
+                CanDelete = true;
             }
         }
 
-        public string TargetUserId
+        // Этот метод сам вызовется внутри скрытого сеттера, когда изменится текст в поле поиска!
+        partial void OnTargetUserIdChanged(string value)
         {
-            get => _targetUserId;
-            set
+            // Сообщаем кнопке поиска, что текст изменился
+            SearchCommand.NotifyCanExecuteChanged();
+
+            // ХИТРЫЙ ХАК: Проверяем, можно ли активировать кнопку удаления
+            if (int.TryParse(value, out int parsedId) && parsedId > 0)
             {
-                if (SetField(ref _targetUserId, value))
-                {
-                    // Сообщаем кнопке поиска, что текст изменился
-                    (SearchCommand as RelayCommand)?.RaiseCanExecuteChanged();
-
-                    // ХИТРЫЙ ХАК: Если юзер ввёл ID руками, проверяем, можно ли активировать кнопку удаления
-                    if (int.TryParse(_targetUserId, out int parsedId) && parsedId > 0)
-                    {
-                        CanDelete = true;
-                    }
-                    else if (string.IsNullOrWhiteSpace(_targetUserId))
-                    {
-                        CanDelete = false;
-                    }
-
-                    // Принудительно заставляем кнопку удаления пересчитать свой статус CanExecute!
-                    (DeleteCommand as RelayCommand)?.RaiseCanExecuteChanged();
-                }
+                CanDelete = true;
             }
+            else if (string.IsNullOrWhiteSpace(value))
+            {
+                CanDelete = false;
+            }
+
+            // Принудительно заставляем кнопку удаления пересчитать свой статус!
+            DeleteCommand.NotifyCanExecuteChanged();
         }
 
-        public bool CanDelete
+        // Этот метод сам вызовется, когда флаг CanDelete изменится
+        partial void OnCanDeleteChanged(bool value)
         {
-            get => _canDelete;
-            set
-            {
-                if (SetField(ref _canDelete, value))
-                {
-                    // Как только флаг меняется — кнопка удаления мгновенно разблокируется в UI!
-                    (DeleteCommand as RelayCommand)?.RaiseCanExecuteChanged();
-                }
-            }
+            // Кнопка удаления мгновенно разблокируется в UI!
+            DeleteCommand.NotifyCanExecuteChanged();
         }
 
-        public ICommand SearchCommand { get; }
-        public ICommand DeleteCommand { get; }
-        public ICommand CancelCommand { get; }
         #endregion
-
 
         #region Конструктор
         public DeletionUsersViewModel(DeleteService deleteService, EventBus eventBus) : base(eventBus)
         {
             _deleteService = deleteService ?? throw new ArgumentNullException(nameof(deleteService));
-            ControlVisibility = Visibility.Collapsed;
-            SubmitButtonText = "Удалить";
-            StatusMessage = "Введите ID ";
-
-            SearchCommand = new RelayCommand(
-                execute: async (_) => await ExecuteSearchCommandAsync(),
-                canExecute: (_) => !string.IsNullOrWhiteSpace(TargetUserId)
-            );
-
-            DeleteCommand = new RelayCommand(
-                execute: async (_) => await ExecuteDeleteCommandAsync(),
-                canExecute: (_) => CanDelete
-            );
-
-            CancelCommand = new RelayCommand(
-                execute: (_) =>
-                {
-                    ResetForm();
-                    ControlVisibility = Visibility.Collapsed;
-                    // Уведомляем автобус, что мы закрылись ручками
-                    _eventBus.Publish(new FormVisibilityChangedMessage(this.GetType(), Visibility.Collapsed));
-                }
-            );
+            ControlVisibility = Visibility.Collapsed; //
+            SubmitButtonText = "Удалить"; //
+            StatusMessage = "Введите ID "; //
 
             // ПРАВКА СТАРТА: Сразу принудительно шлём в автобус сигнал, что мы скрыты!
             _eventBus.Publish(new FormVisibilityChangedMessage(this.GetType(), Visibility.Collapsed));
@@ -130,12 +97,57 @@ namespace WpfHomeNet.ViewModels
             {
                 if (msg.Users != null)
                 {
-                    MainUsersList = msg.Users;
+                    MainUsersList = msg.Users; 
                 }
             });
         }
         #endregion
 
+        #region НАНО-КОМАНДЫ (Идеальные имена для генератора от Microsoft! 🧼)
+
+        [RelayCommand(CanExecute = nameof(CanExecuteSearch))]
+        private async Task SearchAsync() // Было: SearchCommandAsync. Теперь сгенерирует ровно SearchCommand! 🦾
+        {
+            StatusMessage = "Поиск пользователя в базе данных...";
+            CanDelete = false;
+            var (isSuccess, message, _) = await _deleteService.SearchUserAsync(TargetUserId);
+            StatusMessage = message;
+            CanDelete = isSuccess;
+        }
+        private bool CanExecuteSearch() => !string.IsNullOrWhiteSpace(TargetUserId);
+
+
+        [RelayCommand(CanExecute = nameof(CanExecuteDelete))]
+        private async Task DeleteAsync() // Было: DeleteCommandAsync. Теперь сгенерирует ровно DeleteCommand! 🔥
+        {
+            int id = SelectedUser?.Id ?? (int.TryParse(TargetUserId, out int parsedId) ? parsedId : -1);
+            if (id == -1) return;
+            StatusMessage = $"Удаление пользователя с ID {id}...";
+            var (isSuccess, message) = await _deleteService.DeleteUserAsync(id);
+            StatusMessage = message;
+            if (isSuccess)
+            {
+                var userToRemove = MainUsersList?.FirstOrDefault(u => u.Id == id);
+                if (userToRemove != null)
+                {
+                    Application.Current.Dispatcher.Invoke(() => MainUsersList?.Remove(userToRemove));
+                }
+                _eventBus.Publish(new UserDeletedMessage(id));
+                ResetForm();
+            }
+        }
+        private bool CanExecuteDelete() => CanDelete;
+
+
+        [RelayCommand]
+        private void Cancel() 
+        {
+            ResetForm();
+            ControlVisibility = Visibility.Collapsed;
+            _eventBus.Publish(new FormVisibilityChangedMessage(this.GetType(), Visibility.Collapsed));
+        }
+
+        #endregion
 
         #region Логика работы
         private void ResetForm()
@@ -145,43 +157,8 @@ namespace WpfHomeNet.ViewModels
             CanDelete = false;
             SelectedUser = null;
         }
-
-        private async Task ExecuteSearchCommandAsync()
-        {
-            StatusMessage = "Поиск пользователя в базе данных...";
-            CanDelete = false;
-
-            var (isSuccess, message, _) = await _deleteService.SearchUserAsync(TargetUserId);
-
-            StatusMessage = message;
-            CanDelete = isSuccess;
-        }
-
-        private async Task ExecuteDeleteCommandAsync()
-        {
-            int id = _selectedUser?.Id ?? (int.TryParse(TargetUserId, out int parsedId) ? parsedId : -1);
-            if (id == -1) return;
-
-            StatusMessage = $"Удаление пользователя с ID {id}...";
-
-            var (isSuccess, message) = await _deleteService.DeleteUserAsync(id);
-
-            StatusMessage = message;
-
-            if (isSuccess)
-            {
-                // ИСПРАВЛЕНИЕ: Напрямую выпиливаем юзера из нашего списка на экране,
-                // и WPF реактивно сотрет эту строчку прямо на глазах пользователя!
-                var userToRemove = MainUsersList?.FirstOrDefault(u => u.Id == id);
-                if (userToRemove != null)
-                {
-                    Application.Current.Dispatcher.Invoke(() => MainUsersList?.Remove(userToRemove));
-                }
-                // ИСПРАВЛЕНИЕ: Вместо ручного экшена OnUserDeletedFromDb швыряем сообщение в автобус!
-                _eventBus.Publish(new UserDeletedMessage(id));
-                ResetForm();
-            }
-        }
         #endregion
+
+        
     }
 }

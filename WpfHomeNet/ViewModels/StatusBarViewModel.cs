@@ -1,24 +1,25 @@
-﻿using System.Windows;
+﻿using System;
+using System.Threading.Tasks;
+using System.Windows;
+using CommunityToolkit.Mvvm.ComponentModel; // Нано-движок от Microsoft ✨
 using WpfHomeNet.Messaging;
 
 namespace WpfHomeNet.ViewModels
 {
-    public class StatusBarViewModel : FormViewModelBase
-    {   
-        private string _statusText = "Инициализация...";
-   
-        private Func<MainViewModel>? _mainVmProvider;
+    // ОБЯЗАТЕЛЬНО делаем класс partial, чтобы Студия дорисовала кишки! 🧼
+    public partial class StatusBarViewModel : FormViewModelBase
+    {
+        #region Поля (Автоматический штамповочный цех свойств) 🦾
 
-        public string StatusText
+        [ObservableProperty]
+        private string _statusText = "Инициализация..."; // Сгенерирует: public string StatusText
+
+        private Func<MainViewModel>? _mainVmProvider; //
+        #endregion
+
+        #region Конструктор
+        public StatusBarViewModel(EventBus eventBus) : base(eventBus) //
         {
-            get => _statusText;
-            set => SetField(ref _statusText, value);
-        }
-
-        
-        public StatusBarViewModel(EventBus eventBus) : base(eventBus)
-
-        {     
             // 1. Слушаем прямые текстовые статусы
             _eventBus.Subscribe<StatusTextChangedMessage>(async msg =>
                 await UpdateStatusAsync(msg.NewStatus));
@@ -40,17 +41,16 @@ namespace WpfHomeNet.ViewModels
                 }
                 else
                 {
-                    // Если форма закрылась — просто плавно обновляем дефолтный счётчик пользователей
                     await RefreshDefaultStatusAsync();
                 }
             });
 
-            // 3. Ловим успешную загрузку базы данных из асинхронного потока
+            // 3. Ловим успешную загрузку базы данных
             _eventBus.Subscribe<UsersListRefreshedMessage>(async msg =>
             {
-                // Вместо провайдера берём Count ПРЯМО ИЗ СООБЩЕНИЯ, которое прислала модель!
                 if (msg.Users != null)
                 {
+                    // Пишем строго в свойство с Большой буквы! Генератор сам пнёт XAML 🧼
                     StatusText = $"Загружено {msg.Users.Count} пользователей";
                 }
                 else
@@ -59,10 +59,10 @@ namespace WpfHomeNet.ViewModels
                 }
             });
         }
+        #endregion
 
-
-
-        // ИСПРАВЛЕНИЕ: Статус-бар официально пинает метод InitializeAsync главной модели!
+        #region Логика работы
+        // Метод инициализации провайдера
         public async void InitializeMainVmProvider(Func<MainViewModel> mainVmProvider)
         {
             _mainVmProvider = mainVmProvider;
@@ -72,16 +72,16 @@ namespace WpfHomeNet.ViewModels
                 var mainVm = _mainVmProvider.Invoke();
                 if (mainVm != null)
                 {
-                    // ЗАПУСКАЕМ КОНВЕЙЕР: Даем команду главной модели считать СУБД!
                     await mainVm.InitializeAsync();
                 }
             }
-            catch (Exception )
+            catch (Exception)
             {
                 StatusText = "Ошибка запуска базы данных ❌";
             }
         }
 
+        // Асинхронное обновление статуса (Твоя пишущая машинка!)
         private async Task UpdateStatusAsync(string text)
         {
             StatusText = "Загрузка...";
@@ -91,12 +91,14 @@ namespace WpfHomeNet.ViewModels
             await RefreshDefaultStatusAsync();
         }
 
+        // Возврат к дефолтному счётчику пользователей
         private Task RefreshDefaultStatusAsync()
         {
-            // Пробиваемся напрямую в живую коллекцию MainViewModel и забираем реальный Count!
             int actualCount = _mainVmProvider?.Invoke()?.Users?.Count ?? -1;
             StatusText = $"Загружено {actualCount} пользователей";
             return Task.CompletedTask;
         }
+        #endregion
     }
 }
+

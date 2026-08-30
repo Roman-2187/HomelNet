@@ -1,37 +1,36 @@
-﻿using HomeNetCore.Enums;
+﻿using CommunityToolkit.Mvvm.ComponentModel; 
+using HomeNetCore.Enums;
 using HomeNetCore.Services.UsersServices;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Windows;
-using WpfHomeNet.Messaging; 
+using WpfHomeNet.Messaging;
 
 namespace WpfHomeNet.ViewModels
 {
-    public abstract class FormViewModelBase : INotifyPropertyChanged
+   
+    public abstract partial class FormViewModelBase : ObservableObject
     {
-        public event PropertyChangedEventHandler? PropertyChanged;
-    
-
         // ГЛОБАЛЬНЫЙ СИГНАЛ ЛОГАУТА
         public static Action? OnGlobalResetRequested;
 
-        // Делаем защищенное поле автобуса, чтобы все дочерние формы имели к нему прямой доступ
+        // Защищенное поле автобуса для дочерних форм
         protected readonly EventBus _eventBus;
 
-        // Конструктор теперь принимает автобус
+        // Конструктор
         public FormViewModelBase(EventBus eventBus)
         {
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+
             OnGlobalResetRequested += ResetSession;
         }
 
         public void ResetSession()
         {
-            IsComplete = false;
+            IsComplete = false; // <--- ТЕПЕРЬ ПИШЕМ С БОЛЬШОЙ БУКВЫ! 🧼
             ControlVisibility = Visibility.Collapsed;
             OnPropertyChanged(nameof(IsComplete));
             OnResetForm();
         }
+
 
         protected virtual void OnResetForm() { }
 
@@ -42,68 +41,38 @@ namespace WpfHomeNet.ViewModels
             set => _validationResult = value;
         }
 
-        protected bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-        {
-            if (EqualityComparer<T>.Default.Equals(field, value))
-                return false;
+        #region АВТОМАТИЧЕСКИЕ СВОЙСТВА (Штамповочный цех Microsoft) 🦾
 
-            field = value;
-            OnPropertyChanged(propertyName);
-            return true;
-        }
+        [ObservableProperty]
+        private bool _isOpen; 
 
-        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+        [ObservableProperty]
+        private bool _isComplete = false; 
 
-        private bool _isOpen;
-        public bool IsOpen
-        {
-            get => _isOpen;
-            set => SetField(ref _isOpen, value);
-        }
+        [ObservableProperty]
+        private string _statusMessage = string.Empty;
 
-        private bool _isComplete = false;
-        public bool IsComplete
-        {
-            get => _isComplete;
-            protected set => SetField(ref _isComplete, value);
-        }
+        [ObservableProperty]
+        private string _submitButtonText = "Выполнить"; 
 
+        [ObservableProperty]
+        private IReadOnlyDictionary<TypeField, ValidationResult> _validationResults
+            = new Dictionary<TypeField, ValidationResult>();
+
+        #endregion
+
+        
         private Visibility _controlVisibility = Visibility.Collapsed;
         public virtual Visibility ControlVisibility
         {
             get => _controlVisibility;
             set
             {
-                if (SetField(ref _controlVisibility, value))
-                {              
+                if (SetProperty(ref _controlVisibility, value))
+                {
                     _eventBus.Publish(new FormVisibilityChangedMessage(this.GetType(), value));
                 }
             }
-        }
-
-        private string _statusMessage = string.Empty;
-        public string StatusMessage
-        {
-            get => _statusMessage;
-            protected set => SetField(ref _statusMessage, value);
-        }
-
-        private string _submitButtonText = "Выполнить";
-        public string SubmitButtonText
-        {
-            get => _submitButtonText;
-            protected set => SetField(ref _submitButtonText, value);
-        }
-
-        private IReadOnlyDictionary<TypeField, ValidationResult> _validationResults
-            = new Dictionary<TypeField, ValidationResult>();
-        public IReadOnlyDictionary<TypeField, ValidationResult> ValidationResults
-        {
-            get => _validationResults;
-            protected set => SetField(ref _validationResults, value);
         }
 
         public void UpdateValidation(IEnumerable<ValidationResult> results)
@@ -112,5 +81,6 @@ namespace WpfHomeNet.ViewModels
         }
     }
 }
+
 
 

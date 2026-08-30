@@ -98,7 +98,8 @@ HorizontalAlignment="Stretch"
                 
                 <Button MinWidth="120"   
                         Command="{Binding ToggleFormVisibilityCommand}"
-                        CommandParameter="{Binding RegistrationViewModel}"                      
+                        CommandParameter="{Binding RegistrationViewModel}" 
+                        
                         Content="Регистрация" />
                 <Button Width="Auto"                       
                         Command="{Binding ToggleFormVisibilityCommand}"
