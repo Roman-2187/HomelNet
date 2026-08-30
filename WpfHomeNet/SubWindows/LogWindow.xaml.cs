@@ -3,10 +3,6 @@ using HomeNetCore.Enums;
 using System.Windows;
 using WpfHomeNet.UiHelpers;
 
-
-
-
-
 namespace WpfHomeNet
 {
     public partial class LogWindow : Window

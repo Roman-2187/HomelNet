@@ -1,10 +1,7 @@
 ﻿using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Models;
 using HomeNetCore.Services.ListUsersServise;
-using System;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using WpfHomeNet.Messaging;
@@ -66,10 +63,7 @@ namespace WpfHomeNet.ViewModels
         #endregion
 
         #region Конструктор (РАЗГРУЖЕННЫЙ: Только 3 базовые зависимости!)
-        public MainViewModel(
-            ILogger logger,
-            EventBus eventBus,
-            ListUsersService listUsersService)
+        public MainViewModel(ILogger logger,EventBus eventBus,ListUsersService listUsersService)           
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
@@ -119,6 +113,8 @@ namespace WpfHomeNet.ViewModels
                 await Application.Current.Dispatcher.InvokeAsync(async () =>
                 {
                     await UpdateStatusText("Инициализация пользователей успешна");
+
+                    _eventBus.Publish(new UsersListRefreshedMessage(Users));
                 });
             }
             catch (Exception ex)

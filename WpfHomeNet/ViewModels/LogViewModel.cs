@@ -27,11 +27,7 @@ namespace WpfHomeNet.ViewModels
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             _queueManager = logQueueManager ?? throw new ArgumentNullException(nameof(logQueueManager));
             _logWindow = logWindow ?? throw new ArgumentNullException(nameof(logWindow));
-
-           
-
-            // ИСПРАВЛЕНИЕ: Передаем как прямые ссылки на методы! 
-            // Теперь защита .Contains() в EventBus сработает идеально.
+            
             _eventBus.Subscribe<WindowPositionChangedMessage>(PositionLogWindow);
             _eventBus.Subscribe<LogWindowVisibilityChangedMessage>(OnVisibilityCommandReceived);
         }
@@ -52,8 +48,6 @@ namespace WpfHomeNet.ViewModels
 
             OnPropertyChanged(nameof(IsVisible));
         }
-
-
 
         private void PositionLogWindow(WindowPositionChangedMessage msg)
         {

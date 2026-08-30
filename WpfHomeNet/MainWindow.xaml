@@ -7,7 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:viewmodels="clr-namespace:WpfHomeNet.ViewModels"  
     xmlns:relayComand="clr-namespace:WpfHomeNet"    
-        xmlns:converter="clr-namespace:WpfHomeNet.Converters"
+    xmlns:converter="clr-namespace:WpfHomeNet.Converters"
     mc:Ignorable="d"        
     WindowStyle="None"
     ResizeMode="CanResize"           
