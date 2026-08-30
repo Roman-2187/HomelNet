@@ -14,28 +14,15 @@ namespace HomeSocialNetwork
 {
     public partial class App : Application
     {
-        #region Поля и переменные — Идеальная чистота!
+        #region Поля и свойства 
         private static readonly string dbPath = DatabasePathHelper.GetDatabasePath("home_net.db");
-        private readonly string _connectionString = $"Data Source={dbPath}";
-
-        private DbInfrastructureCore? _dbCore;
+        private readonly string _connectionString = $"Data Source={dbPath}";   
         private MainWindow? _mainWindow;
-        private MainViewModel? _mainVm;
-        private LogWindow? _logWindow;
-        private LogQueueManager? _logQueueManager;
-        private AuthenticationViewModel? _loginViewModel;
-        private RegistrationViewModel? _registrationViewModel;
-        private DeletionUsersViewModel? _deleteUsersModel;
-        private LogViewModel? _logViewModel;
-        private AdminMenuViewModel? _adminMenuViewModel;
-        private ILogger? _logger;
-        private EventBus? _eventBus;
-
-        // Понятные геттеры для DI-контейнера
-        public EventBus EventBus => _eventBus ?? throw new InvalidOperationException("EventBus не инициализирован");
-        public MainViewModel MainVm => _mainVm ?? throw new InvalidOperationException("MainVm не инициализирован");
-        public RegistrationViewModel RegistrationViewModel => _registrationViewModel ?? throw new InvalidOperationException("RegistrationViewModel не инициализирован");
-        public AuthenticationViewModel LoginViewModel => _loginViewModel ?? throw new InvalidOperationException("LoginViewModel не инициализирован");
+        private IServiceProvider? _serviceProvider;
+      
+        // Оставляем геттер автобуса для совместимости, вытаскивая его из живого провайдера
+        public EventBus EventBus => _serviceProvider?.GetRequiredService<EventBus>()
+            ?? throw new InvalidOperationException("Провайдер сервисов не инициализирован");
         #endregion
 
         protected override void OnStartup(StartupEventArgs e)
@@ -46,80 +33,91 @@ namespace HomeSocialNetwork
             {
                 var services = new ServiceCollection();
                 ConfigureServices(services);
-                var provider = services.BuildServiceProvider();
+                _serviceProvider = services.BuildServiceProvider();
 
-                Debug.WriteLine("DI-контейнер создан");
+                Debug.WriteLine("DI-контейнер успешно создан");
 
-                InitializeApplication(provider, DatabaseType.SQLite).GetAwaiter().GetResult();
+                
+                // ИСПРАВЛЕНИЕ: Принудительно пинаем контейнер, чтобы он СРАЗУ создал лог-менеджер
+                // и привязал SetOutput до того, как СУБД начнет писать свои логи!
+                var kickLogger = _serviceProvider.GetRequiredService<LogQueueManager>();
+           
+                var dbCore = _serviceProvider.GetRequiredService<DbInfrastructureCore>();
+                dbCore.InitializeAsync(DatabaseType.SQLite).GetAwaiter().GetResult();
 
-                _mainWindow = provider.GetRequiredService<MainWindow>();
+                _mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
                 _mainWindow.Show();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка запуска: {ex.Message}", "Критическая ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Критическая ошибка запуска: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 Shutdown();
-            }
-        }
-
-        private async Task InitializeApplication(IServiceProvider provider, DatabaseType databaseType)
-        {
-            try
-            {
-                _logger = provider.GetRequiredService<ILogger>();
-                _eventBus = provider.GetRequiredService<EventBus>();
-
-                _logWindow = new LogWindow(_logger);
-                _logQueueManager = new LogQueueManager(_logWindow, 20);
-                _logger.SetOutput(_logQueueManager.WriteLog);
-                _logger.LogInformation("Начало инициализации приложения...");
-
-                // 1. СОБИРАЕМ ДЕТАЛЬ: Одна строчка кода убирает всю низкоуровневую грязь
-                _dbCore = new DbInfrastructureCore(_connectionString, _logger);
-                await _dbCore.InitializeAsync(databaseType);
-
-                _logger.LogInformation("БД инициализирована через ядро");
-
-                // 2. ОБРАЩАЕМСЯ ЧЕРЕЗ ТОЧКУ: Красиво, строго и типизировано
-                _registrationViewModel = new RegistrationViewModel(_dbCore.RegisterService, EventBus);
-                _loginViewModel = new AuthenticationViewModel(_dbCore.AuthenticateService);
-                _logViewModel = new LogViewModel(EventBus, _logQueueManager, _logWindow);
-                _adminMenuViewModel = new AdminMenuViewModel(_dbCore.UserService, EventBus);
-                _deleteUsersModel = new DeletionUsersViewModel(_dbCore.DeleteService, EventBus);
-
-                _mainVm = new MainViewModel(_logger, EventBus, _dbCore.ListUsersService)
-                {
-                    RegistrationViewModel = _registrationViewModel,
-                    LoginViewModel = _loginViewModel,
-                    LogVm = _logViewModel,
-                    AdminMenuViewModel = _adminMenuViewModel,
-                    DeleteUsersViewModel = _deleteUsersModel,
-                    LogWindow = _logWindow
-                };
-
-                _logger.LogInformation("Инициализация завершена. Код кристально чист!");
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError($"Инициализация завершилась с ошибкой: {ex.Message}");
-                throw;
             }
         }
 
         private void ConfigureServices(IServiceCollection services)
         {
+            // 1. Системная инфраструктура (Singleton)
             services.AddSingleton<ILogger, Logger>();
-            services.AddSingleton<LogQueueManager>();
-            services.AddSingleton<EventBus>();
+            services.AddSingleton<EventBus>(); // Наше любимое «Бюро вакансий»
 
-            services.AddSingleton<RegistrationViewModel>(_ => RegistrationViewModel);
-            services.AddSingleton<AuthenticationViewModel>(_ => LoginViewModel);
-            services.AddSingleton<MainViewModel>(_ => MainVm);
+            // Лог-менеджер настраиваем через фабрику контейнера
+            services.AddSingleton<LogWindow>(provider => new LogWindow(provider.GetRequiredService<ILogger>()));
+            services.AddSingleton<LogQueueManager>(provider =>
+            {
+                var logWin = provider.GetRequiredService<LogWindow>();
+                var manager = new LogQueueManager(logWin, 20);
+                provider.GetRequiredService<ILogger>().SetOutput(manager.WriteLog);
+                return manager;
+            });
+
+            // ДОПИШИ ЭТУ СТРОКУ в верхнюю часть метода ConfigureServices:
+            services.AddSingleton<StatusBarViewModel>();
+
+
+            // 2. Регистрируем готовую деталь Ядра СУБД
+            services.AddSingleton<DbInfrastructureCore>(provider =>
+                new DbInfrastructureCore(_connectionString, provider.GetRequiredService<ILogger>()));
+
+            // 3. Автоматическая регистрация Вьюмоделей!
+            // Контейнер сам залезет в их конструкторы, вытащит из DbInfrastructureCore нужные сервисы и подставит!
+            services.AddSingleton<RegistrationViewModel>(provider =>
+                new RegistrationViewModel(provider.GetRequiredService<DbInfrastructureCore>().RegisterService, provider.GetRequiredService<EventBus>()));
+
+            services.AddSingleton<AuthenticationViewModel>(provider =>
+                new AuthenticationViewModel(provider.GetRequiredService<DbInfrastructureCore>().AuthenticateService));
+
+            services.AddSingleton<LogViewModel>();
+
+            services.AddSingleton<AdminMenuViewModel>(provider =>
+                new AdminMenuViewModel(provider.GetRequiredService<DbInfrastructureCore>().UserService, provider.GetRequiredService<EventBus>()));
+
+            services.AddSingleton<DeletionUsersViewModel>(provider =>
+                new DeletionUsersViewModel(provider.GetRequiredService<DbInfrastructureCore>().DeleteService, provider.GetRequiredService<EventBus>()));
+
+
+            // Внутри App.xaml.cs возвращаем фабрику к стерильному виду:
+            services.AddSingleton<MainViewModel>(provider =>
+            {
+                var core = provider.GetRequiredService<DbInfrastructureCore>();
+                var mainVm = new MainViewModel(
+                    provider.GetRequiredService<ILogger>(),
+                    provider.GetRequiredService<EventBus>(),
+                    core.ListUsersService);
+
+                // Связываем свойства (без всяких bus.Subscribe!)
+                mainVm.RegistrationViewModel = provider.GetRequiredService<RegistrationViewModel>();
+                mainVm.LoginViewModel = provider.GetRequiredService<AuthenticationViewModel>();
+                mainVm.LogVm = provider.GetRequiredService<LogViewModel>();
+                mainVm.AdminMenuViewModel = provider.GetRequiredService<AdminMenuViewModel>();
+                mainVm.DeleteUsersViewModel = provider.GetRequiredService<DeletionUsersViewModel>();
+                mainVm.LogWindow = provider.GetRequiredService<LogWindow>();
+                mainVm.StatusBarViewModel = provider.GetRequiredService<StatusBarViewModel>();
+
+                return mainVm;
+            });
 
             services.AddTransient<MainWindow>();
         }
     }
 }
-
-
-

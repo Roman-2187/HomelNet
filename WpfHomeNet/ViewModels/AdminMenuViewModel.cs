@@ -2,6 +2,7 @@
 using HomeNetCore.Services;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows;
 using System.Windows.Input;
 using WpfHomeNet.Messaging;
 
@@ -24,6 +25,7 @@ namespace WpfHomeNet.ViewModels
         public ICommand ToggleLogWindowCommand { get; }
         public ICommand UserTableViewCommand { get; }
         public ICommand SeedDataCommand { get; }
+        
 
         public string ToggleButtonText
         {
@@ -36,6 +38,10 @@ namespace WpfHomeNet.ViewModels
             get => _tableButtonText;
             set => SetField(ref _tableButtonText, value);
         }
+
+
+       
+
         #endregion
 
         #region Конструктор
@@ -67,6 +73,8 @@ namespace WpfHomeNet.ViewModels
                 _isTableVisible = msg.IsVisible;
                 TableButtonText = _isTableVisible ? "Скрыть users" : "Показать users";
             });
+
+           
         }
         #endregion
 

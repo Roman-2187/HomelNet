@@ -10,30 +10,30 @@ namespace WpfHomeNet
     {
         private readonly MainViewModel _mainVm;
 
-        // Чистый DI: Контейнер сам передает готовую MainViewModel в конструктор окна!
         public MainWindow(MainViewModel mainVm)
         {
             InitializeComponent();
 
             _mainVm = mainVm ?? throw new ArgumentNullException(nameof(mainVm));
-
-            // Соединяем окно и вьюмодель
-            _mainVm.ConnectToMainWindow(this);
-
-            // Назначаем контекст данных
+      
             DataContext = _mainVm;
 
-           
-            this.ContentRendered += MainWindow_ContentRendered;
-            
+            // СЦЕПЛЕНИЕ ЧЕРЕЗ АВТОБУС: Окно само подписывается на свои сдвиги
+            // и при любом чихе швыряет свежие координаты в шину!
+            this.ContentRendered += (s, e) => SendCoordinatesToBus();
+            this.LocationChanged += (s, e) => SendCoordinatesToBus();
+            this.SizeChanged += (s, e) => SendCoordinatesToBus();
         }
 
 
-        private void MainWindow_ContentRendered(object? sender, EventArgs e)
+
+
+        private void SendCoordinatesToBus()
         {
+            // Защита от дурака при инициализации
             if (double.IsNaN(this.Left) || double.IsNaN(this.Top) || double.IsNaN(this.Width)) return;
 
-            // Просто уведомляем систему, что главное окно готово
+            // Окно само громко кричит в шину: «Я сдвинулось, вот мои новые размеры!»
             _mainVm.EventBus.Publish(new WindowPositionChangedMessage(
                 this.Left,
                 this.Top,
@@ -42,7 +42,6 @@ namespace WpfHomeNet
                 this.IsLoaded
             ));
         }
-
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {

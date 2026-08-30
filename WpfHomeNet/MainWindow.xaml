@@ -70,9 +70,18 @@
 
             <controls:AdminMenu
                 Grid.Row="1"
-                Grid.RowSpan="3"
-                Visibility="Visible" 
-                DataContext="{Binding AdminMenuViewModel}" />
+                Grid.RowSpan="3" 
+                Grid.ColumnSpan="2"
+                
+               
+                
+                  Visibility="{Binding DataContext.AdminMenuVisibility, RelativeSource={RelativeSource AncestorType=Window}}" 
+    
+    d:Visibility="Collapsed" 
+    DataContext="{Binding AdminMenuViewModel}" 
+               
+    
+    />
                                
 
             <!-- Верхнее меню -->
@@ -85,6 +94,10 @@
                         Grid.Column="3"                        
                         Orientation="Horizontal"                        
                         Grid.ColumnSpan="2">
+                <Button MinWidth="100"   
+                        Command="{Binding ToggleAdminMenuCommand}"                      
+            Content="🛠️ Админка" Grid.ColumnSpan="2"  />
+                
                 <Button MinWidth="120"   
                         Command="{Binding ToggleFormVisibilityCommand}"
                         CommandParameter="{Binding RegistrationViewModel}"                      
@@ -116,11 +129,13 @@
             Grid.ColumnSpan="4"
             Grid.RowSpan="4" 
             DataContext="{Binding RegistrationViewModel}" 
-            Visibility="{Binding ControlVisibility}"  />
+            Visibility="{Binding ControlVisibility}"
+                d:Visibility="Hidden" />
          
             <controls:LoginViewControl
              DataContext="{Binding LoginViewModel}" 
              Visibility="{Binding ControlVisibility}"
+             d:Visibility="Hidden" 
              Grid.Row="1" Grid.Column="1"
              Grid.ColumnSpan="4"
              Grid.RowSpan="4"/>
@@ -128,35 +143,26 @@
             <controls:DeleteUsers
              DataContext="{Binding DeleteUsersViewModel}" 
              Visibility="{Binding ControlVisibility}"
+             d:Visibility="Hidden" 
              Grid.Row="1" Grid.Column="1"
              Grid.ColumnSpan="4"
              Grid.RowSpan="3" Margin="2"/>
 
             <controls:UsersTableView x:Name="userTableView" 
             Visibility="{Binding PanelVisibility}" 
+            d:Visibility="Hidden" 
             Grid.RowSpan="2"
             Grid.ColumnSpan="6" 
              Grid.Row="3"/>
                                    
             <!-- Контейнер статус бар -->
-            <ContentControl
-                    Style="{StaticResource
-                    InnerBorderSolidColorStyle}" 
-                    Padding="4"  
-                    Background="#FFA4B291"
-                    Grid.Row="4"
-                    Grid.Column="0"
-                    Grid.ColumnSpan="6" 
-                    Margin="0,137,0,0" 
-                    Grid.RowSpan="2">   
-                <StatusBar x:Name="StatusUsers"
-               Background="#00A3C091">
-                    <TextBlock Name="StatusText"
-                   Margin="3"
-                   Text="{Binding StatusText}"
-                   FontWeight="Bold"/>
-                </StatusBar>
-            </ContentControl>
+            <controls:StatusBarControl
+        DataContext="{Binding StatusBarViewModel}"
+        Grid.Row="4"
+        Grid.Column="0"
+        Grid.ColumnSpan="6" 
+        Margin="0,137,0,0" 
+        Grid.RowSpan="2"/>
         </Grid>
     </ContentControl>
 </Window>
