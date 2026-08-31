@@ -3,60 +3,98 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:WpfHomeNet.Controls"
+            
+              xmlns:controls="clr-namespace:WpfHomeNet.Controls"
+             Background="Transparent"
+             
              mc:Ignorable="d" 
              xmlns:converter="clr-namespace:WpfHomeNet.Converters"
-             d:DesignHeight="450" d:DesignWidth="200">
-    <UserControl.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-        <converter:InverseBooleanToVisibilityConverter x:Key="InverseBooleanVisibleConverter"/>
-        <converter:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
-    </UserControl.Resources>
-
-    <StackPanel x:Name="Menu" Visibility="Visible"  
-                IsEnabled="{Binding DataContext.IsButtonsPanelEnabled,
-                RelativeSource={RelativeSource AncestorType=Window}}" > 
-        
-             <Button Content="User Profile"   
-              Command="{Binding DataContext.ToggleFormVisibilityCommand,
-              RelativeSource={RelativeSource AncestorType=Window}}"
-              CommandParameter="{Binding DataContext.LoginViewModel,
-              RelativeSource={RelativeSource AncestorType=Window}}" 
-                     
-              />
-
-
-        <Button Content="Test list Users" Command="{Binding SeedDataCommand}"/>
-
-
-        <Button Content="Добавить юзера"                     
-              Command="{Binding DataContext.ToggleFormVisibilityCommand,
-              RelativeSource={RelativeSource AncestorType=Window}}"
-              CommandParameter="{Binding DataContext.RegistrationViewModel,
-              RelativeSource={RelativeSource AncestorType=Window}}"
-              IsEnabled="{Binding DataContext.RegistrationViewModel.IsComplete,
-              Converter={StaticResource InverseBooleanConverter},
-              RelativeSource={RelativeSource AncestorType=Window}}"/>
-
-        <Button x:Name="DeleteUsers" Content="Удалить юзера"                     
-        Command="{Binding DataContext.ToggleFormVisibilityCommand, 
-            RelativeSource={RelativeSource AncestorType=Window}}"
-        CommandParameter="{Binding DataContext.DeleteUsersViewModel,
-            RelativeSource={RelativeSource AncestorType=Window}}"/>
-
-
-
-        <Button x:Name="ShowUsers" Content="{Binding TableButtonText}"                     
-              Command="{Binding UserTableViewCommand}"/>
-            
-            
-                        
-             <Button x:Name="ShowLogs" 
-              Command="{Binding ToggleLogWindowCommand}"     
-              Content="{Binding ToggleButtonText}"/>           
-              
-        </StackPanel>
-
-
+             d:DesignHeight="500" d:DesignWidth="740">
     
-</UserControl>
+
+        <UserControl.Resources>
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+            <converter:InverseBooleanToVisibilityConverter x:Key="InverseBooleanVisibleConverter"/>
+            <converter:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+        </UserControl.Resources>
+    <ContentControl 
+    Style="{StaticResource InnerBorderSolidColorStyle}"
+    Background="#FFA4B291" >
+
+        <!-- Главная сетка маски админки — жесткий габарит 600х800 -->
+        <Grid Background="Transparent">
+            <!-- Легкий серый фон, чтобы маска перекрывала подложку -->
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <!-- Левая боковая панель кнопок -->
+                <ColumnDefinition Width="*"/>
+                <!-- Вся правая область под огромную таблицу! -->
+            </Grid.ColumnDefinitions>
+
+            <!-- ЛЕВАЯ ЧАСТЬ: Боковая панель кнопок управления  ContextMenuClosing="Menu_ContextMenuClosing"-->
+            <StackPanel Grid.Column="0"
+                        x:Name="Menu" Margin="5"
+                       
+                    IsEnabled="{Binding DataContext.IsButtonsPanelEnabled, 
+                RelativeSource={RelativeSource AncestorType=Window}}" >
+
+                <Label Content="АДМИН ПАНЕЛЬ" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,5,0,15" Foreground="#333"/>
+
+                <Button Content="User Profile" Margin="0,3"  
+                    Command="{Binding DataContext.ToggleFormVisibilityCommand,
+                    RelativeSource={RelativeSource AncestorType=Window}}"
+                    CommandParameter="{Binding DataContext.LoginViewModel,
+                    RelativeSource={RelativeSource AncestorType=Window}}" />
+
+                <Button Content="Test list Users" Margin="0,3" Command="{Binding SeedDataCommand}"/>
+
+                <Button Content="Добавить юзера" Margin="0,3"                    
+                    Command="{Binding DataContext.ToggleFormVisibilityCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                    CommandParameter="{Binding DataContext.RegistrationViewModel, RelativeSource={RelativeSource AncestorType=Window}}"
+                    IsEnabled="{Binding DataContext.RegistrationViewModel.IsComplete, Converter={StaticResource InverseBooleanConverter}, RelativeSource={RelativeSource AncestorType=Window}}"/>
+
+                <Button x:Name="DeleteUsers" Content="Удалить юзера" Margin="0,3"                    
+                    Command="{Binding DataContext.ToggleFormVisibilityCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                    CommandParameter="{Binding DataContext.DeleteUsersViewModel, RelativeSource={RelativeSource AncestorType=Window}}"/>
+
+            <!-- Кнопка переключения таблицы пользователей -->
+            <!-- Жёстко привязываем команду к родной вьюмодели админки! 🧼 -->
+            <Button x:Name="ShowUsers"
+                Content="{Binding TableButtonText}"
+                Margin="0,3"                    
+                Command="{Binding UserTableViewCommand}"/>
+
+
+
+
+            <Button x:Name="ShowLogs" Margin="0,3"
+                    Command="{Binding ToggleLogWindowCommand}"     
+                    Content="{Binding ToggleButtonText}"/>
+            </StackPanel>
+
+
+        <!-- ПРАВАЯ ЧАСТЬ: Наш контрол таблицы пользователей -->
+        <!-- Жёстко заземляем биндинг на AdminMenuViewModel через сам UserControl! 🧼 -->
+        <Border Grid.Column="1" Margin="5" Background="Transparent" CornerRadius="4" BorderThickness="1" BorderBrush="#DDD"
+                Visibility="{Binding DataContext.IsTableVisible, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}"
+                d:Visibility="Visible">
+
+        
+
+        <controls:UsersTableView x:Name="InsideUserTableView" 
+                    Visibility="{Binding IsTableVisible,
+                    Converter={StaticResource BooleanToVisibilityConverter}}"
+                                     />
+            
+            </Border>
+        <controls:DeleteUsers x:Name="InsideDeleteUsers" 
+                                      DataContext="{Binding DataContext.DeleteUsersViewModel,
+            RelativeSource={RelativeSource AncestorType=Window}}"
+                              Grid.Column="1"     Visibility="{Binding ControlVisibility}"    Margin="10"/>
+    </Grid>
+       </ContentControl>
+    </UserControl>  
+
+
+
+

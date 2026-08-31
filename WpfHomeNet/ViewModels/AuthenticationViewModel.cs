@@ -4,6 +4,7 @@ using HomeNetCore.Services.AuthenticationService;
 using HomeNetCore.Services.UsersServices;
 using System.Windows;
 using System.Windows.Input;
+using WpfHomeNet.Messaging;
 
 namespace WpfHomeNet.ViewModels
 {
@@ -18,8 +19,8 @@ namespace WpfHomeNet.ViewModels
         public RelayCommand ToggleRegistrationCommand { get; private set; }
         #endregion
 
-        // КОНСТРУКТОР: Теперь строго принимает только AuthenticateService
-        public AuthenticationViewModel(AuthenticateService loginService)
+        
+        public AuthenticationViewModel(AuthenticateService loginService,EventBus eventBus) : base(eventBus)
         {
             _loginService = loginService ?? throw new ArgumentNullException(nameof(loginService));
 

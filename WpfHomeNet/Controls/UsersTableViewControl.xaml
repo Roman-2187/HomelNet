@@ -21,13 +21,13 @@
                 <Grid>
                  
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="50"/>
+                        <ColumnDefinition Width="40"/>
                         <ColumnDefinition MinWidth="90" MaxWidth="170"/>
                         <ColumnDefinition MinWidth="90" MaxWidth="170"/>
-                        <ColumnDefinition MinWidth="120" MaxWidth="180"/>
+                        <ColumnDefinition MinWidth="110" MaxWidth="180"/>
                         <ColumnDefinition MinWidth="200"/>
                         <ColumnDefinition MinWidth="90"/>
-                        <ColumnDefinition MinWidth="140"/>
+                        <ColumnDefinition MinWidth="130"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="  ID" />
                     <TextBlock Grid.Column="1" Text="Имя" />
@@ -41,17 +41,18 @@
             </ContentControl>
             <ScrollViewer Grid.Row="1" x:Name="UserPanel" HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Hidden" Focusable="False" Background="Transparent">
-                <ItemsControl ItemsSource="{Binding Users}" VerticalAlignment="Top" HorizontalAlignment="Stretch">
+                <ItemsControl ItemsSource="{Binding DataContext.Users, RelativeSource={RelativeSource AncestorType=Window}}"
+ VerticalAlignment="Top" HorizontalAlignment="Stretch">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Grid Margin="2">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="50"/>
+                                    <ColumnDefinition Width="40"/>
                                     <ColumnDefinition MinWidth="80" MaxWidth="170"/>
                                     <ColumnDefinition MinWidth="90" MaxWidth="170"/>
-                                    <ColumnDefinition MinWidth="120" MaxWidth="180"/>
-                                    <ColumnDefinition MinWidth="200"/>
-                                    <ColumnDefinition MinWidth="90"/>
+                                    <ColumnDefinition MinWidth="120" MaxWidth="160"/>
+                                    <ColumnDefinition MinWidth="180"/>
+                                    <ColumnDefinition MinWidth="100"/>
                                     <ColumnDefinition MinWidth="140"/>
                                 </Grid.ColumnDefinitions>
                                 <ContentControl Grid.Column="0" Content="{Binding Id}"   

@@ -36,10 +36,7 @@ namespace HomeSocialNetwork
                 _serviceProvider = services.BuildServiceProvider();
 
                 Debug.WriteLine("DI-контейнер успешно создан");
-
-                
-                // ИСПРАВЛЕНИЕ: Принудительно пинаем контейнер, чтобы он СРАЗУ создал лог-менеджер
-                // и привязал SetOutput до того, как СУБД начнет писать свои логи!
+                      
                 var kickLogger = _serviceProvider.GetRequiredService<LogQueueManager>();
            
                 var dbCore = _serviceProvider.GetRequiredService<DbInfrastructureCore>();
@@ -47,6 +44,11 @@ namespace HomeSocialNetwork
 
                 _mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
                 _mainWindow.Show();
+
+                // === СОЕДИНЯЕМ ПРОВОДА ПОСЛЕ СБОРКИ ВСЕЙ СХЕМЫ ===
+                var statusBarVm = _serviceProvider.GetRequiredService<StatusBarViewModel>();
+                statusBarVm.InitializeMainVmProvider(() => _serviceProvider.GetRequiredService<MainViewModel>());
+
             }
             catch (Exception ex)
             {
@@ -85,7 +87,9 @@ namespace HomeSocialNetwork
                 new RegistrationViewModel(provider.GetRequiredService<DbInfrastructureCore>().RegisterService, provider.GetRequiredService<EventBus>()));
 
             services.AddSingleton<AuthenticationViewModel>(provider =>
-                new AuthenticationViewModel(provider.GetRequiredService<DbInfrastructureCore>().AuthenticateService));
+               new AuthenticationViewModel(
+             provider.GetRequiredService<DbInfrastructureCore>().AuthenticateService,
+             provider.GetRequiredService<EventBus>()));
 
             services.AddSingleton<LogViewModel>();
 

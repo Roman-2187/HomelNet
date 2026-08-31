@@ -18,8 +18,6 @@ namespace WpfHomeNet
       
             DataContext = _mainVm;
 
-            // СЦЕПЛЕНИЕ ЧЕРЕЗ АВТОБУС: Окно само подписывается на свои сдвиги
-            // и при любом чихе швыряет свежие координаты в шину!
             this.ContentRendered += (s, e) => SendCoordinatesToBus();
             this.LocationChanged += (s, e) => SendCoordinatesToBus();
             this.SizeChanged += (s, e) => SendCoordinatesToBus();
@@ -30,9 +28,6 @@ namespace WpfHomeNet
 
         private void SendCoordinatesToBus()
         {
-            // Защита от дурака при инициализации
-            if (double.IsNaN(this.Left) || double.IsNaN(this.Top) || double.IsNaN(this.Width)) return;
-
             // Окно само громко кричит в шину: «Я сдвинулось, вот мои новые размеры!»
             _mainVm.EventBus.Publish(new WindowPositionChangedMessage(
                 this.Left,

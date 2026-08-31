@@ -11,8 +11,7 @@ namespace WpfHomeNet.ViewModels
 {
     public class RegistrationViewModel : FormViewModelBase
     {
-        private readonly RegisterService _registerService;
-        private readonly EventBus _eventBus; // Внедряем автобус
+        private readonly RegisterService _registerService;   
         private UserEntity? _createdUser;
 
         public CreateUserInput UserData { get; set; } = new();
@@ -21,11 +20,10 @@ namespace WpfHomeNet.ViewModels
         public ICommand ToggleRegistrationCommand { get; }
 
         // DI ПРАВКА: Принимаем RegisterService и EventBus напрямую из контейнера
-        public RegistrationViewModel(RegisterService registerService, EventBus eventBus)
+        public RegistrationViewModel(RegisterService registerService, EventBus eventBus) : base(eventBus)
         {
             _registerService = registerService ?? throw new ArgumentNullException(nameof(registerService));
-            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-
+           
             InitializeInitialHints();
 
             RegisterCommand = new RelayCommand(

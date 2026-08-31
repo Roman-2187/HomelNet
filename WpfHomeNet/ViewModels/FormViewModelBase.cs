@@ -3,36 +3,36 @@ using HomeNetCore.Services.UsersServices;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
-
+using WpfHomeNet.Messaging; 
 
 namespace WpfHomeNet.ViewModels
 {
     public abstract class FormViewModelBase : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;
+    
 
-        // ГЛОБАЛЬНЫЙ РАДИОЭФИР: Вещает на всё приложение, какая форма изменила видимость
-        // Передает: (object senderForm, Visibility newVisibility)
-        public static event Action<FormViewModelBase, Visibility>? OnFormVisibilityChanged;
-
-        // ГЛОБАЛЬНЫЙ СИГНАЛ ЛОГАУТА: Чтобы все формы разом услышали команду "Сброс"
+        // ГЛОБАЛЬНЫЙ СИГНАЛ ЛОГАУТА
         public static Action? OnGlobalResetRequested;
 
-        public FormViewModelBase()
+        // Делаем защищенное поле автобуса, чтобы все дочерние формы имели к нему прямой доступ
+        protected readonly EventBus _eventBus;
+
+        // Конструктор теперь принимает автобус
+        public FormViewModelBase(EventBus eventBus)
         {
-            // Каждая форма при рождении подписывается на глобальный Reset
+            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             OnGlobalResetRequested += ResetSession;
         }
 
         public void ResetSession()
         {
             IsComplete = false;
-            ControlVisibility = Visibility.Collapsed; // Сразу тушим форму при выходе
+            ControlVisibility = Visibility.Collapsed;
             OnPropertyChanged(nameof(IsComplete));
-            OnResetForm(); // Даем дочернему классу шанс очистить свои кастомные текстовые поля
+            OnResetForm();
         }
 
-        // Виртуальный метод для кастомной очистки полей в дочерних классах (по желанию)
         protected virtual void OnResetForm() { }
 
         private List<ValidationResult>? _validationResult;
@@ -78,9 +78,8 @@ namespace WpfHomeNet.ViewModels
             set
             {
                 if (SetField(ref _controlVisibility, value))
-                {
-                    // КЛЮЧЕВОЙ МОМЕНТ: Стреляем в глобальный эфир!
-                    OnFormVisibilityChanged?.Invoke(this, value);
+                {              
+                    _eventBus.Publish(new FormVisibilityChangedMessage(this.GetType(), value));
                 }
             }
         }
@@ -113,4 +112,5 @@ namespace WpfHomeNet.ViewModels
         }
     }
 }
+
 

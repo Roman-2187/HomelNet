@@ -1,33 +1,31 @@
-﻿using System;
-using System.Collections.ObjectModel;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 using WpfHomeNet.Messaging;
 
 namespace WpfHomeNet.ViewModels
 {
     public class StatusBarViewModel : FormViewModelBase
-    {
-        private readonly EventBus _eventBus;
+    {   
         private string _statusText = "Инициализация...";
-        private int _usersCount;
+   
+        private Func<MainViewModel>? _mainVmProvider;
+
         public string StatusText
         {
             get => _statusText;
             set => SetField(ref _statusText, value);
         }
 
-        public StatusBarViewModel(EventBus eventBus)
-        {
-            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+        
+        public StatusBarViewModel(EventBus eventBus) : base(eventBus)
 
-            // 1. Слушаем прямые текстовые статусы (например, логаут)
+        {     
+            // 1. Слушаем прямые текстовые статусы
             _eventBus.Subscribe<StatusTextChangedMessage>(async msg =>
                 await UpdateStatusAsync(msg.NewStatus));
-        
-            // 2. Слушаем открытие/закрытие форм напрямую без посредничества MainViewModel!
+
+            // 2. Слушаем открытие/закрытие форм
             _eventBus.Subscribe<FormVisibilityChangedMessage>(async msg =>
-            {          
+            {
                 string formFriendlyName = msg.FormType.Name switch
                 {
                     "DeletionUsersViewModel" => "Удаление пользователей",
@@ -36,33 +34,52 @@ namespace WpfHomeNet.ViewModels
                     _ => "Форма"
                 };
 
-                string text = msg.Visibility == Visibility.Visible
-                    ? $"Открыта форма: {formFriendlyName}"
-                    : $"Cold close: {formFriendlyName}";
-
-                await UpdateStatusAsync(text);
+                if (msg.Visibility == Visibility.Visible)
+                {
+                    await UpdateStatusAsync($"Открыта форма: {formFriendlyName}");
+                }
+                else
+                {
+                    // Если форма закрылась — просто плавно обновляем дефолтный счётчик пользователей
+                    await RefreshDefaultStatusAsync();
+                }
             });
 
-            // 3. Слушаем СУБД: успешную загрузку базы
+            // 3. Ловим успешную загрузку базы данных из асинхронного потока
             _eventBus.Subscribe<UsersListRefreshedMessage>(async msg =>
             {
-                _usersCount = msg.Users.Count;
-                await UpdateStatusAsync("Инициализация пользователей успешна");
+                // Вместо провайдера берём Count ПРЯМО ИЗ СООБЩЕНИЯ, которое прислала модель!
+                if (msg.Users != null)
+                {
+                    StatusText = $"Загружено {msg.Users.Count} пользователей";
+                }
+                else
+                {
+                    await RefreshDefaultStatusAsync();
+                }
             });
+        }
 
-            // 4. Слушаем удаление юзера
-            _eventBus.Subscribe<UserDeletedMessage>(async msg =>
-            {
-                _usersCount--; // Уменьшаем счетчик на лету
-                await UpdateStatusAsync($"Пользователь [ID: {msg.UserId}] удален из базы");
-            });
 
-            // 5. Слушаем добавление юзера
-            _eventBus.Subscribe<UserAddedMessage>(async msg =>
+
+        // ИСПРАВЛЕНИЕ: Статус-бар официально пинает метод InitializeAsync главной модели!
+        public async void InitializeMainVmProvider(Func<MainViewModel> mainVmProvider)
+        {
+            _mainVmProvider = mainVmProvider;
+
+            try
             {
-                _usersCount++; // Увеличиваем счетчик
-                await UpdateStatusAsync($"Пользователь {msg.User?.FirstName} успешно добавлен");
-            });
+                var mainVm = _mainVmProvider.Invoke();
+                if (mainVm != null)
+                {
+                    // ЗАПУСКАЕМ КОНВЕЙЕР: Даем команду главной модели считать СУБД!
+                    await mainVm.InitializeAsync();
+                }
+            }
+            catch (Exception )
+            {
+                StatusText = "Ошибка запуска базы данных ❌";
+            }
         }
 
         private async Task UpdateStatusAsync(string text)
@@ -71,8 +88,15 @@ namespace WpfHomeNet.ViewModels
             await Task.Delay(500);
             StatusText = text;
             await Task.Delay(2500);
-            StatusText = $"Загружено {_usersCount} пользователей";
+            await RefreshDefaultStatusAsync();
+        }
+
+        private Task RefreshDefaultStatusAsync()
+        {
+            // Пробиваемся напрямую в живую коллекцию MainViewModel и забираем реальный Count!
+            int actualCount = _mainVmProvider?.Invoke()?.Users?.Count ?? -1;
+            StatusText = $"Загружено {actualCount} пользователей";
+            return Task.CompletedTask;
         }
     }
 }
-

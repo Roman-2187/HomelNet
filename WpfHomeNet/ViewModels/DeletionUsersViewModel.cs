@@ -11,7 +11,7 @@ namespace WpfHomeNet.ViewModels
     {
         #region Поля и переменные
         private readonly DeleteService _deleteService;
-        private readonly EventBus _eventBus; 
+        
 
         private ObservableCollection<UserEntity>? _mainUsersList;
         private UserEntity? _selectedUser;
@@ -86,11 +86,9 @@ namespace WpfHomeNet.ViewModels
 
 
         #region Конструктор
-        public DeletionUsersViewModel(DeleteService deleteService, EventBus eventBus)
+        public DeletionUsersViewModel(DeleteService deleteService, EventBus eventBus) : base(eventBus)
         {
             _deleteService = deleteService ?? throw new ArgumentNullException(nameof(deleteService));
-            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-
             ControlVisibility = Visibility.Collapsed;
             SubmitButtonText = "Удалить";
             StatusMessage = "Введите ID ";
@@ -125,6 +123,14 @@ namespace WpfHomeNet.ViewModels
                 {
                     ResetForm();
                     ControlVisibility = Visibility.Collapsed;
+                }
+            });
+
+            _eventBus.Subscribe<UsersListRefreshedMessage>(msg =>
+            {
+                if (msg.Users != null)
+                {
+                    MainUsersList = msg.Users;
                 }
             });
         }
@@ -164,6 +170,13 @@ namespace WpfHomeNet.ViewModels
 
             if (isSuccess)
             {
+                // ИСПРАВЛЕНИЕ: Напрямую выпиливаем юзера из нашего списка на экране,
+                // и WPF реактивно сотрет эту строчку прямо на глазах пользователя!
+                var userToRemove = MainUsersList?.FirstOrDefault(u => u.Id == id);
+                if (userToRemove != null)
+                {
+                    Application.Current.Dispatcher.Invoke(() => MainUsersList?.Remove(userToRemove));
+                }
                 // ИСПРАВЛЕНИЕ: Вместо ручного экшена OnUserDeletedFromDb швыряем сообщение в автобус!
                 _eventBus.Publish(new UserDeletedMessage(id));
                 ResetForm();
