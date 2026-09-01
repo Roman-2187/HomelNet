@@ -1,4 +1,5 @@
-﻿using HomeNetCore.Models;
+﻿using HomeNetCore.Data.Interfaces;
+using HomeNetCore.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,10 +12,11 @@ namespace HomeNetCore.Services.DeleteService
         public class DeleteService
         {
             private readonly UserService _userService;
-
-            public DeleteService(UserService userService)
+              ILogger _logger;
+            public DeleteService(ILogger iloger, UserService userService)
             {
                 _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+            _logger = iloger ?? throw new ArgumentNullException();
             }
 
             // Безопасный поиск пользователя для формы удаления
@@ -50,12 +52,22 @@ namespace HomeNetCore.Services.DeleteService
                 try
                 {
                     await _userService.DeleteUserAsync(id);
-                    return (true, $"Пользователь с ID {id} успешно удален из системы.");
+
+                // 1. Дождались, пока СУБД выплюнет список в оперативку
+                var allUsers = await _userService.GetAllUsersAsync();
+
+                // 2. И теперь у нормального списка спокойно берем Count! 🚀
+                _logger.LogDebug($"в системе {allUsers.Count} пользователей");
+
+                return (true, $"Пользователь с ID {id} успешно удален из системы.");
+
+               
                 }
                 catch (Exception ex)
                 {
                     return (false, $"Ошибка удаления из БД: {ex.Message}");
                 }
+           
             }
         }
     }

@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Models;
 using HomeNetCore.Services.DeleteService;
 using System.Windows;
@@ -12,6 +13,8 @@ namespace WpfHomeNet.ViewModels
         #region Поля и свойства 🦾
         private readonly DeleteService _deleteService;
 
+        ILogger  _logger;
+
         // ПОЛНОСТЬЮ убрали свойство MainUsersList! Окно больше не следит за всей коллекцией 🧼
         [ObservableProperty] private UserEntity? _selectedUser;
         [ObservableProperty] private string _targetUserId = string.Empty;
@@ -19,15 +22,18 @@ namespace WpfHomeNet.ViewModels
         #endregion
 
         #region Конструктор
-        public DeleteUsersViewModel(DeleteService deleteService, EventBus eventBus) : base(eventBus)
+        public DeleteUsersViewModel(DeleteService deleteService, EventBus eventBus,ILogger logger) : base(eventBus)
         {
             _deleteService = deleteService ?? throw new ArgumentNullException(nameof(deleteService));
+
 
             ControlVisibility = Visibility.Collapsed;
             SubmitButtonText = "Удалить";
             StatusMessage = "Введите ID ";
 
             InitEventBus();
+
+            _logger=logger ?? throw new ArgumentNullException(nameof(logger));
         }
         #endregion
 
@@ -78,11 +84,14 @@ namespace WpfHomeNet.ViewModels
             var (isSuccess, message) = await _deleteService.DeleteUserAsync(id);
             StatusMessage = message;
 
+
             if (isSuccess)
             {
                 // Окно ПРОСТО сообщает в эфир об удалении, а таблица сама выкинет его из UI! 🚀
                 _eventBus.Publish(new UserDeletedMessage(id));
                 ResetForm();
+
+              
             }
         }
 

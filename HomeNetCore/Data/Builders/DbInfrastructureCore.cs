@@ -3,6 +3,7 @@ using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Data.Repositories;
 using HomeNetCore.Data.Schemes;
 using HomeNetCore.Enums;
+using HomeNetCore.Helpers;
 using HomeNetCore.Models;
 using HomeNetCore.Services;
 using HomeNetCore.Services.AuthenticationService;
@@ -62,7 +63,7 @@ namespace HomeSocialNetwork.Core
 
             RegisterService = new RegisterService(UserService);
             AuthenticateService = new AuthenticateService(UserService);
-            DeleteService = new DeleteService(UserService);
+            DeleteService = new DeleteService(_logger, UserService);
         }
     }
 }

@@ -75,7 +75,7 @@ namespace HomeNetCore.Services
         }
 
 
-        // Сделали userName необязательным (= null)
+       
         public async Task DeleteUserAsync(int userId, string? userName = null)
         {
             try

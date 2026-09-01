@@ -1,29 +1,17 @@
-﻿using System.Windows;
-using CommunityToolkit.Mvvm.ComponentModel; // Нано-движок от Microsoft ✨
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using System.Windows;
 using WpfHomeNet.Messaging;
 
 namespace WpfHomeNet.ViewModels
 {
-    // ОБЯЗАТЕЛЬНО делаем класс partial, чтобы Студия дорисовала кишки! 🧼
     public partial class StatusBarViewModel : FormViewModelBase
     {
-        #region Поля и состояние 🦾
-
         [ObservableProperty]
-        private string _statusText = "Инициализация..."; // Сгенерирует: public string StatusText
+        private string _statusText = "Инициализация приложения...";
 
-        // Локальный счётчик для статус-бара, чтобы не дёргать чужие ВьюМодели 🧼
-        private int _lastCount = 0;
-        #endregion
+        public StatusBarViewModel(EventBus eventBus) : base(eventBus) =>InitializeBusSubscriptions();
+        
 
-        #region Конструктор
-        public StatusBarViewModel(EventBus eventBus) : base(eventBus)
-        {
-            InitializeBusSubscriptions();
-        }
-        #endregion
-
-        #region Инициализация подписок шины (Только через EventBus!)
         private void InitializeBusSubscriptions()
         {
             // 1. Слушаем прямые текстовые статусы
@@ -35,7 +23,7 @@ namespace WpfHomeNet.ViewModels
             {
                 string formFriendlyName = msg.FormType.Name switch
                 {
-                    "DeletionUsersViewModel" => "Удаление пользователей",
+                    "DeleteUsersViewModel" => "Удаление пользователей",
                     "RegistrationViewModel" => "Регистрация",
                     "AuthenticationViewModel" => "Авторизация",
                     _ => "Форма"
@@ -47,64 +35,27 @@ namespace WpfHomeNet.ViewModels
                 }
                 else
                 {
-                    await RefreshDefaultStatusAsync();
+                    await UpdateStatusAsync("Система готова к работе");
                 }
             });
 
-            // 3. Ловим успешную загрузку базы данных (первичный прогрев счётчика)
-            _eventBus.Subscribe<UsersListRefreshedMessage>(async msg =>
+            // 3. ПРИЁМ СЧЁТЧИКА: Таблица прислала живой список — просто выводим каунт! 🚀💎
+            _eventBus.Subscribe<UsersListRefreshedMessage>(msg =>
             {
-                if (msg.Users != null)
-                {
-                    _lastCount = msg.Users.Count; // Запомнили количество
-                    StatusText = $"Загружено {_lastCount} пользователей";
-                }
-                else
-                {
-                    await RefreshDefaultStatusAsync();
-                }
-            });
-
-            // 4. Ловим добавление пользователя — увеличиваем локальный счётчик 🚀
-            _eventBus.Subscribe<UserAddedMessage>(msg =>
-            {
-                if (msg.User != null)
-                {
-                    _lastCount++;
-                    _ = RefreshDefaultStatusAsync(); // Обновляем дефолтный текст
-                }
-            });
-
-            // 5. Ловим удаление пользователя — уменьшаем локальный счётчик 🚀
-            _eventBus.Subscribe<UserDeletedMessage>(msg =>
-            {
-                _lastCount = Math.Max(0, _lastCount - 1); // Защита от минуса
-                _ = RefreshDefaultStatusAsync(); // Обновляем дефолтный текст
+                StatusText = $"Загружено {msg.Users.Count} пользователей";
             });
         }
-        #endregion
 
-        #region Логика работы
-
-        // Метод инициализации провайдера больше НЕ НУЖЕН и удалён! Полная свобода! 🎉
-
-        // Асинхронное обновление статуса (Твоя пишущая машинка!)
         private async Task UpdateStatusAsync(string text)
         {
-            StatusText = "Загрузка...";
-            await Task.Delay(500);
+            StatusText = "Загрузка пользователей...";
+            await Task.Delay(1200);
             StatusText = text;
-            await Task.Delay(2500);
-            await RefreshDefaultStatusAsync();
-        }
+            await Task.Delay(2000);
 
-        // Возврат к дефолтному счётчику пользователей (теперь берёт данные из памяти!)
-        private Task RefreshDefaultStatusAsync()
-        {
-            StatusText = $"Загружено {_lastCount} пользователей";
-            return Task.CompletedTask;
+            // Пишущая машинка закончила? Просим таблицу вернуть счётчик на экран! 👌
+            _eventBus.Publish(new RequestStatusRefreshMessage());
         }
-        #endregion
     }
 }
 

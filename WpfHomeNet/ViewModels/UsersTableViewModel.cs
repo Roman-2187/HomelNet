@@ -6,87 +6,81 @@ using WpfHomeNet.Messaging;
 
 namespace WpfHomeNet.ViewModels
 {
-    /// <summary>
-    /// Автономная ВьюМодель для управления логикой таблицы пользователей.
-    /// Перехватывает события шины данных и обновляет коллекцию независимо от главного окна.
-    /// </summary>
     public partial class UsersTableViewModel : FormViewModelBase
     {
         private readonly ListUsersService _listUsersService;
 
-        /// <summary>
-        /// Глобальный и актуальный список пользователей, привязанный прямо к UsersTableView.xaml.
-        /// </summary>
         public ObservableCollection<UserEntity> Users => _listUsersService.Users;
 
         public UsersTableViewModel(EventBus eventBus, ListUsersService listUsersService) : base(eventBus)
         {
             _listUsersService = listUsersService ?? throw new ArgumentNullException(nameof(listUsersService));
 
-            // Запускаем личные рельсы подписок для таблицы 🚂
             InitializeBusSubscriptions();
 
-            // САМА СЕБЯ КОРМИТ: Таблица при рождении асинхронно пинает сервис базы данных 🚀
+            // САМА СЕБЯ КОРМИТ: Стартовый запуск с красивой задержкой
             Task.Run(async () =>
             {
-                // Отправляем статус загрузки в шину (для нашего статус-бара!)
                 _eventBus.Publish(new StatusTextChangedMessage("Синхронизация с базой данных HomeNet..."));
+                await Task.Delay(1000);
 
-                // Качаем юзеров из SQLite напрямую в сервис
-                await _listUsersService.RefreshUsersAsync();
-
-                // Переходим в UI-поток и говорим XAML-таблице: «Обнови пиксели, данные прилетели!» 🧼
                 Application.Current.Dispatcher.Invoke(() =>
                 {
+                    _listUsersService.RefreshUsersAsync().GetAwaiter().GetResult();
                     OnPropertyChanged(nameof(Users));
-                });
 
-                // Оповещаем статус-бар и всех остальных, что список готов и налит!
-                _eventBus.Publish(new UsersListRefreshedMessage(_listUsersService.Users));
+                    // Сразу кормим статус-бар при первой загрузке базы
+                    _eventBus.Publish(new UsersListRefreshedMessage(Users));
+                });
             });
         }
 
-
-        /// <summary>
-        /// Подписки на события шины, которые касаются ИСКЛЮЧИТЕЛЬНО изменения состава пользователей.
-        /// </summary>
         private void InitializeBusSubscriptions()
         {
-            // 1. Ловим сообщение об удалении пользователя из базы данных
+            // 1. Ловим сообщение об удалении пользователя
             _eventBus.Subscribe<UserDeletedMessage>(msg =>
             {
-                // Заходим в UI-поток один раз и делаем всё атомарно для потокобезопасности 🔒
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     var userToRemove = Users.FirstOrDefault(u => u.Id == msg.UserId);
                     if (userToRemove != null)
                     {
+                        string deletedName = $"{userToRemove.FirstName} {userToRemove.LastName}";
                         Users.Remove(userToRemove);
+
+                        // Стреляем точной коллекцией сразу после удаления! 🚀
+                        _eventBus.Publish(new UsersListRefreshedMessage(Users));
+
+                        Task.Run(async () =>
+                        {
+                            await Task.Delay(1000);
+                            _eventBus.Publish(new StatusTextChangedMessage($"Пользователь {deletedName} успешно удалён"));
+                        });
                     }
                 });
             });
 
-            // 2. Ловим сообщение о добавлении нового пользователя
+            // 2. Ловим добавление нового пользователя
             _eventBus.Subscribe<UserAddedMessage>(msg =>
             {
                 if (msg.User == null) return;
 
-                // Безопасно добавляем в UI-потоке, чтобы интерфейс мгновенно отрисовал строку
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     Users.Add(msg.User);
+                    _eventBus.Publish(new UsersListRefreshedMessage(Users));
                 });
             });
 
-
-            _eventBus.Subscribe<UsersListRefreshedMessage>(msg =>
+            // 3. ОТВЕТ НА ЗАПРОС: Статус-бар попросил обновить экран? На, держи! 🛸🧼
+            _eventBus.Subscribe<RequestStatusRefreshMessage>(msg =>
             {
-                // Переходим в UI-поток и пинаем XAML, чтобы он перечитал свойство Users! 🧼
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    OnPropertyChanged(nameof(Users));
+                    _eventBus.Publish(new UsersListRefreshedMessage(Users));
                 });
             });
         }
     }
 }
+

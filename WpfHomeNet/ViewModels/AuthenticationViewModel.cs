@@ -26,10 +26,10 @@ namespace WpfHomeNet.ViewModels
 
             InitializeInitialHints();
 
-            LoginCommand = new RelayCommand(
-               execute: async (obj) => await ExecuteLoginCommand(),
-               canExecute: (obj) => true
-            );
+            LoginCommand = new RelayCommand(async (obj) => await ExecuteLoginCommand(),  (obj) => true );
+               
+             
+           
 
             CancelCommand = new RelayCommand(
                 execute: (obj) =>

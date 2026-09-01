@@ -48,6 +48,7 @@ namespace HomeSocialNetwork
                 _mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
                 _mainWindow.Show();
 
+
                 _serviceProvider.GetRequiredService<RegistrationViewModel>();
                 _serviceProvider.GetRequiredService<AuthenticationViewModel>();
                 _serviceProvider.GetRequiredService<DeleteUsersViewModel>();
@@ -112,7 +113,16 @@ namespace HomeSocialNetwork
                 new AdminMenuViewModel(provider.GetRequiredService<DbInfrastructureCore>().UserService, provider.GetRequiredService<EventBus>()));
 
             services.AddSingleton<DeleteUsersViewModel>(provider =>
-                new DeleteUsersViewModel(provider.GetRequiredService<DbInfrastructureCore>().DeleteService, provider.GetRequiredService<EventBus>()));
+            {
+                var core = provider.GetRequiredService<DbInfrastructureCore>();
+
+                return new DeleteUsersViewModel(
+                    core.DeleteService,
+                    provider.GetRequiredService<EventBus>(),
+                    provider.GetRequiredService<ILogger>() // 🧼 ВРЕЗАЛИ: достаём логгер из контейнера!
+                );
+            });
+
 
 
             // Внутри App.xaml.cs возвращаем фабрику к стерильному виду:
