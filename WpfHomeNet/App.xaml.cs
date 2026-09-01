@@ -19,7 +19,10 @@ namespace HomeSocialNetwork
         private readonly string _connectionString = $"Data Source={dbPath}";   
         private MainWindow? _mainWindow;
         private IServiceProvider? _serviceProvider;
-      
+
+        public IServiceProvider Services => _serviceProvider
+           ?? throw new InvalidOperationException("Провайдер не инициализирован");
+
         // Оставляем геттер автобуса для совместимости, вытаскивая его из живого провайдера
         public EventBus EventBus => _serviceProvider?.GetRequiredService<EventBus>()
             ?? throw new InvalidOperationException("Провайдер сервисов не инициализирован");
@@ -45,9 +48,11 @@ namespace HomeSocialNetwork
                 _mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
                 _mainWindow.Show();
 
-                // === СОЕДИНЯЕМ ПРОВОДА ПОСЛЕ СБОРКИ ВСЕЙ СХЕМЫ ===
-                var statusBarVm = _serviceProvider.GetRequiredService<StatusBarViewModel>();
-                statusBarVm.InitializeMainVmProvider(() => _serviceProvider.GetRequiredService<MainViewModel>());
+                _serviceProvider.GetRequiredService<RegistrationViewModel>();
+                _serviceProvider.GetRequiredService<AuthenticationViewModel>();
+                _serviceProvider.GetRequiredService<DeleteUsersViewModel>();
+                _serviceProvider.GetRequiredService<AdminMenuViewModel>();
+                _serviceProvider.GetRequiredService<LogViewModel>();
 
             }
             catch (Exception ex)
@@ -62,6 +67,19 @@ namespace HomeSocialNetwork
             // 1. Системная инфраструктура (Singleton)
             services.AddSingleton<ILogger, Logger>();
             services.AddSingleton<EventBus>(); // Наше любимое «Бюро вакансий»
+            services.AddSingleton<StatusBarViewModel>();
+
+            services.AddTransient<UsersTableViewModel>(provider =>
+            {
+                // Достаем наше ядро базы данных
+                var core = provider.GetRequiredService<DbInfrastructureCore>();
+
+                // Передаем в конструктор шину и сервис из ядра
+                return new UsersTableViewModel(
+                    provider.GetRequiredService<EventBus>(),
+                    core.ListUsersService 
+                );
+            });
 
             // Лог-менеджер настраиваем через фабрику контейнера
             services.AddSingleton<LogWindow>(provider => new LogWindow(provider.GetRequiredService<ILogger>()));
@@ -72,9 +90,6 @@ namespace HomeSocialNetwork
                 provider.GetRequiredService<ILogger>().SetOutput(manager.WriteLog);
                 return manager;
             });
-
-            // ДОПИШИ ЭТУ СТРОКУ в верхнюю часть метода ConfigureServices:
-            services.AddSingleton<StatusBarViewModel>();
 
 
             // 2. Регистрируем готовую деталь Ядра СУБД
@@ -96,28 +111,22 @@ namespace HomeSocialNetwork
             services.AddSingleton<AdminMenuViewModel>(provider =>
                 new AdminMenuViewModel(provider.GetRequiredService<DbInfrastructureCore>().UserService, provider.GetRequiredService<EventBus>()));
 
-            services.AddSingleton<DeletionUsersViewModel>(provider =>
-                new DeletionUsersViewModel(provider.GetRequiredService<DbInfrastructureCore>().DeleteService, provider.GetRequiredService<EventBus>()));
+            services.AddSingleton<DeleteUsersViewModel>(provider =>
+                new DeleteUsersViewModel(provider.GetRequiredService<DbInfrastructureCore>().DeleteService, provider.GetRequiredService<EventBus>()));
 
 
             // Внутри App.xaml.cs возвращаем фабрику к стерильному виду:
             services.AddSingleton<MainViewModel>(provider =>
             {
                 var core = provider.GetRequiredService<DbInfrastructureCore>();
+
+                // Вытаскиваем только что зарегистрированную таблицу из контейнера
+                var usersTableVm = provider.GetRequiredService<UsersTableViewModel>();
+
                 var mainVm = new MainViewModel(
                     provider.GetRequiredService<ILogger>(),
-                    provider.GetRequiredService<EventBus>(),
-                    core.ListUsersService);
-
-                // Связываем свойства (без всяких bus.Subscribe!)
-                mainVm.RegistrationViewModel = provider.GetRequiredService<RegistrationViewModel>();
-                mainVm.LoginViewModel = provider.GetRequiredService<AuthenticationViewModel>();
-                mainVm.LogVm = provider.GetRequiredService<LogViewModel>();
-                mainVm.AdminMenuViewModel = provider.GetRequiredService<AdminMenuViewModel>();
-                mainVm.DeleteUsersViewModel = provider.GetRequiredService<DeletionUsersViewModel>();
-                mainVm.LogWindow = provider.GetRequiredService<LogWindow>();
-                mainVm.StatusBarViewModel = provider.GetRequiredService<StatusBarViewModel>();
-
+                    provider.GetRequiredService<EventBus>());
+                   
                 return mainVm;
             });
 

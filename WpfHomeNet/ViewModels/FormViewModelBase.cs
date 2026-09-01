@@ -15,6 +15,10 @@ namespace WpfHomeNet.ViewModels
         // Защищенное поле автобуса для дочерних форм
         protected readonly EventBus _eventBus;
 
+        // Один кабель на весь проект! Все дочерние формы теперь имеют и скрытое _eventBus, и публичное EventBus! 🧼✨
+        public EventBus EventBus => _eventBus;
+
+
         // Конструктор
         public FormViewModelBase(EventBus eventBus)
         {

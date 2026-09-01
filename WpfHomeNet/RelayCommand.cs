@@ -32,10 +32,7 @@ namespace WpfHomeNet
             _execute(parameter);
         }
 
-        public void RaiseCanExecuteChanged()
-        {
-            CommandManager.InvalidateRequerySuggested();
-        }
+        
     }
 }
 

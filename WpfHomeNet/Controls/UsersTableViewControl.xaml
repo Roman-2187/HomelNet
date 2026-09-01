@@ -41,8 +41,9 @@
             </ContentControl>
             <ScrollViewer Grid.Row="1" x:Name="UserPanel" HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Hidden" Focusable="False" Background="Transparent">
-                <ItemsControl ItemsSource="{Binding DataContext.Users, RelativeSource={RelativeSource AncestorType=Window}}"
- VerticalAlignment="Top" HorizontalAlignment="Stretch">
+                <ItemsControl ItemsSource="{Binding Users}" VerticalAlignment="Top" HorizontalAlignment="Stretch">
+
+                   
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Grid Margin="2">

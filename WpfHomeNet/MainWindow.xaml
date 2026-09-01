@@ -10,18 +10,15 @@
     xmlns:converter="clr-namespace:WpfHomeNet.Converters"
     mc:Ignorable="d"        
     WindowStyle="None"
-    ResizeMode="CanResize"           
-    Width="800"
-    Height="600"
-    MinWidth="800"                     
-    MinHeight="600"  
+    ResizeMode="CanResize"                             
     AllowsTransparency="True"
     FontFamily="Calibri"
     FontSize="14"                             
     Background="Transparent"
-   >
+    Width="800" Height="600"
+    MinWidth="800" MinHeight="600"> 
+   
     <Window.Resources>
-       
         <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Padding" Value="9.4"/>
             <Setter Property="BorderThickness" Value="0.6"/>
@@ -59,7 +56,7 @@
                 <ColumnDefinition Width="40"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Шапка -->
+            <!-- Шапка приложения -->
             <Border Grid.Row="0" Grid.Column="0">
                 <Label HorizontalAlignment="Center" 
                        FontWeight="Bold"
@@ -68,91 +65,107 @@
                        Foreground="Black"/>
             </Border>
 
-            <!-- Админка как ПОЛНАЯ МАСКА на всё окно (растягиваем на все строки и колонки) -->
-            <controls:AdminMenu
-                Grid.Row="1" Grid.RowSpan="5"
-                Grid.Column="0" Grid.ColumnSpan="6"
-                Panel.ZIndex="99" 
-               Visibility="{Binding DataContext.AdminMenuVisibility, RelativeSource={RelativeSource AncestorType=Window}}"
-HorizontalAlignment="Stretch" 
-                VerticalAlignment="Stretch" 
-                DataContext="{Binding AdminMenuViewModel}"
-                 /> 
-
-
-
-
-                <!-- Верхнее меню -->
-            <StackPanel x:Name="UpperMenu" 
-                         Visibility="{Binding RegistrationViewModel.IsComplete,
-                   Converter={StaticResource InverseBooleanVisibleConverter}}"
-                        IsEnabled="{Binding IsButtonsPanelEnabled}"
-                        HorizontalAlignment="Right"
-                        Grid.Row="0"               
-                        Grid.Column="3"                        
-                        Orientation="Horizontal"                        
-                        Grid.ColumnSpan="2">
-                <Button MinWidth="100"   
-                        Command="{Binding ToggleAdminMenuCommand}"                      
-            Content="🛠️ Админка" Grid.ColumnSpan="2"  />
-                
-                <Button MinWidth="120"   
-                        Command="{Binding ToggleFormVisibilityCommand}"
-                        CommandParameter="{Binding RegistrationViewModel}" 
-                        
-                        Content="Регистрация" />
-                <Button Width="Auto"                       
-                        Command="{Binding ToggleFormVisibilityCommand}"
-                        CommandParameter="{Binding LoginViewModel}"                    
-                        Content="Вход в профиль" 
-                        MinWidth="120" />
-            </StackPanel>
-            
-            <!-- Кнопка выхода -->
-            <Button Grid.Column="5"              
-                    Click="CloseButton_Click"
+            <!-- Кнопка закрытия ("Крестик" всегда на самом верхнем слое)" -->
+            <Button Grid.Row="0" Grid.Column="5"              
+                     Click="CloseButton_Click"
+                    Panel.ZIndex="100"
                     Content="×" Width="Auto"/>
 
-            <!-- Кнопка выхода из аккаунта-->
-            <Button x:Name="ButtonExit"
-                    Grid.Column="3" 
-                    Grid.ColumnSpan="2" 
-                    HorizontalAlignment="Right"
-                    Command="{Binding LogoutCommand}"
-                    Content="Выйти из аккаунта"                     
-                    Visibility="{Binding RegistrationViewModel.IsComplete,
-                    Converter={StaticResource BooleanToVisibilityConverter}}" />
+            <!-- АДМИНКА: Маска на всё окно -->        
+            <controls:AdminMenu
+                Grid.Row="1" Grid.RowSpan="4"
+                Grid.Column="0" Grid.ColumnSpan="6"
+                Panel.ZIndex="98" 
+                HorizontalAlignment="Stretch" 
+                VerticalAlignment="Stretch" 
+                Visibility="{Binding DataContext.AdminMenuVisibility, 
+                RelativeSource={RelativeSource AncestorType=Window}}"
+                DataContext="{Binding AdminMenuVm, 
+                Source={StaticResource VmLocator}}" />
 
-            <!-- Форма регистрации — пробивает любые маски! 🧼 -->
+
+            <!-- ВЕРХНЕЕ МЕНЮ: Схлопывается целиком, когда сессия завершена -->
+            <StackPanel
+                Visibility="{Binding MainVm.IsComplete,
+                Source={StaticResource VmLocator},
+                Converter={StaticResource InverseBooleanVisibleConverter}}"
+                IsEnabled="{Binding IsButtonsPanelEnabled}"
+                HorizontalAlignment="Right"
+                Grid.Row="0" Grid.Column="2"                                                  
+                Orientation="Horizontal"                        
+                Grid.ColumnSpan="3"
+                Margin="0,0,45,0">             
+                        
+
+                <Button
+                    MinWidth="100"   
+                    Command="{Binding ToggleAdminMenuCommand}"                      
+                    Content="🛠️ Админка" />
+
+                <!-- Кнопки завернуты в изолированный пакет! 🦾 -->
+                <StackPanel
+                    Orientation="Horizontal"
+                    Visibility="{Binding DataContext.AdminMenuVisibility,
+                    RelativeSource={RelativeSource AncestorType=Window}, 
+                    Converter={StaticResource InverseBooleanVisibleConverter}}">
+                    <Button 
+                        MinWidth="120"   
+                        Command="{Binding ToggleFormVisibilityCommand}"
+                        CommandParameter="{Binding RegistrationVm,
+                        Source={StaticResource VmLocator}}" 
+                        Content="Регистрация" />
+
+                    <Button
+                        MinWidth="120"                       
+                        Command="{Binding ToggleFormVisibilityCommand}"
+                        CommandParameter="{Binding LoginVm,
+                        Source={StaticResource VmLocator}}"                    
+                        Content="Вход в профиль" />
+                </StackPanel>
+            </StackPanel>
+
+                
+             <!-- КНОПКА ВЫХОДА ИЗ АККАУНТА  -->
+             <Button 
+                Grid.Row="0" Grid.Column="3" 
+                Grid.ColumnSpan="2" 
+                MinWidth="140"
+                HorizontalAlignment="Right"
+                Margin="0,0,45,0"
+                Command="{Binding LogoutCommand}"
+                Content="Выйти из аккаунта"                     
+                Visibility="{Binding MainVm.IsComplete,
+                Source={StaticResource VmLocator},
+                Converter={StaticResource BooleanToVisibilityConverter}}" />     
+
+            <!-- ФОРМА РЕГИСТРАЦИИ (ZIndex 99 — поверх админки) -->
             <controls:RegistrationViewControl 
                 Grid.Row="1" Grid.Column="1"
                 Grid.ColumnSpan="4" Grid.RowSpan="4" 
                 Panel.ZIndex="99" 
-                DataContext="{Binding RegistrationViewModel}" 
+                DataContext="{Binding RegistrationVm,
+                Source={StaticResource VmLocator}}" 
                 Visibility="{Binding ControlVisibility}"
                 d:Visibility="Hidden" />
 
-                <!-- Форма логина — пробивает любые маски! -->
-                <controls:LoginViewControl
+            <!-- ФОРМА ЛОГИНА (ZIndex 99 — поверх админки) -->
+            <controls:LoginViewControl
                 Grid.Row="1" Grid.Column="1"
                 Grid.ColumnSpan="4" Grid.RowSpan="4"
                 Panel.ZIndex="99"
-                    DataContext="{Binding LoginViewModel}" 
+                DataContext="{Binding LoginVm,
+                Source={StaticResource VmLocator}}" 
                 Visibility="{Binding ControlVisibility}"
                 d:Visibility="Hidden" />
 
-         
-
-           
-                                   
-            <!-- Контейнер статус бар -->
+            <!-- КОНТЕЙНЕР СТАТУС-БАР -->
             <controls:StatusBarControl
-        DataContext="{Binding StatusBarViewModel}"
-        Grid.Row="4"
-        Grid.Column="0"
-        Grid.ColumnSpan="6" 
-        Margin="0,137,0,0" 
-        Grid.RowSpan="2"/>
+                DataContext="{Binding StatusBarVm,
+                Source={StaticResource VmLocator}}"
+                Grid.Row="5"
+                Grid.Column="0"
+                Grid.ColumnSpan="6" 
+                VerticalAlignment="Bottom"/>
         </Grid>
     </ContentControl>
 </Window>

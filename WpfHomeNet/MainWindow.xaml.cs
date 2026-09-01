@@ -12,16 +12,21 @@ namespace WpfHomeNet
 
         public MainWindow(MainViewModel mainVm)
         {
-            InitializeComponent();
-
+            // 1. Сначала жёстко забираем вьюмодель и проверяем на null! 🧼
             _mainVm = mainVm ?? throw new ArgumentNullException(nameof(mainVm));
-      
+
+            // 2. СРАЗУ отдаём её в DataContext, пока окно ещё слепое! 🦾⚡
             DataContext = _mainVm;
 
+            // 3. И только теперь, когда мозг на месте, запускаем сборку интерфейса!
+            InitializeComponent();
+
+            // Подписки на движение окна
             this.ContentRendered += (s, e) => SendCoordinatesToBus();
             this.LocationChanged += (s, e) => SendCoordinatesToBus();
             this.SizeChanged += (s, e) => SendCoordinatesToBus();
         }
+
 
 
 
@@ -38,12 +43,8 @@ namespace WpfHomeNet
             ));
         }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e)
-        {
-            // Закрываем окно логов через свойство вьюмодели безопасно
-            _mainVm.LogWindow?.Close();
-            Close();
-        }
+        private void CloseButton_Click(object sender, RoutedEventArgs e)=>Application.Current.Shutdown();
+        
 
         private void WindowDrag_MouseDown(object sender, MouseButtonEventArgs e) => this.DragMove();
     }
