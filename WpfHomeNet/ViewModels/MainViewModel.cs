@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Data.Interfaces;
+using HomeNetCore.Models;
 using System.Windows;
 using WpfHomeNet.Messaging;
 
@@ -43,8 +44,46 @@ namespace WpfHomeNet.ViewModels
             // Лямбда-сжатие для меню админа
             _eventBus.Subscribe<AdminMenuVisibilityChangedMessage>(msg =>
                 AdminMenuVisibility = msg.IsVisible ? Visibility.Visible : Visibility.Collapsed);
+
+            _eventBus.Subscribe<UserRegisteredMessage>(msg =>
+                 Application.Current.Dispatcher.Invoke(() => OnAuthSuccess(msg.User, msg.IsFromAdminPanel)));
+
+            _eventBus.Subscribe<UserLoggedMessage>(msg =>
+                Application.Current.Dispatcher.Invoke(() => OnAuthSuccess(msg.User, msg.IsFromAdminPanel)));
         }
         #endregion
+
+        private void OnAuthSuccess(UserEntity user, bool isFromAdminPanel)
+        {
+            if (user == null) return;
+
+            if (isFromAdminPanel || AdminMenuVisibility == Visibility.Visible)
+            {
+                // Сценарий админа (оставляем как есть)
+                _openedForms.Clear();
+                OnPropertyChanged(nameof(IsButtonsPanelEnabled));
+                _eventBus.Publish(new StatusTextChangedMessage($"[Админ-Режим] Успешное действие: {user.FirstName}"));
+            }
+            else
+            {
+                // 👤 СЦЕНАРИЙ ОБЫЧНОГО ЮЗЕРА
+                MainInterfaceVisibility = Visibility.Visible;
+                AdminMenuVisibility = Visibility.Collapsed;
+
+                // 🔥 ВОТ ОНА — АВТОМАТИЗАЦИЯ ЧЕРЕЗ АВТОБУС!
+                // Шлём в шину приказы: "Наглухо скрыть формы регистрации и входа с экрана!"
+                _eventBus.Publish(new FormVisibilityChangedMessage(typeof(RegistrationViewModel), Visibility.Collapsed));
+                _eventBus.Publish(new FormVisibilityChangedMessage(typeof(AuthenticationViewModel), Visibility.Collapsed));
+
+                _openedForms.Clear();
+                OnPropertyChanged(nameof(IsButtonsPanelEnabled));
+
+                _eventBus.Publish(new StatusTextChangedMessage($"Добро пожаловать, {user.FirstName}!"));
+            }
+        }
+
+
+
 
         #region НАНО-КОМАНДЫ (Чистое управление экраном) 🛸
 

@@ -18,22 +18,31 @@ namespace WpfHomeNet.ViewModels
 
             InitializeBusSubscriptions();
 
-            // САМА СЕБЯ КОРМИТ: Стартовый запуск с красивой задержкой
+            // 🛸 КРАСИВЫЙ АСИНХРОННЫЙ СТАРТ:
             Task.Run(async () =>
             {
+                // 1. Сразу пишем в статус-бар приветствие (UI не ждёт, статус загорается мгновенно)
                 _eventBus.Publish(new StatusTextChangedMessage("Синхронизация с базой данных HomeNet..."));
+
+                // 2. В ФОНЕ (не вешая интерфейс) запрашиваем список из базы данных
+                // База прочитается тихо, пока юзер смотрит на красивый статус
+                await _listUsersService.RefreshUsersAsync();
+
+                // 3. Держим паузу в 1 секунду для кинематографичности эффекта
                 await Task.Delay(1000);
 
-                Application.Current.Dispatcher.Invoke(() =>
+                // 4. И только теперь мягко отдаём данные в UI-поток для отрисовки!
+                await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
-                    _listUsersService.RefreshUsersAsync().GetAwaiter().GetResult();
                     OnPropertyChanged(nameof(Users));
 
-                    // Сразу кормим статус-бар при первой загрузке базы
+                    // Кормим статус-бар финальными циферками
                     _eventBus.Publish(new UsersListRefreshedMessage(Users));
+                    _eventBus.Publish(new StatusTextChangedMessage("База данных успешно синхронизирована."));
                 });
             });
         }
+
 
         private void InitializeBusSubscriptions()
         {
@@ -61,7 +70,7 @@ namespace WpfHomeNet.ViewModels
             });
 
             // 2. Ловим добавление нового пользователя
-            _eventBus.Subscribe<UserAddedMessage>(msg =>
+            _eventBus.Subscribe<UserRegisteredMessage>(msg =>
             {
                 if (msg.User == null) return;
 

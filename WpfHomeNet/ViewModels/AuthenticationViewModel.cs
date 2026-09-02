@@ -86,7 +86,9 @@ namespace WpfHomeNet.ViewModels
 
             try
             {
-                var (isSuccess, validationList) = await _loginService.CheckUserAsync(UserData);
+                // Предполагаем, что сервис научился отдавать созданного юзера третьим параметром
+                // Если нет — ниже напишу, как выкрутиться!
+                var (isSuccess, validationList, loggedUser) = await _loginService.CheckUserAsync(UserData);
                 IsComplete = isSuccess;
 
                 ValidationResults = validationList.ToDictionary(r => r.Field, r => r);
@@ -96,6 +98,12 @@ namespace WpfHomeNet.ViewModels
                     StatusMessage = "Вход выполнен успешно";
                     SubmitButtonText = "OK";
                     IsComplete = true;
+
+                    // 🔥 ВРЕЗАЕМ СЮДА — ПОЛЬЗОВАТЕЛЬ УСПЕШНО ПРОШЕЛ ПРОВЕРКУ!
+                    if (loggedUser != null)
+                    {
+                        _eventBus.Publish(new UserLoggedMessage(loggedUser));
+                    }
                 }
                 else
                 {
@@ -107,6 +115,7 @@ namespace WpfHomeNet.ViewModels
                 StatusMessage = $"При входе произошла ошибка: {ex.Message}";
             }
         }
+
     }
 }
 

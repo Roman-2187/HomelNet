@@ -17,15 +17,25 @@ using HomeNetCore.Services.UsersServices;
                 _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             }
 
-            public async Task<(bool IsSuccess, List<ValidationResult> Messages)> CheckUserAsync(LoginInUserInput userInput)
-            {
-                var validationResults = await ValidateInputAsync(userInput);
-                var hasCriticalErrors = validationResults.Any(r => r.State == ValidationState.Error);
+        // 1. Меняем возвращаемый тип: добавляем третьим параметром UserEntity?
+        public async Task<(bool IsSuccess, List<ValidationResult> Messages, HomeNetCore.Models.UserEntity? User)> CheckUserAsync(LoginInUserInput userInput)
+        {
+            var validationResults = await ValidateInputAsync(userInput);
+            var hasCriticalErrors = validationResults.Any(r => r.State == ValidationState.Error);
 
-                return (!hasCriticalErrors, validationResults);
+            HomeNetCore.Models.UserEntity? authenticatedUser = null;
+
+            // 2. Если ошибок нет — вытаскиваем тёпленького юзера из базы для логгера и UI
+            if (!hasCriticalErrors)
+            {
+                authenticatedUser = await _userService.GetUserByEmailAsync(userInput.Email);
             }
 
-            private async Task<List<ValidationResult>> ValidateInputAsync(LoginInUserInput input)
+            return (!hasCriticalErrors, validationResults, authenticatedUser);
+        }
+
+
+        private async Task<List<ValidationResult>> ValidateInputAsync(LoginInUserInput input)
             {
                 var results = new List<ValidationResult>();
 

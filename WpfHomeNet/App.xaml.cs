@@ -16,14 +16,13 @@ namespace HomeSocialNetwork
     {
         #region Поля и свойства 
         private static readonly string dbPath = DatabasePathHelper.GetDatabasePath("home_net.db");
-        private readonly string _connectionString = $"Data Source={dbPath}";   
+        private readonly string _connectionString = $"Data Source={dbPath}";
         private MainWindow? _mainWindow;
         private IServiceProvider? _serviceProvider;
 
         public IServiceProvider Services => _serviceProvider
            ?? throw new InvalidOperationException("Провайдер не инициализирован");
 
-        // Оставляем геттер автобуса для совместимости, вытаскивая его из живого провайдера
         public EventBus EventBus => _serviceProvider?.GetRequiredService<EventBus>()
             ?? throw new InvalidOperationException("Провайдер сервисов не инициализирован");
         #endregion
@@ -39,22 +38,30 @@ namespace HomeSocialNetwork
                 _serviceProvider = services.BuildServiceProvider();
 
                 Debug.WriteLine("DI-контейнер успешно создан");
-                      
+
+                // 1. Сначала обязательно будим логгер, чтобы окно логов открылось!
                 var kickLogger = _serviceProvider.GetRequiredService<LogQueueManager>();
-           
+
+                // 2. Инициализируем ядро базы данных
                 var dbCore = _serviceProvider.GetRequiredService<DbInfrastructureCore>();
                 dbCore.InitializeAsync(DatabaseType.SQLite).GetAwaiter().GetResult();
 
-                _mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
-                _mainWindow.Show();
-
-
-                _serviceProvider.GetRequiredService<RegistrationViewModel>();
-                _serviceProvider.GetRequiredService<AuthenticationViewModel>();
-                _serviceProvider.GetRequiredService<DeleteUsersViewModel>();
-                _serviceProvider.GetRequiredService<AdminMenuViewModel>();
+                // 3. 🔥 ВОЗВРАЩАЕМ ПИНОК ДЛЯ ТАБЛИЦЫ И ОКОН! 
+                // Теперь они синглтоны, поэтому вызов GetRequiredService просто ОДИН раз создаст их в памяти.
+                // Это запустит их внутренние подписки и стартовые потоки загрузки.
+                _serviceProvider.GetRequiredService<UsersTableViewModel>();
+                _serviceProvider.GetRequiredService<UsersTableViewModel>();
+                _serviceProvider.GetRequiredService<UserDashboardViewModel>(); // 🔥 ПИНАЕМ ЗДЕСЬ!
                 _serviceProvider.GetRequiredService<LogViewModel>();
 
+                _serviceProvider.GetRequiredService<LogViewModel>();
+                _serviceProvider.GetRequiredService<AdminMenuViewModel>();
+                _serviceProvider.GetRequiredService<RegistrationViewModel>();
+                _serviceProvider.GetRequiredService<AuthenticationViewModel>();
+
+                // 4. Показываем главное окно
+                _mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+                _mainWindow.Show();
             }
             catch (Exception ex)
             {
@@ -63,26 +70,25 @@ namespace HomeSocialNetwork
             }
         }
 
+
         private void ConfigureServices(IServiceCollection services)
         {
             // 1. Системная инфраструктура (Singleton)
             services.AddSingleton<ILogger, Logger>();
-            services.AddSingleton<EventBus>(); // Наше любимое «Бюро вакансий»
+            services.AddSingleton<EventBus>();
             services.AddSingleton<StatusBarViewModel>();
 
-            services.AddTransient(provider =>
+            // 🔥 ИСПРАВЛЕНО: Перевели UsersTableViewModel строго в Singleton!
+            services.AddSingleton(provider =>
             {
-                // Достаем наше ядро базы данных
                 var core = provider.GetRequiredService<DbInfrastructureCore>();
-
-                // Передаем в конструктор шину и сервис из ядра
                 return new UsersTableViewModel(
                     provider.GetRequiredService<EventBus>(),
-                    core.ListUsersService 
+                    core.ListUsersService
                 );
             });
 
-            // Лог-менеджер настраиваем через фабрику контейнера
+            // Лог-менеджер
             services.AddSingleton(provider => new LogWindow(provider.GetRequiredService<ILogger>()));
             services.AddSingleton(provider =>
             {
@@ -92,20 +98,18 @@ namespace HomeSocialNetwork
                 return manager;
             });
 
-
-            // 2. Регистрируем готовую деталь Ядра СУБД
+            // 2. Регистрируем Ядро СУБД (Singleton)
             services.AddSingleton(provider =>
                 new DbInfrastructureCore(_connectionString, provider.GetRequiredService<ILogger>()));
 
-            // 3. Автоматическая регистрация Вьюмоделей!
-            // Контейнер сам залезет в их конструкторы, вытащит из DbInfrastructureCore нужные сервисы и подставит!
+            // 3. Регистрация Вьюмоделей (Все Singleton — никаких дублей!)
             services.AddSingleton(provider =>
                 new RegistrationViewModel(provider.GetRequiredService<DbInfrastructureCore>().RegisterService, provider.GetRequiredService<EventBus>()));
 
             services.AddSingleton(provider =>
                new AuthenticationViewModel(
-             provider.GetRequiredService<DbInfrastructureCore>().AuthenticateService,
-             provider.GetRequiredService<EventBus>()));
+                    provider.GetRequiredService<DbInfrastructureCore>().AuthenticateService,
+                    provider.GetRequiredService<EventBus>()));
 
             services.AddSingleton<LogViewModel>();
 
@@ -115,30 +119,26 @@ namespace HomeSocialNetwork
             services.AddSingleton(provider =>
             {
                 var core = provider.GetRequiredService<DbInfrastructureCore>();
-
                 return new DeleteUsersViewModel(
                     core.DeleteService,
                     provider.GetRequiredService<EventBus>(),
-                    provider.GetRequiredService<ILogger>() // 🧼 ВРЕЗАЛИ: достаём логгер из контейнера!
+                    provider.GetRequiredService<ILogger>()
                 );
             });
 
-
-
-            // Внутри App.xaml.cs возвращаем фабрику к стерильному виду:
+            // 🔥 ИСПРАВЛЕНО: Чистое создание MainViewModel без "зависших" в воздухе вызовов
             services.AddSingleton(provider =>
             {
-                var core = provider.GetRequiredService<DbInfrastructureCore>();
-
-                // Вытаскиваем только что зарегистрированную таблицу из контейнера
-                var usersTableVm = provider.GetRequiredService<UsersTableViewModel>();
-
-                var mainVm = new MainViewModel(
+                return new MainViewModel(
                     provider.GetRequiredService<ILogger>(),
                     provider.GetRequiredService<EventBus>());
-                   
-                return mainVm;
             });
+
+            services.AddTransient<MainWindow>();
+
+
+            services.AddSingleton(provider =>
+        new UserDashboardViewModel(provider.GetRequiredService<EventBus>()));
 
             services.AddTransient<MainWindow>();
         }

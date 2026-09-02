@@ -87,8 +87,8 @@ namespace WpfHomeNet.ViewModels
 
                     if (_createdUser != null)
                     {
-                        // ИСПРАВЛЕНИЕ: Вместо вызова чужого экшена швыряем сообщение в автобус!
-                        _eventBus.Publish(new UserAddedMessage(_createdUser));
+                        // 🔥 МЕНЯЕМ НА ТВОЁ НОВОЕ СЛУШАЕМОЕ СООБЩЕНИЕ!
+                        _eventBus.Publish(new UserRegisteredMessage(_createdUser));
                     }
                 }
                 else

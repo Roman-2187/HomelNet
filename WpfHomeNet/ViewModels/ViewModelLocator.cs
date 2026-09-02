@@ -17,6 +17,9 @@ namespace WpfHomeNet.ViewModels
         public StatusBarViewModel StatusBarVm => Services.GetRequiredService<StatusBarViewModel>();
         // Прописываем мост для таблицы в Локаторе 🚀
         public UsersTableViewModel UsersTable => Services.GetRequiredService<UsersTableViewModel>();
+        // Прописываем мост для личного кабинета в Локаторе 🚀
+        public UserDashboardViewModel UserDashboardVm => Services.GetRequiredService<UserDashboardViewModel>();
+
 
     }
 }
