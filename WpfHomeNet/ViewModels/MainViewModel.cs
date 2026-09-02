@@ -16,7 +16,9 @@ namespace WpfHomeNet.ViewModels
         [ObservableProperty] private Visibility _adminMenuVisibility = Visibility.Collapsed;
 
         // Стрелка заменяет get, return и скобки! Датчик считает всё через Any() 👌
-        public bool IsButtonsPanelEnabled => !_openedForms.Any();
+        // Датчик считает всё через Count. Кнопки активны, если в радаре 0 открытых окон! 🛸🛡️
+        public bool IsButtonsPanelEnabled => _openedForms.Count == 0;
+
         #endregion
 
         #region Конструктор
@@ -34,6 +36,7 @@ namespace WpfHomeNet.ViewModels
             _eventBus.Subscribe<FormVisibilityChangedMessage>(msg => Application.Current.Dispatcher.Invoke(() =>
             {
                 _ = msg.Visibility == Visibility.Visible ? _openedForms.Add(msg.FormType) : _openedForms.Remove(msg.FormType);
+
                 OnPropertyChanged(nameof(IsButtonsPanelEnabled));
             }));
 

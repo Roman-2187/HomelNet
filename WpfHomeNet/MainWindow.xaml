@@ -84,48 +84,44 @@
                 Source={StaticResource VmLocator}}" />
 
 
-            <!-- ВЕРХНЕЕ МЕНЮ: Схлопывается целиком, когда сессия завершена -->
+            <!-- ОБЩИЙ ВНЕШНИЙ СТАК: Управляет блокировкой по твоему тернарнику 🦾 -->
             <StackPanel
-                Visibility="{Binding MainVm.IsComplete,
-                Source={StaticResource VmLocator},
-                Converter={StaticResource InverseBooleanVisibleConverter}}"
-                IsEnabled="{Binding IsButtonsPanelEnabled}"
-                HorizontalAlignment="Right"
-                Grid.Row="0" Grid.Column="2"                                                  
-                Orientation="Horizontal"                        
-                Grid.ColumnSpan="3"
-                Margin="0,0,45,0">             
-                        
+    Visibility="{Binding MainVm.IsComplete,
+    Source={StaticResource VmLocator},
+    Converter={StaticResource InverseBooleanVisibleConverter}}"
+    IsEnabled="{Binding IsButtonsPanelEnabled}"
+    HorizontalAlignment="Right"
+    Grid.Row="0" Grid.Column="2"                                                  
+    Orientation="Horizontal"                        
+    Grid.ColumnSpan="3"
+    Margin="0,0,45,0">
 
+                <!-- Кнопка админки стоит отдельно в общем контейнере -->
                 <Button
-                    MinWidth="100"   
-                    Command="{Binding ToggleAdminMenuCommand}"                      
-                    Content="🛠️ Админка" />
+        MinWidth="100"   
+        Command="{Binding ToggleAdminMenuCommand}"                      
+        Content="🛠️ Админка" />
 
-                <!-- Кнопки завернуты в изолированный пакет! 🦾 -->
-                <StackPanel
-                    Orientation="Horizontal"
-                    Visibility="{Binding DataContext.AdminMenuVisibility,
-                    RelativeSource={RelativeSource AncestorType=Window}, 
-                    Converter={StaticResource InverseBooleanVisibleConverter}}">
+                <!-- ВНУТРЕННИЙ ПАКЕТ: Твои две кнопки изолированы в свой блок! 🚀🧼 -->
+                <!-- Никаких скрывающих биндингов, они дышат свободно и зависят от внешнего IsEnabled -->
+                <StackPanel Orientation="Horizontal" Margin="10,0,0,0">
                     <Button 
-                        MinWidth="120"   
-                        Command="{Binding ToggleFormVisibilityCommand}"
-                        CommandParameter="{Binding RegistrationVm,
-                        Source={StaticResource VmLocator}}" 
-                        Content="Регистрация" />
+            MinWidth="120"   
+            Command="{Binding ToggleFormVisibilityCommand}"
+            CommandParameter="{Binding RegistrationVm, Source={StaticResource VmLocator}}" 
+            Content="Регистрация" />
 
                     <Button
-                        MinWidth="120"                       
-                        Command="{Binding ToggleFormVisibilityCommand}"
-                        CommandParameter="{Binding LoginVm,
-                        Source={StaticResource VmLocator}}"                    
-                        Content="Вход в профиль" />
+            MinWidth="120"                       
+            Command="{Binding ToggleFormVisibilityCommand}"
+            CommandParameter="{Binding LoginVm, Source={StaticResource VmLocator}}"                    
+            Content="Вход в профиль" />
                 </StackPanel>
             </StackPanel>
 
-                
-             <!-- КНОПКА ВЫХОДА ИЗ АККАУНТА  -->
+
+
+            <!-- КНОПКА ВЫХОДА ИЗ АККАУНТА  -->
              <Button 
                 Grid.Row="0" Grid.Column="3" 
                 Grid.ColumnSpan="2" 

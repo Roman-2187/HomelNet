@@ -41,37 +41,47 @@ using HomeNetCore.Services.UsersServices;
                 }
             }
 
-            private async Task<List<ValidationResult>> ValidateInputAsync(CreateUserInput input)
+        private async Task<List<ValidationResult>> ValidateInputAsync(CreateUserInput input)
+        {
+            var results = new List<ValidationResult>();
+
+            // ШАГ 1: Локальные быстрые проверки (Имя, Пароль, Подтверждение)
+            var nameRes = ValidateUserName(input.UserName);
+            var passRes = ValidatePassword(input.Password);
+            var confirmRes = ValidateConfirmedPassword(input.Password, input.ConfirmPassword);
+
+            results.AddRange(new[] { nameRes, passRes, confirmRes });
+
+            // ШАГ 2: Честная проверка формата Email (Эсэмэски вернулись!) 🚀📧
+            var emailRes = new ValidationResult { Field = TypeField.EmailType };
+
+            if (string.IsNullOrWhiteSpace(input.Email))
             {
-                var results = new List<ValidationResult>();
-
-                // ШАГ 1: Локальные быстрые проверки (Имя, Пароль, Подтверждение)
-                var nameRes = ValidateUserName(input.UserName);
-                var passRes = ValidatePassword(input.Password);
-                var confirmRes = ValidateConfirmedPassword(input.Password, input.ConfirmPassword);
-
-                results.AddRange(new[] { nameRes, passRes, confirmRes });
-
-                // ШАГ 2: Магия switch. Проверяем, есть ли ошибки на первом шаге
-                var dynamicEmailResult = results.Any(r => r.State == ValidationState.Error) switch
+                emailRes = SetResult(emailRes, ValidationState.Error, "Email не может быть пустым");
+            }
+            else if (!_validateField.IsValidEmailFormat(input.Email))
+            {
+                emailRes = SetResult(emailRes, ValidationState.Error, "Некорректный формат email");
+            }
+            else
+            {
+                // ШАГ 3: Магия switch. В базу идём ТОЛЬКО если локальные поля и сам email идеальны! 🛸🔒
+                emailRes = results.Any(r => r.State == ValidationState.Error) switch
                 {
-                    // Если локальные поля уже с ошибками — базу по поводу Email НЕ дёргаем!
-                    true => new ValidationResult
-                    {
-                        Field = TypeField.EmailType,
-                        State = ValidationState.Info,
-                        Message = "Введите email"
-                    },
+                    // Если где-то в форме есть косяк — базу по поводу уникальности не дёргаем,
+                    // но формат-то у нас уже прошёл! Пишем, что имейл корректен.
+                    true => SetResult(emailRes, ValidationState.Success, "Формат email корректен (ожидание отправки)"),
 
-                    // Если локально всё чисто — только тогда идём асинхронно проверять базу
+                    // Если вообще всё чисто — проверяем занятость в SQLite
                     false => await ValidateEmailAsync(input.Email)
                 };
-
-                results.Add(dynamicEmailResult);
-                return results;
             }
 
-            private UserEntity CreateUserEntity(CreateUserInput input) => new()
+            results.Add(emailRes);
+            return results;
+        }
+
+        private UserEntity CreateUserEntity(CreateUserInput input) => new()
             {
                 FirstName = input.UserName,
                 Email = input.Email,
@@ -114,29 +124,25 @@ using HomeNetCore.Services.UsersServices;
                     : SetResult(res, ValidationState.Success, "пароли совпадают");
             }
 
-            private async Task<ValidationResult> ValidateEmailAsync(string email)
+        private async Task<ValidationResult> ValidateEmailAsync(string email)
+        {
+            var res = new ValidationResult { Field = TypeField.EmailType };
+
+            try
             {
-                var res = new ValidationResult { Field = TypeField.EmailType };
-
-                try
-                {
-                    if (string.IsNullOrWhiteSpace(email))
-                        return SetResult(res, ValidationState.Error, "Email не может быть пустым");
-
-                    if (!_validateField.IsValidEmailFormat(email))
-                        return SetResult(res, ValidationState.Error, "Некорректный формат email");
-
-                    return await _userService.CheckEmailExistsAsync(email)
-                        ? SetResult(res, ValidationState.Error, "Email уже зарегистрирован")
-                        : SetResult(res, ValidationState.Success, "Email принят");
-                }
-                catch (Exception ex)
-                {
-                    return SetResult(res, ValidationState.Error, $"Ошибка проверки email: {ex.Message}");
-                }
+                // Сюда прилетает только гарантированно правильный формат! Проверяем уникальность.
+                return await _userService.CheckEmailExistsAsync(email)
+                    ? SetResult(res, ValidationState.Error, "Email уже зарегистрирован")
+                    : SetResult(res, ValidationState.Success, "Email свободен и принят");
             }
+            catch (Exception ex)
+            {
+                return SetResult(res, ValidationState.Error, $"Ошибка проверки email: {ex.Message}");
+            }
+        }
 
-            private ValidationResult SetResult(ValidationResult res, ValidationState state, string message)
+
+        private ValidationResult SetResult(ValidationResult res, ValidationState state, string message)
             {
                 res.State = state;
                 res.Message = message;

@@ -70,7 +70,7 @@ namespace HomeSocialNetwork
             services.AddSingleton<EventBus>(); // Наше любимое «Бюро вакансий»
             services.AddSingleton<StatusBarViewModel>();
 
-            services.AddTransient<UsersTableViewModel>(provider =>
+            services.AddTransient(provider =>
             {
                 // Достаем наше ядро базы данных
                 var core = provider.GetRequiredService<DbInfrastructureCore>();
@@ -83,8 +83,8 @@ namespace HomeSocialNetwork
             });
 
             // Лог-менеджер настраиваем через фабрику контейнера
-            services.AddSingleton<LogWindow>(provider => new LogWindow(provider.GetRequiredService<ILogger>()));
-            services.AddSingleton<LogQueueManager>(provider =>
+            services.AddSingleton(provider => new LogWindow(provider.GetRequiredService<ILogger>()));
+            services.AddSingleton(provider =>
             {
                 var logWin = provider.GetRequiredService<LogWindow>();
                 var manager = new LogQueueManager(logWin, 20);
@@ -94,25 +94,25 @@ namespace HomeSocialNetwork
 
 
             // 2. Регистрируем готовую деталь Ядра СУБД
-            services.AddSingleton<DbInfrastructureCore>(provider =>
+            services.AddSingleton(provider =>
                 new DbInfrastructureCore(_connectionString, provider.GetRequiredService<ILogger>()));
 
             // 3. Автоматическая регистрация Вьюмоделей!
             // Контейнер сам залезет в их конструкторы, вытащит из DbInfrastructureCore нужные сервисы и подставит!
-            services.AddSingleton<RegistrationViewModel>(provider =>
+            services.AddSingleton(provider =>
                 new RegistrationViewModel(provider.GetRequiredService<DbInfrastructureCore>().RegisterService, provider.GetRequiredService<EventBus>()));
 
-            services.AddSingleton<AuthenticationViewModel>(provider =>
+            services.AddSingleton(provider =>
                new AuthenticationViewModel(
              provider.GetRequiredService<DbInfrastructureCore>().AuthenticateService,
              provider.GetRequiredService<EventBus>()));
 
             services.AddSingleton<LogViewModel>();
 
-            services.AddSingleton<AdminMenuViewModel>(provider =>
+            services.AddSingleton(provider =>
                 new AdminMenuViewModel(provider.GetRequiredService<DbInfrastructureCore>().UserService, provider.GetRequiredService<EventBus>()));
 
-            services.AddSingleton<DeleteUsersViewModel>(provider =>
+            services.AddSingleton(provider =>
             {
                 var core = provider.GetRequiredService<DbInfrastructureCore>();
 
@@ -126,7 +126,7 @@ namespace HomeSocialNetwork
 
 
             // Внутри App.xaml.cs возвращаем фабрику к стерильному виду:
-            services.AddSingleton<MainViewModel>(provider =>
+            services.AddSingleton(provider =>
             {
                 var core = provider.GetRequiredService<DbInfrastructureCore>();
 
