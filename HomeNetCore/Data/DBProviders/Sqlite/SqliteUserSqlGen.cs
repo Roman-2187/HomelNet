@@ -92,7 +92,8 @@ namespace HomeNetCore.Data.DBProviders.Sqlite
                 throw new InvalidOperationException("Некорректные поля для выборки");
             }
 
-            return $"SELECT {_formattedTable.AllFields} FROM {_formattedTable.TableName}";
+            // ⚡ ДОБИВАЕМ: Оборачиваем имя таблицы в кавычки \"{_formattedTable.TableName}\"
+            return $"SELECT {_formattedTable.AllFields} FROM \"{_formattedTable.TableName}\"";
         }
 
 

@@ -2,12 +2,7 @@
 {
     // TableSchema с улучшенной логикой
     public class TableSchema
-    {
-
-        public TableSchema()
-        {
-            
-        }
+    { 
         public string? TableName { get; set; }
         public List<ColumnSchema> Columns { get; set; } = new();
 
@@ -50,8 +45,13 @@
             columnNames = string.Join(", ",
                Columns.Select(c => $"{c.OriginalName}"));
 
-            AllFields = string.Join(", ",
-                Columns.Select(c => $"{c.Name} AS {c.OriginalName}"));
+            
+               
+
+            // БЫЛО: AllFields = string.Join(", ", Columns.Select(c => $"{c.Name} AS {c.OriginalName}"));
+
+            // СТАЛО: Оборачиваем физическое имя в базе в кавычки "first_name" AS FirstName
+            AllFields = string.Join(", ", Columns.Select(c => $"\"{c.Name}\" AS {c.OriginalName}"));
 
             AllParameters = string.Join(", ",
                 Columns.Select(c => $"@{c.OriginalName}"));
@@ -67,5 +67,27 @@
             SetClause = string.Join(", ",
                 Columns.Where(c => c.Name != idColumn).Select(c => $"{c.Name} = @{c.OriginalName}"));
         }
+
+
+        /// <summary>
+        /// Полностью переводит всю таблицу и её колонки под правила конкретной СУБД
+        /// </summary>
+        public TableSchema CloneWithTransform(Func<string?, string?> nameTransformer)
+        {
+            var transformedTable = new TableSchema
+            {
+                TableName = nameTransformer(this.TableName ?? string.Empty),
+                Columns = this.Columns.Select(col => col.CloneWithTransform(nameTransformer)).ToList()
+            };
+
+            // Сразу запускаем пересчёт AllFields, InsertFields на новых именах
+            transformedTable.Initialize();
+            transformedTable.IdColumnName = transformedTable.Columns.FirstOrDefault(c => c.IsPrimaryKey)?.Name;
+
+            return transformedTable;
+        }
+
+
+
     }
 }

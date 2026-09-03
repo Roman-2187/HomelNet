@@ -1,215 +1,82 @@
 ﻿using HomeNetCore.Data.Adapters;
 using HomeNetCore.Data.Schemes;
 using HomeNetCore.Enums;
-using System.Text;
-using System.Text.RegularExpressions;
+using HomeNetCore.Helpers; // Наш статик класс со StringExtensions
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace HomeNetCore.Data.DBProviders.Sqlite
 {
     public class SqliteSchemaAdapter : ISchemaAdapter
-    {           
+    {
         private const string TypeText = "TEXT";
         private const string TypeInteger = "INTEGER";
         private const string TypeTimestamp = "TIMESTAMP";
+        private const string TypeReal = "REAL";
         private const string DefaultCurrentTimestamp = "DEFAULT CURRENT_TIMESTAMP";
         private const string NotNull = "NOT NULL";
         private const string PrimaryKey = "PRIMARY KEY";
         private const string Unique = "UNIQUE";
         private const string AutoIncrement = "AUTOINCREMENT";
-        
 
         public string ConvertTableName(string? rawName, NameFormat format)
         {
-            if (string.IsNullOrEmpty(rawName))
-            {
-                throw new ArgumentException("Имя таблицы не может быть пустым");
-            }
-
-            return format switch
-            {
-                NameFormat.SnakeCase => ToSnakeCase(rawName),
-                NameFormat.CamelCase => ToCamelCase(rawName),
-                _ => throw new ArgumentException("Неизвестный формат")
-            };
+            if (string.IsNullOrEmpty(rawName)) throw new ArgumentException("Имя таблицы не может быть пустым");
+            return format == NameFormat.SnakeCase ? rawName.ToSnakeCase()! : rawName.ToCamelCase()!;
         }
-       
+
         public string ConvertColumnName(string? rawName, NameFormat format)
         {
-            if (string.IsNullOrEmpty(rawName))
-                throw new ArgumentException("Имя колонки не может быть пустым");
-
-            if (rawName.Any(char.IsWhiteSpace))
-                throw new ArgumentException("Имя колонки не должно содержать пробелы");
-
-            return format switch
-            {
-                NameFormat.SnakeCase => ToSnakeCase(rawName),
-                NameFormat.CamelCase => ToCamelCase(rawName),
-                _ => throw new ArgumentException("Неизвестный формат")
-            };          
+            if (string.IsNullOrEmpty(rawName)) throw new ArgumentException("Имя колонки не может быть пустым");
+            return format == NameFormat.SnakeCase ? rawName.ToSnakeCase()! : rawName.ToCamelCase()!;
         }
-
-
         /// <summary>
-        /// Преобразует схему в формат snake_case для использования в SQL-запросах
+        /// Вот ОНО! Метод сжался до одной строчки. Схема сама всё перекладывает внутри себя!
         /// </summary>
-        /// <param name="originalSchema">Исходная схема таблицы</param>
-        /// <returns>Отформатированная схема с именами в snake_case</returns>
         public TableSchema ConvertToSnakeCaseSchema(TableSchema originalSchema)
         {
-            var snakeCaseSchema = new TableSchema
-            {
-                TableName = ConvertTableName(originalSchema.TableName, NameFormat.SnakeCase),
-                Columns = originalSchema.Columns.Select(col =>
-                    new ColumnSchema
-                    {
-                        OriginalName = col.Name,
-                        Name = ConvertColumnName(col.Name, NameFormat.SnakeCase),
-                        Type = col.Type,
-                        Length = col.Length,
-                        IsNullable = col.IsNullable,
-                        IsPrimaryKey = col.IsPrimaryKey,
-                        IsUnique = col.IsUnique,
-                        IsAutoIncrement = col.IsAutoIncrement,
-                        CreatedAt = col.CreatedAt,
-                        IsCreatedAt = col.IsCreatedAt,
-                        Comment = col.Comment,
-                        DefaultValue = col.DefaultValue
-                    }).ToList()
-            };
-
-            // Сначала инициализируем схему
-            snakeCaseSchema.Initialize();
-
-            // Теперь присваиваем IdColumnName на основе преобразованной схемы
-            snakeCaseSchema.IdColumnName = snakeCaseSchema.Columns
-                .FirstOrDefault(c => c.IsPrimaryKey)?.Name;
-
-            return snakeCaseSchema;
+            return originalSchema.CloneWithTransform(name => name.ToSnakeCase());
         }
-
 
         public List<string> GetColumnDefinitions(TableSchema schema)
         {
-            // Валидация всех колонок
-            foreach (var col in schema.Columns)
+            var definitions = schema.Columns.Select(col =>
             {
-                ValidateColumn(col);
-            }
-
-            return schema.Columns.Select(col =>
-            {
-                var name = $"\"{ConvertColumnName(col.Name,NameFormat.SnakeCase)}\"";
+                var name = $"\"{col.Name}\"";
 
                 string sqlType = col.Type switch
                 {
-                    ColumnType.Varchar => TypeText,       
-                    ColumnType.Integer => TypeInteger,    
-                    ColumnType.DateTime => TypeTimestamp, 
-                    ColumnType.Boolean => TypeInteger,    
-                    _ => throw new NotSupportedException($"Тип {col.Type} не поддерживается")
+                    ColumnType.Varchar => TypeText,
+                    ColumnType.Integer => TypeInteger,
+                    ColumnType.DateTime => TypeTimestamp,
+                    ColumnType.Boolean => TypeInteger,
+                    ColumnType.Real => TypeReal,
+                    _ => throw new NotSupportedException($"Тип {col.Type} не поддерживается SQLite")
                 };
 
                 var constraints = new List<string>();
 
-                
-
-                if (col.IsCreatedAt)
-                {
-                    constraints.Add(DefaultCurrentTimestamp);
-                }
-
-                if (!col.IsNullable)
-                {
-                    constraints.Add(NotNull); 
-                }
-
-                if (col.IsPrimaryKey)
-                {
-                    constraints.Add(PrimaryKey); 
-                }
-
-                if (col.IsUnique)
-                {
-                    constraints.Add(Unique); 
-                }
-
-                if (col.IsAutoIncrement)
-                {
-                    constraints.Add(AutoIncrement); 
-                }
+                if (col.IsCreatedAt) constraints.Add(DefaultCurrentTimestamp);
+                if (!col.IsNullable) constraints.Add(NotNull);
+                if (col.IsPrimaryKey) constraints.Add(PrimaryKey);
+                if (col.IsUnique) constraints.Add(Unique);
+                if (col.IsAutoIncrement) constraints.Add(AutoIncrement);
 
                 var parts = new List<string> { name, sqlType };
-
-                if (constraints.Any())
-                    parts.Add(string.Join(" ", constraints));
+                if (constraints.Any()) parts.Add(string.Join(" ", constraints));
 
                 return string.Join(" ", parts);
             }).ToList();
-        }
 
-        private void ValidateColumn(ColumnSchema col)
-        {
-            if (col.Type == ColumnType.Unspecified)
-                throw new InvalidOperationException(
-                    $"Колонка '{col.Name}' " +
-                    $"не имеет заданного типа. Вызовите WithDateTime() " +
-                    $"или другой метод установки типа.");
-        }
-
-       
-        private string ToSnakeCase(string name)
-        {
-            if (string.IsNullOrEmpty(name))
-                return name;
-
-            var builder = new StringBuilder();
-
-            for (int i = 0; i < name.Length; i++)
+            foreach (var col in schema.Columns.Where(c => c.IsForeignKey))
             {
-                char c = name[i];
-                if (char.IsUpper(c))
-                {
-                    if (i > 0)
-                        builder.Append('_');
-                    builder.Append(char.ToLower(c));
-                }
-                else
-                {
-                    builder.Append(c);
-                }
+                definitions.Add($"FOREIGN KEY(\"{col.Name}\") REFERENCES \"" +
+                    $"{col.ReferencedTable.ToSnakeCase()}\"(\"" +
+                    $"{col.ReferencedColumn.ToSnakeCase()}\") ON DELETE RESTRICT");
             }
 
-            return builder.ToString();
+            return definitions;
         }
-
-        private string ToCamelCase(string name)
-        {
-            if (string.IsNullOrEmpty(name))
-                return name;
-
-
-            if (!name.Contains('_') && char.IsUpper(name[0]))
-                return name;
-
-                // Проверяем, есть ли подчёркивания
-                if (name.Contains('_'))
-            {
-                // Преобразуем первую букву в нижний регистр (для camelCase)
-                name = char.ToUpper(name[0]) + name.Substring(1);
-            }
-            else
-            {
-                // Если нет подчёркиваний - делаем первую букву заглавной
-                name = char.ToUpper(name[0]) + name.Substring(1);
-            }
-
-            // Применяем регулярное выражение для обработки подчёркиваний
-            return Regex.Replace(
-                name,
-                @"_([a-zA-Z])",
-                match => match.Groups[1].Value.ToUpper()
-            ).Replace("_", "");
-        }   
     }
 }

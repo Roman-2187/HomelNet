@@ -7,7 +7,8 @@
         Varchar,
         DateTime,
         Boolean,
-        Unknown
+        Unknown,
+        Real
     }
 }
 
