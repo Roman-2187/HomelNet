@@ -1,5 +1,4 @@
-﻿
-using System.Globalization;
+﻿using System.Globalization;
 using System.Windows.Data;
 
 namespace WpfHomeNet.Converters
@@ -18,9 +17,4 @@ namespace WpfHomeNet.Converters
     }
 
 }
-
-
-
-
-
 

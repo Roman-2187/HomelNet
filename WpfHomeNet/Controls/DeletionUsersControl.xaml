@@ -6,12 +6,10 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
     xmlns:local="clr-namespace:WpfHomeNet.Controls"
     mc:Ignorable="d" 
-    d:DesignHeight="400" d:DesignWidth="800">
-    <ContentControl 
-        Style="{StaticResource InnerBorderSolidColorStyle}"
-        Background="#FFA4B291" >
+    d:DesignHeight="400" d:DesignWidth="800" Foreground="Transparent" Background="Transparent">
+   
 
-        <Grid Margin="10">
+        <Grid Margin="10" Background="Transparent">
             <!-- Добавили четвертую строку специально для нижних кнопок -->
             <Grid.RowDefinitions>
                 <RowDefinition Height="25"/>
@@ -23,7 +21,7 @@
             <!-- Заголовок -->
             <TextBlock
                 Text="{Binding StatusMessage}"
-                Foreground="Black" FontWeight="Bold"
+                 FontWeight="Bold"
                 Margin="20,0,20,0" VerticalAlignment="Center"/>
 
 
@@ -37,7 +35,7 @@
                     VerticalContentAlignment="Center"
                     Text="{Binding TargetUserId,
                     UpdateSourceTrigger=PropertyChanged}"
-                    Background="#7FFFFFFF"
+                   
                     Foreground="DarkSlateGray"
                     Padding="5,0,0,0"/>
 
@@ -46,7 +44,7 @@
                     Content="Найти" Margin="70,0,0,0"
                     Width="90" Height="35"
                     Command="{Binding SearchCommand}"
-                    Background="Transparent"/>
+                    Background="Transparent" />
                 
             </StackPanel>
 
@@ -55,19 +53,19 @@
                 Grid.Row="2"               
                 BorderThickness="0.3"
                 BorderBrush="Black"
-                CornerRadius="5"
-                Background="#7FFFFFFF"
-                Margin="5" >
+                CornerRadius="6"
+                
+                Margin="10" >
                 <ListBox
                     Style="{StaticResource RoundedListBox}"    
-                    DisplayMemberPath="DisplayInfo"
+                    DisplayMemberPath="DisplayInfo" Background="Transparent"
                    
                     ItemsSource="{Binding UsersTable.Users, Source={StaticResource VmLocator}}"
 
                     SelectedItem="{Binding SelectedUser}"
                     SelectedValuePath="Id"  
-                    Margin="5"  
-                    Background="Transparent" >
+                    Margin="10"  
+                    RenderTransformOrigin="0.507,0.617" >
                     <ListBox.Resources>
                         <Style TargetType="{x:Type ScrollViewer}">
                             <Setter Property="VerticalScrollBarVisibility" Value="Hidden"/>
@@ -79,6 +77,11 @@
                             <Setter Property="Background" Value="Transparent"/>
                             <Setter Property="BorderBrush" Value="Transparent"/>
                             <Setter Property="FontWeight" Value="Normal"/>
+
+                            <!-- 🔥 ТОЛКАЕМ ТЕКСТ ВНУТРЕННИМ ОТСТУПОМ НА 10 ПИКСЕЛЕЙ СЛЕВА -->
+                            <!-- Формат: Слева, Сверху, Справа, Снизу -->
+                            <Setter Property="Padding" Value="10,0,0,0"/>
+
                             <Style.Triggers>
                                 <Trigger Property="Tag" Value="Found">
                                     <Setter Property="FontWeight" Value="Bold"/>
@@ -87,6 +90,7 @@
                             </Style.Triggers>
                         </Style>
                     </ListBox.ItemContainerStyle>
+
                 </ListBox>
             </Border>
 
@@ -100,12 +104,13 @@
                 <!-- Биндинг команды удаления и флага доступности -->
                 <Button 
                    Width="80" 
+
                    Content="Удалить" 
                    Height="35"
                    Margin="0,0,10,0"
                    Command="{Binding DeleteCommand}"
                    IsEnabled="{Binding CanDelete}"
-                   Background="#00DDDDDD"/>
+                   Background="#00DDDDDD" />
 
                 <!-- Биндинг команды отмены (схлопывания формы) -->
                 <Button 
@@ -113,9 +118,9 @@
                    Width="80"
                    Height="35"
                    Command="{Binding CancelCommand}"
-                   Background="Transparent"/>
+                   Background="Transparent" />
             </StackPanel>
         </Grid>
-    </ContentControl>
+    
 </UserControl>
 

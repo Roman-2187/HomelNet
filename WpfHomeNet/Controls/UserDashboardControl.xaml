@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:WpfHomeNet.Controls"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
-    <Grid Margin="15">
+    <Grid Margin="3">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="200"/>
             <!-- Левая колонка: Друзья -->
@@ -16,7 +16,7 @@
 
         <!-- ЛЕВАЯ ПАНЕЛЬ: СПИСОК ДРУЗЕЙ -->
         <Border Grid.Column="0" Background="#252526" CornerRadius="6" Margin="0,0,15,0">
-            <Grid Margin="10">
+            <Grid Margin="2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
@@ -27,16 +27,16 @@
                 <!-- Биндим список напрямую к коллекции Friends из нашей UserDashboardViewModel -->
                 <ListBox Grid.Row="1" 
                          ItemsSource="{Binding Friends}" 
-                         Background="Transparent" 
+                         Background="#FF36373F" 
                          BorderThickness="0" 
                          Foreground="#DCDCDC" 
-                         FontSize="13"/>
+                         FontSize="13" d:ItemsSource="{d:SampleData ItemCount=5}"/>
             </Grid>
         </Border>
 
         <!-- ПРАВАЯ ПАНЕЛЬ: РАБОЧАЯ ЗОНА ДЛЯ ЧАТА -->
         <Border Grid.Column="1" Background="#1E1E1E" CornerRadius="6">
-            <Grid Margin="20">
+            <Grid Margin="5">
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,12">
                         <TextBlock Text="Добро пожаловать в HomeNet, " FontSize="18" Foreground="#DCDCDC"/>

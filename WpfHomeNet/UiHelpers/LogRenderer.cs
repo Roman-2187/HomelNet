@@ -17,7 +17,7 @@ namespace WpfHomeNet.UiHelpers
         
         { LogColor.Error, Brushes.OrangeRed },
         { LogColor.Warning, Brushes.Orange },
-        { LogColor.Information, Brushes.Green },
+        { LogColor.Information, Brushes.LightGreen},
         { LogColor.Debug, Brushes.Tan }
         
     };

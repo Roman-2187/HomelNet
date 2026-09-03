@@ -14,42 +14,46 @@
  Width="Auto"
  Margin="5">
 
-           
+
     <UserControl.Resources>
         <converter:StateToBrushConverter x:Key="StateToBrushConverter"/>
         <converter:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
-        
+
     </UserControl.Resources>
 
-    <ContentControl Style="{StaticResource TripleBorderStyle}" Padding="4" Background="#00000000">
-        
-        <Grid Margin="15">
+    <ContentControl Style="{StaticResource TripleBorderDarkBlueStyle}" Padding="4" >
+        <ContentControl.Tag>
+            <CornerRadius>10</CornerRadius>
+            <!-- Внутренняя матрешка тоже хочет знать радиус! -->
+        </ContentControl.Tag>
+        <Grid Margin="15" Background="Transparent">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
-                  
-               
+
+
             </Grid.RowDefinitions>
 
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions> 
-            
+                <ColumnDefinition Width="110*"/>
+                <ColumnDefinition Width="37*"/>
+            </Grid.ColumnDefinitions>
+
             <!-- USER NAME -->
-            <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Vertical" Margin="0,0,0,5">
-                
+            <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,0,0,5" Grid.ColumnSpan="2">
+
                 <Label Content="Имя пользователя:" VerticalAlignment="Center"/>
-                
+
                 <TextBox
                 Text="{Binding UserData.UserName}"
                 BorderBrush="{Binding ValidationResults[NameType].State, Converter={StaticResource StateToBrushConverter}}"
                 IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"/>
-                
-               
-                
+
+
+
                 <Label
                 Content="{Binding ValidationResults[NameType].Message}"
                 Foreground="{Binding ValidationResults[NameType].State, Converter={StaticResource StateToBrushConverter}}"
@@ -58,8 +62,8 @@
             </StackPanel>
 
             <!-- EMAIL -->
-            <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Vertical" Margin="0,0,0,5">
-                
+            <StackPanel Orientation="Vertical" Margin="0,89,0,5" Grid.ColumnSpan="2" Grid.RowSpan="2">
+
                 <Label Content="Email:" VerticalAlignment="Center"/>
 
                 <TextBox 
@@ -68,19 +72,19 @@
                 IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"   >
                 </TextBox>
 
-                    <Label
+                <Label
                 Content="{Binding ValidationResults[EmailType].Message}"
                 Foreground="{Binding ValidationResults[EmailType].State, Converter={StaticResource StateToBrushConverter}}"
                 FontSize="11"
                 HorizontalAlignment="Center"/>
-                
+
             </StackPanel>
 
             <!-- PASSWORD -->
-            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Vertical" Margin="0,0,0,5">
-                
+            <StackPanel Grid.Row="2" Orientation="Vertical" Margin="0,0,0,5" Grid.ColumnSpan="2">
+
                 <Label Content="Пароль:" VerticalAlignment="Center"/>
-                
+
                 <TextBox
                 Text="{Binding UserData.Password}"
                 BorderBrush="{Binding ValidationResults[PasswordType].State, Converter={StaticResource StateToBrushConverter}}"
@@ -88,26 +92,26 @@
                 
                
                 />
-                
+
                 <Label
                 Content="{Binding ValidationResults[PasswordType].Message}"
                 Foreground="{Binding ValidationResults[PasswordType].State, Converter={StaticResource StateToBrushConverter}}"
                 FontSize="11"
                 HorizontalAlignment="Center"/>
-                
+
             </StackPanel>
 
-           
+
             <!-- CONFIRMED PASSWORD -->
-            <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Vertical" Margin="0,0,0,5">
+            <StackPanel Grid.Row="3" Orientation="Vertical" Margin="0,0,0,5" Grid.ColumnSpan="2">
 
                 <Label Content="Повторите пароль:" VerticalAlignment="Center"/>
                 <TextBox
                 Text="{Binding UserData.ConfirmPassword}"
                 BorderBrush="{Binding ValidationResults[ConfirmedPasswordType].State, Converter={StaticResource StateToBrushConverter}}"
-                IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"/>              
-                
-                               
+                IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"/>
+
+
                 <Label
                 Content="{Binding ValidationResults[ConfirmedPasswordType].Message}"
                 Foreground="{Binding ValidationResults[ConfirmedPasswordType].State, Converter={StaticResource StateToBrushConverter}}"
@@ -116,7 +120,7 @@
             </StackPanel>
 
 
-            <Grid Grid.Row="4" >
+            <Grid Grid.Row="3" Grid.ColumnSpan="2" Margin="0,89,0,0" Grid.RowSpan="2" >
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
@@ -133,13 +137,13 @@
                 <StackPanel Grid.Column="1"                            
                 Orientation="Horizontal"
                 HorizontalAlignment="Right"   >
-             
+
                     <Button
                 Content="Отмена"
                 Command="{Binding CancelCommand}"
                 IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"
                 MinWidth="120"  />
-             
+
                     <Button MinWidth="120"
                 Content="{Binding SubmitButtonText}"
                 Command="{Binding ToggleRegistrationCommand}"  

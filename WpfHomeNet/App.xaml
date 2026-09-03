@@ -2,13 +2,15 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:WpfHomeNet" 
-             xmlns:vm="clr-namespace:WpfHomeNet.ViewModels"   >
+             xmlns:vm="clr-namespace:WpfHomeNet.ViewModels"   
+             xmlns:cv="clr-namespace:WpfHomeNet.Converters" >
     
 
     <Application.Resources>
        
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <vm:ViewModelLocator x:Key="VmLocator" />
+        <cv:CornerRadiusConverter x:Key="RadiusCalc" />
 
         <Style TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
@@ -75,7 +77,7 @@
                     Margin="1,1,1,0"
                     BorderBrush="Black"
                     Padding="4"
-                    CornerRadius="6" 
+                    CornerRadius="8" 
                             HorizontalAlignment="{TemplateBinding HorizontalAlignment}">
                             <TextBlock
                         Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}, StringFormat={}{0}}"
@@ -88,44 +90,46 @@
             </Setter>
         </Style>
 
-
-        <Style x:Key="TripleBorderStyle" TargetType="ContentControl">
+        <!-- 🧊 КУБИК 1: Синяя сталь на ContentControl через честный Tag! 🎛️ -->
+        <Style x:Key="TripleBorderBlueStyle" TargetType="ContentControl">
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ContentControl">
                         <Grid>
-                            <!-- Внешний Border (только рамка, без градиента) -->
-                          <Border  CornerRadius="8"
-                                 BorderThickness="0.65"
-                                 BorderBrush="Black"
-                                 Background="White">    
-                                <!-- Белый фон для всего элемента -->
-
-                                <!-- Контейнер для вложенных Border -->
+                            <!-- 👑 ВНЕШНИЙ БОРДЕР: Тянет CornerRadius напрямую из кармашка Tag! -->
+                            <Border CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" 
+                                    BorderThickness="0.65" BorderBrush="Black" Background="White">
                                 <Grid>
-                                    <!-- Средний Border -->
-                                    <Border BorderThickness="1.1" Margin="-0.15"
-                                    BorderBrush="LightBlue"
-                                    CornerRadius="7.4"/>
 
-                                    <!-- Внутренний Border (с градиентом) -->
-                                    <Border Margin="0.35"  
-                                    BorderThickness="0.6"
-                                    BorderBrush="Black" 
-                                    CornerRadius="7.35">
+                                    <!-- 🥈 СРЕДНИЙ БОРДЕР: Берет радиус из Tag и вычитает 0.6 через калькулятор -->
+                                    <Border BorderThickness="1.1" Margin="-0.15" BorderBrush="LightBlue" 
+                                            CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent},
+                                        Converter={StaticResource RadiusCalc}, ConverterParameter=-0.6}"/>
 
-                                        <!-- Градиентный фон ВНУТРИ внутреннего бордера -->
+                                    <!-- 🥉 ВНУТРЕННИЙ БОРДЕР: Берет радиус из Tag и вычитает 0.65 -->
+                                    <Border Margin="0.35" BorderThickness="0.6" BorderBrush="Black"
+                                            CornerRadius="{Binding Tag,
+                                        RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource RadiusCalc}, ConverterParameter=-0.65}">
                                         <Border.Background>
                                             <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
-                                                <GradientStop Color="#FF668C66" Offset="0.0"/>
-                                                <GradientStop Color="Tan" Offset="0.7"/>
-                                                <GradientStop Color="#99104710" Offset="1.0"/>
-                                            </LinearGradientBrush>
-                                        </Border.Background>
+                                                <!-- 🌌 Верх: Твой стальной сине-зелёный -->
+                                                <GradientStop Color="#FF71B5B3" Offset="0.0"/>
 
-                                        <!-- Контент -->
+                                                <!-- 🧊 НАЧАЛО РАЗМЫТИЯ: Свет блика начинает плавно входить уже с 40% высоты -->
+                                                <GradientStop Color="#FF9ABCBC" Offset="0.4"/>
+
+                                                <!-- 🧊 КОНЕЦ РАЗМЫТИЯ: Свет блика мягко удерживается до 75% высоты -->
+                                                <GradientStop Color="#FF9ABCBC" Offset="0.75"/>
+
+                                                <!-- 💎 Низ: Твой стальной сине-зелёный -->
+                                                <GradientStop Color="#FF71B5B3" Offset="1.0"/>
+                                            </LinearGradientBrush>
+
+                                           
+                                        </Border.Background>
                                         <ContentPresenter Margin="{TemplateBinding Padding}"/>
                                     </Border>
+
                                 </Grid>
                             </Border>
                         </Grid>
@@ -133,6 +137,103 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- 🧊 КУБИК 1: Истинный DarkBlue (Мягкое затемнение на 10% от исходного сине-зелёного) 🎛️ -->
+        <Style x:Key="TripleBorderDarkBlueStyle" TargetType="ContentControl">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContentControl">
+                        <Grid>
+                            <!-- 👑 ВНЕШНИЙ БОРДЕР: Тянет CornerRadius напрямую из кармашка Tag! -->
+                            <Border CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" 
+                            BorderThickness="0.65" BorderBrush="DarkRed" Background="White">
+                                <Grid>
+
+                                    <!-- 🥈 СРЕДНИЙ БОРДЕР: Тонкая стальная подложка, чуть темнее для объема -->
+                                    <Border BorderThickness="1.1" Margin="-0.15" BorderBrush="#FF4B7E7C" 
+                                    CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent},
+                                Converter={StaticResource RadiusCalc}, ConverterParameter=-0.6}"/>
+
+                                    <!-- 🥉 ВНУТРЕННИЙ БОРДЕР: Аккуратная сталь, ровно на 10% плотнее оригинала -->
+                                    <Border Margin="0.35" BorderThickness="0.6" BorderBrush="Black"
+                                    CornerRadius="{Binding Tag,
+                                RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource RadiusCalc}, ConverterParameter=-0.65}">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                                <!-- 🌌 Верх: Исходный сине-зелёный, аккуратно притемненный на 10% -->
+                                                <GradientStop Color="#FF65A2A0" Offset="0.0"/>
+
+                                                <!-- 🧊 НАЧАЛО РАЗМЫТИЯ: Мягкий, благородный стальной блик -->
+                                                <GradientStop Color="#FF8AA9A9" Offset="0.4"/>
+
+                                                <!-- 🧊 КОНЕЦ РАЗМЫТИЯ: Блик плавно и сдержанно держится до 75% -->
+                                                <GradientStop Color="#FF8AA9A9" Offset="0.75"/>
+
+                                                <!-- 💎 Низ: Спокойное возвращение в базовый тон -->
+                                                <GradientStop Color="#FF65A2A0" Offset="1.0"/>
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                        <ContentPresenter Margin="{TemplateBinding Padding}"/>
+                                    </Border>
+
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 🦾 КУБИК 2: Киберпанк (Неоновый контур + Сочный Сдержанный Красно-Бордовый фон) 🌌 -->
+        <Style x:Key="TripleBorderCyberpunkStyle" TargetType="ContentControl">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContentControl">
+                        <Grid>
+                            <!-- 👑 ВНЕШНИЙ БОРДЕР: Рамка на месте, базу сделали мягче -->
+                            <Border CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" 
+                            BorderThickness="0.8" BorderBrush="#FF00F5FF" Background="#FF2B1115">
+                                <Border.Effect>
+                                    <DropShadowEffect Color="#FF00F5FF" BlurRadius="6" ShadowDepth="0" Opacity="0.35"/>
+                                </Border.Effect>
+                                <Grid>
+
+                                    <!-- 🥈 СРЕДНИЙ БОРДЕР: Уютный переходный бордовый -->
+                                    <Border BorderThickness="1.2" Margin="-0.2" BorderBrush="#FF5C1E26" 
+                                    CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent},
+                                Converter={StaticResource RadiusCalc}, ConverterParameter=-0.6}"/>
+
+                                    <!-- 🥉 ВНУТРЕННИЙ БОРДЕР: Вывели из глухой темноты в приятный глазу тон -->
+                                    <Border Margin="0.4" BorderThickness="0.6" BorderBrush="#FF2E1216"
+                                    CornerRadius="{Binding Tag,
+                                RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource RadiusCalc}, ConverterParameter=-0.65}">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                                <!-- 🌌 Верх: Уверенный бордовый, теперь без черноты -->
+                                                <GradientStop Color="#FF4A1A21" Offset="0.0"/>
+
+                                                <!-- ⚡ НАЧАЛО БЛИКА: Мягкий, читаемый неоново-красный отсвет -->
+                                                <GradientStop Color="#FF5C232B" Offset="0.4"/>
+
+                                                <!-- ⚡ КОНЕЦ БЛИКА: Держим сочность и объем -->
+                                                <GradientStop Color="#FF5C232B" Offset="0.75"/>
+
+                                                <!-- 🔋 Низ: Плавный уход в базовый тон -->
+                                                <GradientStop Color="#FF4A1A21" Offset="1.0"/>
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                        <ContentPresenter Margin="{TemplateBinding Padding}"/>
+                                    </Border>
+
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
 
 
         <Style x:Key="InnerBorderSolidColorStyle" TargetType="ContentControl">
@@ -150,7 +251,7 @@
                            Background="Transparent">
                                 <Border Margin="-0.1"
                                BorderThickness="0.3"
-                               BorderBrush="Black"
+                               BorderBrush="DarkRed"
                                CornerRadius="8"
                                Background="{TemplateBinding Background}">
                                     <ContentPresenter Margin="{TemplateBinding Padding}"/>
@@ -161,6 +262,45 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!--  КУБИК 2:  на ContentControl через честный Tag! 🎛️ -->
+        <Style x:Key="TripleBordergreenStyle" TargetType="ContentControl">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContentControl">
+                        <Grid>
+                            <!-- 👑 ВНЕШНИЙ БОРДЕР: Тянет CornerRadius напрямую из кармашка Tag! -->
+                            <Border CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" 
+                              BorderThickness="0.65" BorderBrush="Black" Background="White">
+                                <Grid>
+
+                                    <!-- 🥈 СРЕДНИЙ БОРДЕР: Берет радиус из Tag и вычитает 0.6 через калькулятор -->
+                                    <Border BorderThickness="1.1" Margin="-0.15" BorderBrush="LightBlue" 
+                                      CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent},
+                                  Converter={StaticResource RadiusCalc}, ConverterParameter=-0.6}"/>
+
+                                    <!-- 🥉 ВНУТРЕННИЙ БОРДЕР: Берет радиус из Tag и вычитает 0.65 -->
+                                    <Border Margin="0.35" BorderThickness="0.6" BorderBrush="Black"
+                                      CornerRadius="{Binding Tag,
+                                  RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource RadiusCalc}, ConverterParameter=-0.65}">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                                <GradientStop Color="#FF668C66" Offset="0.0"/>
+                                                <GradientStop Color="Tan" Offset="0.7"/>
+                                                <GradientStop Color="#99104710" Offset="1.0"/>
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                        <ContentPresenter Margin="{TemplateBinding Padding}"/>
+                                    </Border>
+
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
 
 
         <Style TargetType="TextBox">

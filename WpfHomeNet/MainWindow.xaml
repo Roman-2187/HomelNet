@@ -15,7 +15,7 @@
     FontFamily="Calibri"
     FontSize="14"                             
     Background="Transparent"
-    Width="800" Height="600"
+    
     MinWidth="800" MinHeight="600"> 
    
     <Window.Resources>
@@ -28,15 +28,20 @@
         <converter:InverseBooleanToVisibilityConverter x:Key="InverseBooleanVisibleConverter"/>
     </Window.Resources>
 
-    <ContentControl 
-        Style="{StaticResource TripleBorderStyle}"                    
-        Width="800"                         
-        Height="600"
-        MinWidth="800"                     
-        MinHeight="600"                    
-        HorizontalAlignment="Center"                    
-        VerticalAlignment="Center"
-        MouseDown="WindowDrag_MouseDown">
+
+    <ContentControl Style="{StaticResource TripleBorderDarkBlueStyle}" 
+                Padding="10"
+                Width="900" Height="600" MinWidth="800" MinHeight="600"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                MouseLeftButtonDown="WindowDrag_MouseDown">
+        <ContentControl.Tag>
+            
+            <CornerRadius>10</CornerRadius>
+        </ContentControl.Tag>
+
+        
+                         
+        
 
         <Grid x:Name="MainGrid" Margin="4">
             <Grid.RowDefinitions>
@@ -159,8 +164,8 @@
 
             <!-- ФОРМА РЕГИСТРАЦИИ -->
             <controls:RegistrationViewControl 
-                Grid.Row="1" Grid.Column="1"
-                Grid.ColumnSpan="4" Grid.RowSpan="4" 
+                Grid.Row="1" Grid.Column="1" Margin="11,6,6,6"
+                Grid.ColumnSpan="5" Grid.RowSpan="4" 
                 Panel.ZIndex="99" 
                 DataContext="{Binding RegistrationVm, Source={StaticResource VmLocator}}" 
                 Visibility="{Binding ControlVisibility}"
@@ -168,8 +173,8 @@
 
             <!-- ФОРМА ЛОГИНА -->
             <controls:LoginViewControl
-                Grid.Row="1" Grid.Column="1"
-                Grid.ColumnSpan="4" Grid.RowSpan="4"
+                Grid.Row="1" Grid.Column="1"  Margin="11,6,6,6"
+                Grid.ColumnSpan="5" Grid.RowSpan="4"
                 Panel.ZIndex="99"
                 DataContext="{Binding LoginVm, Source={StaticResource VmLocator}}" 
                 Visibility="{Binding ControlVisibility}"

@@ -12,15 +12,19 @@
              BorderThickness="0"
              Height="Auto"
              Width="Auto"
-             Margin="10"  VerticalAlignment="Top">
+             Margin="10"  ClipToBounds="True" VerticalAlignment="Top">
 
     <UserControl.Resources>
         <converter:StateToBrushConverter x:Key="StateToBrushConverter"/>
         <converter:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
     </UserControl.Resources>
-    
 
-    <ContentControl Style="{StaticResource TripleBorderStyle}" Padding="4" Background="#00000000">
+
+    <ContentControl Style="{StaticResource TripleBorderBlueStyle}"  Padding="4" >
+        <ContentControl.Tag>
+            <CornerRadius>10</CornerRadius>
+            <!-- Внутренняя матрешка тоже хочет знать радиус! -->
+        </ContentControl.Tag>
         <Grid Margin="15">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>

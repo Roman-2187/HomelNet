@@ -21,8 +21,9 @@
 
     <ContentControl 
             Style="{StaticResource InnerBorderSolidColorStyle}"
-            Background="#FFA4B291">
-        <Grid Background="Transparent">
+           
+        >
+        <Grid >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
                 <!-- Левая боковая панель кнопок -->
@@ -31,15 +32,23 @@
             </Grid.ColumnDefinitions>
 
             <!-- ЛЕВАЯ ЧАСТЬ: Боковая панель кнопок управления -->
-            <StackPanel
-                    Grid.Column="0"  Margin="5"
-                    IsEnabled="{Binding MainVm.IsButtonsPanelEnabled,
-                    Source={StaticResource VmLocator}}">
 
-                <Label
+            <ContentControl 
+         Style="{StaticResource TripleBorderDarkBlueStyle}" Margin="5"> <ContentControl.Tag>
+
+                        <CornerRadius>8</CornerRadius>
+                    </ContentControl.Tag>
+            <StackPanel 
+                    Grid.Column="0"  Margin="5" 
+                    IsEnabled="{Binding MainVm.IsButtonsPanelEnabled,
+                    Source={StaticResource VmLocator}}" Background="Transparent">
+
+                   
+
+                    <Label 
                         Content="АДМИН ПАНЕЛЬ" FontWeight="Bold"
                         HorizontalAlignment="Center" Margin="0,5,0,15"
-                        Foreground="#333"/>
+                        />
 
                 <!-- Кнопки профиля и регистрации теперь бьют СТРОГО через VmLocator!-->
 
@@ -52,7 +61,7 @@
                 <Button
                         Content="Test list Users"
                         Margin="0,3" 
-                        Command="{Binding SeedDataCommand}"/>
+                        Command="{Binding SeedDataCommand}" />
 
                 <Button 
                         Content="Добавить юзера" Margin="0,3"                    
@@ -62,7 +71,8 @@
                         Source={StaticResource VmLocator}}"
                         IsEnabled="{Binding MainVm.IsComplete,
                         Source={StaticResource VmLocator},
-                        Converter={StaticResource InverseBooleanConverter}}"/>
+                        Converter={StaticResource InverseBooleanConverter}}"
+                    />
 
                 <!-- Кнопка вызова формы удаления юзеров -->
                 <Button 
@@ -76,13 +86,17 @@
                 <Button 
                         Margin="0,3"
                         Content="{Binding TableButtonText}"                    
-                        Command="{Binding UserTableViewCommand}"/>
+                        Command="{Binding UserTableViewCommand}"
+                    />
 
                 <Button
                         Margin="0,3"
                         Command="{Binding ToggleLogWindowCommand}"     
-                        Content="{Binding ToggleButtonText}"/>
+                        Content="{Binding ToggleButtonText}"
+                    />
             </StackPanel>
+
+            </ContentControl>
 
             <!-- ПРАВАЯ ЧАСТЬ: Динамическая рабочая зона  -->
             <Grid 
@@ -90,8 +104,8 @@
 
                 <!-- 1. ТАБЛИЦА ПОЛЬЗОВАТЕЛЕЙ -->
                 <Border 
-                        Background="White" CornerRadius="4" 
-                        BorderThickness="1" BorderBrush="#DDD"
+                        Background="Transparent" CornerRadius="4" 
+                        BorderThickness="1" BorderBrush="#FF464545"
                         Visibility="{Binding IsTableVisible,
                         Converter={StaticResource BooleanToVisibilityConverter}}"
                         d:Visibility="Visible">
@@ -100,25 +114,31 @@
                     <!-- СТАЛО (Подключаемся к твоему реальному локатору): 🧼 -->
                     <!-- БЫЛО: DataContext="{Binding Users, Source={StaticResource VmLocator}}" -->
                     <!-- СТАЛО (Вытаскиваем из локатора именно ВьюМодель таблицы): 🧼 -->
-                    <controls:UsersTableView DataContext="{Binding UsersTable, Source={StaticResource VmLocator}}" />
+                    <controls:UsersTableView DataContext="{Binding UsersTable,
+                        Source={StaticResource VmLocator}}" />
 
 
 
                 </Border>
 
                 <!-- 2. ФОРМА УДАЛЕНИЯ ЮЗЕРОВ 🦾🔥 -->
-                <Border 
-                        Background="#FFF0F0"
-                        CornerRadius="4" 
-                        BorderThickness="1"                         BorderBrush="#FFAAAA"
+                <ContentControl 
+  Style="{StaticResource InnerBorderSolidColorStyle}" 
+                        Background="Transparent"
+                        Margin="0"
+                        BorderThickness="1"                        
+                    
                         Visibility="{Binding DeleteUsersVm.ControlVisibility, 
                         Source={StaticResource VmLocator}}">
 
                     <controls:DeleteUsers
                             DataContext="{Binding DeleteUsersVm,
                             Source={StaticResource VmLocator}}"
-                            Margin="10"/>
-                </Border>
+                            Margin="10" 
+                        
+                        Loaded="DeleteUsers_Loaded"/>
+                    </ContentControl>
+                
             </Grid>
         </Grid>
     </ContentControl>

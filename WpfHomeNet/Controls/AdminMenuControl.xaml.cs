@@ -11,5 +11,10 @@ namespace WpfHomeNet.Controls
         {
             InitializeComponent();
         }
+
+        private void DeleteUsers_Loaded(object sender, System.Windows.RoutedEventArgs e)
+        {
+
+        }
     }
 }

@@ -10,11 +10,11 @@
     <!-- Твоя фирменная подложка и цвета -->
     <ContentControl Style="{StaticResource InnerBorderSolidColorStyle}" 
                     Padding="4"  
-                    Background="#FFA4B291">
+                    Background="Transparent">
         <StatusBar Background="#00A3C091">
             <StatusBarItem>
                 <TextBlock Text="{Binding StatusText, FallbackValue='Загрузка системы...'}"
-                           Margin="3"
+                           Margin="2"
                            FontWeight="Bold"
                            Foreground="Black"/>
             </StatusBarItem>
