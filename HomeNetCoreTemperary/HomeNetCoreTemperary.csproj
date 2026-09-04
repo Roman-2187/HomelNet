@@ -14,4 +14,10 @@
     <ProjectReference Include="..\HomeNetCore\HomeNetCore.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Data\Builders\" />
+    <Folder Include="Data\Dbproviders\" />
+    <Folder Include="Data\Repositories\" />
+  </ItemGroup>
+
 </Project>

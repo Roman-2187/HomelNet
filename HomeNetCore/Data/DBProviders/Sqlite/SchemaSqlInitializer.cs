@@ -7,12 +7,12 @@ using System.Collections.Generic;
 
 namespace HomeNetCore.Data.DBProviders.Sqlite
 {
-    public class SqliteSchemaSqlInit : ISchemaSqlInitializer
+    public class SchemaSqlInitializer : ISchemaSqlInitializer
     {
         private readonly ISchemaAdapter _adapter;
         private readonly ILogger _logger;
 
-        public SqliteSchemaSqlInit(ILogger logger, ISchemaAdapter schemaAdapter)
+        public SchemaSqlInitializer(ILogger logger, ISchemaAdapter schemaAdapter)
         {
             _adapter = schemaAdapter ?? throw new ArgumentNullException(nameof(schemaAdapter));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

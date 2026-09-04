@@ -1,19 +1,15 @@
 ﻿using HomeNetCore.Data.Adapters;
 using HomeNetCore.Data.DBProviders.Postgres;
 using HomeNetCore.Data.DBProviders.Sqlite;
+using HomeNetCore.Data.DBProviders.Sqlite.HomeNetCore.Data.DBProviders.Sqlite;
 using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Data.PostgreClasses;
-using HomeNetCore.Data.Schemes;
 using HomeNetCore.Data.SqliteClasses;
 using HomeNetCore.Enums;
 using Microsoft.Data.Sqlite;
 using Npgsql;
 using System.Data.Common;
 using WpfHomeNet.Data.DBProviders.Postgres;
-
-namespace HomeNetCore.Services
-{
-}
 
 namespace HomeNetCore.Data
 {
@@ -24,41 +20,31 @@ namespace HomeNetCore.Data
 
         public DatabaseServiceFactory(string connectionString, ILogger logger)
         {
-            _connectionString = connectionString ??
-                throw new ArgumentNullException(nameof(connectionString));
-            _logger = logger ??
-                throw new ArgumentNullException(nameof(logger));
+            _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <summary>
-        /// Создаёт набор сервисов для работы с указанной СУБД.
+        /// 1. Создаёт базовое подключение и общую инфраструктуру для инициализации всей БД.
         /// </summary>
-        /// <param name="databaseType">Тип СУБД (SQLite/PostGreSQL).</param>
-        /// <param name="tableSchema">Схема таблицы для генерации SQL.</param>
-        /// <returns>Кортеж из: соединения, инициализатора, провайдера схемы, адаптера и генератора SQL.</returns>
         public (DbConnection connection,
                  ISchemaSqlInitializer initializer,
                  ISchemaProvider schemaProvider,
-                 ISchemaAdapter schemaAdapter,
-                 ISchemaUserSqlGenerator userSqlGen)
-            CreateServices(DatabaseType databaseType, TableSchema tableSchema)
+                 ISchemaAdapter schemaAdapter)
+            CreateCoreInfrastructure(DatabaseType databaseType)
         {
-            if (tableSchema == null)
-                throw new ArgumentNullException(nameof(tableSchema));
-
             switch (databaseType)
             {
                 case DatabaseType.SQLite:
                     var sqliteConnection = new SqliteConnection(_connectionString);
                     var sqliteAdapter = new SqliteSchemaAdapter();
-                    var sqliteSqlInit = new SqliteSchemaSqlInit(_logger, sqliteAdapter);
+                    var sqliteSqlInit = new SchemaSqlInitializer(_logger, sqliteAdapter);
 
                     return (
                         sqliteConnection,
                         sqliteSqlInit,
                         new SqliteGetSchemaProvider(sqliteSqlInit, sqliteConnection, _logger),
-                        sqliteAdapter,
-                        new SqliteUserSqlGen(tableSchema, sqliteAdapter, _logger)
+                        sqliteAdapter
                     );
 
                 case DatabaseType.PostGreSQL:
@@ -66,21 +52,38 @@ namespace HomeNetCore.Data
                     var pgAdapter = new PostgresSchemaAdapter();
                     var pgSqlInit = new PostgresSchemaSqlInit(_logger, pgAdapter);
 
-
                     return (
                         pgConnection,
                         pgSqlInit,
                         new PostgresSchemaProvider(pgSqlInit, pgConnection),
-                        pgAdapter,
-                        new PostgresUserSqlGen(tableSchema, pgAdapter, _logger)
+                        pgAdapter
                     );
 
                 default:
-                    throw new ArgumentException(
-                        $"Неподдерживаемый тип БД: {databaseType}", nameof(databaseType));
+                    throw new ArgumentException($"Неподдерживаемый тип БД: {databaseType}", nameof(databaseType));
             }
         }
+
+        /// <summary>
+        /// 2. 🧙‍♂️ Магический штамповщик генераторов: возвращает КОНКРЕТНЫЙ КЛАСС напрямую!
+        /// </summary>
+        public SqliteSqlGenerator<T> CreateSqlGenerator<T>(DatabaseType databaseType, ISchemaAdapter adapter) where T : class
+        {
+            if (adapter == null) throw new ArgumentNullException(nameof(adapter));
+
+            switch (databaseType)
+            {
+                case DatabaseType.SQLite:
+                    // Возвращаем сам класс! Никаких интерфейсов.
+                    return new SqliteSqlGenerator<T>(adapter, _logger);
+
+                case DatabaseType.PostGreSQL:
+                    throw new NotImplementedException("PostgreSQL дженерик-генератор пока не реализован.");
+
+                default:
+                    throw new ArgumentException($"Неподдерживаемый тип БД для генератора: {databaseType}", nameof(databaseType));
+            }
+        }
+
     }
-
-
 }

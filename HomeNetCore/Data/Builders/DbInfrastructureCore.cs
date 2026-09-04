@@ -1,7 +1,6 @@
 ﻿using HomeNetCore.Data;
 using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Data.Repositories;
-using HomeNetCore.Data.Schemes;
 using HomeNetCore.Enums;
 using HomeNetCore.Models;
 using HomeNetCore.Services;
@@ -17,19 +16,19 @@ namespace HomeSocialNetwork.Core
         private readonly string _connectionString;
         private readonly ILogger _logger;
 
-        // Внутренние шестерёнки скрыты инкапсуляцией
+        // Внутреннее соединение
         private DbConnection? _connection;
-        private TableSchema? _tableSchema;
-        private ISchemaUserSqlGenerator? _userSqlGen;
-        private DBInitializer? _databaseInitializer;
-        private UserRepository? _userRepository;
 
-        // Чистые детали, доступные через точку
+        // 👤 Сервисы пользователей
         public UserService UserService { get; private set; } = null!;
         public ListUsersService ListUsersService { get; private set; } = null!;
         public RegisterService RegisterService { get; private set; } = null!;
         public AuthenticateService AuthenticateService { get; private set; } = null!;
         public DeleteService DeleteService { get; private set; } = null!;
+
+        // 💬 Сервисы чата и контактов семьи
+        public MessageService MessageService { get; private set; } = null!;
+        public FriendService FriendService { get; private set; } = null!;
 
         public DbInfrastructureCore(string connectionString, ILogger logger)
         {
@@ -39,31 +38,53 @@ namespace HomeSocialNetwork.Core
 
         public async Task InitializeAsync(DatabaseType databaseType)
         {
-            _tableSchema = new UsersTable().Build();
+            _logger.LogInformation("Запуск инициализации инфраструктуры БД...");
+
+            // 1. Создаем фабрику СУБД
             var factory = new DatabaseServiceFactory(_connectionString, _logger);
 
-            var (connection, sqlInit, schemaProvider, schemaAdapter, userSqlGen) =
-                factory.CreateServices(databaseType, _tableSchema);
-
+            // 2. Вытаскиваем базовые компоненты из фабрики (без передачи каких-либо схем-заглушек!)
+            var (connection, sqlInit, schemaProvider, schemaAdapter) = factory.CreateCoreInfrastructure(databaseType);
             _connection = connection;
-            _userSqlGen = userSqlGen;
 
-            _databaseInitializer = new DBInitializer(
-                _connection, schemaProvider, schemaAdapter,
-                sqlInit, _tableSchema, _logger);
+            // =================================================================
+            // 🚂 АВТОПИЛОТ: НАКАТЫВАЕМ И СВЕРЯЕМ ВСЕ ТАБЛИЦЫ СРАЗУ
+            // =================================================================
+            // Наш новый DBInitializer сам пойдет в SchemaRegistry и все проверит за один вызов!
+            var dbInitializer = new DBInitializer(_connection, schemaProvider, schemaAdapter, sqlInit, _logger);
+            await dbInitializer.InitializeAsync();
 
-            await _databaseInitializer.InitializeAsync();
-            _logger.LogInformation("База данных успешно инициализирована внутри инфраструктурного ядра.");
+            // =================================================================
+            // 🚀 ШТАМПУЕМ АВТОНОМНЫЕ ГЕНЕРАТОРЫ SQL ПОД КАЖДУЮ СУЩНОСТЬ
+            // =================================================================
+            // Никакой каши, никаких индексов [0] или. Фабрика сама создаст дженерик-генераторы,
+            // а они сами заберут свои схемы из реестра.
+            var userSqlGen = factory.CreateSqlGenerator<UserEntity>(databaseType, schemaAdapter);
+            var messageSqlGen = factory.CreateSqlGenerator<MessageEntity>(databaseType, schemaAdapter);
+            var friendSqlGen = factory.CreateSqlGenerator<FriendEntity>(databaseType, schemaAdapter);
 
-            // Собираем репозитории и сервисы бизнес-логики
-            _userRepository = new UserRepository(_connection, _userSqlGen);
-            UserService = new UserService(_userRepository, _logger);
+            // =================================================================
+            // СВЯЗЫВАЕМ РЕПОЗИТОРИИ И СЕРВИСЫ БИЗНЕС-ЛОГИКИ
+            // =================================================================
+            // Блок пользователей
+            var userRepository = new UserRepository(_connection, userSqlGen);
+            UserService = new UserService(userRepository, _logger);
             ListUsersService = new ListUsersService(UserService);
-
             RegisterService = new RegisterService(UserService);
             AuthenticateService = new AuthenticateService(UserService);
             DeleteService = new DeleteService(_logger, UserService);
+
+            // Блок сообщений чата
+            var messageRepository = new MessageRepository(_connection, messageSqlGen);
+            MessageService = new MessageService(messageRepository, _logger);
+
+            // Блок контактов/друзей
+            var friendRepository = new FriendRepository(_connection, friendSqlGen);
+            FriendService = new FriendService(friendRepository, _logger);
+
+            _logger.LogInformation("Вся бизнес-логика ядра успешно переведена на дженерик-рельсы и запущена!");
         }
     }
 }
+
 

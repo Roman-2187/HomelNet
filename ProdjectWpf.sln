@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WpfHomeNet", "WpfHomeNet\Wp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeNetCore", "HomeNetCore\HomeNetCore.csproj", "{79716F2D-4F01-4FD3-A380-3B10B20FC375}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeNetCoreTemperary", "HomeNetCoreTemperary\HomeNetCoreTemperary.csproj", "{C4941B96-FCE0-47F2-9AE5-D3E5F3E08DC1}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,10 +21,6 @@ Global
 		{79716F2D-4F01-4FD3-A380-3B10B20FC375}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{79716F2D-4F01-4FD3-A380-3B10B20FC375}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{79716F2D-4F01-4FD3-A380-3B10B20FC375}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C4941B96-FCE0-47F2-9AE5-D3E5F3E08DC1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C4941B96-FCE0-47F2-9AE5-D3E5F3E08DC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C4941B96-FCE0-47F2-9AE5-D3E5F3E08DC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C4941B96-FCE0-47F2-9AE5-D3E5F3E08DC1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

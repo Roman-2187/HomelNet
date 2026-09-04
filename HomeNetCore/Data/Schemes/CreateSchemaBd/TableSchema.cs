@@ -3,7 +3,9 @@
     // TableSchema с улучшенной логикой
     public class TableSchema
     { 
-        public string? TableName { get; set; }
+        
+
+        public string TableName { get; set; } = string.Empty;
         public List<ColumnSchema> Columns { get; set; } = new();
 
         // Все поля для общих операций с алиасами
@@ -76,8 +78,13 @@
         {
             var transformedTable = new TableSchema
             {
-                TableName = nameTransformer(this.TableName ?? string.Empty),
-                Columns = this.Columns.Select(col => col.CloneWithTransform(nameTransformer)).ToList()
+                // 1. Берем имя (если null, то пустую строку) и ставим "!" в конце, чтобы компилятор не ворчал
+                TableName = nameTransformer(this.TableName ?? string.Empty)!,
+
+                // 2. Добавляем проверку на null для коллекции Columns на всякий случай
+                Columns = this.Columns?
+        .Select(c => c.CloneWithTransform(nameTransformer))
+        .ToList() ?? new List<ColumnSchema>()
             };
 
             // Сразу запускаем пересчёт AllFields, InsertFields на новых именах
