@@ -17,46 +17,47 @@ namespace WpfHomeNet.ViewModels
         #endregion
 
         #region Свойства
-        public double Offset { get; set; } = 5;
+        public double Offset { get; set; } = 1;
         public bool IsVisible => _logWindow.Visibility == Visibility.Visible;
         #endregion
 
         #region Конструктор
+
         public LogViewModel(EventBus eventBus, LogQueueManager logQueueManager, LogWindow logWindow)
         {
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             _queueManager = logQueueManager ?? throw new ArgumentNullException(nameof(logQueueManager));
             _logWindow = logWindow ?? throw new ArgumentNullException(nameof(logWindow));
-            
+
             _eventBus.Subscribe<WindowPositionChangedMessage>(PositionLogWindow);
             _eventBus.Subscribe<LogWindowVisibilityChangedMessage>(OnVisibilityCommandReceived);
-        }
-        #endregion
 
-        #region Логика управления окном
+            // Активируем менеджер очереди один раз при создании ViewModel
+            _queueManager.SetReady();
+        }
+
         private void OnVisibilityCommandReceived(LogWindowVisibilityChangedMessage msg)
         {
             if (msg.IsVisible)
             {
                 _logWindow.Show();
-                _queueManager.SetReady();
             }
             else
             {
                 _logWindow.Hide();
             }
-
-            OnPropertyChanged(nameof(IsVisible));
         }
 
         private void PositionLogWindow(WindowPositionChangedMessage msg)
         {
             if (!msg.IsLoaded) return;
 
-            _logWindow.Left = msg.Left + msg.Width + Offset;
+            // Строгая, линейная привязка лога к правому краю главного окна
+            _logWindow.Left = msg.Left + msg.Width;
             _logWindow.Top = msg.Top;
             _logWindow.Height = msg.Height;
-            _logWindow.Width = 600;
+            _logWindow.Width = 650;
+
         }
         #endregion
 

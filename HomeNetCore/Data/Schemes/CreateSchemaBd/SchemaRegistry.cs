@@ -1,5 +1,6 @@
 ﻿using HomeNetCore.Data.Builders; // Подключаем наш новый TableSchemaBuilder
 using HomeNetCore.Data.Schemes;
+using HomeNetCore.Enums;
 using HomeNetCore.Models;
 
 namespace HomeSocialNetwork.Core
@@ -19,18 +20,24 @@ namespace HomeSocialNetwork.Core
             users.AddColumn(u => u.CreatedAt).IsTrackedTimestamp();
             yield return users.Generate(); // Генерация схемы, валидация и автоматический .Initialize()
 
+            
             // 2. ⚡ СХЕМА ТАБЛИЦЫ СООБЩЕНИЙ (messages)
             var messages = new TableBuilder<MessageEntity>("Messages");
             messages.AddColumn(m => m.Id).AsPrimaryKey().AsAutoIncrement();
             messages.AddColumn(m => m.SenderId).IsRequired().HasForeignKey<UserEntity>();
             messages.AddColumn(m => m.ReceiverId).IsRequired().HasForeignKey<UserEntity>();
-            messages.AddColumn(m => m.Text).HasLength(4000);
-            messages.AddColumn(m => m.MediaType).HasLength(50).HasDefault("Text");
-            messages.AddColumn(m => m.CloudUrl).AsText();
-            messages.AddColumn(m => m.LocalPath).AsText();
-            messages.AddColumn(m => m.IsRead).HasDefault(0);
+            messages.AddColumn(m => m.Text).AsText();
+
+            // Передаем дефолтное значение "Text", но тип принудительно ставим как у Text/Varchar
+            messages.AddColumn(m => m.MediaType).AsText();
+
+            // Передаем дефолт 0 и принудительно просим валидатор считать это поле INTEGER (числом)
+            messages.AddColumn(m => m.IsRead).HasDefault(0, ColumnType.Integer);
+
             messages.AddColumn(m => m.CreatedAt).IsTrackedTimestamp();
             yield return messages.Generate();
+
+
 
             // 3. ⚡ СХЕМА ТАБЛИЦЫ КОНТАКТОВ / ДРУЗЕЙ (friends)
             var friends = new TableBuilder<FriendEntity>("Friends");

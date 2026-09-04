@@ -47,6 +47,7 @@ namespace HomeNetCore.Data.DBProviders.Sqlite
             string escapedName = _adapter.ConvertTableName(tableName, NameFormat.SnakeCase);
 
             return $"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='{escapedName}'";
+
         }
 
         public string GenerateGetTableStructureSql(string? tableName)

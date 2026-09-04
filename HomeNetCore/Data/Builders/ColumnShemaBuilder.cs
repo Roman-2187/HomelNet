@@ -57,11 +57,16 @@ namespace HomeNetCoreTemperary.Data.Builders
             return this;
         }
 
-        public ColumnBuilder<TEntity> HasDefault(object value)
+        public ColumnBuilder<TEntity> HasDefault(object value, ColumnType? forceType = null)
         {
             _schema.DefaultValue = value;
+            if (forceType != null)
+            {
+                _schema.Type = forceType.Value;
+            }
             return this;
         }
+
 
         public ColumnBuilder<TEntity> HasForeignKey<TTarget>() where TTarget : class
         {
@@ -71,12 +76,16 @@ namespace HomeNetCoreTemperary.Data.Builders
             return this;
         }
 
-        public ColumnBuilder<TEntity> AsText()
+        // Если вызван без параметров — это обычный длинный текст. 
+        // Если передать ColumnType — принудительно перезапишет тип на нужный.
+        public ColumnBuilder<TEntity> AsText(ColumnType? customType = null)
         {
-            _schema.Type = ColumnType.Varchar;
+            // Если в твоем enum есть ColumnType.Text, используем его, иначе оставляем Varchar
+            _schema.Type = customType ?? ColumnType.Varchar;
             _schema.Length = 8000;
             return this;
         }
+
 
         public ColumnSchema Build()
         {

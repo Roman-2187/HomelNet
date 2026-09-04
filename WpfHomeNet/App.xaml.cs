@@ -93,7 +93,7 @@ namespace HomeSocialNetwork
             services.AddSingleton(provider =>
             {
                 var logWin = provider.GetRequiredService<LogWindow>();
-                var manager = new LogQueueManager(logWin, 20);
+                var manager = new LogQueueManager(logWin, 5);
                 provider.GetRequiredService<ILogger>().SetOutput(manager.WriteLog);
                 return manager;
             });

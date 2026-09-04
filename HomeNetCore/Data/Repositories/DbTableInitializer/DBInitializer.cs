@@ -2,7 +2,7 @@
 using HomeNetCore.Data.Adapters;
 using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Data.Schemes;
-using HomeSocialNetwork.Core; // Подключаем пространство имен нашего SchemaRegistry
+using HomeSocialNetwork.Core;
 using System;
 using System.Data;
 using System.Data.Common;
@@ -18,7 +18,6 @@ public class DBInitializer
     private readonly ISchemaProvider _schemaProvider;
     private readonly ISchemaAdapter _schemaAdapter;
 
-    // Конструктор стал чище — больше не нужно передавать сюда коллекцию схем!
     public DBInitializer(
         DbConnection connection,
         ISchemaProvider schemaProvider,
@@ -37,43 +36,53 @@ public class DBInitializer
     {
         _logger.LogInformation("=== СТАРТ ИНИЦИАЛИЗАЦИИ БАЗЫ ДАННЫХ ===");
 
-        // 🧙 Magick: Прямо здесь берём все зарегистрированные таблицы из нашего реестра!
         var tableSchemas = SchemaRegistry.GetAllSchemas();
 
         foreach (var schema in tableSchemas)
         {
+            // 🛡️ Переводим схему в змейку (из "Users" в "users"), чтобы узнать её РЕАЛЬНОЕ имя в БД
+            var dbSchema = _schemaAdapter.ConvertToSnakeCaseSchema(schema);
+            string dbTableName = dbSchema?.TableName ?? schema.TableName ?? string.Empty;
+
             try
             {
-                _logger.LogInformation($"[БД] Проверка таблицы: {schema.TableName}...");
+                _logger.LogInformation($"[БД] Проверка таблицы: {dbTableName}...");
 
-                if (!await TableExistsAsync(schema.TableName))
+                // Ищем в БД именно физическое имя "users", а не C#-имя "Users"
+                if (!await TableExistsAsync(dbTableName))
                 {
-                    await CreateTableAsync(schema);
+                    // Передаем на создание уже готовую snake_case схему
+                    await CreateTableAsync(dbSchema ?? schema);
                 }
                 else
                 {
-                    _logger.LogDebug($"[БД] Таблица {schema.TableName} существует, сверяю структуру...");
+                    _logger.LogDebug($"[БД] Таблица {dbTableName} существует, сверяю структуру...");
                     await CheckTableStructureAsync(schema);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"[КРИТ] Сбой при обработке таблицы {schema.TableName}: {ex.Message}");
-                throw; // Падаем, если база данных повреждена или заблокирована
+                _logger.LogError($"[КРИТ] Сбой при обработке таблицы {dbTableName}: {ex.Message}");
+                throw;
             }
         }
-
-
 
         _logger.LogInformation("=== ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ЗАВЕРШЕНА ===");
     }
 
     private async Task<bool> TableExistsAsync(string tableName)
     {
-        var sql = _schemaSqlGenerator.GenerateTableExistsSql(tableName);
+        // 🛡️ Полностью очищаем имя от кавычек и переводим в нижний регистр для сверки
+        var cleanName = tableName.Trim('"', '\'').ToLower();
+
+        // Переводим системное имя из sqlite_master в нижний регистр через LOWER() 
+        // Это найдет и "Users", и "users", и "USERS" со 100% гарантией!
+        var sql = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND LOWER(name) = @cleanName;";
+
         try
         {
-            var result = await _dbConnection.ExecuteScalarAsync<int>(sql, new { tableName });
+            // Передаем чистый параметр напрямую в Dapper, минуя кривой генератор
+            var result = await _dbConnection.ExecuteScalarAsync<int>(sql, new { cleanName });
             return result > 0;
         }
         catch (Exception ex)
@@ -83,22 +92,24 @@ public class DBInitializer
         }
     }
 
-    private async Task CreateTableAsync(TableSchema schema)
+    private async Task CreateTableAsync(TableSchema dbSchema)
     {
-        _logger.LogWarning($"Таблица {schema.TableName} не обнаружена. Запуск генерации...");
+        string targetName = dbSchema.TableName ?? string.Empty;
+        _logger.LogWarning($"Таблица {targetName} не обнаружена. Запуск генерации...");
 
         if (_dbConnection.State != ConnectionState.Open)
         {
             await _dbConnection.OpenAsync();
         }
 
-        await _dbConnection.ExecuteAsync(_schemaSqlGenerator.GenerateCreateTableSql(schema));
+        await _dbConnection.ExecuteAsync(_schemaSqlGenerator.GenerateCreateTableSql(dbSchema));
 
-        if (await TableExistsAsync(schema.TableName))
-            _logger.LogInformation($"✅ Таблица {schema.TableName} успешно создана в БД.");
+        // Проверяем по РЕАЛЬНОМУ имени, которое улетело в базу данных
+        if (await TableExistsAsync(targetName))
+            _logger.LogInformation($"✅ Таблица {targetName} успешно создана в БД.");
         else
         {
-            _logger.LogError($"❌ Ошибка создания! Таблица {schema.TableName} отсутствует после выполнения скрипта.");
+            _logger.LogError($"❌ Ошибка создания! Таблица {targetName} отсутствует после выполнения скрипта.");
         }
     }
 
@@ -109,10 +120,14 @@ public class DBInitializer
             await _dbConnection.OpenAsync();
         }
 
-        var expectedSchema = await _schemaProvider.GetActualTableSchemaAsync(actualSchema.TableName);
-
+        // Переводим исходную схему в змейку для корректного поиска структуры
         var actualAdaptedSchema = _schemaAdapter.ConvertToSnakeCaseSchema(actualSchema) ??
             throw new ArgumentNullException(nameof(actualSchema));
+
+        string dbTableName = actualAdaptedSchema.TableName ?? string.Empty;
+
+        // Запрашиваем состояние из базы по её правильному имени в нижнем регистре
+        var expectedSchema = await _schemaProvider.GetActualTableSchemaAsync(dbTableName);
 
         var expectedAdaptedSchema = _schemaAdapter.ConvertToSnakeCaseSchema(expectedSchema) ??
             throw new ArgumentNullException(nameof(expectedSchema));
@@ -122,11 +137,11 @@ public class DBInitializer
 
         if (diff.IsIdentical)
         {
-            _logger.LogInformation($"  -> Структура таблицы {actualSchema.TableName} в порядке.");
+            _logger.LogInformation($"  -> Структура таблицы {dbTableName} в порядке.");
         }
         else
         {
-            _logger.LogWarning($"⚠️ Обнаружены расхождения в структуру {actualSchema.TableName}:");
+            _logger.LogWarning($"⚠️ Обнаружены расхождения в структуре {dbTableName}:");
 
             foreach (var missing in diff.MissingColumns)
                 _logger.LogWarning($"   [-] Отсутствует колонка: {missing.Name}");
