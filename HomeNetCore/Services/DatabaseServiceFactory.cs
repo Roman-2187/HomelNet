@@ -1,7 +1,6 @@
 ﻿using HomeNetCore.Data.Adapters;
 using HomeNetCore.Data.DBProviders.Postgres;
 using HomeNetCore.Data.DBProviders.Sqlite;
-using HomeNetCore.Data.DBProviders.Sqlite.HomeNetCore.Data.DBProviders.Sqlite;
 using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Data.PostgreClasses;
 using HomeNetCore.Data.SqliteClasses;
@@ -50,12 +49,12 @@ namespace HomeNetCore.Data
                 case DatabaseType.PostGreSQL:
                     var pgConnection = new NpgsqlConnection(_connectionString);
                     var pgAdapter = new PostgresSchemaAdapter();
-                    var pgSqlInit = new PostgresSchemaSqlInit(_logger, pgAdapter);
+                    var pgSqlInit = new PostgresSchemaSqlInitializer(_logger, pgAdapter);
 
                     return (
                         pgConnection,
                         pgSqlInit,
-                        new PostgresSchemaProvider(pgSqlInit, pgConnection),
+                        new PostgresSchemaProvider(pgSqlInit, pgConnection,_logger),
                         pgAdapter
                     );
 
@@ -67,23 +66,19 @@ namespace HomeNetCore.Data
         /// <summary>
         /// 2. 🧙‍♂️ Магический штамповщик генераторов: возвращает КОНКРЕТНЫЙ КЛАСС напрямую!
         /// </summary>
-        public SqliteSqlGenerator<T> CreateSqlGenerator<T>(DatabaseType databaseType, ISchemaAdapter adapter) where T : class
+        public ISqlGenerator<T> CreateSqlGenerator<T>(DatabaseType databaseType, ISchemaAdapter adapter) where T : class
         {
-            if (adapter == null) throw new ArgumentNullException(nameof(adapter));
-
-            switch (databaseType)
+            return databaseType switch
             {
-                case DatabaseType.SQLite:
-                    // Возвращаем сам класс! Никаких интерфейсов.
-                    return new SqliteSqlGenerator<T>(adapter, _logger);
+                DatabaseType.SQLite => new SqliteSqlGenerator<T>(adapter, _logger),
 
-                case DatabaseType.PostGreSQL:
-                    throw new NotImplementedException("PostgreSQL дженерик-генератор пока не реализован.");
+                // 🔥 УБИРАЕМ ЗАГЛУШКУ И СТАВИМ НАШ НАСТОЯЩИЙ ДЖЕНЕРИК ПОСТГРЕС-ГЕНЕРАТОР!
+                DatabaseType.PostGreSQL => new PostgresSqlGenerator<T>(adapter, _logger),
 
-                default:
-                    throw new ArgumentException($"Неподдерживаемый тип БД для генератора: {databaseType}", nameof(databaseType));
-            }
+                _ => throw new ArgumentOutOfRangeException(nameof(databaseType), $"Тип СУБД {databaseType} не поддерживается фабрикой.")
+            };
         }
+
 
     }
 }

@@ -20,7 +20,7 @@
     </UserControl.Resources>
 
 
-    <ContentControl Style="{StaticResource TripleBorderBlueStyle}"  Padding="4" >
+    <ContentControl Style="{StaticResource TripleBorderDarkBlueStyle}"  Padding="4" >
         <ContentControl.Tag>
             <CornerRadius>10</CornerRadius>
             <!-- Внутренняя матрешка тоже хочет знать радиус! -->

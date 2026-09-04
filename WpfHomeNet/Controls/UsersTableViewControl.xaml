@@ -5,8 +5,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"  
              Height="Auto" Width="Auto">
-   
-    <ContentControl Style="{StaticResource InnerBorderSolidColorStyle}" Padding="4"   >
+
+    <ContentControl Style="{StaticResource InnerBorderSolidColorStyle}" Padding="4" Background="#FF9ABCBC"  >
         <Grid>
             <!-- Две строки: заголовки и данные -->
             <Grid.RowDefinitions>

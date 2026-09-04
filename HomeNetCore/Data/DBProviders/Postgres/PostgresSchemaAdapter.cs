@@ -1,67 +1,40 @@
 ﻿using HomeNetCore.Data.Adapters;
 using HomeNetCore.Data.Schemes;
 using HomeNetCore.Enums;
-using System.Text;
+using HomeNetCore.Helpers; // Используем наш единый статик класс со StringExtensions 🚀
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace WpfHomeNet.Data.DBProviders.Postgres
-
 {
     public class PostgresSchemaAdapter : ISchemaAdapter
     {
+        private const string DefaultCurrentTimestamp = "DEFAULT CURRENT_TIMESTAMP";
+        private const string NotNull = "NOT NULL";
+        private const string PrimaryKey = "PRIMARY KEY";
+        private const string Unique = "UNIQUE";
+
         public string ConvertTableName(string? rawName, NameFormat format)
         {
-            if (string.IsNullOrEmpty(rawName))
-            {
-                throw new ArgumentException("Имя таблицы не может быть пустым");
-            }
-
-            return ToSnakeCase(rawName);
+            if (string.IsNullOrEmpty(rawName)) throw new ArgumentException("Имя таблицы не может быть пустым");
+            return format == NameFormat.SnakeCase ? rawName.ToSnakeCase()! : rawName.ToCamelCase()!;
         }
 
         public string ConvertColumnName(string? rawName, NameFormat format)
         {
-            if (string.IsNullOrEmpty(rawName))
-            {
-                throw new ArgumentException("Имя колонки не может быть пустым");
-            }
-
-            if (rawName.Any(char.IsWhiteSpace))
-            {
-                throw new ArgumentException("Имя колонки не должно содержать пробелы");
-            }
-
-            return ToSnakeCase(rawName);
+            if (string.IsNullOrEmpty(rawName)) throw new ArgumentException("Имя колонки не может быть пустым");
+            if (rawName.Any(char.IsWhiteSpace)) throw new ArgumentException("Имя колонки не должно содержать пробелы");
+            return format == NameFormat.SnakeCase ? rawName.ToSnakeCase()! : rawName.ToCamelCase()!;
         }
 
+        /// <summary>
+        /// Вот ОНО! Теперь и для Postgres метод сжался до одной строчки. 
+        /// Инкапсуляция на полную мощность! 🧙‍♂️💎
+        /// </summary>
         public TableSchema ConvertToSnakeCaseSchema(TableSchema originalSchema)
         {
-            var snakeCaseSchema = new TableSchema
-            {
-                TableName = ConvertTableName(originalSchema.TableName, NameFormat.SnakeCase),
-                Columns = originalSchema.Columns.Select(col =>
-                    new ColumnSchema
-                    {
-                        OriginalName = col.Name,
-                        Name = ConvertColumnName(col.Name, NameFormat.SnakeCase),
-                        Type = col.Type,
-                        Length = col.Length,
-                        IsNullable = col.IsNullable,
-                        IsPrimaryKey = col.IsPrimaryKey,
-                        IsUnique = col.IsUnique,
-                        IsAutoIncrement = col.IsAutoIncrement,
-                        CreatedAt = col.CreatedAt,
-                        IsCreatedAt = col.IsCreatedAt,
-                        Comment = col.Comment,
-                        DefaultValue = col.DefaultValue
-                    }).ToList()
-            };
-            snakeCaseSchema.Initialize();
-
-            // Теперь присваиваем IdColumnName на основе преобразованной схемы
-            snakeCaseSchema.IdColumnName = snakeCaseSchema.Columns
-                .FirstOrDefault(c => c.IsPrimaryKey)?.Name;
-
-            return snakeCaseSchema;
+            return originalSchema.CloneWithTransform(name => name.ToSnakeCase());
         }
 
         public List<string> GetColumnDefinitions(TableSchema schema)
@@ -73,112 +46,55 @@ namespace WpfHomeNet.Data.DBProviders.Postgres
 
             return schema.Columns.Select(col =>
             {
-                var name = $"\"{ConvertColumnName(col.Name, NameFormat.SnakeCase)}\"";
+                // Оборачиваем имя в экранирующие кавычки под стандарты Postgres
+                var name = $"\"{col.Name}\"";
 
                 string sqlType = col.Type switch
                 {
+                    // Postgres требует явного указания автоинкремента через SERIAL!
+                    ColumnType.Integer => col.IsPrimaryKey && col.IsAutoIncrement ? "SERIAL" : "INTEGER",
                     ColumnType.Varchar => col.Length.HasValue ? $"VARCHAR({col.Length})" : "VARCHAR",
-                    ColumnType.Integer => "INTEGER",
                     ColumnType.DateTime => "TIMESTAMP",
-                    ColumnType.Boolean => "BOOLEAN",                                        
-                    _ => throw new NotSupportedException($"Тип {col.Type} не поддерживается")
+                    ColumnType.Boolean => "BOOLEAN",
+                    _ => throw new NotSupportedException($"Тип {col.Type} не поддерживается Postgres")
                 };
 
                 var constraints = new List<string>();
 
-                // Обработка DefaultValue с учетом типа
+                // Если это SERIAL (первичный ключ с автоинкрементом в Postgres), 
+                // то ключевые слова PRIMARY KEY и NOT NULL добавляются как обычно, но дефолтное значение SERIAL генерирует сам!
                 if (col.DefaultValue != null)
                 {
-                    string defaultValue;
-
-                    switch (col.Type)
+                    string defaultValue = col.Type switch
                     {
-                        case ColumnType.Varchar:
-                        
-                            defaultValue = $"'{col.DefaultValue}'";  // Строки в кавычках
-                            break;
-                        case ColumnType.DateTime:
-                            defaultValue = $"'{col.DefaultValue}'";  // Даты в кавычках
-                            break;
-                        case ColumnType.Integer:
-                        case ColumnType.Boolean:
-                            defaultValue = col.DefaultValue.ToString() 
-                            ?? throw new InvalidOperationException($"Некорректное дефолтное значение для колонки {col.Name}"); 
-                            break;
-                        default:
-                            defaultValue = $"'{col.DefaultValue}'";
-                            break;
-                    }
-
+                        ColumnType.Varchar or ColumnType.DateTime => $"'{col.DefaultValue}'",
+                        ColumnType.Integer or ColumnType.Boolean => col.DefaultValue.ToString()
+                            ?? throw new InvalidOperationException($"Некорректное дефолтное значение для колонки {col.Name}"),
+                        _ => $"'{col.DefaultValue}'"
+                    };
                     constraints.Add($"DEFAULT {defaultValue}");
                 }
                 else if (col.IsCreatedAt)
                 {
-                    constraints.Add("DEFAULT CURRENT_TIMESTAMP");
+                    constraints.Add(DefaultCurrentTimestamp);
                 }
 
-                if (!col.IsNullable)
-                {
-                    constraints.Add("NOT NULL");
-                }
-
-                if (col.IsPrimaryKey)
-                {
-                    constraints.Add("PRIMARY KEY");
-                }
-
-                if (col.IsUnique)
-                {
-                    constraints.Add("UNIQUE");
-                }
+                if (!col.IsNullable) constraints.Add(NotNull);
+                if (col.IsPrimaryKey) constraints.Add(PrimaryKey);
+                if (col.IsUnique) constraints.Add(Unique);
 
                 var parts = new List<string> { name, sqlType };
-
-                if (constraints.Any())
-                    parts.Add(string.Join(" ", constraints));
+                if (constraints.Any()) parts.Add(string.Join(" ", constraints));
 
                 return string.Join(" ", parts);
             }).ToList();
         }
 
-
         private void ValidateColumn(ColumnSchema col)
         {
             if (col.Type == ColumnType.Unspecified)
-                throw new InvalidOperationException(
-                    $"Колонка '{col.Name}' не имеет заданного типа. " +
-                    "Вызовите метод установки типа.");
+                throw new InvalidOperationException($"Колонка '{col.Name}' не имеет заданного типа.");
         }
-
-        private string ToSnakeCase(string name)
-        {
-            if (string.IsNullOrEmpty(name))
-                return name;
-
-            var builder = new StringBuilder();
-
-            for (int i = 0; i < name.Length; i++)
-            {
-                char c = name[i];
-                if (char.IsUpper(c))
-                {
-                    if (i > 0)
-                        builder.Append('_');
-                    builder.Append(char.ToLower(c));
-                }
-                else if (char.IsWhiteSpace(c))
-                {
-                    builder.Append('_');  // Замена пробелов на подчеркивания
-                }
-                else
-                {
-                    builder.Append(c);
-                }
-            }
-
-            return builder.ToString();
-        }
-
-       
     }
 }
+

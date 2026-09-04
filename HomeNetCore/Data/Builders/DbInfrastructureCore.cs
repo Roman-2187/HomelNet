@@ -47,6 +47,15 @@ namespace HomeSocialNetwork.Core
             var (connection, sqlInit, schemaProvider, schemaAdapter) = factory.CreateCoreInfrastructure(databaseType);
             _connection = connection;
 
+            // 🔥 ЖЕСТКОЕ ИСПРАВЛЕНИЕ: Открываем сетевой шлейф к PostgreSQL перед проверкой метаданных!
+            if (_connection.State != System.Data.ConnectionState.Open)
+            {
+                await _connection.OpenAsync();
+            }
+
+           
+
+
             // =================================================================
             // 🚂 АВТОПИЛОТ: НАКАТЫВАЕМ И СВЕРЯЕМ ВСЕ ТАБЛИЦЫ СРАЗУ
             // =================================================================

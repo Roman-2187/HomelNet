@@ -32,7 +32,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
+                <RowDefinition Height="45"/>
 
 
             </Grid.RowDefinitions>
@@ -134,8 +134,8 @@
 
 
                 <!-- BUTTONS -->
-                <StackPanel Grid.Column="1"                            
-                Orientation="Horizontal"
+                <StackPanel Grid.Column="1" Margin="0,80,0,0" Height="45"                           
+                Orientation="Horizontal"  
                 HorizontalAlignment="Right"   >
 
                     <Button

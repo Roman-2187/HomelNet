@@ -1,35 +1,31 @@
 ﻿using HomeNetCore.Data.Adapters;
-
 using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Data.Schemes;
-using HomeSocialNetwork.Core; // Подключаем твой SchemaRegistry
+using HomeSocialNetwork.Core; // Твой SchemaRegistry
 using System;
 using System.Linq;
 
-namespace HomeNetCore.Data.DBProviders.Sqlite
+namespace HomeNetCore.Data.DBProviders.Postgres
 {
-    // 🧙‍♂️ Магический дженерик-генератор: штампует SQL под любой твой C#-класс!
-    public class SqliteSqlGenerator<T> : ISqlGenerator<T> where T : class
+    // 🧙‍♂️ Магический дженерик-генератор для PostgreSQL: штампует идеальный SQL в snake_case!
+    public class PostgresSqlGenerator<T> : ISqlGenerator<T> where T : class
     {
         private readonly TableSchema _formattedTable;
         private readonly ISchemaAdapter _adapter;
         private readonly ILogger _logger;
 
-        // Конструктор теперь САМ забирает схему, убрали лишний параметр снаружи!
-        public SqliteSqlGenerator(
+        public PostgresSqlGenerator(
             ISchemaAdapter adapter,
             ILogger logger)
         {
             _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            // Автопилот: берём имя класса (например, "UserEntity")
+            // Автопилот: определяем имя сущности C# (например, "MessageEntity")
             string targetEntityName = typeof(T).Name;
-
-            // Отрезаем слово "Entity" для точного поиска в реестре (например, "UserEntity" -> "User")
             string cleanName = targetEntityName.Replace("Entity", "");
 
-            // Ищем подходящую таблицу в SchemaRegistry (по имени "Users", "Messages" или "Friends")
+            // Ищем метаданные в едином реестре схем
             var rawTableSchema = SchemaRegistry.GetAllSchemas()
                 .FirstOrDefault(s => s.TableName.Equals(cleanName + "s", StringComparison.OrdinalIgnoreCase) ||
                                      s.TableName.Equals(cleanName, StringComparison.OrdinalIgnoreCase));
@@ -40,40 +36,44 @@ namespace HomeNetCore.Data.DBProviders.Sqlite
                 throw new InvalidOperationException($"Схема для класса {targetEntityName} отсутствует в реестре схем.");
             }
 
-            // Твой проверенный ночной перевод схемы в snake_case 🐍
+            // Переводим C# схему в формат PostgreSQL (snake_case со всеми вытекающими) 🐍
             _formattedTable = adapter.ConvertToSnakeCaseSchema(rawTableSchema)
-                ?? throw new InvalidOperationException("Ошибка адаптера при конвертации схемы");
+                ?? throw new InvalidOperationException("Ошибка адаптера при конвертации схемы для Postgres");
         }
 
-        // Универсальная вставка (CRUD - Create) 🚀
+        // Вставка (CRUD - Create) с фирменным синтаксисом RETURNING 🚀
         public string GenerateInsert()
         {
             if (string.IsNullOrEmpty(_formattedTable.InsertFields) || string.IsNullOrEmpty(_formattedTable.InsertParameters))
             {
                 throw new InvalidOperationException($"Некорректные поля для вставки в таблицу {_formattedTable.TableName}");
             }
-            return $@"INSERT INTO {_formattedTable.TableName} ({_formattedTable.InsertFields}) VALUES ({_formattedTable.InsertParameters});
-            SELECT last_insert_rowid() AS id";
+
+            // В Postgres вместо SQLite-вского SELECT last_insert_rowid() используется элегантный RETURNING id!
+            string idColumn = _formattedTable.IdColumnName ?? "id";
+            return $@"INSERT INTO ""{_formattedTable.TableName}"" ({_formattedTable.InsertFields}) 
+                      VALUES ({_formattedTable.InsertParameters}) 
+                      RETURNING {idColumn};";
         }
 
-        // Универсальное обновление по ID (CRUD - Update) 🧼
+        // Обновление по ID (CRUD - Update) 🧼
         public string GenerateUpdate()
         {
             string? idColumn = _formattedTable.IdColumnName;
             if (string.IsNullOrEmpty(idColumn))
             {
-                throw new InvalidOperationException($"У таблицы {_formattedTable.TableName} нет одиночного ID-столбца (возможно, ключ составной)");
+                throw new InvalidOperationException($"У таблицы {_formattedTable.TableName} нет одиночного ID-столбца");
             }
 
             if (string.IsNullOrEmpty(_formattedTable.SetClause))
             {
-                throw new InvalidOperationException($"Некорректный SET clause для обновления таблицы {_formattedTable.TableName}");
+                throw new InvalidOperationException($"Некорректный SET clause для таблицы {_formattedTable.TableName}");
             }
 
-            return $"UPDATE {_formattedTable.TableName} SET {_formattedTable.SetClause} WHERE {idColumn} = @{idColumn}";
+            return $"UPDATE \"{_formattedTable.TableName}\" SET {_formattedTable.SetClause} WHERE {idColumn} = @{idColumn};";
         }
 
-        // Универсальное удаление по ID (CRUD - Delete) ❌
+        // Удаление по ID (CRUD - Delete) ❌
         public string GenerateDelete()
         {
             string? idColumn = _formattedTable.IdColumnName;
@@ -81,7 +81,7 @@ namespace HomeNetCore.Data.DBProviders.Sqlite
             {
                 throw new InvalidOperationException($"У таблицы {_formattedTable.TableName} нет одиночного ID для удаления");
             }
-            return $"DELETE FROM {_formattedTable.TableName} WHERE {idColumn} = @{idColumn}";
+            return $"DELETE FROM \"{_formattedTable.TableName}\" WHERE {idColumn} = @{idColumn};";
         }
 
         // Выборка по ID (CRUD - Read) 🔍
@@ -92,40 +92,55 @@ namespace HomeNetCore.Data.DBProviders.Sqlite
             {
                 throw new InvalidOperationException($"У таблицы {_formattedTable.TableName} нет одиночного ID для выборки");
             }
-            return $"SELECT * FROM {_formattedTable.TableName} WHERE {idColumn} = @{idColumn}";
+            return $"SELECT {_formattedTable.AllFields} FROM \"{_formattedTable.TableName}\" WHERE {idColumn} = @{idColumn};";
         }
 
-        // Универсальный выбор всех строк из таблицы 📊
+        // Выборка всех строк 📊
         public string GenerateSelectAll()
         {
             if (string.IsNullOrEmpty(_formattedTable.AllFields))
             {
                 throw new InvalidOperationException($"Некорректные поля для выборки из таблицы {_formattedTable.TableName}");
             }
-
-            // Твоё ночное исправление: оборачиваем имя таблицы в безопасные кавычки! ⚡
             return $"SELECT {_formattedTable.AllFields} FROM \"{_formattedTable.TableName}\"";
         }
 
-        // =================================================================
-        // 🔥 СПЕЦИАЛЬНЫЙ СЕКРЕТНЫЙ ОТСЕК ДЛЯ ТАБЛИЦ С EMAIL (Умный полиморфизм!)
-        // =================================================================
+        // Мощный Postgres Upsert (вставка или обновление при конфликте ключей) 🔄
+        public string GenerateUpsert()
+        {
+            string? idColumn = _formattedTable.IdColumnName;
+            if (string.IsNullOrEmpty(idColumn))
+            {
+                throw new InvalidOperationException($"Upsert невозможен: у таблицы {_formattedTable.TableName} нет явного ID");
+            }
 
-        // Поиск по Email (сработает для пользователей на автопилоте!)
+            return $@"INSERT INTO ""{_formattedTable.TableName}"" ({_formattedTable.InsertFields}) 
+                      VALUES ({_formattedTable.InsertParameters})
+                      ON CONFLICT ({idColumn}) 
+                      DO UPDATE SET {_formattedTable.SetClause}
+                      RETURNING {idColumn};";
+        }
+
+        // Поиск по Email 📧
         public string GenerateSelectByEmail()
         {
             string emailColumn = GetEmailColumnOrThrow();
-            return $"SELECT {_formattedTable.AllFields} FROM {_formattedTable.TableName} WHERE {emailColumn} = @{emailColumn}";
+            return $"SELECT {_formattedTable.AllFields} FROM \"{_formattedTable.TableName}\" WHERE {emailColumn} = @{emailColumn};";
         }
 
-        // Проверка существования Email
+        // Проверка существования Email 🔒
         public string GenerateEmailExists()
         {
             string emailColumn = GetEmailColumnOrThrow();
-            return $"SELECT COUNT(*) FROM {_formattedTable.TableName} WHERE {emailColumn} = @email";
+            // Передаем параметр @email как в SQLite для полной совместимости Dapper-шлейфов
+            return $"SELECT COUNT(*) FROM \"{_formattedTable.TableName}\" WHERE {emailColumn} = @email;";
         }
 
-        // Вспомогательный застрахованный метод, чтобы не дублировать код проверки ошибок 🛡️
+        public string GenerateSelectCount()
+        {
+            return $"SELECT COUNT(*) FROM \"{_formattedTable.TableName}\"";
+        }
+
         private string GetEmailColumnOrThrow()
         {
             if (_formattedTable.Columns == null)

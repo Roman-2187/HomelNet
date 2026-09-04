@@ -9,61 +9,62 @@
     Background="Transparent" 
     mc:Ignorable="d" 
     d:DesignHeight="500" d:DesignWidth="740">
-             
-        <UserControl.Resources>
-            <BooleanToVisibilityConverter
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter
                 x:Key="BooleanToVisibilityConverter"/>
-            <converter:InverseBooleanToVisibilityConverter 
+        <converter:InverseBooleanToVisibilityConverter 
                 x:Key="InverseBooleanVisibleConverter"/>
-            <converter:InverseBooleanConverter
+        <converter:InverseBooleanConverter
                 x:Key="InverseBooleanConverter"/>
-        </UserControl.Resources>
+    </UserControl.Resources>
 
     <ContentControl 
             Style="{StaticResource InnerBorderSolidColorStyle}"
-           
+           Background="#FF464545"
         >
         <Grid >
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="200"/>
                 <!-- Левая боковая панель кнопок -->
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition/>
                 <!-- Вся правая область под контент -->
             </Grid.ColumnDefinitions>
 
             <!-- ЛЕВАЯ ЧАСТЬ: Боковая панель кнопок управления -->
 
             <ContentControl 
-         Style="{StaticResource TripleBorderDarkBlueStyle}" Margin="5"> <ContentControl.Tag>
+         Style="{StaticResource TripleBorderDarkBlueStyle}" Margin="6,6,0,6">
+                <ContentControl.Tag>
 
-                        <CornerRadius>8</CornerRadius>
-                    </ContentControl.Tag>
-            <StackPanel 
-                    Grid.Column="0"  Margin="5" 
+                    <CornerRadius>8</CornerRadius>
+                </ContentControl.Tag>
+                <StackPanel 
+                    Grid.Column="0"  Margin="3" 
                     IsEnabled="{Binding MainVm.IsButtonsPanelEnabled,
                     Source={StaticResource VmLocator}}" Background="Transparent">
 
-                   
+
 
                     <Label 
                         Content="АДМИН ПАНЕЛЬ" FontWeight="Bold"
                         HorizontalAlignment="Center" Margin="0,5,0,15"
                         />
 
-                <!-- Кнопки профиля и регистрации теперь бьют СТРОГО через VmLocator!-->
+                    <!-- Кнопки профиля и регистрации теперь бьют СТРОГО через VmLocator!-->
 
-                <Button Content="User Profile" Margin="0,3"  
+                    <Button Content="User Profile" Margin="0,3"  
                         Command="{Binding MainVm.ToggleFormVisibilityCommand,
                         Source={StaticResource VmLocator}}"
                         CommandParameter="{Binding LoginVm,
                         Source={StaticResource VmLocator}}" />
 
-                <Button
+                    <Button
                         Content="Test list Users"
                         Margin="0,3" 
                         Command="{Binding SeedDataCommand}" />
 
-                <Button 
+                    <Button 
                         Content="Добавить юзера" Margin="0,3"                    
                         Command="{Binding MainVm.ToggleFormVisibilityCommand,
                         Source={StaticResource VmLocator}}"
@@ -74,33 +75,33 @@
                         Converter={StaticResource InverseBooleanConverter}}"
                     />
 
-                <!-- Кнопка вызова формы удаления юзеров -->
-                <Button 
+                    <!-- Кнопка вызова формы удаления юзеров -->
+                    <Button 
                         Content="Удалить юзера" Margin="0,3"
                         Command="{Binding MainVm.ToggleFormVisibilityCommand,
                         Source={StaticResource VmLocator}}" 
                         CommandParameter="{Binding DeleteUsersVm,
                         Source={StaticResource VmLocator}}" />
 
-                <!-- ВОЗВРАЩАЕМ НАШУ НАНО-КНОПКУ ТАБЛИЦЫ С БОЛЬШОЙ БУКВЫ! 👁️✨ -->
-                <Button 
+                    <!-- ВОЗВРАЩАЕМ НАШУ НАНО-КНОПКУ ТАБЛИЦЫ С БОЛЬШОЙ БУКВЫ! 👁️✨ -->
+                    <Button 
                         Margin="0,3"
                         Content="{Binding TableButtonText}"                    
                         Command="{Binding UserTableViewCommand}"
                     />
 
-                <Button
+                    <Button
                         Margin="0,3"
                         Command="{Binding ToggleLogWindowCommand}"     
                         Content="{Binding ToggleButtonText}"
                     />
-            </StackPanel>
+                </StackPanel>
 
             </ContentControl>
 
             <!-- ПРАВАЯ ЧАСТЬ: Динамическая рабочая зона  -->
             <Grid 
-                    Grid.Column="1" Margin="5">
+                    Grid.Column="1" Margin="5,5,5,5">
 
                 <!-- 1. ТАБЛИЦА ПОЛЬЗОВАТЕЛЕЙ -->
                 <Border 
@@ -134,11 +135,11 @@
                     <controls:DeleteUsers
                             DataContext="{Binding DeleteUsersVm,
                             Source={StaticResource VmLocator}}"
-                            Margin="10" 
+                            Margin="0.5" 
                         
                         Loaded="DeleteUsers_Loaded"/>
-                    </ContentControl>
-                
+                </ContentControl>
+
             </Grid>
         </Grid>
     </ContentControl>

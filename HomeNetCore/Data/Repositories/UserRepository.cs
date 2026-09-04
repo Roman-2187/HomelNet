@@ -1,14 +1,9 @@
 ﻿using Dapper;
 using HomeNetCore.Data.DBProviders.Sqlite;
-using HomeNetCore.Data.DBProviders.Sqlite.HomeNetCore.Data.DBProviders.Sqlite;
 using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Helpers.Exceptions;
 using HomeNetCore.Models;
-using System;
-using System.Collections.Generic;
 using System.Data.Common;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace HomeNetCore.Data.Repositories
 {
@@ -16,22 +11,22 @@ namespace HomeNetCore.Data.Repositories
     public class UserRepository : IUserRepository
     {
         private readonly DbConnection _connection;
-        private readonly SqliteSqlGenerator<UserEntity> _userSqlGenerator;
+        // БЫЛО: private readonly SqliteSqlGenerator<UserEntity> _sqlGen;
+        // СТАЛО:
+        private readonly ISqlGenerator<UserEntity> _sqlGen;
 
-        // БЫЛО: public UserRepository(DbConnection connection, ISqliteSqlGenerator<UserEntity> generator)
-        // СТАЛО:
-        // БЫЛО: public UserRepository(DbConnection connection, ISqLiteSqlGenerator<UserEntity> generator)
-        // СТАЛО:
-        public UserRepository(DbConnection connection, SqliteSqlGenerator<UserEntity> generator)
+        // В конструкторе меняем тип параметра:
+        public UserRepository(DbConnection connection, ISqlGenerator<UserEntity> sqlGen)
         {
-            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
-            _userSqlGenerator = generator ?? throw new ArgumentNullException(nameof(generator));
+            _connection = connection;
+            _sqlGen = sqlGen;
         }
+
 
 
         public async Task<bool> EmailExistsAsync(string? email)
         {
-            var sql = _userSqlGenerator.GenerateEmailExists();
+            var sql = _sqlGen.GenerateEmailExists();
             return await _connection.ExecuteScalarAsync<bool>(sql, new { email });
         }
 
@@ -39,7 +34,7 @@ namespace HomeNetCore.Data.Repositories
         {
             try
             {
-                var sql = _userSqlGenerator.GenerateInsert();
+                var sql = _sqlGen.GenerateInsert();
                 var newId = await _connection.ExecuteScalarAsync<int>(sql, user);
                 user.Id = newId;
                 return user;
@@ -52,7 +47,7 @@ namespace HomeNetCore.Data.Repositories
 
         public async Task DeleteByIdAsync(int id)
         {
-            var affectedRows = await _connection.ExecuteAsync(_userSqlGenerator.GenerateDelete(), new { id = id });
+            var affectedRows = await _connection.ExecuteAsync(_sqlGen.GenerateDelete(), new { id = id });
 
             if (affectedRows == 0)
             {
@@ -62,7 +57,7 @@ namespace HomeNetCore.Data.Repositories
 
         public async Task<List<UserEntity>> GetAllAsync()
         {
-            string sql = _userSqlGenerator.GenerateSelectAll();
+            string sql = _sqlGen.GenerateSelectAll();
 
             try
             {
@@ -80,17 +75,17 @@ namespace HomeNetCore.Data.Repositories
 
         public async Task<UserEntity?> GetByIdAsync(int id)
         {
-            return await _connection.QueryFirstOrDefaultAsync<UserEntity>(_userSqlGenerator.GenerateSelectById(), new { id = id });
+            return await _connection.QueryFirstOrDefaultAsync<UserEntity>(_sqlGen.GenerateSelectById(), new { id = id });
         }
 
         public async Task<UserEntity?> GetByEmailAsync(string email)
         {
-            return await _connection.QueryFirstOrDefaultAsync<UserEntity>(_userSqlGenerator.GenerateSelectByEmail(), new { email = email });
+            return await _connection.QueryFirstOrDefaultAsync<UserEntity>(_sqlGen.GenerateSelectByEmail(), new { email = email });
         }
 
         public async Task UpdateAsync(UserEntity user)
         {
-            await _connection.ExecuteAsync(_userSqlGenerator.GenerateUpdate(), user);
+            await _connection.ExecuteAsync(_sqlGen.GenerateUpdate(), user);
         }
     }
 }

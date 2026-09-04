@@ -301,6 +301,50 @@
             </Setter>
         </Style>
 
+        <Style x:Key="TripleBorderDeepBlueStyle" TargetType="ContentControl">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContentControl">
+                        <Grid>
+                            <!-- 👑 ВНЕШНИЙ БОРДЕР: Тянет CornerRadius напрямую из кармашка Tag! -->
+                            <Border CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" 
+                            BorderThickness="0.65" BorderBrush="DarkRed" Background="White">
+                                <Grid>
+
+                                    <!-- 🥈 СРЕДНИЙ БОРДЕР: Затемнён под новые глубокие тона для сохранения объёма -->
+                                    <Border BorderThickness="1.1" Margin="-0.15" BorderBrush="#FF3A6260" 
+                                    CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent},
+                                    Converter={StaticResource RadiusCalc}, ConverterParameter=-0.6}"/>
+
+                                    <!-- 🥉 ВНУТРЕННИЙ БОРДЕР: Аккуратная сталь, глубокий контрастный тон -->
+                                    <Border Margin="0.35" BorderThickness="0.6" BorderBrush="Black"
+                                    CornerRadius="{Binding Tag,
+                                    RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource RadiusCalc}, ConverterParameter=-0.65}">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                                <!-- 🌌 Верх: Углублённый, плотный сине-зелёный (был #FF65A2A0) -->
+                                                <GradientStop Color="#FF528785" Offset="0.0"/>
+
+                                                <!-- 🧊 НАЧАЛО РАЗМЫТИЯ: Приглушённый, более тёмный стальной блик (был #FF8AA9A9) -->
+                                                <GradientStop Color="#FF718E8E" Offset="0.4"/>
+
+                                                <!-- 🧊 КОНЕЦ РАЗМЫТИЯ: Блик плавно держится до 75% -->
+                                                <GradientStop Color="#FF718E8E" Offset="0.75"/>
+
+                                                <!-- 💎 Низ: Возвращение в глубокий базовый тон -->
+                                                <GradientStop Color="#FF528785" Offset="1.0"/>
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                        <ContentPresenter Margin="{TemplateBinding Padding}"/>
+                                    </Border>
+
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
 
         <Style TargetType="TextBox">

@@ -32,8 +32,7 @@ namespace WpfHomeNet.ViewModels
             _eventBus.Subscribe<WindowPositionChangedMessage>(PositionLogWindow);
             _eventBus.Subscribe<LogWindowVisibilityChangedMessage>(OnVisibilityCommandReceived);
 
-            // Активируем менеджер очереди один раз при создании ViewModel
-            _queueManager.SetReady();
+          
         }
 
         private void OnVisibilityCommandReceived(LogWindowVisibilityChangedMessage msg)
@@ -41,12 +40,19 @@ namespace WpfHomeNet.ViewModels
             if (msg.IsVisible)
             {
                 _logWindow.Show();
+
+                // Как только админ первый раз нажал кнопку "Показать" — будим наш канал! 🚀
+                // Благодаря защите (if (_isReady) return) повторные клики ничего не сломают.
+                _queueManager.SetReady();
             }
             else
             {
                 _logWindow.Hide();
             }
+
+            
         }
+
 
         private void PositionLogWindow(WindowPositionChangedMessage msg)
         {

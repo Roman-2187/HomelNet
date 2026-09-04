@@ -1,4 +1,5 @@
 ﻿using HomeNetCore.Enums;
+using HomeNetCore.Interfaces;
 using HomeNetCore.Models;
 using HomeNetCore.Models.InputUserData;
 using HomeNetCore.Services.UsersServices;
@@ -6,40 +7,40 @@ using HomeNetCore.Services.UsersServices;
 
     namespace HomeNetCore.Services
     {
-        public class RegisterService
+    public class RegisterService : IRegisterService
+    {
+        private readonly UserService _userService;
+        private readonly ValidationFormat _validateField = new();
+
+        public RegisterService(UserService userService)
         {
-            private readonly UserService _userService;
-            private readonly ValidationFormat _validateField = new();
+            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+        }
 
-            public RegisterService(UserService userService)
+        public async Task<(bool IsSuccess, List<ValidationResult> Messages, UserEntity? CreatedUser)> RegisterUserAsync(CreateUserInput userInput)
+        {
+            // 1. Пошаговая валидация
+            var validationResults = await ValidateInputAsync(userInput);
+            if (validationResults.Any(r => r.State == ValidationState.Error))
+                return (false, validationResults, null);
+
+            // 2. Создание и сохранение модели
+            try
             {
-                _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+                var user = CreateUserEntity(userInput);
+                await _userService.AddUserAsync(user);
+                return (true, validationResults, user);
             }
-
-            public async Task<(bool IsSuccess, List<ValidationResult> Messages, UserEntity? CreatedUser)> RegisterUserAsync(CreateUserInput userInput)
+            catch (Exception ex)
             {
-                // 1. Пошаговая валидация
-                var validationResults = await ValidateInputAsync(userInput);
-                if (validationResults.Any(r => r.State == ValidationState.Error))
-                    return (false, validationResults, null);
-
-                // 2. Создание и сохранение модели
-                try
+                var errorResult = new ValidationResult
                 {
-                    var user = CreateUserEntity(userInput);
-                    await _userService.AddUserAsync(user);
-                    return (true, validationResults, user);
-                }
-                catch (Exception ex)
-                {
-                    var errorResult = new ValidationResult
-                    {
-                        State = ValidationState.Error,
-                        Message = $"Ошибка сохранения пользователя: {ex.Message}"
-                    };
-                    return (false, new List<ValidationResult> { errorResult }, null);
-                }
+                    State = ValidationState.Error,
+                    Message = $"Ошибка сохранения пользователя: {ex.Message}"
+                };
+                return (false, new List<ValidationResult> { errorResult }, null);
             }
+        }
 
         private async Task<List<ValidationResult>> ValidateInputAsync(CreateUserInput input)
         {
@@ -82,47 +83,47 @@ using HomeNetCore.Services.UsersServices;
         }
 
         private UserEntity CreateUserEntity(CreateUserInput input) => new()
-            {
-                FirstName = input.UserName,
-                Email = input.Email,
-                Password = input.Password
-            };
+        {
+            FirstName = input.UserName,
+            Email = input.Email,
+            Password = input.Password
+        };
 
-            private ValidationResult ValidateUserName(string userName)
-            {
-                var res = new ValidationResult { Field = TypeField.NameType };
+        private ValidationResult ValidateUserName(string userName)
+        {
+            var res = new ValidationResult { Field = TypeField.NameType };
 
-                if (string.IsNullOrWhiteSpace(userName))
-                    return SetResult(res, ValidationState.Error, "Имя пользователя не может быть пустым");
+            if (string.IsNullOrWhiteSpace(userName))
+                return SetResult(res, ValidationState.Error, "Имя пользователя не может быть пустым");
 
-                return !_validateField.ValidateUserNameFormat(userName)
-                    ? SetResult(res, ValidationState.Error, "Допустимо минимум 3 буквы подряд без пробелов")
-                    : SetResult(res, ValidationState.Success, "Имя пользователя принято");
-            }
+            return !_validateField.ValidateUserNameFormat(userName)
+                ? SetResult(res, ValidationState.Error, "Допустимо минимум 3 буквы подряд без пробелов")
+                : SetResult(res, ValidationState.Success, "Имя пользователя принято");
+        }
 
-            private ValidationResult ValidatePassword(string password)
-            {
-                var res = new ValidationResult { Field = TypeField.PasswordType };
+        private ValidationResult ValidatePassword(string password)
+        {
+            var res = new ValidationResult { Field = TypeField.PasswordType };
 
-                if (string.IsNullOrWhiteSpace(password))
-                    return SetResult(res, ValidationState.Error, "Пароль не может быть пустым");
+            if (string.IsNullOrWhiteSpace(password))
+                return SetResult(res, ValidationState.Error, "Пароль не может быть пустым");
 
-                return !_validateField.ValidatePasswordFormat(password)
-                    ? SetResult(res, ValidationState.Error, "Пароль должен содержать минимум 8 символов, буквы и цифры")
-                    : SetResult(res, ValidationState.Success, "Пароль принято");
-            }
+            return !_validateField.ValidatePasswordFormat(password)
+                ? SetResult(res, ValidationState.Error, "Пароль должен содержать минимум 8 символов, буквы и цифры")
+                : SetResult(res, ValidationState.Success, "Пароль принято");
+        }
 
-            private ValidationResult ValidateConfirmedPassword(string password, string confirmedPassword)
-            {
-                var res = new ValidationResult { Field = TypeField.ConfirmedPasswordType };
+        private ValidationResult ValidateConfirmedPassword(string password, string confirmedPassword)
+        {
+            var res = new ValidationResult { Field = TypeField.ConfirmedPasswordType };
 
-                if (string.IsNullOrWhiteSpace(confirmedPassword))
-                    return SetResult(res, ValidationState.Error, "Пароль не может быть пустым");
+            if (string.IsNullOrWhiteSpace(confirmedPassword))
+                return SetResult(res, ValidationState.Error, "Пароль не может быть пустым");
 
-                return confirmedPassword != password
-                    ? SetResult(res, ValidationState.Error, "пароли не совпадают")
-                    : SetResult(res, ValidationState.Success, "пароли совпадают");
-            }
+            return confirmedPassword != password
+                ? SetResult(res, ValidationState.Error, "пароли не совпадают")
+                : SetResult(res, ValidationState.Success, "пароли совпадают");
+        }
 
         private async Task<ValidationResult> ValidateEmailAsync(string email)
         {
@@ -143,11 +144,11 @@ using HomeNetCore.Services.UsersServices;
 
 
         private ValidationResult SetResult(ValidationResult res, ValidationState state, string message)
-            {
-                res.State = state;
-                res.Message = message;
-                return res;
-            }
+        {
+            res.State = state;
+            res.Message = message;
+            return res;
         }
     }
+}
 

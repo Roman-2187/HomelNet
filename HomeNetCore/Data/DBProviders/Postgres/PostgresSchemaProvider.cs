@@ -1,6 +1,7 @@
 ﻿using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Data.Schemes;
 using HomeNetCore.Enums;
+using HomeNetCore.Helpers.Exceptions; // Для красивых кастомных исключений ядра
 using Npgsql;
 using NpgsqlTypes;
 using System;
@@ -15,8 +16,12 @@ namespace HomeNetCore.Data.PostgreClasses
     {
         private readonly ISchemaSqlInitializer _generator;
         private readonly DbConnection _requiredConnection;
+        private readonly ILogger _logger; // Подключаем наш логгер 🚀
 
-        public PostgresSchemaProvider(ISchemaSqlInitializer generator, DbConnection connection)
+        public PostgresSchemaProvider(
+            ISchemaSqlInitializer generator,
+            DbConnection connection,
+            ILogger logger) // Принимаем логгер через DI
         {
             if (connection == null)
                 throw new ArgumentNullException(nameof(connection));
@@ -26,99 +31,99 @@ namespace HomeNetCore.Data.PostgreClasses
 
             _generator = generator ?? throw new ArgumentNullException(nameof(generator));
             _requiredConnection = connection;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            if (_requiredConnection.State != ConnectionState.Open)
-                throw new InvalidOperationException("Соединение с PostgreSQL должно быть открыто!");
+            //if (_requiredConnection.State != ConnectionState.Open)
+            //    throw new InvalidOperationException("Соединение с PostgreSQL должно быть открыто!");
         }
 
         public async Task<TableSchema> GetActualTableSchemaAsync(string? tableName)
         {
-            // 🛡️ Защита от Null: если имя таблицы не передано, падаем сразу
             if (string.IsNullOrWhiteSpace(tableName))
                 throw new ArgumentException("Имя таблицы не может быть пустым.", nameof(tableName));
 
-            var columns = new List<ColumnSchema>();
+            // Списков для временного хранения сырых данных из БД до закрытия ридера
+            var rawColumnsData = new List<(string Name, string DataType, int? Length, bool IsNullable, string KeyType, string ExtraInfo)>();
 
-            using var command = _requiredConnection.CreateCommand();
-            command.CommandText = _generator.GenerateGetTableStructureSql(tableName);
-
-            if (command is NpgsqlCommand npgsqlCmd)
+            try
             {
-                npgsqlCmd.Parameters.Add("@tableName", NpgsqlDbType.Text).Value = tableName;
-            }
-
-            using var reader = await command.ExecuteReaderAsync();
-
-            while (await reader.ReadAsync())
-            {
-                // Безопасное чтение строк с подстраховкой на случай DBNull
-                string columnName = reader.IsDBNull(0) ? string.Empty : reader.GetString(0);
-                string dbDataType = reader.IsDBNull(1) ? string.Empty : reader.GetString(1);
-
-                // В Postgres IsNullable возвращает 'YES' или 'NO'
-                string isNullableStr = reader.IsDBNull(3) ? "NO" : reader.GetString(3);
-
-                // Корректно вытаскиваем информацию о ключах из ридера СУБД
-                // Заметка: в Postgres структура может возвращать другие маркеры, подстрахуемся
-                string keyType = reader.IsDBNull(4) ? string.Empty : reader.GetString(4);
-                string extraInfo = reader.IsDBNull(5) ? string.Empty : reader.GetString(5);
-
-                columns.Add(new ColumnSchema
+                using (var command = _requiredConnection.CreateCommand())
                 {
-                    Name = columnName,
-                    OriginalName = columnName, // Синхронизируем, чтобы маппер не потерял связь
-                    Type = MapType(dbDataType),
-                    Length = reader.IsDBNull(2) ? null : reader.GetInt32(2),
-                    IsNullable = isNullableStr.Equals("YES", StringComparison.OrdinalIgnoreCase),
-                    IsPrimaryKey = keyType.Equals("PRI", StringComparison.OrdinalIgnoreCase) || keyType.Contains("primary"),
-                    IsAutoIncrement = extraInfo.Contains("nextval") || extraInfo.Equals("auto_increment", StringComparison.OrdinalIgnoreCase)
-                });
-            }
+                    command.CommandText = _generator.GenerateGetTableStructureSql(tableName);
 
-            return new TableSchema
+                    if (command is NpgsqlCommand npgsqlCmd)
+                    {
+                        npgsqlCmd.Parameters.Add("@tableName", NpgsqlTypes.NpgsqlDbType.Text).Value = tableName;
+                    }
+
+                    // БЫСТРЫЙ ЧИТАТЕЛЬ: Только забираем данные, никакого лишнего кода внутри!
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            rawColumnsData.Add((
+                                Name: reader.IsDBNull(0) ? string.Empty : reader.GetString(0),
+                                DataType: reader.IsDBNull(1) ? string.Empty : reader.GetString(1),
+                                Length: reader.IsDBNull(2) ? null : reader.GetInt32(2),
+                                IsNullable: reader.IsDBNull(3) ? false : reader.GetString(3).Equals("YES", StringComparison.OrdinalIgnoreCase),
+                                KeyType: reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
+                                ExtraInfo: reader.IsDBNull(5) ? string.Empty : reader.GetString(5)
+                            ));
+                        }
+                    } // 🔐 Ридер гарантированно ЗАКРЫЛСЯ здесь. Подключение полностью свободно!
+                }
+
+                // Теперь спокойно, в свободной оперативной памяти, собираем наши умные модели
+                var columns = new List<ColumnSchema>();
+                foreach (var row in rawColumnsData)
+                {
+                    columns.Add(new ColumnSchema
+                    {
+                        Name = row.Name,
+                        OriginalName = row.Name,
+                        Type = MapType(row.DataType),
+                        Length = row.Length,
+                        IsNullable = row.IsNullable,
+                        IsPrimaryKey = row.KeyType.Equals("primary", StringComparison.OrdinalIgnoreCase) || row.KeyType.Contains("primary"),
+                        IsAutoIncrement = row.ExtraInfo.Contains("nextval") || row.ExtraInfo.Equals("auto_increment", StringComparison.OrdinalIgnoreCase)
+                    });
+                }
+
+                _logger.LogDebug($"Получено {columns.Count} столбцов для таблицы {tableName} из PostgreSQL");
+
+                var getSchema = new TableSchema
+                {
+                    TableName = tableName,
+                    Columns = columns
+                };
+
+                // Запускаем расчет SQL-костей Dapper на свободном подключении
+                getSchema.Initialize();
+
+                _logger.LogDebug($"Получено имен колонок таблицы {tableName} : {getSchema.columnNames}");
+
+                return getSchema;
+            }
+            catch (Exception ex)
             {
-                TableName = tableName,
-                Columns = columns
-            };
+                throw new HomeNetCore.Helpers.Exceptions.SchemaProviderException(
+                    $"Ошибка при получении схемы для таблицы {tableName} в PostgreSQL: {ex.Message}",
+                    ex);
+            }
         }
+
 
         public ColumnType MapType(string? dbType)
         {
-            if (dbType is null)
-            {
-                return ColumnType.Unknown;
-            }
+            if (dbType is null) return ColumnType.Unknown;
 
             var type = dbType.ToLower();
             return type switch
             {
-                // Числовые типы
-                "integer" => ColumnType.Integer,
-                "int4" => ColumnType.Integer,
-                "smallint" => ColumnType.Integer,
-                "int2" => ColumnType.Integer,
-                "bigint" => ColumnType.Integer,
-                "int8" => ColumnType.Integer,
-                "serial" => ColumnType.Integer,
-                "bigserial" => ColumnType.Integer,
-
-                // Строковые типы
-                "varchar" => ColumnType.Varchar,
-                "character varying" => ColumnType.Varchar,
-                "text" => ColumnType.Varchar,
-                "char" => ColumnType.Varchar,
-                "character" => ColumnType.Varchar,
-
-                // Дата и время
-                "timestamp" => ColumnType.DateTime,
-                "timestamp with time zone" => ColumnType.DateTime,
-                "timestamp without time zone" => ColumnType.DateTime,
-                "date" => ColumnType.DateTime,
-                "time" => ColumnType.DateTime,
-
-                // Логический тип
-                "boolean" => ColumnType.Boolean,
-                "bool" => ColumnType.Boolean,
+                "integer" or "int4" or "smallint" or "int2" or "bigint" or "int8" or "serial" or "bigserial" => ColumnType.Integer,
+                "varchar" or "character varying" or "text" or "char" or "character" => ColumnType.Varchar,
+                "timestamp" or "timestamp with time zone" or "timestamp without time zone" or "date" or "time" => ColumnType.DateTime,
+                "boolean" or "bool" => ColumnType.Boolean,
                 _ => ColumnType.Unknown
             };
         }

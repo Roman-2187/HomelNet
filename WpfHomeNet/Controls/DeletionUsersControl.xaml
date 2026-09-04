@@ -6,10 +6,12 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
     xmlns:local="clr-namespace:WpfHomeNet.Controls"
     mc:Ignorable="d" 
-    d:DesignHeight="400" d:DesignWidth="800" Foreground="Transparent" Background="Transparent">
-   
+    d:DesignHeight="400" d:DesignWidth="800" >
 
-        <Grid Margin="10" Background="Transparent">
+    <ContentControl  Style="{StaticResource InnerBorderSolidColorStyle}" Background="#FF65A2A0">
+       
+
+            <Grid Margin="10" >
             <!-- Добавили четвертую строку специально для нижних кнопок -->
             <Grid.RowDefinitions>
                 <RowDefinition Height="25"/>
@@ -21,7 +23,7 @@
             <!-- Заголовок -->
             <TextBlock
                 Text="{Binding StatusMessage}"
-                 FontWeight="Bold"
+                 FontWeight="Bold" 
                 Margin="20,0,20,0" VerticalAlignment="Center"/>
 
 
@@ -30,14 +32,15 @@
                 Grid.Row="1" Margin="5,10,5,5"
                 Orientation="Horizontal" >
                 <!-- Биндинг ID пользователя на лету -->
-                <TextBox
+                <TextBox BorderBrush="#FF211E19"
+                         BorderThickness="0.5"
                     Width="400" Height="35"
                     VerticalContentAlignment="Center"
                     Text="{Binding TargetUserId,
                     UpdateSourceTrigger=PropertyChanged}"
                    
                     Foreground="DarkSlateGray"
-                    Padding="5,0,0,0"/>
+                    Padding="5,0,0,0" Background="#66B3CCB3"/>
 
                 <!-- Биндинг команды поиска -->
                 <Button
@@ -49,7 +52,7 @@
             </StackPanel>
 
             <!-- Список найденных пользователей -->
-            <Border
+        <Border Background="#66ABC8AB"
                 Grid.Row="2"               
                 BorderThickness="0.3"
                 BorderBrush="Black"
@@ -58,7 +61,7 @@
                 Margin="10" >
                 <ListBox
                     Style="{StaticResource RoundedListBox}"    
-                    DisplayMemberPath="DisplayInfo" Background="Transparent"
+                    DisplayMemberPath="DisplayInfo" Background="#66ABC8AB"
                    
                     ItemsSource="{Binding UsersTable.Users, Source={StaticResource VmLocator}}"
 
@@ -110,7 +113,7 @@
                    Margin="0,0,10,0"
                    Command="{Binding DeleteCommand}"
                    IsEnabled="{Binding CanDelete}"
-                   Background="#00DDDDDD" />
+                   Background="Transparent" />
 
                 <!-- Биндинг команды отмены (схлопывания формы) -->
                 <Button 
@@ -120,7 +123,9 @@
                    Command="{Binding CancelCommand}"
                    Background="Transparent" />
             </StackPanel>
-        </Grid>
+        </Grid> 
+    
+    </ContentControl>
     
 </UserControl>
 

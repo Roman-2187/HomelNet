@@ -77,10 +77,11 @@
                     Content="×" Width="Auto"/>
 
             <!-- АДМИНКА: Теперь привязка жестко зафиксирована на окне -->
-            <controls:AdminMenu
+            <controls:AdminMenu   d:Visibility="Collapsed"
                 Grid.Row="1" Grid.RowSpan="4"
                 Grid.Column="0" Grid.ColumnSpan="6"
                 Panel.ZIndex="98" 
+               
                 HorizontalAlignment="Stretch" 
                 VerticalAlignment="Stretch" 
                 Visibility="{Binding DataContext.AdminMenuVisibility, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -112,7 +113,8 @@
                 <Button MinWidth="100"   
                         Command="{Binding ToggleAdminMenuCommand}"                      
                         Content="🛠️ Админка"
-                        IsEnabled="{Binding MainVm.IsButtonsPanelEnabled, Source={StaticResource VmLocator}}" />
+                        IsEnabled="{Binding MainVm.IsButtonsPanelEnabled, Source={StaticResource VmLocator}}"
+                       />
 
                 <!-- 📦 ВНУТРЕННИЙ Контейнер больше НЕ имеет никаких стилей и блокировок! -->
                 <StackPanel Orientation="Horizontal" Margin="10,0,0,0">
@@ -164,25 +166,25 @@
 
             <!-- ФОРМА РЕГИСТРАЦИИ -->
             <controls:RegistrationViewControl 
-                Grid.Row="1" Grid.Column="1" Margin="11,6,6,6"
+                Grid.Row="1" Grid.Column="1" Margin="65,6,6,6"
                 Grid.ColumnSpan="5" Grid.RowSpan="4" 
                 Panel.ZIndex="99" 
                 DataContext="{Binding RegistrationVm, Source={StaticResource VmLocator}}" 
                 Visibility="{Binding ControlVisibility}"
-                d:Visibility="Hidden" />
+                 d:Visibility="Hidden"/>
 
             <!-- ФОРМА ЛОГИНА -->
             <controls:LoginViewControl
-                Grid.Row="1" Grid.Column="1"  Margin="11,6,6,6"
+                Grid.Row="1" Grid.Column="1"  Margin="65,6,6,6"
                 Grid.ColumnSpan="5" Grid.RowSpan="4"
                 Panel.ZIndex="99"
                 DataContext="{Binding LoginVm, Source={StaticResource VmLocator}}" 
                 Visibility="{Binding ControlVisibility}"
-                d:Visibility="Hidden" />
+                 />
 
             <!-- 👤 МАСКА АВТОРИЗОВАННОГО ПОЛЬЗОВАТЕЛЯ -->
             <!-- 🔥 ИСПРАВЛЕНО: Ищем видимость строго в контексте главного окна! -->
-            <controls:UserDashboardControl 
+            <controls:UserDashboardControl  d:Visibility="Collapsed"
                 Grid.Row="1" Grid.RowSpan="4"
                 Grid.Column="0" Grid.ColumnSpan="6"
                 Panel.ZIndex="50"

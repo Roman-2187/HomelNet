@@ -17,6 +17,10 @@ namespace HomeSocialNetwork
         #region Поля и свойства 
         private static readonly string dbPath = DatabasePathHelper.GetDatabasePath("home_net.db");
         private readonly string _connectionString = $"Data Source={dbPath}";
+
+        private readonly string _postgresConnectionString = "Server=127.0.0.1:5432;Database=home_net_db;User Id=postgres;Password=05011987;";
+
+
         private MainWindow? _mainWindow;
         private IServiceProvider? _serviceProvider;
 
@@ -42,26 +46,45 @@ namespace HomeSocialNetwork
                 // 1. Сначала обязательно будим логгер, чтобы окно логов открылось!
                 var kickLogger = _serviceProvider.GetRequiredService<LogQueueManager>();
 
-                // 2. Инициализируем ядро базы данных
-                var dbCore = _serviceProvider.GetRequiredService<DbInfrastructureCore>();
-                dbCore.InitializeAsync(DatabaseType.SQLite).GetAwaiter().GetResult();
+                // 2. 🔥 ХРОНОЛОГИЧЕСКИЙ ПОРЯДОК: Запускаем строго последовательную цепочку в фоне! 🚀
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        var dbCore = _serviceProvider.GetRequiredService<DbInfrastructureCore>();
 
-                // 3. 🔥 ВОЗВРАЩАЕМ ПИНОК ДЛЯ ТАБЛИЦЫ И ОКОН! 
-                // Теперь они синглтоны, поэтому вызов GetRequiredService просто ОДИН раз создаст их в памяти.
-                // Это запустит их внутренние подписки и стартовые потоки загрузки.
-                _serviceProvider.GetRequiredService<UsersTableViewModel>();
-                _serviceProvider.GetRequiredService<UsersTableViewModel>();
-                _serviceProvider.GetRequiredService<UserDashboardViewModel>(); // 🔥 ПИНАЕМ ЗДЕСЬ!
-                _serviceProvider.GetRequiredService<LogViewModel>();
+                        // ШАГ А: Сначала ЖДЁМ пока Postgres полностью проверит и создаст таблицы
+                        // Обратите внимание на написание DatabaseType.PostgreSQL (без заглавной S в середине)
+                        await dbCore.InitializeAsync(DatabaseType.PostGreSQL);
 
-                _serviceProvider.GetRequiredService<LogViewModel>();
-                _serviceProvider.GetRequiredService<AdminMenuViewModel>();
-                _serviceProvider.GetRequiredService<RegistrationViewModel>();
-                _serviceProvider.GetRequiredService<AuthenticationViewModel>();
+                        Debug.WriteLine("База данных PostgreSQL успешно инициализирована.");
 
-                // 4. Показываем главное окно
-                _mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
-                _mainWindow.Show();
+                        // ШАГ Б: Только КОГДА БАЗА НА 100% ГОТОВА — возвращаемся в UI-поток и пинаем вью-модели! 💎
+                        await Current.Dispatcher.InvokeAsync(() =>
+                        {
+                            // Теперь в core.ListUsersService гарантированно НЕ БУДЕТ null!
+                            _serviceProvider.GetRequiredService<UsersTableViewModel>();
+                            _serviceProvider.GetRequiredService<UserDashboardViewModel>();
+                            _serviceProvider.GetRequiredService<LogViewModel>();
+                            _serviceProvider.GetRequiredService<AdminMenuViewModel>();
+                            _serviceProvider.GetRequiredService<RegistrationViewModel>();
+                            _serviceProvider.GetRequiredService<AuthenticationViewModel>();
+
+                            // ШАГ В: Спокойно открываем и показываем главное окно мессенджера
+                            _mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+                            _mainWindow.Show();
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        // Если база упала — мы увидим НАСТОЯЩИЙ ex.ToString() со всей подноготной! 🕵️‍♂️
+                        await Current.Dispatcher.InvokeAsync(() =>
+                        {
+                            MessageBox.Show($"Ошибка инициализации БД:\n\n{ex.ToString()}", "Критический сбой", MessageBoxButton.OK, MessageBoxImage.Error);
+                            Shutdown();
+                        });
+                    }
+                });
             }
             catch (Exception ex)
             {
@@ -69,6 +92,7 @@ namespace HomeSocialNetwork
                 Shutdown();
             }
         }
+
 
 
         private void ConfigureServices(IServiceCollection services)
@@ -100,7 +124,7 @@ namespace HomeSocialNetwork
 
             // 2. Регистрируем Ядро СУБД (Singleton)
             services.AddSingleton(provider =>
-                new DbInfrastructureCore(_connectionString, provider.GetRequiredService<ILogger>()));
+                new DbInfrastructureCore(_postgresConnectionString, provider.GetRequiredService<ILogger>()));
 
             // 3. Регистрация Вьюмоделей (Все Singleton — никаких дублей!)
             services.AddSingleton(provider =>

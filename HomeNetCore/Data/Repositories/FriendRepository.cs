@@ -3,19 +3,18 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading.Tasks;
 using Dapper;
-using HomeNetCore.Data.DBProviders.Sqlite;
-using HomeNetCore.Data.DBProviders.Sqlite.HomeNetCore.Data.DBProviders.Sqlite;
 using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Models;
 
 namespace HomeNetCore.Data.Repositories
 {
-    public class FriendRepository
+    // Подключаем контракт IFriendRepository! 🔌
+    public class FriendRepository : IFriendRepository
     {
         private readonly DbConnection _connection;
-        private readonly ISqLiteSqlGenerator<FriendEntity> _sqlGen;
+        private readonly ISqlGenerator<FriendEntity> _sqlGen;
 
-        public FriendRepository(DbConnection connection, ISqLiteSqlGenerator<FriendEntity> sqlGen)
+        public FriendRepository(DbConnection connection, ISqlGenerator<FriendEntity> sqlGen)
         {
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
             _sqlGen = sqlGen ?? throw new ArgumentNullException(nameof(sqlGen));
@@ -29,10 +28,18 @@ namespace HomeNetCore.Data.Repositories
             return rowsAffected > 0;
         }
 
+        // ❌ Удалить связь/заявку из таблицы friends по её уникальному ID
+        public async Task<bool> RemoveFriendByIdAsync(int id)
+        {
+            // Дженерик-генератор сам соберёт DELETE FROM friends WHERE id = @id под нужную СУБД! 🚀
+            string sql = _sqlGen.GenerateDelete();
+            int rowsAffected = await _connection.ExecuteAsync(sql, new { Id = id });
+            return rowsAffected > 0;
+        }
+
         // 👥 Вытащить профили всех юзеров, которые находятся в друзьях у конкретного человека
         public async Task<IEnumerable<UserEntity>> GetFriendsForUserAsync(int userId)
         {
-            // По ID друга из связующей таблицы friends лезем в таблицу users за именами!
             string sql = @"SELECT u.* FROM users u
                            INNER JOIN friends f ON u.id = f.friend_id 
                            WHERE f.user_id = @UserId;";
@@ -41,4 +48,3 @@ namespace HomeNetCore.Data.Repositories
         }
     }
 }
-
