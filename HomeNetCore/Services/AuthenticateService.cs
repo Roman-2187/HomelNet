@@ -2,7 +2,7 @@
 using HomeNetCore.Models;
 using HomeNetCore.Models.Validation;
 using HomeNetCore.Services.UsersServices;
-
+using System.Net.NetworkInformation; // 🔥 ОБЯЗАТЕЛЬНО ДОБАВЬ ЭТОТ ЮЗИНГ НАВЕРХУ ФАЙЛА!
 
 
 

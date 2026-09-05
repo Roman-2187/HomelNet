@@ -1,41 +1,43 @@
 ﻿using Dapper;
-using HomeNetCore.Data.DBProviders.Sqlite;
 using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Helpers.Exceptions;
 using HomeNetCore.Models;
+using System;
+using System.Collections.Generic;
 using System.Data.Common;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace HomeNetCore.Data.Repositories
 {
-    // 🔥 Теперь репозиторий гордо наследует дженерик-интерфейс и принимает SqliteSqlGenerator<UserEntity>!
     public class UserRepository : IUserRepository
     {
-        private readonly DbConnection _connection;
-        // БЫЛО: private readonly SqliteSqlGenerator<UserEntity> _sqlGen;
-        // СТАЛО:
-        private readonly ISqlGenerator<UserEntity> _sqlGen;
+        // 🔥 Храним ссылку на динамический контейнер контекста вместо жёстких ссылок!
+        private readonly DbContextContainer _context;
 
-        // В конструкторе меняем тип параметра:
-        public UserRepository(DbConnection connection, ISqlGenerator<UserEntity> sqlGen)
+        // В конструкторе принимаем только контекст
+        public UserRepository(DbContextContainer context)
         {
-            _connection = connection;
-            _sqlGen = sqlGen;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
+        //public async Task<bool> EmailExistsAsync(string? email)
+        //{
+        //    // На лету вытаскиваем актуальный шлейф и генератор 🔌⚡
+        //    DbConnection connection = _context.Connection;
+        //    var sql = _context.UserSqlGen.GenerateEmailExists();
 
-
-        public async Task<bool> EmailExistsAsync(string? email)
-        {
-            var sql = _sqlGen.GenerateEmailExists();
-            return await _connection.ExecuteScalarAsync<bool>(sql, new { email });
-        }
+        //    return await connection.ExecuteScalarAsync<bool>(sql, new { email });
+        //}
 
         public async Task<UserEntity> InsertUserAsync(UserEntity user)
         {
             try
             {
-                var sql = _sqlGen.GenerateInsert();
-                var newId = await _connection.ExecuteScalarAsync<int>(sql, user);
+                DbConnection connection = _context.Connection;
+                var sql = _context.UserSqlGen.GenerateInsert();
+
+                var newId = await connection.ExecuteScalarAsync<int>(sql, user);
                 user.Id = newId;
                 return user;
             }
@@ -47,7 +49,10 @@ namespace HomeNetCore.Data.Repositories
 
         public async Task DeleteByIdAsync(int id)
         {
-            var affectedRows = await _connection.ExecuteAsync(_sqlGen.GenerateDelete(), new { id = id });
+            DbConnection connection = _context.Connection;
+            var sql = _context.UserSqlGen.GenerateDelete();
+
+            var affectedRows = await connection.ExecuteAsync(sql, new { id = id });
 
             if (affectedRows == 0)
             {
@@ -57,14 +62,12 @@ namespace HomeNetCore.Data.Repositories
 
         public async Task<List<UserEntity>> GetAllAsync()
         {
-            string sql = _sqlGen.GenerateSelectAll();
+            DbConnection connection = _context.Connection;
+            string sql = _context.UserSqlGen.GenerateSelectAll();
 
             try
             {
-                // Выполняем запрос через Dapper
-                var users = (await _connection.QueryAsync<UserEntity>(sql)).ToList();
-
-                // Проверяем результат
+                var users = (await connection.QueryAsync<UserEntity>(sql)).ToList();
                 return users ?? throw new InvalidOperationException("Не удалось получить данные из БД");
             }
             catch (Exception ex)
@@ -75,17 +78,52 @@ namespace HomeNetCore.Data.Repositories
 
         public async Task<UserEntity?> GetByIdAsync(int id)
         {
-            return await _connection.QueryFirstOrDefaultAsync<UserEntity>(_sqlGen.GenerateSelectById(), new { id = id });
+            DbConnection connection = _context.Connection;
+            string sql = _context.UserSqlGen.GenerateSelectById();
+
+            return await connection.QueryFirstOrDefaultAsync<UserEntity>(sql, new { id = id });
         }
 
         public async Task<UserEntity?> GetByEmailAsync(string email)
         {
-            return await _connection.QueryFirstOrDefaultAsync<UserEntity>(_sqlGen.GenerateSelectByEmail(), new { email = email });
+            DbConnection connection = _context.Connection;
+            string sql = _context.UserSqlGen.GenerateSelectByEmail();
+
+            return await connection.QueryFirstOrDefaultAsync<UserEntity>(sql, new { email = email });
         }
 
         public async Task UpdateAsync(UserEntity user)
         {
-            await _connection.ExecuteAsync(_sqlGen.GenerateUpdate(), user);
+            DbConnection connection = _context.Connection;
+            string sql = _context.UserSqlGen.GenerateUpdate();
+
+            await connection.ExecuteAsync(sql, user);
         }
+
+
+        public async Task<bool> EmailExistsAsync(string? email)
+        {
+            try
+            {
+                // 1. Пробуем долбиться в текущую выбранную базу (Postgres)
+                DbConnection connection = _context.Connection;
+                var sql = _context.UserSqlGen.GenerateEmailExists();
+                return await connection.ExecuteScalarAsync<bool>(sql, new { email });
+            }
+            catch (Exception ex) when (ex.Message.Contains("stream") || ex.Message.Contains("connection") || ex.InnerException?.Message.Contains("stream") == true)
+            {
+                // 🔥 МАГИЯ: Ловим падение сервера, пишем лог и переключаем рельсы на лету!
+                System.Diagnostics.Debug.WriteLine("⚠️ Сервер Postgres не ответил! Автоматический прыжок на SQLite...");
+
+                // Переключаем весь контекст приложения на локальный файл!
+                await _context.SwitchDatabaseAsync(HomeNetCore.Enums.DatabaseType.SQLite);
+
+                // 2. Повторяем этот же запрос еще раз, но уже в живую SQLite! 🔌⚡
+                DbConnection connection = _context.Connection;
+                var sql = _context.UserSqlGen.GenerateEmailExists();
+                return await connection.ExecuteScalarAsync<bool>(sql, new { email });
+            }
+        }
+
     }
 }
