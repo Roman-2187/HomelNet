@@ -60,7 +60,7 @@ namespace HomeSocialNetwork.Core
             // 🚂 АВТОПИЛОТ: НАКАТЫВАЕМ И СВЕРЯЕМ ВСЕ ТАБЛИЦЫ СРАЗУ
             // =================================================================
             // Наш новый DBInitializer сам пойдет в SchemaRegistry и все проверит за один вызов!
-            var dbInitializer = new DBInitializer(_connection, schemaProvider, schemaAdapter, sqlInit, _logger);
+            var dbInitializer = new DBInitializer(_connection, schemaProvider, schemaAdapter, sqlInit,sqlInit ,_logger);
             await dbInitializer.InitializeAsync();
 
             // =================================================================

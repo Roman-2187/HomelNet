@@ -57,21 +57,14 @@ namespace WpfHomeNet.Data.Schemes.CheckTableBd
         /// </summary>
         private bool AreColumnsEqual(ColumnSchema expected, ColumnSchema actual)
         {
-            // 1. Проверяем самые критичные вещи, которые должны совпадать железно
+            // 1. Железная проверка имени и первичного ключа
             if (!string.Equals(expected.Name, actual.Name, StringComparison.OrdinalIgnoreCase) ||
                 expected.IsPrimaryKey != actual.IsPrimaryKey)
             {
                 return false;
             }
 
-            // 2. Смягчаем проверку Nullable (SQLite иногда искажает nullability для внешних ключей)
-            if (expected.IsNullable != actual.IsNullable)
-            {
-                // Если это не критично для твоего приложения, можно оставить или залогировать, 
-                // но для полной тишины в логах лучше пропустить, если типы совпадут
-            }
-
-            // 3. Сверяем типы данных с учетом специфики SQLite
+            // 2. Сверяем типы данных с учетом специфики SQLite И PostgreSQL! 🐘🔌
             bool typesAreEqual = false;
             if (expected.Type == actual.Type)
             {
@@ -82,26 +75,26 @@ namespace WpfHomeNet.Data.Schemes.CheckTableBd
                 string expType = expected.Type.ToString().ToLower();
                 string actType = actual.Type.ToString().ToLower();
 
-                // Разрешаем совместимость Boolean и Integer
+                // Совместимость Boolean и Integer (актуально для SQLite)
                 if ((expType == "boolean" && actType == "integer") || (expType == "integer" && actType == "boolean"))
                     typesAreEqual = true;
 
-                // Разрешаем совместимость различных текстовых типов (Varchar, Text, String)
-                if ((expType == "varchar" || expType == "text" || expType == "string") &&
-                    (actType == "varchar" || actType == "text" || actType == "string"))
+                // Совместимость текстовых типов (Varchar, Text, String, Character Varying)
+                if ((expType == "varchar" || expType == "text" || expType == "string" || expType == "character varying") &&
+                    (actType == "varchar" || actType == "text" || actType == "string" || actType == "character varying"))
+                    typesAreEqual = true;
+
+                // Совместимость типов даты-времени (DateTime, Timestamp)
+                if ((expType == "datetime" || expType == "timestamp") && (actType == "datetime" || actType == "timestamp"))
                     typesAreEqual = true;
             }
 
-            // Если типы не совпали — это точно ошибка структуры
             if (!typesAreEqual) return false;
 
-            // 4. Проверяем дефолтные значения ТОЛЬКО если типы в порядке
-            if (!AreDefaultValuesEqual(expected.DefaultValue, actual.DefaultValue))
+            // 3. Сверяем дефолтные значения с очисткой синтаксиса обеих СУБД
+            if (!AreDefaultValuesEqual(expected.DefaultValue, actual.DefaultValue, expected.IsCreatedAt))
             {
-                // Если дефолты не совпали (например, "Text" против "'Text'"), 
-                // но типы и имена правильные — не будем спамить жестким варнингом структуры.
-                // Возвращаем true, чтобы не пугать ложным несоответствием типов.
-                return true;
+                return true; // Не спамим ошибкой, если дефолты структурно не критичны
             }
 
             return true;
@@ -109,17 +102,31 @@ namespace WpfHomeNet.Data.Schemes.CheckTableBd
 
 
 
-        private bool AreDefaultValuesEqual(object? expected, object? actual)
+
+        private bool AreDefaultValuesEqual(object? expected, object? actual, bool isCreatedAt)
         {
             if (expected == null && actual == null) return true;
+
+            // Вытаскиваем сырые строки с безопасной проверкой на null
+            string expRaw = expected?.ToString() ?? string.Empty;
+            string actRaw = actual?.ToString() ?? string.Empty;
+
+            // Если это колонка даты создания, Postgres может вернуть 'now()' или 'CURRENT_TIMESTAMP'
+            if (isCreatedAt)
+            {
+                string lowerAct = actRaw.ToLower();
+                if (lowerAct.Contains("now") || lowerAct.Contains("current_timestamp")) return true;
+            }
+
             if (expected == null || actual == null) return false;
 
-            // Приводим к строкам и чистим системные скобки SQLite (например, '0' или (0))
-            string expStr = expected.ToString()!.Trim('\'', '(', ')');
-            string actStr = actual.ToString()!.Trim('\'', '(', ')');
+            // Чистим кавычки, скобки и постгресовые указатели типов (разрезаем по :: и берем первую часть)
+            string expStr = expRaw.Trim('\'', '(', ')').Split(new[] { "::" }, StringSplitOptions.None)[0];
+            string actStr = actRaw.Trim('\'', '(', ')').Split(new[] { "::" }, StringSplitOptions.None)[0];
 
             return expStr.Equals(actStr, StringComparison.OrdinalIgnoreCase);
         }
+
     }
 }
 

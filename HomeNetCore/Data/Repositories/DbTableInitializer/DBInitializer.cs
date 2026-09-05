@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using HomeNetCore.Data.DBProviders;
 using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Data.Schemes;
 using HomeSocialNetwork.Core;
@@ -13,12 +14,13 @@ public class DBInitializer
     private readonly ILogger _logger;
     private readonly ISchemaProvider _schemaProvider;
     private readonly ISchemaAdapter _schemaAdapter;
+    private ISchemaSqlInitializer _initializer;
 
     public DBInitializer(
         DbConnection connection,
         ISchemaProvider schemaProvider,
         ISchemaAdapter schemaAdapter,
-        ISchemaSqlInitializer schemaSqlGenerator,
+        ISchemaSqlInitializer schemaSqlGenerator, ISchemaSqlInitializer schemaSqlInitializer,
         ILogger logger)
     {
         _schemaProvider = schemaProvider ?? throw new ArgumentNullException(nameof(schemaProvider));
@@ -26,6 +28,7 @@ public class DBInitializer
         _schemaSqlGenerator = schemaSqlGenerator ?? throw new ArgumentNullException(nameof(schemaSqlGenerator));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _schemaAdapter = schemaAdapter ?? throw new ArgumentNullException(nameof(schemaAdapter));
+        _initializer = schemaSqlInitializer ?? throw new ArgumentNullException(nameof(schemaSqlInitializer));
     }
 
     public async Task InitializeAsync()
@@ -73,7 +76,9 @@ public class DBInitializer
 
         // Переводим системное имя из sqlite_master в нижний регистр через LOWER() 
         // Это найдет и "Users", и "users", и "USERS" со 100% гарантией!
-        var sql = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND LOWER(name) = @cleanName;";
+        // СТАЛО (идеально под любую СУБД):
+        string sql = _initializer.GenerateTableExistsSql(tableName);
+
 
         try
         {
