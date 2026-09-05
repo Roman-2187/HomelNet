@@ -65,7 +65,7 @@ namespace HomeSocialNetwork
                             // Теперь в core.ListUsersService гарантированно НЕ БУДЕТ null!
                             _serviceProvider.GetRequiredService<UsersTableViewModel>();
                             _serviceProvider.GetRequiredService<UserDashboardViewModel>();
-                            _serviceProvider.GetRequiredService<LogViewModel>();
+                            
                             _serviceProvider.GetRequiredService<AdminMenuViewModel>();
                             _serviceProvider.GetRequiredService<RegistrationViewModel>();
                             _serviceProvider.GetRequiredService<AuthenticationViewModel>();
@@ -135,7 +135,7 @@ namespace HomeSocialNetwork
                     provider.GetRequiredService<DbInfrastructureCore>().AuthenticateService,
                     provider.GetRequiredService<EventBus>()));
 
-            services.AddSingleton<LogViewModel>();
+           
 
             services.AddSingleton(provider =>
                 new AdminMenuViewModel(provider.GetRequiredService<DbInfrastructureCore>().UserService, provider.GetRequiredService<EventBus>()));

@@ -3,48 +3,62 @@ using System.Windows;
 using System.Windows.Input;
 using WpfHomeNet.Messaging;
 using WpfHomeNet.ViewModels;
+using WpfHomeNet.UiHelpers; // 🔥 Не забываем для LogQueueManager
 
 namespace WpfHomeNet
 {
     public partial class MainWindow : Window
     {
         private readonly MainViewModel _mainVm;
+        private readonly LogWindow _logWindow; // 🔥 Прямая ссылка на соседа
+        private readonly LogQueueManager _queueManager; // 🔥 Вытащили сюда из LogViewModel
 
-        public MainWindow(MainViewModel mainVm)
+        public MainWindow(MainViewModel mainVm, LogWindow logWindow, LogQueueManager logQueueManager)
         {
-            // 1. Сначала жёстко забираем вьюмодель и проверяем на null! 🧼
             _mainVm = mainVm ?? throw new ArgumentNullException(nameof(mainVm));
+            _logWindow = logWindow ?? throw new ArgumentNullException(nameof(logWindow));
+            _queueManager = logQueueManager ?? throw new ArgumentNullException(nameof(logQueueManager));
 
-            // 2. СРАЗУ отдаём её в DataContext, пока окно ещё слепое! 🦾⚡
             DataContext = _mainVm;
-
-            // 3. И только теперь, когда мозг на месте, запускаем сборку интерфейса!
             InitializeComponent();
 
-            // Подписки на движение окна
-            this.ContentRendered += (s, e) => SendCoordinatesToBus();
-            this.LocationChanged += (s, e) => SendCoordinatesToBus();
-            this.SizeChanged += (s, e) => SendCoordinatesToBus();
+            // 1. Окна договариваются о координатах НАПРЯМУЮ без спама в шину! ⚡
+            this.ContentRendered += (s, e) => PositionLogWindow();
+            this.LocationChanged += (s, e) => PositionLogWindow();
+            this.SizeChanged += (s, e) => PositionLogWindow();
+
+            // 2. Ловим команду видимости логов прямо здесь, на UI-фасаде
+            _mainVm.EventBus.Subscribe<LogWindowVisibilityChangedMessage>(OnVisibilityCommandReceived);
         }
 
-
-
-
-
-        private void SendCoordinatesToBus()
+        private void PositionLogWindow()
         {
-            // Окно само громко кричит в шину: «Я сдвинулось, вот мои новые размеры!»
-            _mainVm.EventBus.Publish(new WindowPositionChangedMessage(
-                this.Left,
-                this.Top,
-                this.Width,
-                this.Height,
-                this.IsLoaded
-            ));
+            if (!this.IsLoaded || _logWindow == null) return;
+
+            // Строгая привязка лога к правому краю главного окна
+            _logWindow.Left = this.Left + this.Width;
+            _logWindow.Top = this.Top;
+            _logWindow.Height = this.Height;
+            _logWindow.Width = 650;
         }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e)=>Application.Current.Shutdown();
-        
+        private void OnVisibilityCommandReceived(LogWindowVisibilityChangedMessage msg)
+        {
+            if (msg.IsVisible)
+            {
+                _logWindow.Show();
+                PositionLogWindow(); // Сразу корректируем позицию при показе
+
+                // 🔥 Важная логика ядра: будим наш канал логов при первом открытии!
+                _queueManager.SetReady();
+            }
+            else
+            {
+                _logWindow.Hide();
+            }
+        }
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e) => Application.Current.Shutdown();
 
         private void WindowDrag_MouseDown(object sender, MouseButtonEventArgs e) => this.DragMove();
     }
