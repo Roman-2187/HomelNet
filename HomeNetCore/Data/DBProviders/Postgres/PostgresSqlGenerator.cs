@@ -1,9 +1,6 @@
-﻿using HomeNetCore.Data.Adapters;
-using HomeNetCore.Data.Interfaces;
+﻿using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Data.Schemes;
 using HomeSocialNetwork.Core; // Твой SchemaRegistry
-using System;
-using System.Linq;
 
 namespace HomeNetCore.Data.DBProviders.Postgres
 {

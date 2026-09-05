@@ -12,7 +12,7 @@ namespace HomeNetCore.Data.Interfaces
         /// <returns></returns>
         Task<TableSchema> GetActualTableSchemaAsync(string? tableName);
 
-        ColumnType MapType(string? dbType);
+     
     }
 
 

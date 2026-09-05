@@ -308,11 +308,11 @@
                         <Grid>
                             <!-- 👑 ВНЕШНИЙ БОРДЕР: Тянет CornerRadius напрямую из кармашка Tag! -->
                             <Border CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" 
-                            BorderThickness="0.65" BorderBrush="DarkRed" Background="White">
+                            BorderThickness="0.65" BorderBrush="Black" Background="White">
                                 <Grid>
 
                                     <!-- 🥈 СРЕДНИЙ БОРДЕР: Затемнён под новые глубокие тона для сохранения объёма -->
-                                    <Border BorderThickness="1.1" Margin="-0.15" BorderBrush="#FF3A6260" 
+                                    <Border BorderThickness="1.1" Margin="-0.15" BorderBrush="LightBlue" 
                                     CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent},
                                     Converter={StaticResource RadiusCalc}, ConverterParameter=-0.6}"/>
 

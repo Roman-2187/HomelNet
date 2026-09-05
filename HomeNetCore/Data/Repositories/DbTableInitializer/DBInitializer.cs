@@ -1,13 +1,9 @@
 ﻿using Dapper;
-using HomeNetCore.Data.Adapters;
 using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Data.Schemes;
 using HomeSocialNetwork.Core;
-using System;
 using System.Data;
 using System.Data.Common;
-using System.Linq;
-using System.Threading.Tasks;
 using WpfHomeNet.Data.Schemes.CheckTableBd;
 
 public class DBInitializer

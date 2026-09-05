@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:WpfHomeNet.Controls"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
-    <Grid Margin="3">
+    <Grid Margin="1">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="200"/>
             <!-- Левая колонка: Друзья -->
@@ -15,7 +15,7 @@
         </Grid.ColumnDefinitions>
 
         <!-- ЛЕВАЯ ПАНЕЛЬ: СПИСОК ДРУЗЕЙ -->
-        <ContentControl Style="{StaticResource TripleBorderDeepBlueStyle}" Grid.Column="0" Margin="5" >
+        <ContentControl Style="{StaticResource TripleBorderDeepBlueStyle}" Grid.Column="0"  >
 
             <ContentControl.Tag>
                 <CornerRadius>8</CornerRadius>
@@ -40,7 +40,7 @@
             </ContentControl>
 
         <!-- ПРАВАЯ ПАНЕЛЬ: РАБОЧАЯ ЗОНА ДЛЯ ЧАТА -->
-        <ContentControl Style="{StaticResource TripleBorderBlueStyle}" Grid.Column="1" Margin="5" >
+        <ContentControl Style="{StaticResource TripleBorderBlueStyle}" Grid.Column="1" Margin="5,0,0,0" >
            
                 <ContentControl.Tag>
                     <CornerRadius>8</CornerRadius>

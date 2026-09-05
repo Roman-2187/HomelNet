@@ -14,9 +14,9 @@
     AllowsTransparency="True"
     FontFamily="Calibri"
     FontSize="14"                             
-    Background="Transparent" Left="100"
+    Background="Transparent" Left="70"
     
-    Width="900" Height="650"> 
+    Width="950" Height="650"> 
    
     <Window.Resources>
         <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
@@ -31,7 +31,7 @@
 
     <ContentControl Style="{StaticResource TripleBorderDarkBlueStyle}" 
                 
-                Width="900" Height="650" 
+                Width="950" Height="650" 
                 HorizontalAlignment="Center" VerticalAlignment="Center"
                 MouseLeftButtonDown="WindowDrag_MouseDown">
         <ContentControl.Tag>
