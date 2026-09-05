@@ -2,7 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Models;
-using HomeNetCore.Services.DeleteService;
+using HomeNetCore.Services;
 using System.Windows;
 using WpfHomeNet.Messaging;
 

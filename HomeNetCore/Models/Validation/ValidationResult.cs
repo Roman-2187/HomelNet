@@ -1,5 +1,5 @@
 ﻿using HomeNetCore.Enums;
-namespace HomeNetCore.Services.UsersServices
+namespace HomeNetCore.Models.Validation
 {
     public class ValidationResult
     {

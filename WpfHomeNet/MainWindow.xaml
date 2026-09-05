@@ -1,4 +1,4 @@
-﻿<Window x:Class="WpfHomeNet.MainWindow"  WindowStartupLocation="Manual"       
+﻿<Window x:Class="WpfHomeNet.MainWindow"       
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:controls="clr-namespace:WpfHomeNet.Controls"     
     xmlns:local="clr-namespace:WpfHomeNet.UiHelpers"   
@@ -14,7 +14,7 @@
     AllowsTransparency="True"
     FontFamily="Calibri"
     FontSize="14"                             
-    Background="Transparent" Left="70"
+    Background="Transparent"  WindowStartupLocation="CenterScreen"
     
     Width="950" Height="650"> 
    

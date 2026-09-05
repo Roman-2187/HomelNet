@@ -7,14 +7,14 @@ using Microsoft.Data.Sqlite;
 using Npgsql;
 using System.Data.Common;
 
-namespace HomeNetCore.Data
+namespace HomeNetCore.Data.Builders
 {
-    public class DatabaseServiceFactory
+    public class DatabaseInfrastructureBuilder
     {
         private readonly string _connectionString;
         private readonly ILogger _logger;
 
-        public DatabaseServiceFactory(string connectionString, ILogger logger)
+        public DatabaseInfrastructureBuilder(string connectionString, ILogger logger)
         {
             _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

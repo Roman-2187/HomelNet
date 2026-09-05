@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HomeNetCore.Services.DeleteService
+namespace HomeNetCore.Services
 {
    
         public class DeleteService

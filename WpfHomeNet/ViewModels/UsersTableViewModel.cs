@@ -1,40 +1,41 @@
-﻿using System.Collections.ObjectModel;
+﻿using HomeNetCore.Models;
+using HomeNetCore.Services;
+using System.Collections.ObjectModel;
 using System.Windows;
-using HomeNetCore.Models;
-using HomeNetCore.Services.ListUsersServise;
 using WpfHomeNet.Messaging;
 
 namespace WpfHomeNet.ViewModels
 {
     public partial class UsersTableViewModel : FormViewModelBase
     {
-        private readonly ListUsersService _listUsersService;
+        
+        private UserService _userService;
 
-        public ObservableCollection<UserEntity> Users => _listUsersService.Users;
+        public ObservableCollection<UserEntity> Users { get; private set; } = new();
 
-        public UsersTableViewModel(EventBus eventBus, ListUsersService listUsersService) : base(eventBus)
+        public UsersTableViewModel(EventBus eventBus, UserService userService) : base(eventBus)
         {
-            _listUsersService = listUsersService ?? throw new ArgumentNullException(nameof(listUsersService));
+            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
 
             InitializeBusSubscriptions();
 
-            // 🛸 КРАСИВЫЙ АСИНХРОННЫЙ СТАРТ:
             Task.Run(async () =>
             {
-                // 1. Сразу пишем в статус-бар приветствие (UI не ждёт, статус загорается мгновенно)
                 _eventBus.Publish(new StatusTextChangedMessage("Синхронизация с базой данных HomeNet..."));
 
-                // 2. В ФОНЕ (не вешая интерфейс) запрашиваем список из базы данных
-                // База прочитается тихо, пока юзер смотрит на красивый статус
-                await _listUsersService.RefreshUsersAsync();
+                // 1. Честно читаем базу данных напрямую в фоновом потоке
+                var list = await _userService.GetAllUsersAsync();
 
-                // 3. Держим паузу в 1 секунду для кинематографичности эффекта
-                await Task.Delay(1000);
+                await Task.Delay(1000); // Наша кинематографичная пауза 🎬
 
-                // 4. И только теперь мягко отдаём данные в UI-поток для отрисовки!
+                // 2. Возвращаемся в UI-поток и безопасно забиваем коллекцию
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
-                    OnPropertyChanged(nameof(Users));
+                    Users.Clear();
+                    foreach (var user in list)
+                    {
+                        Users.Add(user);
+                    }
 
                     // Кормим статус-бар финальными циферками
                     _eventBus.Publish(new UsersListRefreshedMessage(Users));

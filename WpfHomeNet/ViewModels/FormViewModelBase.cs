@@ -1,6 +1,6 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel; 
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNetCore.Enums;
-using HomeNetCore.Services.UsersServices;
+using HomeNetCore.Models.Validation;
 using System.Windows;
 using WpfHomeNet.Messaging;
 

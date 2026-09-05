@@ -1,29 +1,33 @@
 ﻿using HomeNetCore.Enums;
 using HomeNetCore.Models;
-using HomeNetCore.Models.InputUserData;
+using HomeNetCore.Models.Validation;
 using HomeNetCore.Services;
-using HomeNetCore.Services.UsersServices;
 using System.Windows;
 using System.Windows.Input;
-using WpfHomeNet.Messaging; 
+using WpfHomeNet.Messaging;
 
 namespace WpfHomeNet.ViewModels
 {
     public class RegistrationViewModel : FormViewModelBase
     {
-        private readonly RegisterService _registerService;   
+        private readonly RegisterService _registerService;
         private UserEntity? _createdUser;
 
-        public CreateUserInput UserData { get; set; } = new();
+        // 1. Сюда напрямую биндятся Имя, Почта и Пароль
+        public UserEntity UserData { get; set; } = new();
+
+        // 2. Изолированное свойство ТОЛЬКО для UI-проверки совпадения (в базу не летит!)
+        
+
+       
         public ICommand RegisterCommand { get; }
         public ICommand CancelCommand { get; }
         public ICommand ToggleRegistrationCommand { get; }
 
-        // DI ПРАВКА: Принимаем RegisterService и EventBus напрямую из контейнера
         public RegistrationViewModel(RegisterService registerService, EventBus eventBus) : base(eventBus)
         {
             _registerService = registerService ?? throw new ArgumentNullException(nameof(registerService));
-           
+
             InitializeInitialHints();
 
             RegisterCommand = new RelayCommand(
@@ -35,14 +39,8 @@ namespace WpfHomeNet.ViewModels
             );
 
             ToggleRegistrationCommand = new RelayCommand(
-                execute: async (parameter) =>
-                {
-                    if (!IsComplete)
-                        await ExecuteRegisterCommand();
-                    else
-                        CloseForm();
-                },
-                canExecute: (parameter) => !IsComplete || true
+                execute: async (parameter) => await ExecuteRegisterCommand(),
+                canExecute: (parameter) => true
             );
         }
 
@@ -59,7 +57,7 @@ namespace WpfHomeNet.ViewModels
             UpdateValidation(initialHints);
             SubmitButtonText = "Зарегистрироваться";
         }
- 
+
         private void CloseForm()
         {
             UserData = new();
@@ -83,13 +81,17 @@ namespace WpfHomeNet.ViewModels
                 if (IsComplete)
                 {
                     StatusMessage = "Вы успешно зарегистрированы";
-                    SubmitButtonText = "Завершить";
+
+                    SubmitButtonText = "ща погодь!";
 
                     if (_createdUser != null)
                     {
-                        // 🔥 МЕНЯЕМ НА ТВОЁ НОВОЕ СЛУШАЕМОЕ СООБЩЕНИЕ!
                         _eventBus.Publish(new UserRegisteredMessage(_createdUser));
                     }
+
+                    // 🔥 МАГИЯ АВТОМАТИЗАЦИИ: замираем на 1 секунду и бесшумно схлопываем форму!
+                    await Task.Delay(1500);
+                    CloseForm();
                 }
                 else
                 {

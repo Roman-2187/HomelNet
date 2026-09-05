@@ -1,47 +1,46 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
- using CommunityToolkit.Mvvm.ComponentModel;
+﻿using System;
+using System.ComponentModel.DataAnnotations.Schema; // 🔥 ОБЯЗАТЕЛЬНО ДЛЯ NOTMAPPED
+using CommunityToolkit.Mvvm.ComponentModel;
+
 namespace HomeNetCore.Models
 {
-
-   
-
     public partial class UserEntity : ObservableObject
     {
-        [ObservableProperty]      
+        [ObservableProperty]
         private int _id;
 
-        [ObservableProperty]        
+        [ObservableProperty]
         private string? _firstName = string.Empty;
 
-        [ObservableProperty]       
+        [ObservableProperty]
         private string? _lastName = string.Empty;
 
-        [ObservableProperty]      
+        [ObservableProperty]
         private string? _phoneNumber = string.Empty;
 
-        [ObservableProperty]       
+        [ObservableProperty]
         private string? _email = string.Empty;
 
-        [ObservableProperty]       
+        [ObservableProperty]
         private string? _password = string.Empty;
 
+        // 🔥 НАШ ХИТРЫЙ НЕВИДИМЫЙ ХВОСТ:
+        [NotMapped] // База данных Postgres эту строчку полностью проигнорирует! 🔐
         [ObservableProperty]
-       
+        private string _confirmPassword = string.Empty; // Сгенерирует публичное свойство ConfirmPassword
+
+        [ObservableProperty]
         private DateTime _createdAt = DateTime.UtcNow;
 
         public string FullName => $"{FirstName} {LastName}";
-
         public string DisplayInfo => $"ID: {Id} - {Email}";
 
-        // Ручно уведомляем об изменении FullName при обновлении зависимостей
         partial void OnFirstNameChanged(string? value) => OnPropertyChanged(nameof(FullName));
         partial void OnLastNameChanged(string? value) => OnPropertyChanged(nameof(FullName));
-
-        // Аналогично для DisplayInfo
         partial void OnIdChanged(int value) => OnPropertyChanged(nameof(DisplayInfo));
         partial void OnEmailChanged(string? value) => OnPropertyChanged(nameof(DisplayInfo));
     }
-
-
-
 }
+
+
+

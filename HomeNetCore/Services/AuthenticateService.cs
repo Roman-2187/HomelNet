@@ -1,11 +1,12 @@
 ﻿using HomeNetCore.Enums;
-using HomeNetCore.Models.InputUserData;
+using HomeNetCore.Models;
+using HomeNetCore.Models.Validation;
 using HomeNetCore.Services.UsersServices;
 
 
 
-    
-    namespace HomeNetCore.Services.AuthenticationService
+
+namespace HomeNetCore.Services
     {
         public class AuthenticateService
         {
@@ -18,54 +19,55 @@ using HomeNetCore.Services.UsersServices;
             }
 
         // 1. Меняем возвращаемый тип: добавляем третьим параметром UserEntity?
-        public async Task<(bool IsSuccess, List<ValidationResult> Messages, HomeNetCore.Models.UserEntity? User)> CheckUserAsync(LoginInUserInput userInput)
+        public async Task<(bool IsSuccess, List<ValidationResult> Messages, UserEntity? User)> CheckUserAsync(UserEntity userInput)
         {
             var validationResults = await ValidateInputAsync(userInput);
             var hasCriticalErrors = validationResults.Any(r => r.State == ValidationState.Error);
 
-            HomeNetCore.Models.UserEntity? authenticatedUser = null;
+            UserEntity? authenticatedUser = null;
 
             // 2. Если ошибок нет — вытаскиваем тёпленького юзера из базы для логгера и UI
             if (!hasCriticalErrors)
             {
-                authenticatedUser = await _userService.GetUserByEmailAsync(userInput.Email);
+                // На строке 32 пиши вот так:
+                if (!hasCriticalErrors && !string.IsNullOrWhiteSpace(userInput.Email))
+                {
+                    authenticatedUser = await _userService.GetUserByEmailAsync(userInput.Email);
+                }
+
             }
 
             return (!hasCriticalErrors, validationResults, authenticatedUser);
         }
 
 
-        private async Task<List<ValidationResult>> ValidateInputAsync(LoginInUserInput input)
+        private async Task<List<ValidationResult>> ValidateInputAsync(UserEntity input)
+        {
+            var results = new List<ValidationResult>();
+
+            // Ставим "!", гася панику компилятора по поводу возможного null 🤫
+            var emailResult = await ValidateEmailAsync(input.Email!);
+            results.Add(emailResult);
+
+            var passwordResult = emailResult.State switch
             {
-                var results = new List<ValidationResult>();
-
-                // 1. Сначала всегда валидируем Email
-                var emailResult = await ValidateEmailAsync(input.Email);
-                results.Add(emailResult);
-
-                // 2. Через switch-выражение управляем проверкой пароля на основе статуса Email
-                var passwordResult = emailResult.State switch
+                ValidationState.Error => new ValidationResult
                 {
-                    // Если с Email ошибка — до пароля не дотрагиваемся, возвращаем нейтральный Info
-                    ValidationState.Error => new ValidationResult
-                    {
-                        Field = TypeField.PasswordType,
-                        State = ValidationState.Info,
-                        Message = "Текущий пароль"
-                    },
+                    Field = TypeField.PasswordType,
+                    State = ValidationState.Info,
+                    Message = "Текущий пароль"
+                },
+                // И здесь глушим предупреждение через "!"
+                ValidationState.Success => await VerifyPasswordPlainTextAsync(input.Email!, input.Password!),
+                _ => await VerifyPasswordPlainTextAsync(input.Email!, input.Password!)
+            };
 
-                    // Если Email успешно найден — только тогда асинхронно дёргаем проверку пароля
-                    ValidationState.Success => await VerifyPasswordPlainTextAsync(input.Email, input.Password),
+            results.Add(passwordResult);
+            return results;
+        }
 
-                    // Дефолтный сценарий на случай других состояний
-                    _ => await VerifyPasswordPlainTextAsync(input.Email, input.Password)
-                };
 
-                results.Add(passwordResult);
-                return results;
-            }
-
-            private async Task<ValidationResult> ValidateEmailAsync(string email)
+        private async Task<ValidationResult> ValidateEmailAsync(string email)
             {
                 var result = new ValidationResult { Field = TypeField.EmailType };
 

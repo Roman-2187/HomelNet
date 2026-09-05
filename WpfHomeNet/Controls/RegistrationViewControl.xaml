@@ -48,7 +48,7 @@
                 <Label Content="Имя пользователя:" VerticalAlignment="Center"/>
 
                 <TextBox
-                Text="{Binding UserData.UserName}"
+                Text="{Binding UserData.FirstName}"
                 BorderBrush="{Binding ValidationResults[NameType].State, Converter={StaticResource StateToBrushConverter}}"
                 IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"/>
 

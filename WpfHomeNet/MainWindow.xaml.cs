@@ -4,7 +4,7 @@ using System.Windows.Input;
 using WpfHomeNet.Messaging;
 using WpfHomeNet.ViewModels;
 using WpfHomeNet.UiHelpers; // 🔥 Не забываем для LogQueueManager
-
+using System.Windows.Media.Animation; // 🔥 Подключаем движок анимаций Microsoft!
 namespace WpfHomeNet
 {
     public partial class MainWindow : Window
@@ -20,7 +20,9 @@ namespace WpfHomeNet
             _queueManager = logQueueManager ?? throw new ArgumentNullException(nameof(logQueueManager));
 
             DataContext = _mainVm;
-            InitializeComponent();
+            InitializeComponent();_logWindow.Show();
+            PositionLogWindow();
+            _logWindow.Hide();
 
             // 1. Окна договариваются о координатах НАПРЯМУЮ без спама в шину! ⚡
             this.ContentRendered += (s, e) => PositionLogWindow();
@@ -29,36 +31,85 @@ namespace WpfHomeNet
 
             // 2. Ловим команду видимости логов прямо здесь, на UI-фасаде
             _mainVm.EventBus.Subscribe<LogWindowVisibilityChangedMessage>(OnVisibilityCommandReceived);
+
+
+            
         }
 
         private void PositionLogWindow()
         {
             if (!this.IsLoaded || _logWindow == null) return;
 
-            // Строгая привязка лога к правому краю главного окна
-            _logWindow.Left = this.Left + this.Width;
+            // 1. Узнаем полную ширину текущего рабочего стола (без панели задач)
+            double screenWidth = SystemParameters.WorkArea.Width;
+
+            // 2. Рассчитываем левую границу лога (она прилипла к правому боку главного окна)
+            double logLeft = this.Left + this.Width;
+
+            // 3. Железно привязываем координаты
+            _logWindow.Left = logLeft;
             _logWindow.Top = this.Top;
             _logWindow.Height = this.Height;
-            _logWindow.Width = 650;
+
+            // 4. 🔥 МАГИЯ: Ширина лога — это строго ВСЁ оставшееся место до правого края экрана!
+            // Если главное окно уехало в ноль, то лог займет вообще всё свободное пространство справа!
+            double remainingWidth = screenWidth - logLeft;
+
+            // Страховка, чтобы ширина не ушла в минус, если главное окно частично вылезло за экран
+            _logWindow.Width = remainingWidth > 0 ? remainingWidth : 100;
         }
 
-        private void OnVisibilityCommandReceived(LogWindowVisibilityChangedMessage msg)
+
+
+
+
+
+        private double _originalLeftPosition; // 📌 Переменная-память: запомнит, где окно стояло изначально
+
+    private void OnVisibilityCommandReceived(LogWindowVisibilityChangedMessage msg)
+    {
+        // Настраиваем плавное замедление для обеих анимаций
+        var ease = new QuadraticEase { EasingMode = EasingMode.EaseOut };
+
+        if (msg.IsVisible)
         {
-            if (msg.IsVisible)
-            {
-                _logWindow.Show();
-                PositionLogWindow(); // Сразу корректируем позицию при показе
+            // 🔥 Шаг 1: Запоминаем текущую координату КРАЙНИЙ раз, перед тем как уехать
+            _originalLeftPosition = this.Left;
 
-                // 🔥 Важная логика ядра: будим наш канал логов при первом открытии!
-                _queueManager.SetReady();
-            }
-            else
+            var winMoveLeftAnimation = new DoubleAnimation
             {
-                _logWindow.Hide();
-            }
+                To = 0, // Уезжаем к левому краю
+                Duration = TimeSpan.FromMilliseconds(800), // Плавная, вальяжная скорость
+                EasingFunction = ease
+            };
+
+            this.BeginAnimation(Window.LeftProperty, winMoveLeftAnimation);
+
+            _logWindow.Show();
+            _queueManager.SetReady();
         }
+        else
+        {
+            // 🔥 Шаг 2: При скрытии логов плавно возвращаем окно на сохраненное место!
+            var winMoveBackAnimation = new DoubleAnimation
+            {
+                To = _originalLeftPosition, // Едем обратно домой 🏠
+                Duration = TimeSpan.FromMilliseconds(800),
+                EasingFunction = ease
+            };
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e) => Application.Current.Shutdown();
+            // Лог-окно сначала прячем, а главное красиво уезжает назад
+            _logWindow.Hide();
+            this.BeginAnimation(Window.LeftProperty, winMoveBackAnimation);
+        }
+    }
+
+
+
+
+
+
+    private void CloseButton_Click(object sender, RoutedEventArgs e) => Application.Current.Shutdown();
 
         private void WindowDrag_MouseDown(object sender, MouseButtonEventArgs e) => this.DragMove();
     }

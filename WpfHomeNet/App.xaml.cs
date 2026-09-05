@@ -1,7 +1,8 @@
-﻿using HomeNetCore.Data.Interfaces;
+﻿using HomeNetCore.Data;
+using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Enums;
 using HomeNetCore.Helpers;
-using HomeSocialNetwork.Core;
+using HomeNetCore.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
 using System.Windows;
@@ -19,7 +20,6 @@ namespace HomeSocialNetwork
         private readonly string _connectionString = $"Data Source={dbPath}";
 
         private readonly string _postgresConnectionString = "Server=127.0.0.1:5432;Database=home_net_db;User Id=postgres;Password=05011987;";
-
 
         private MainWindow? _mainWindow;
         private IServiceProvider? _serviceProvider;
@@ -46,15 +46,14 @@ namespace HomeSocialNetwork
                 // 1. Сначала обязательно будим логгер, чтобы окно логов открылось!
                 var kickLogger = _serviceProvider.GetRequiredService<LogQueueManager>();
 
-                // 2. 🔥 ХРОНОЛОГИЧЕСКИЙ ПОРЯДОК: Запускаем строго последовательную цепочку в фоне! 🚀
+                // 2. ХРОНОЛОГИЧЕСКИЙ ПОРЯДОК: Запускаем строго последовательную цепочку в фоне! 🚀
                 Task.Run(async () =>
                 {
                     try
                     {
-                        var dbCore = _serviceProvider.GetRequiredService<DbInfrastructureCore>();
+                        var dbCore = _serviceProvider.GetRequiredService<DbContextContainer>();
 
                         // ШАГ А: Сначала ЖДЁМ пока Postgres полностью проверит и создаст таблицы
-                        // Обратите внимание на написание DatabaseType.PostgreSQL (без заглавной S в середине)
                         await dbCore.InitializeAsync(DatabaseType.PostGreSQL);
 
                         Debug.WriteLine("База данных PostgreSQL успешно инициализирована.");
@@ -62,10 +61,10 @@ namespace HomeSocialNetwork
                         // ШАГ Б: Только КОГДА БАЗА НА 100% ГОТОВА — возвращаемся в UI-поток и пинаем вью-модели! 💎
                         await Current.Dispatcher.InvokeAsync(() =>
                         {
-                            // Теперь в core.ListUsersService гарантированно НЕ БУДЕТ null!
+                            // Прогреваем вью-модели, которые теперь качают данные напрямую
                             _serviceProvider.GetRequiredService<UsersTableViewModel>();
                             _serviceProvider.GetRequiredService<UserDashboardViewModel>();
-                            
+
                             _serviceProvider.GetRequiredService<AdminMenuViewModel>();
                             _serviceProvider.GetRequiredService<RegistrationViewModel>();
                             _serviceProvider.GetRequiredService<AuthenticationViewModel>();
@@ -77,7 +76,6 @@ namespace HomeSocialNetwork
                     }
                     catch (Exception ex)
                     {
-                        // Если база упала — мы увидим НАСТОЯЩИЙ ex.ToString() со всей подноготной! 🕵️‍♂️
                         await Current.Dispatcher.InvokeAsync(() =>
                         {
                             MessageBox.Show($"Ошибка инициализации БД:\n\n{ex.ToString()}", "Критический сбой", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -93,24 +91,12 @@ namespace HomeSocialNetwork
             }
         }
 
-
-
         private void ConfigureServices(IServiceCollection services)
         {
             // 1. Системная инфраструктура (Singleton)
             services.AddSingleton<ILogger, Logger>();
             services.AddSingleton<EventBus>();
             services.AddSingleton<StatusBarViewModel>();
-
-            // 🔥 ИСПРАВЛЕНО: Перевели UsersTableViewModel строго в Singleton!
-            services.AddSingleton(provider =>
-            {
-                var core = provider.GetRequiredService<DbInfrastructureCore>();
-                return new UsersTableViewModel(
-                    provider.GetRequiredService<EventBus>(),
-                    core.ListUsersService
-                );
-            });
 
             // Лог-менеджер
             services.AddSingleton(provider => new LogWindow(provider.GetRequiredService<ILogger>()));
@@ -122,35 +108,84 @@ namespace HomeSocialNetwork
                 return manager;
             });
 
-            // 2. Регистрируем Ядро СУБД (Singleton)
+            // 2. Регистрируем Контекст СУБД (Singleton)
             services.AddSingleton(provider =>
-                new DbInfrastructureCore(_postgresConnectionString, provider.GetRequiredService<ILogger>()));
+                new DbContextContainer(_postgresConnectionString, provider.GetRequiredService<ILogger>())); // Переименованный класс ядра
 
-            // 3. Регистрация Вьюмоделей (Все Singleton — никаких дублей!)
+            // 🚀 НОВЫЙ ЭТАЖ: Регистрируем репозитории данных (Они берут коннект и генераторы прямо из DbContextContainer)
             services.AddSingleton(provider =>
-                new RegistrationViewModel(provider.GetRequiredService<DbInfrastructureCore>().RegisterService, provider.GetRequiredService<EventBus>()));
-
-            services.AddSingleton(provider =>
-               new AuthenticationViewModel(
-                    provider.GetRequiredService<DbInfrastructureCore>().AuthenticateService,
-                    provider.GetRequiredService<EventBus>()));
-
-           
-
-            services.AddSingleton(provider =>
-                new AdminMenuViewModel(provider.GetRequiredService<DbInfrastructureCore>().UserService, provider.GetRequiredService<EventBus>()));
+            {
+                var context = provider.GetRequiredService<DbContextContainer>();
+                return new HomeNetCore.Data.Repositories.UserRepository(context.Connection, context.UserSqlGen);
+            });
 
             services.AddSingleton(provider =>
             {
-                var core = provider.GetRequiredService<DbInfrastructureCore>();
-                return new DeleteUsersViewModel(
-                    core.DeleteService,
-                    provider.GetRequiredService<EventBus>(),
-                    provider.GetRequiredService<ILogger>()
-                );
+                var context = provider.GetRequiredService<DbContextContainer>();
+                return new HomeNetCore.Data.Repositories.MessageRepository(context.Connection, context.MessageSqlGen);
             });
 
-            // 🔥 ИСПРАВЛЕНО: Чистое создание MainViewModel без "зависших" в воздухе вызовов
+            services.AddSingleton(provider =>
+            {
+                var context = provider.GetRequiredService<DbContextContainer>();
+                return new HomeNetCore.Data.Repositories.FriendRepository(context.Connection, context.FriendSqlGen);
+            });
+
+            // 🧠 НОВЫЙ ЭТАЖ: Регистрируем бизнес-сервисы в DI (Контейнер сам прокинет в них репозитории и логгер!)
+            services.AddSingleton(provider =>
+                new UserService(provider.GetRequiredService<HomeNetCore.Data.Repositories.UserRepository>(), provider.GetRequiredService<ILogger>()));
+
+            services.AddSingleton(provider =>
+                new RegisterService(provider.GetRequiredService<UserService>()));
+
+            services.AddSingleton(provider =>
+                new AuthenticateService(provider.GetRequiredService<UserService>()));
+
+            services.AddSingleton(provider =>
+                new DeleteService(provider.GetRequiredService<ILogger>(), provider.GetRequiredService<UserService>()));
+
+            services.AddSingleton(provider =>
+                new MessageService(provider.GetRequiredService<HomeNetCore.Data.Repositories.MessageRepository>(), provider.GetRequiredService<ILogger>()));
+
+            services.AddSingleton(provider =>
+                new FriendService(provider.GetRequiredService<HomeNetCore.Data.Repositories.FriendRepository>(), provider.GetRequiredService<ILogger>()));
+
+
+            // 3. 🎨 Регистрация Вьюмоделей (Берут сервисы НАПРЯМУЮ ИЗ DI, без посредника core!)
+            services.AddSingleton(provider =>
+                new UsersTableViewModel(
+                    provider.GetRequiredService<EventBus>(),
+                    provider.GetRequiredService<UserService>() // Тянем прямо из DI! 💎
+                ));
+
+            services.AddSingleton(provider =>
+                new RegistrationViewModel(
+                    provider.GetRequiredService<RegisterService>(), // Из DI! 💎
+                    provider.GetRequiredService<EventBus>()
+                ));
+
+            services.AddSingleton(provider =>
+                new AuthenticationViewModel(
+                    provider.GetRequiredService<AuthenticateService>(), // Из DI! 💎
+                    provider.GetRequiredService<EventBus>()
+                ));
+
+            services.AddSingleton(provider =>
+                new AdminMenuViewModel(
+                    provider.GetRequiredService<UserService>(), // Из DI! 💎
+                    provider.GetRequiredService<EventBus>()
+                ));
+
+            services.AddSingleton(provider =>
+                new DeleteUsersViewModel(
+                    provider.GetRequiredService<DeleteService>(), // Из DI! 💎
+                    provider.GetRequiredService<EventBus>(),
+                    provider.GetRequiredService<ILogger>()
+                ));
+
+            services.AddSingleton(provider =>
+                new UserDashboardViewModel(provider.GetRequiredService<EventBus>()));
+
             services.AddSingleton(provider =>
             {
                 return new MainViewModel(
@@ -159,12 +194,7 @@ namespace HomeSocialNetwork
             });
 
             services.AddTransient<MainWindow>();
-
-
-            services.AddSingleton(provider =>
-        new UserDashboardViewModel(provider.GetRequiredService<EventBus>()));
-
-            services.AddTransient<MainWindow>();
         }
+
     }
 }

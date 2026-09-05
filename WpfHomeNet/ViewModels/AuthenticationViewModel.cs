@@ -1,7 +1,7 @@
 ﻿using HomeNetCore.Enums;
-using HomeNetCore.Models.InputUserData;
-using HomeNetCore.Services.AuthenticationService;
-using HomeNetCore.Services.UsersServices;
+using HomeNetCore.Models;
+using HomeNetCore.Models.Validation;
+using HomeNetCore.Services;
 using System.Windows;
 using System.Windows.Input;
 using WpfHomeNet.Messaging;
@@ -13,7 +13,7 @@ namespace WpfHomeNet.ViewModels
         #region Поля и переменные
         private readonly AuthenticateService _loginService;
 
-        public LoginInUserInput UserData { get; set; } = new();
+        public UserEntity UserData { get; set; } = new();
         public ICommand LoginCommand { get; }
         public ICommand CancelCommand { get; }
         public RelayCommand ToggleRegistrationCommand { get; private set; }
