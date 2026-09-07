@@ -100,7 +100,6 @@ namespace WpfHomeNet.ViewModels
         {
             ResetForm();
             ControlVisibility = Visibility.Collapsed;
-            _eventBus.Publish(new FormVisibilityChangedMessage(GetType(), Visibility.Collapsed));
         }
         #endregion
 

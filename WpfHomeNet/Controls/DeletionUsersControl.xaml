@@ -8,10 +8,9 @@
     mc:Ignorable="d" 
     d:DesignHeight="400" d:DesignWidth="800" >
 
-    <ContentControl  Style="{StaticResource InnerBorderSolidColorStyle}" Background="#FF65A2A0">
-       
+   
 
-            <Grid Margin="10" >
+        <Grid  >
             <!-- Добавили четвертую строку специально для нижних кнопок -->
             <Grid.RowDefinitions>
                 <RowDefinition Height="25"/>
@@ -125,7 +124,7 @@
             </StackPanel>
         </Grid> 
     
-    </ContentControl>
+    
     
 </UserControl>
 

@@ -6,7 +6,13 @@
              xmlns:local="clr-namespace:WpfHomeNet.Controls"
              mc:Ignorable="d" 
              d:DesignHeight="600" d:DesignWidth="500">
-    <Grid Background="#F5F5F5">
+
+    <ContentControl Style="{StaticResource CyberpunkStyle}" Margin="5,0,0,0" >
+        <ContentControl.Tag>
+            <CornerRadius>10</CornerRadius>
+            <!-- Внутренняя матрешка тоже хочет знать радиус! -->
+        </ContentControl.Tag>
+        <Grid >
         <Grid.RowDefinitions>
             <RowDefinition Height="60"/>
             <!-- 0: Верхняя плашка (Имя + Статус) -->
@@ -17,8 +23,8 @@
         </Grid.RowDefinitions>
 
         <!-- ==================== ROW 0: ВЕРХНЯЯ ПЛАШКА ==================== -->
-        <Border Grid.Row="0" Background="White"
-                BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0" Background="Transparent"
+                BorderBrush="Transparent" BorderThickness="0,0,0,1">
             <Grid Margin="15,0">
                 <StackPanel VerticalAlignment="Center">
                     <!-- Имя собеседника (брата) -->
@@ -50,7 +56,7 @@
                 <Border Background="#DCF8C6" CornerRadius="10"
                         Padding="10" HorizontalAlignment="Right" Margin="0,5" MaxWidth="350">
                     <TextBlock
-                        Text="Привет! Да, сука, всё настроил, счётчик теперь работает как атомные часыгонку потоков разгромил!"
+                        Text="Привет! Да, сука, всё настроил, "
                         TextWrapping="Wrap"/>
                 </Border>
             </StackPanel>
@@ -59,7 +65,7 @@
       
         <!-- ==================== ROW 2: НИЖНЯЯ ПАНЕЛЬ ВВОДА ==================== -->
         <!-- ==================== ROW 2: НИЖНЯЯ ПАНЕЛЬ ВВОДА ==================== -->
-        <Border Grid.Row="2" Background="White" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Padding="10">
+            <Border Grid.Row="2" CornerRadius="8" Background="#FF519183" Margin="5" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Padding="10">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -83,4 +89,6 @@
 
 
     </Grid>
+    </ContentControl>
+
 </UserControl>

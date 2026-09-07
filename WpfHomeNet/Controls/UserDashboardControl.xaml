@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:WpfHomeNet.Controls"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
-    <Grid Margin="1">
+    <Grid Margin="0">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="200"/>
             <!-- Левая колонка: Друзья -->
@@ -15,52 +15,19 @@
         </Grid.ColumnDefinitions>
 
         <!-- ЛЕВАЯ ПАНЕЛЬ: СПИСОК ДРУЗЕЙ -->
-        <ContentControl Style="{StaticResource TripleBorderDeepBlueStyle}" Grid.Column="0"  >
 
+        <ContentControl Style="{StaticResource CyberpunkStyle}" Padding="4" >
             <ContentControl.Tag>
-                <CornerRadius>8</CornerRadius>
-
+                <CornerRadius>10</CornerRadius>
+                <!-- Внутренняя матрешка тоже хочет знать радиус! -->
             </ContentControl.Tag>
-            <Grid Margin="2">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <TextBlock Grid.Row="0" Text="👥 Контакты сети" Foreground="Black" FontWeight="Bold" FontSize="14" Margin="5,0,0,10"/>
-
-                <!-- Биндим список напрямую к коллекции Friends из нашей UserDashboardViewModel -->
-                <ListBox Grid.Row="1" 
-                         ItemsSource="{Binding Friends}" 
-                         Background="Transparent" 
-                         BorderThickness="0" 
-                         Foreground="Black" FontWeight="Bold"
-                         FontSize="13" d:ItemsSource="{d:SampleData ItemCount=5}"/>
-            </Grid>
             </ContentControl>
 
-        <!-- ПРАВАЯ ПАНЕЛЬ: РАБОЧАЯ ЗОНА ДЛЯ ЧАТА -->
-        <ContentControl Style="{StaticResource TripleBorderBlueStyle}" Grid.Column="1" Margin="5,0,0,0" >
-           
-                <ContentControl.Tag>
-                    <CornerRadius>8</CornerRadius>
-                  
-                </ContentControl.Tag>
-                <Grid Margin="5">
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,12">
-                        <TextBlock Text="Добро пожаловать в HomeNet, " FontSize="18" Foreground="Black"/>
-                        <!-- Мягко вытягиваем имя из CurrentUser. Если имени нет (тест) — покажет 'Пользователь' -->
-                        <TextBlock Text="{Binding CurrentUser.FirstName, FallbackValue='Пользователь'}" FontSize="18" FontWeight="Bold" Foreground="#4FC1FF"/>
-                    </StackPanel>
-
-                    <TextBlock Text="Выберите собеседника на левой панели, чтобы начать шифрованный диалог." 
-                               Foreground="#8E8E93" 
-                               HorizontalAlignment="Center"
-                               TextAlignment="Center"
-                               FontSize="13"/>
-                </StackPanel>
-            </Grid>
-            </ContentControl>
+            <local:ChatViewControl  Grid.Column="1">
+                
+            </local:ChatViewControl>
+       
+            
+            
     </Grid>
 </UserControl>

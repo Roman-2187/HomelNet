@@ -20,7 +20,7 @@
     </UserControl.Resources>
 
 
-    <ContentControl Style="{StaticResource TripleBorderDarkBlueStyle}"  Padding="4" >
+    <ContentControl Style="{StaticResource CyberpunkStyle}"  Padding="4" >
         <ContentControl.Tag>
             <CornerRadius>10</CornerRadius>
             <!-- Внутренняя матрешка тоже хочет знать радиус! -->
@@ -37,7 +37,7 @@
 
             <!-- EMAIL -->
             <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Vertical" Margin="0,0,0,5">
-                <Label Content="Email:" VerticalAlignment="Center"/>
+                <Label Content="Email:" VerticalAlignment="Center" Foreground="#FFB300"/>
                 <TextBox
                     Text="{Binding UserData.Email, UpdateSourceTrigger=PropertyChanged}"
                     BorderBrush="{Binding ValidationResults[EmailType].State, Converter={StaticResource StateToBrushConverter}}"
@@ -50,8 +50,8 @@
             </StackPanel>
 
             <!-- PASSWORD -->
-            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Vertical" Margin="0,0,0,5">
-                <Label Content="Пароль:" VerticalAlignment="Center"/>
+            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Vertical" Margin="0,0,0,5"  >
+                <Label Content="Пароль:" VerticalAlignment="Center" Foreground="#FFB300"/>
                 <TextBox
                     x:Name="PasswordBox"
                     Text="{Binding UserData.Password, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"

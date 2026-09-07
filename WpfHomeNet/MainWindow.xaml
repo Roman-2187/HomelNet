@@ -29,7 +29,7 @@
     </Window.Resources>
 
 
-    <ContentControl Style="{StaticResource TripleBorderDarkBlueStyle}" 
+    <ContentControl Style="{StaticResource CyberpunkStyle}" 
                 
                 Width="950" Height="650" 
                 HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -67,7 +67,7 @@
                        FontWeight="Bold"
                        Content="HomeNet"
                        FontSize="20"
-                       Foreground="Black"/>
+                       Foreground="#FFB300"/>
             </Border>
 
             <!-- Кнопка закрытия -->

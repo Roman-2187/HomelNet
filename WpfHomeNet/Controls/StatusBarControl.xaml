@@ -8,17 +8,17 @@
              d:DesignHeight="50" d:DesignWidth="800">
 
     <!-- Твоя фирменная подложка и цвета -->
-    <ContentControl Style="{StaticResource InnerBorderSolidColorStyle}" 
-                    Padding="4"  
+    <Border BorderBrush="#FFF23E5C"  BorderThickness="1"
+        Padding="4" CornerRadius="8" 
                     Background="Transparent">
         <StatusBar Background="#00A3C091">
             <StatusBarItem>
                 <TextBlock Text="{Binding StatusText, FallbackValue='Загрузка системы...'}"
                            Margin="2"
                            FontWeight="Bold"
-                           Foreground="Black"/>
+                           Foreground="#FFB300"/>
             </StatusBarItem>
         </StatusBar>
-    </ContentControl>
+       </Border>
 
 </UserControl>

@@ -7,7 +7,7 @@
     xmlns:converter="clr-namespace:WpfHomeNet.Converters"
     xmlns:controls="clr-namespace:WpfHomeNet.Controls"
     Background="Transparent" 
-    mc:Ignorable="d" 
+    mc:Ignorable="d" Margin="0"
     d:DesignHeight="500" d:DesignWidth="740">
 
     <UserControl.Resources>
@@ -19,10 +19,7 @@
                 x:Key="InverseBooleanConverter"/>
     </UserControl.Resources>
 
-    <ContentControl 
-            Style="{StaticResource InnerBorderSolidColorStyle}"
-           Background="#FF464545"
-        >
+  
         <Grid >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="200"/>
@@ -34,11 +31,12 @@
             <!-- ЛЕВАЯ ЧАСТЬ: Боковая панель кнопок управления -->
 
             <ContentControl 
-         Style="{StaticResource TripleBorderDarkBlueStyle}" Margin="6,6,0,6">
+         Style="{StaticResource CyberpunkStyle}" Margin="0,0,10,10">
                 <ContentControl.Tag>
 
                     <CornerRadius>8</CornerRadius>
                 </ContentControl.Tag>
+
                 <StackPanel 
                     Grid.Column="0"  Margin="3" 
                     IsEnabled="{Binding MainVm.IsButtonsPanelEnabled,
@@ -101,7 +99,7 @@
 
             <!-- ПРАВАЯ ЧАСТЬ: Динамическая рабочая зона  -->
             <Grid 
-                    Grid.Column="1" Margin="5,5,5,5">
+                    Grid.Column="1" Margin="0,0,0,10">
 
                 <!-- 1. ТАБЛИЦА ПОЛЬЗОВАТЕЛЕЙ -->
                 <Border 
@@ -124,13 +122,17 @@
 
                 <!-- 2. ФОРМА УДАЛЕНИЯ ЮЗЕРОВ 🦾🔥 -->
                 <ContentControl 
-  Style="{StaticResource InnerBorderSolidColorStyle}" 
+  Style="{StaticResource CyberpunkStyle}" 
                         Background="Transparent"
                         Margin="0"
                         BorderThickness="1"                        
                     
                         Visibility="{Binding DeleteUsersVm.ControlVisibility, 
                         Source={StaticResource VmLocator}}">
+                    <ContentControl.Tag>
+
+                        <CornerRadius>8</CornerRadius>
+                    </ContentControl.Tag>
 
                     <controls:DeleteUsers
                             DataContext="{Binding DeleteUsersVm,
@@ -142,5 +144,5 @@
 
             </Grid>
         </Grid>
-    </ContentControl>
+   
 </UserControl>  
