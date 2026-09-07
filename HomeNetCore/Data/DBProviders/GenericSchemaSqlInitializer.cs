@@ -52,11 +52,27 @@ namespace HomeNetCore.Data.DBProviders
         }
 
         public string GenerateGetTableStructureSql(string? tableName)
+{
+    if (string.IsNullOrEmpty(tableName)) return _getTableStructureSql;
+
+    // 🔥 ИСПРАВЛЕНИЕ: Если это SQLite Pragma, подставляем имя таблицы
+    if (_getTableStructureSql.Contains("PRAGMA", StringComparison.OrdinalIgnoreCase))
+    {
+        // 1. Если шаблон использует формат string.Format (как table_info("{0}"))
+        if (_getTableStructureSql.Contains("{0}"))
         {
-            // Здесь Postgres использует параметры Dapper (@tableName), а SQLite требует Pragma.
-            // Поэтому возвращаем шаблон как есть — Dapper или адаптер разберутся! ⚡
-            return _getTableStructureSql;
+            return string.Format(_getTableStructureSql, tableName);
         }
+
+        // 2. Если шаблон использует старый плейсхолдер @tableName
+        return _getTableStructureSql.Replace("@tableName", $"\"{tableName}\"", StringComparison.OrdinalIgnoreCase);
+    }
+
+    // Для Postgres возвращаем как есть — там отработает штатный параметр @tableName
+    return _getTableStructureSql;
+}
+
+
     }
 }
 
