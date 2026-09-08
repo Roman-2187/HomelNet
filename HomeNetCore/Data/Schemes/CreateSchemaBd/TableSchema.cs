@@ -36,39 +36,30 @@
 
         public string? columnNames { get; set; }
 
-        public void Initialize()
-        {           
-           
-            string idColumn = Columns.FirstOrDefault(c => c.IsPrimaryKey)?.Name
-                ?? throw new InvalidOperationException("ID-колонка не найдена в таблице");
+        public bool Initialize()
+        {
+            var pkColumn = Columns.FirstOrDefault(c => c.IsPrimaryKey);
+            if (pkColumn == null)
+            {
+                return false; // Фейсконтроль по PK не пройден
+            }
 
-            // Формируем все поля с алиасами (включая ID)
+            string idColumn = pkColumn.Name ?? "Null";
+            IdColumnName = idColumn;
 
-            columnNames = string.Join(", ",
-               Columns.Select(c => $"{c.OriginalName}"));
-
-            
-               
-
-            // БЫЛО: AllFields = string.Join(", ", Columns.Select(c => $"{c.Name} AS {c.OriginalName}"));
-
-            // СТАЛО: Оборачиваем физическое имя в базе в кавычки "first_name" AS FirstName
+            columnNames = string.Join(", ", Columns.Select(c => $"{c.OriginalName}"));
             AllFields = string.Join(", ", Columns.Select(c => $"\"{c.Name}\" AS {c.OriginalName}"));
+            AllParameters = string.Join(", ", Columns.Select(c => $"@{c.OriginalName}"));
 
-            AllParameters = string.Join(", ",
-                Columns.Select(c => $"@{c.OriginalName}"));
+            // 🔥 ИСПРАВЛЕНИЕ: Заменили c.Name.Equals на string.Equals(c.Name, idColumn, ...)
+            InsertFields = string.Join(", ", Columns.Where(c => !string.Equals(c.Name, idColumn, StringComparison.OrdinalIgnoreCase)).Select(c => c.Name));
+            InsertParameters = string.Join(", ", Columns.Where(c => !string.Equals(c.Name, idColumn, StringComparison.OrdinalIgnoreCase)).Select(c => $"@{c.OriginalName}"));
+            SetClause = string.Join(", ", Columns.Where(c => !string.Equals(c.Name, idColumn, StringComparison.OrdinalIgnoreCase)).Select(c => $"{c.Name} = @{c.OriginalName}"));
 
-            // Формируем поля для INSERT (исключая ID)
-            InsertFields = string.Join(", ",
-                Columns.Where(c => c.Name != idColumn).Select(c => c.Name));
-
-            InsertParameters = string.Join(", ",
-                Columns.Where(c => c.Name != idColumn).Select(c => $"@{c.OriginalName}"));
-
-            // Формируем SET clause для UPDATE
-            SetClause = string.Join(", ",
-                Columns.Where(c => c.Name != idColumn).Select(c => $"{c.Name} = @{c.OriginalName}"));
+            return true;
         }
+
+
 
 
         /// <summary>

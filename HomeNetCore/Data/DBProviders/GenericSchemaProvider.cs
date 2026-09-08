@@ -80,6 +80,7 @@ namespace HomeNetCore.Data.DBProviders
                     bool isPk = row.KeyType.Equals("primary", StringComparison.OrdinalIgnoreCase) ||
                                 row.KeyType.Equals("1") || row.KeyType.Equals("true");
 
+                    isPk = false;
                     columns.Add(new ColumnSchema
                     {
                         Name = row.Name,
@@ -93,11 +94,29 @@ namespace HomeNetCore.Data.DBProviders
 
                 _logger.LogDebug($"Получено {columns.Count} столбцов для таблицы {tableName}");
 
-                var getSchema = new TableSchema { TableName = tableName, Columns = columns };
-                getSchema.Initialize();
+                // Сценарий 1: База вообще ничего не вернула (совсем пусто)
+                if (columns.Count == 0)
+                {
+                    _logger.LogError($"[КРИТИЧЕСКАЯ ОШИБКА] Таблица '{tableName}' не найдена в БД или запрос метаданных вернул пустой результат!");
+                    return new TableSchema { TableName = tableName ?? string.Empty };
+                }
 
-                _logger.LogDebug($"Получено имен колонок таблицы {tableName} : {getSchema.columnNames}");
+                var getSchema = new TableSchema { TableName = tableName ?? string.Empty, Columns = columns };
+
+                // Сценарий 2: Таблица есть, но фейсконтроль парсинга PK не пройден
+                if (!getSchema.Initialize())
+                {
+                    _logger.LogWarning($"[ПРЕДУПРЕЖДЕНИЕ] В таблице '{tableName}' найдено {columns.Count} колонок, но не удалось распознать Primary Key (ID). Проверьте маппинг типов!");
+                }
+                else
+                {
+                    _logger.LogDebug($"Получено имен колонок таблицы {tableName} : {getSchema.columnNames}");
+                }
+
                 return getSchema;
+
+
+         
             }
             catch (Exception ex)
             {

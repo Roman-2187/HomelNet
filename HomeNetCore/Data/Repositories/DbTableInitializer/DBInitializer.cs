@@ -3,6 +3,7 @@ using HomeNetCore.Data.DBProviders;
 using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Data.Schemes;
 using HomeSocialNetwork.Core;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Data;
 using System.Data.Common;
 using WpfHomeNet.Data.Schemes.CheckTableBd;
@@ -129,6 +130,14 @@ public class DBInitializer
 
         // Запрашиваем состояние из базы по её правильному имени в нижнем регистре
         var expectedSchema = await _schemaProvider.GetActualTableSchemaAsync(dbTableName);
+
+        // 🔥 ИСПРАВЛЕННЫЙ СТРАЖ: Проверяем именно то, что прилетело ИЗ БАЗЫ (expectedSchema)!
+        if (expectedSchema.Columns.Count == 0 || string.IsNullOrEmpty(expectedSchema.IdColumnName))
+        {
+            _logger.LogWarning($"[ИНИЦИАЛИЗАТОР] Сверка структуры для таблицы '{dbTableName}' пропущена, так как схема в БД повреждена, пуста или не имеет Primary Key.");
+            return; // Мгновенный выход, к сравнению ниже не идем 🛑
+        }
+
 
         var expectedAdaptedSchema = _schemaAdapter.ConvertToSnakeCaseSchema(expectedSchema) ??
             throw new ArgumentNullException(nameof(expectedSchema));
