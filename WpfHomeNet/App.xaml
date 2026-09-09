@@ -71,7 +71,116 @@
 
 
 
+        <!-- 🔽 ИСПРАВЛЕННЫЙ СТИЛЬ 1: Форма входа/регистрации (Полный цикл полётов) -->
+        <Style x:Key="CyberpunkFlyOutTopStyle" TargetType="UserControl">
+            <Setter Property="Visibility" Value="{Binding ControlVisibility}"/>
 
+            <!-- Изначально вывешиваем форму в космос на -600 -->
+            <Setter Property="RenderTransform">
+                <Setter.Value>
+                    <TranslateTransform Y="-600"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Opacity" Value="0"/>
+
+            <Style.Triggers>
+                <!-- 🎯 ТРИГГЕР 1: Плавный спуск сверху вниз, когда форма становится видимой -->
+                <Trigger Property="IsVisible" Value="True">
+                    <Trigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)"
+                                         From="-600" To="0" 
+                                         Duration="0:0:0.5"
+                                         AccelerationRatio="0.2" 
+                                         DecelerationRatio="0.8"/>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                         From="0" To="1" 
+                                         Duration="0:0:0.4"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.EnterActions>
+                </Trigger>
+
+                <!-- 🎯 ТРИГГЕР 2: Выталкивание наверх в космос при УСПЕХЕ (IsComplete == True) -->
+                <DataTrigger Binding="{Binding IsComplete}" Value="True">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)"
+                                         To="-600" 
+                                         Duration="0:0:0.5"
+                                         AccelerationRatio="0.3" 
+                                         DecelerationRatio="0.7"/>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                         To="0" 
+                                         Duration="0:0:0.4"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                </DataTrigger>
+
+                <!-- 🎯 ТРИГГЕР 3: 🔥 НАШ НОВЫЙ ПОРШЕНЬ: Выталкивание наверх при ОТМЕНЕ (IsCancelled == True) -->
+                <DataTrigger Binding="{Binding IsCancelled}" Value="True">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <!-- Точно так же уносим с отметки 0 наверх на -600 -->
+                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)"
+                                         To="-600" 
+                                         Duration="0:0:0.5"
+                                         AccelerationRatio="0.3" 
+                                         DecelerationRatio="0.7"/>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                         To="0" 
+                                         Duration="0:0:0.4"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+
+
+
+
+
+        <!-- 🔼 ОКОНЧАТЕЛЬНЫЙ СТИЛЬ 2: Профиль пользователя (В дизайнере на месте, а в рантайме взлетает СТРОГО ПРИ УСПЕХЕ) -->
+        <Style x:Key="CyberpunkFlyInBottomStyle" TargetType="UserControl">
+
+            <!-- 🛠️ ЖЕСТКАЯ БАЗА: При старте приложения профиль ВСЕГДА мёртво сидит в подвале на +800 и скрыт -->
+            <!-- 🔥 ХАК ДЛЯ ДИЗАЙНЕРА: Через FallbackValue мы заставляем Студию думать, что по умолчанию Y=0 и Opacity=1, чтобы ты видел чат на превью! -->
+            <Setter Property="RenderTransform">
+                <Setter.Value>
+                    <TranslateTransform Y="{Binding DummyProperty, FallbackValue=800, TargetNullValue=800}"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Opacity" Value="0"/>
+
+            <Style.Triggers>
+                <!-- 🚀 МОМЕНТ ВХОДА: Врубается ТОЛЬКО тогда, когда MainInterfaceVisibility реально становится Visible! -->
+                <DataTrigger Binding="{Binding DataContext.MainInterfaceVisibility, RelativeSource={RelativeSource AncestorType=Window}}" Value="Visible">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <!-- Плавно толкаем поршень снизу (+800) вверх в рабочую точку (0) за 550 мс -->
+                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)"
+                                         From="800" To="0" 
+                                         Duration="0:0:0.55"
+                                         AccelerationRatio="0.2" 
+                                         DecelerationRatio="0.8"/>
+
+                                <!-- Плавно зажигаем неоновое проявление из прозрачности -->
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                         From="0" To="1" 
+                                         Duration="0:0:0.45"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
 
 
 

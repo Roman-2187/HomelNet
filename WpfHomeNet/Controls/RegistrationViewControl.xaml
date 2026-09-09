@@ -12,7 +12,7 @@
  BorderThickness="0"   
  Height="Auto" 
  Width="Auto"
- Margin="0">
+ Margin="0"    Style="{StaticResource CyberpunkFlyOutTopStyle}">
 
 
     <UserControl.Resources>
@@ -20,6 +20,12 @@
         <converter:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
 
     </UserControl.Resources>
+
+
+
+
+
+
 
     <ContentControl Style="{StaticResource CyberpunkStyle }" Padding="0" >
         <ContentControl.Tag>

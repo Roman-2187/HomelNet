@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Input;
-using WpfHomeNet.Messaging;
-using WpfHomeNet.ViewModels;
-using WpfHomeNet.UiHelpers; // 🔥 Не забываем для LogQueueManager
+using System.Windows.Media;
 using System.Windows.Media.Animation; // 🔥 Подключаем движок анимаций Microsoft!
+using WpfHomeNet.Messaging;
+using WpfHomeNet.UiHelpers; // 🔥 Не забываем для LogQueueManager
+using WpfHomeNet.ViewModels;
 namespace WpfHomeNet
 {
     public partial class MainWindow : Window
@@ -20,21 +21,26 @@ namespace WpfHomeNet
             _queueManager = logQueueManager ?? throw new ArgumentNullException(nameof(logQueueManager));
 
             DataContext = _mainVm;
-            InitializeComponent();_logWindow.Show();
+            InitializeComponent();
+            _logWindow.Show();
             PositionLogWindow();
             _logWindow.Hide();
 
-            // 1. Окна договариваются о координатах НАПРЯМУЮ без спама в шину! ⚡
             this.ContentRendered += (s, e) => PositionLogWindow();
             this.LocationChanged += (s, e) => PositionLogWindow();
             this.SizeChanged += (s, e) => PositionLogWindow();
 
-            // 2. Ловим команду видимости логов прямо здесь, на UI-фасаде
             _mainVm.EventBus.Subscribe<LogWindowVisibilityChangedMessage>(OnVisibilityCommandReceived);
 
+           
 
-            
+
         }
+
+
+
+       
+
 
         private void PositionLogWindow()
         {

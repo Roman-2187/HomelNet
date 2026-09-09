@@ -27,31 +27,25 @@ namespace HomeNetCore.Data
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        // Центральная инициализация при старте приложения
-      
-
-
-
+        // Центральная инициализация при старте приложения: теперь ПРИОРИТЕТ НА SQLite! 🎯
         public async Task InitializeAsync(DatabaseType databaseType)
         {
+            // Насильно форсируем SQLite для локальной разработки, 
+            // либо используем переданный тип, если вы явно запрашиваете SQLite при старте
+            var targetType = databaseType == DatabaseType.PostGreSQL ? DatabaseType.SQLite : databaseType;
+
             try
             {
-                await SwitchDatabaseAsync(databaseType);
+                await SwitchDatabaseAsync(targetType);
             }
-            catch (DbException ) when (databaseType == DatabaseType.PostGreSQL)
+            catch (DbException) when (targetType == DatabaseType.SQLite)
             {
-                _logger.LogWarning("Не удалось подключиться к PostgreSQL при старте. Аварийно переключаемся на SQLite...");
+                _logger.LogWarning("Критическая ошибка локального SQLite при старте! Аварийно пробуем PostgreSQL...");
 
-                // Если Postgres лежит прямо на старте, разворачиваем инфраструктуру SQLite
-                await SwitchDatabaseAsync(DatabaseType.SQLite);
+                // Если локальный файл заблокирован или поврежден, пытаемся уйти на Postgres
+                await SwitchDatabaseAsync(DatabaseType.PostGreSQL);
             }
         }
-
-
-
-
-
-
 
         // 🔥 МАГИЧЕСКИЙ ТУМБЛЕР ПЕРЕКЛЮЧЕНИЯ НА ЛЕТУ!
         public async Task SwitchDatabaseAsync(DatabaseType databaseType)
@@ -100,43 +94,40 @@ namespace HomeNetCore.Data
             if (Connection != null) await Connection.DisposeAsync();
         }
 
-
-
+        // Теперь этот метод защищает выполнение, опираясь на SQLite как на основную базу! 🛡
         public async Task<T?> ExecuteWithFallbackAsync<T>(Func<DbContextContainer, Task<T>> databaseOperation)
         {
             try
             {
-                // Проверяем, если соединение закрыто/сломано из-за убитого процесса, сразу переключаем
-                if (CurrentType == DatabaseType.PostGreSQL &&
+                // Если наше основное соединение с SQLite отвалилось (например, файл заблокирован другим процессом)
+                if (CurrentType == DatabaseType.SQLite &&
                     (Connection.State == System.Data.ConnectionState.Closed || Connection.State == System.Data.ConnectionState.Broken))
                 {
-                    _logger.LogWarning("Обнаружен разрыв соединения с PostgreSQL перед выполнением. Переключаемся на SQLite...");
-                    await SwitchDatabaseAsync(DatabaseType.SQLite);
+                    _logger.LogWarning("Обнаружен разрыв соединения с SQLite перед выполнением. Переключаемся на PostgreSQL...");
+                    await SwitchDatabaseAsync(DatabaseType.PostGreSQL);
                 }
 
                 return await databaseOperation(this);
             }
-            catch (DbException ) when (CurrentType == DatabaseType.PostGreSQL)
+            catch (DbException) when (CurrentType == DatabaseType.SQLite)
             {
-                _logger.LogError("Критическая ошибка PostgreSQL (возможно, процесс был убит). Аварийное переключение на SQLite...");
+                _logger.LogError("Критическая ошибка SQLite. Аварийное переключение на PostgreSQL...");
 
                 try
                 {
-                    // Переключаем тумблер на SQLite
-                    await SwitchDatabaseAsync(DatabaseType.SQLite);
+                    // Переключаем тумблер на резервный Postgres
+                    await SwitchDatabaseAsync(DatabaseType.PostGreSQL);
 
-                    // Повторяем операцию уже на новой базе
+                    // Повторяем операцию уже на нем
                     return await databaseOperation(this);
                 }
-                catch (Exception ех)
+                catch (Exception ex)
                 {
-                    _logger.LogCritical("Не удалось переключиться на резервную базу SQLite!");
-                    _logger.LogError($"[ВНИМАНИЕ] Не удалось выполнить проверку или обновление структуры таблиц для СУБД {ех}. Приложение продолжает запуск на страх и риск.");
-                        return default(T?);
+                    _logger.LogCritical("Не удалось переключиться на резервную базу PostgreSQL!");
+                    _logger.LogError($"[ВНИМАНИЕ] Ошибка фоллбэка: {ex}. Приложение продолжает работу вслепую.");
+                    return default(T?);
                 }
             }
         }
-
     }
 }
-

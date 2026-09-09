@@ -1,9 +1,7 @@
 ﻿using Dapper;
-using HomeNetCore.Data.DBProviders;
 using HomeNetCore.Data.Interfaces;
 using HomeNetCore.Data.Schemes;
 using HomeSocialNetwork.Core;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Data;
 using System.Data.Common;
 using WpfHomeNet.Data.Schemes.CheckTableBd;
@@ -21,7 +19,8 @@ public class DBInitializer
         DbConnection connection,
         ISchemaProvider schemaProvider,
         ISchemaAdapter schemaAdapter,
-        ISchemaSqlInitializer schemaSqlGenerator, ISchemaSqlInitializer schemaSqlInitializer,
+        ISchemaSqlInitializer schemaSqlGenerator,
+        ISchemaSqlInitializer schemaSqlInitializer,
         ILogger logger)
     {
         _schemaProvider = schemaProvider ?? throw new ArgumentNullException(nameof(schemaProvider));
@@ -134,7 +133,8 @@ public class DBInitializer
         // 🔥 ИСПРАВЛЕННЫЙ СТРАЖ: Проверяем именно то, что прилетело ИЗ БАЗЫ (expectedSchema)!
         if (expectedSchema.Columns.Count == 0 || string.IsNullOrEmpty(expectedSchema.IdColumnName))
         {
-            _logger.LogWarning($"[ИНИЦИАЛИЗАТОР] Сверка структуры для таблицы '{dbTableName}' пропущена, так как схема в БД повреждена, пуста или не имеет Primary Key.");
+            _logger.LogError($"[ИНИЦИАЛИЗАТОР] Сверка структуры для таблицы '{dbTableName}'" +
+                $" пропущена, так как схема в БД повреждена, пуста или не имеет Primary Key.");
             return; // Мгновенный выход, к сравнению ниже не идем 🛑
         }
 
@@ -160,7 +160,8 @@ public class DBInitializer
                 _logger.LogWarning($"   [+] Обнаружена лишняя колонка: {extra.Name}");
 
             foreach (var mismatch in diff.MismatchedColumns)
-                _logger.LogWarning($"   [*] Сдвиг типа в '{mismatch.ColumnName}': ожидалось {mismatch.Expected}, прилетело {mismatch.Actual}");
+                _logger.LogWarning($"   [*] Сдвиг типа в '{mismatch.ColumnName}':" +
+                    $" ожидалось {mismatch.Expected}, прилетело {mismatch.Actual}");
         }
     }
 }

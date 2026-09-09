@@ -79,6 +79,9 @@ namespace WpfHomeNet.ViewModels
             IsComplete = false;
         }
 
+
+
+
         private async Task ExecuteLoginCommand()
         {
             StatusMessage = string.Empty;
@@ -96,7 +99,7 @@ namespace WpfHomeNet.ViewModels
                 if (IsComplete)
                 {
                     StatusMessage = "Вход выполнен успешно";
-                    SubmitButtonText = "OK";
+                    SubmitButtonText = string.Empty;
                     IsComplete = true;
 
                     // 🔥 ВРЕЗАЕМ СЮДА — ПОЛЬЗОВАТЕЛЬ УСПЕШНО ПРОШЕЛ ПРОВЕРКУ!

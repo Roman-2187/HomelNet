@@ -30,6 +30,7 @@ namespace WpfHomeNet.ViewModels
         public void ResetSession()
         {
             IsComplete = false; // <--- ТЕПЕРЬ ПИШЕМ С БОЛЬШОЙ БУКВЫ! 🧼
+            IsCancelled = false;
             ControlVisibility = Visibility.Collapsed;
             OnPropertyChanged(nameof(IsComplete));
             OnResetForm();
@@ -46,6 +47,11 @@ namespace WpfHomeNet.ViewModels
         }
 
         #region АВТОМАТИЧЕСКИЕ СВОЙСТВА (Штамповочный цех Microsoft) 🦾
+
+
+        // 🔥 НАШ НОВЫЙ ПОРШЕНЬ ОТМЕНЫ: Сгенерирует публичное свойство IsCancelled
+        [ObservableProperty]
+        private bool _isCancelled = false;
 
         [ObservableProperty]
         private bool _isOpen; 

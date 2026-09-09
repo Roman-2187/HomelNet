@@ -24,6 +24,8 @@
             <Setter Property="BorderThickness" Value="0.6"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
         </Style>
+        
+        
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <converter:InverseBooleanToVisibilityConverter x:Key="InverseBooleanVisibleConverter"/>
     </Window.Resources>
@@ -165,39 +167,35 @@
                 Visibility="{Binding MainInterfaceVisibility}" />
 
             <!-- ФОРМА РЕГИСТРАЦИИ -->
-            <controls:RegistrationViewControl 
-                Grid.Row="1" Grid.Column="1" Margin="65,6,6,6"
-                Grid.ColumnSpan="5" Grid.RowSpan="4" 
-                Panel.ZIndex="99" 
-                DataContext="{Binding RegistrationVm, Source={StaticResource VmLocator}}" 
-                Visibility="{Binding ControlVisibility}"
-                 d:Visibility="Hidden"/>
+
+
+            <!-- ФОРМА РЕГИСТРАЦИИ -->
+            <controls:RegistrationViewControl x:Name="RegControl"
+    Grid.Row="1" Grid.Column="1" Margin="65,6,6,6"
+    Grid.ColumnSpan="5" Grid.RowSpan="4" 
+    Panel.ZIndex="99" 
+    DataContext="{Binding RegistrationVm, Source={StaticResource VmLocator}}" 
+    Visibility="{Binding ControlVisibility}"/>
 
             <!-- ФОРМА ЛОГИНА -->
-            <controls:LoginViewControl
-                Grid.Row="1" Grid.Column="1"  Margin="65,6,6,6"
-                Grid.ColumnSpan="5" Grid.RowSpan="4"
-                Panel.ZIndex="99"
-                DataContext="{Binding LoginVm, Source={StaticResource VmLocator}}" 
-                Visibility="{Binding ControlVisibility}"
-                 />
+            <controls:LoginViewControl x:Name="LogControl"
+    Grid.Row="1" Grid.Column="1"  Margin="65,6,6,6"
+    Grid.ColumnSpan="5" Grid.RowSpan="4"
+    Panel.ZIndex="99"
+    DataContext="{Binding LoginVm, Source={StaticResource VmLocator}}" 
+    Visibility="{Binding ControlVisibility}"/>
 
             <!-- 👤 МАСКА АВТОРИЗОВАННОГО ПОЛЬЗОВАТЕЛЯ -->
-            <!-- 🔥 ИСПРАВЛЕНО: Ищем видимость строго в контексте главного окна! -->
-            <controls:UserDashboardControl  d:Visibility="Collapsed"
-                Grid.Row="1" Grid.RowSpan="4"
-                Grid.Column="0" Grid.ColumnSpan="6"
-                Panel.ZIndex="50"
-                
-                
-                Visibility="{Binding DataContext.MainInterfaceVisibility,
-                RelativeSource={RelativeSource AncestorType=Window}}"
-                
-                DataContext="{Binding UserDashboardVm, Source={StaticResource VmLocator}}" />
+            <!-- 🔥 ХАК: Ставим жестко Visible, чтобы он был готов к взлету из подвала, а вьюмодель его не скрывала раньше времени! -->
+            <controls:UserDashboardControl x:Name="DashboardControl"
+    Grid.Row="1" Grid.RowSpan="4"
+    Grid.Column="0" Grid.ColumnSpan="6"
+    Panel.ZIndex="50"
+    Visibility="Visible"
+    DataContext="{Binding UserDashboardVm, Source={StaticResource VmLocator}}" />
 
 
-
-                <!-- КОНТЕЙНЕР СТАТУС-БАР -->
+            <!-- КОНТЕЙНЕР СТАТУС-БАР -->
             <controls:StatusBarControl
                 DataContext="{Binding StatusBarVm, Source={StaticResource VmLocator}}"
                 Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="6" 
