@@ -5,15 +5,21 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:viewmodels="clr-namespace:WpfHomeNet.ViewModels"
              xmlns:converter="clr-namespace:WpfHomeNet.Converters"
-             Visibility="{Binding ControlVisibility, RelativeSource={RelativeSource AncestorType=UserControl}}"
+             xmlns:helpers="clr-namespace:WpfHomeNet.Helpers"
+             Visibility="{Binding ControlVisibility,
+               RelativeSource={RelativeSource AncestorType=UserControl}}"
              x:Name="LoginControl"
              mc:Ignorable="d"
              Background="Transparent"
              BorderThickness="0"
              Height="Auto"
-             Width="Auto"
+             Width="600"
              Margin="10"  ClipToBounds="True" VerticalAlignment="Top"
-              Style="{StaticResource CyberpunkFlyOutTopStyle}"> 
+             Style="{StaticResource UniversalFlyOutTopStyle}"
+             d:Opacity="1"
+             
+               >
+
 
     <UserControl.Resources>
         <converter:StateToBrushConverter x:Key="StateToBrushConverter"/>
@@ -44,33 +50,44 @@
                 <Label Content="Email:" VerticalAlignment="Center" Foreground="#FFB300"/>
                 <TextBox
                     Text="{Binding UserData.Email, UpdateSourceTrigger=PropertyChanged}"
-                    BorderBrush="{Binding ValidationResults[EmailType].State, Converter={StaticResource StateToBrushConverter}}"
-                    IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}" />
+                    BorderBrush="{Binding ValidationResults[EmailType].State,
+                    Converter={StaticResource StateToBrushConverter}}"
+                    IsEnabled="{Binding IsComplete,
+                    Converter={StaticResource InverseBooleanConverter}}" />
                 <Label
                     Content="{Binding ValidationResults[EmailType].Message}"
-                    Foreground="{Binding ValidationResults[EmailType].State, Converter={StaticResource StateToBrushConverter}}"
+                    Foreground="{Binding ValidationResults[EmailType].State,
+                    Converter={StaticResource StateToBrushConverter}}"
                     FontSize="11"
                     HorizontalAlignment="Center"/>
             </StackPanel>
 
             <!-- PASSWORD -->
-            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Vertical" Margin="0,0,0,5"  >
-                <Label Content="Пароль:" VerticalAlignment="Center" Foreground="#FFB300"/>
+            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Vertical" 
+                         >
+                <Label Content="Пароль:" VerticalAlignment="Center"
+                       Foreground="#FFB300"/>
                 <TextBox
                     x:Name="PasswordBox"
-                    Text="{Binding UserData.Password, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                    BorderBrush="{Binding ValidationResults[PasswordType].State, Converter={StaticResource StateToBrushConverter}}"
-                    IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"
-                    Margin="0,0,0,5" />
+                    Text="{Binding UserData.Password, UpdateSourceTrigger=PropertyChanged,
+                    Mode=TwoWay}"
+                    BorderBrush="{Binding ValidationResults[PasswordType].State,
+                    Converter={StaticResource StateToBrushConverter}}"
+                    IsEnabled="{Binding IsComplete,
+                    Converter={StaticResource InverseBooleanConverter}}"
+                    
+                    />
                 <Label
                     Content="{Binding ValidationResults[PasswordType].Message}"
-                    Foreground="{Binding ValidationResults[PasswordType].State, Converter={StaticResource StateToBrushConverter}}"
+                    Foreground="{Binding ValidationResults[PasswordType].State, 
+                    Converter={StaticResource StateToBrushConverter}}"
                     FontSize="10"
                     HorizontalContentAlignment="Center"/>
             </StackPanel>
-            
-            
-            <Label Grid.Row="2" Content="{Binding StatusMessage}" />
+
+
+            <Label Grid.Row="2" Content="{Binding StatusMessage}"
+                   Foreground="#FFB300" />
 
 
             <!-- BUTTONS -->
@@ -82,12 +99,14 @@
                 <Button
                     Content="Отмена"
                     Command="{Binding CancelCommand}"   
-                    IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"
+                    IsEnabled="{Binding IsComplete,
+                    Converter={StaticResource InverseBooleanConverter}}"
                     Width="Auto" MinWidth="120"/>
                 <Button
                     Content="{Binding SubmitButtonText}"
                      Command="{Binding ToggleRegistrationCommand}"  
-                     
+                       IsEnabled="{Binding IsComplete,
+                    Converter={StaticResource InverseBooleanConverter}}"
                     Width="Auto" MinWidth="120"/>
             </StackPanel>
         </Grid>

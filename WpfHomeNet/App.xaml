@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:WpfHomeNet" 
              xmlns:vm="clr-namespace:WpfHomeNet.ViewModels"   
-             xmlns:cv="clr-namespace:WpfHomeNet.Converters" >
+             xmlns:cv="clr-namespace:WpfHomeNet.Converters"
+              xmlns:helpers="clr-namespace:WpfHomeNet.Helpers">
     
 
     <Application.Resources>
@@ -71,116 +72,222 @@
 
 
 
-        <!-- 🔽 ИСПРАВЛЕННЫЙ СТИЛЬ 1: Форма входа/регистрации (Полный цикл полётов) -->
-        <Style x:Key="CyberpunkFlyOutTopStyle" TargetType="UserControl">
-            <Setter Property="Visibility" Value="{Binding ControlVisibility}"/>
+        <Style x:Key="CyberpunkContactItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="Margin" Value="2,1"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="14"/>
+            <!-- 🍊 СТАТИКА: Оранжево-золотые буквы по умолчанию -->
+            <Setter Property="Foreground" Value="#FFB300"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
 
-            <!-- Изначально вывешиваем форму в космос на -600 -->
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="border"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="6"
+                        Padding="{TemplateBinding Padding}">
+                            <!-- ContentPresenter сам выведет FirstName благодаря DisplayMemberPath -->
+                            <ContentPresenter x:Name="contentPresenter"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <!-- 🚨 НАВЕДЕНИЕ КУРСОРA: Красный фон + Неоновый текст + Неоновая рамка -->
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFF23E5C"/>
+                                <Setter Property="Foreground" Value="#00F0FF"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#00F0FF"/>
+                            </Trigger>
+
+                            <!-- 🌌 АКТИВНЫЙ/ВЫБРАННЫЙ ЧАТ: Уход в глубокий темный с неоновой бирюзовой рамкой -->
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FF131926"/>
+                                <Setter Property="Foreground" Value="#00F0FF"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#00F0FF"/>
+                            </Trigger>
+
+                            <!-- 🚫 ОТКЛЮЧЕННОЕ СОСТОЯНИЕ -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="Transparent"/>
+                                <Setter Property="Foreground" Value="#FF615959"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+        <Style x:Key="PanelFlyOutTopStyle" TargetType="FrameworkElement">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Setter Property="Opacity" Value="0"/>
             <Setter Property="RenderTransform">
                 <Setter.Value>
                     <TranslateTransform Y="-600"/>
                 </Setter.Value>
             </Setter>
-            <Setter Property="Opacity" Value="0"/>
-
             <Style.Triggers>
-                <!-- 🎯 ТРИГГЕР 1: Плавный спуск сверху вниз, когда форма становится видимой -->
-                <Trigger Property="IsVisible" Value="True">
-                    <Trigger.EnterActions>
-                        <BeginStoryboard>
-                            <Storyboard>
-                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)"
-                                         From="-600" To="0" 
-                                         Duration="0:0:0.5"
-                                         AccelerationRatio="0.2" 
-                                         DecelerationRatio="0.8"/>
-                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                         From="0" To="1" 
-                                         Duration="0:0:0.4"/>
-                            </Storyboard>
-                        </BeginStoryboard>
-                    </Trigger.EnterActions>
-                </Trigger>
-
-                <!-- 🎯 ТРИГГЕР 2: Выталкивание наверх в космос при УСПЕХЕ (IsComplete == True) -->
-                <DataTrigger Binding="{Binding IsComplete}" Value="True">
+                <!-- Триггер слушает логический булен из UserDashboardViewModel -->
+                <DataTrigger Binding="{Binding IsChatOpen}" Value="True">
                     <DataTrigger.EnterActions>
                         <BeginStoryboard>
                             <Storyboard>
-                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)"
-                                         To="-600" 
-                                         Duration="0:0:0.5"
-                                         AccelerationRatio="0.3" 
-                                         DecelerationRatio="0.7"/>
-                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                         To="0" 
-                                         Duration="0:0:0.4"/>
+                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility">
+                                    <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Visible}"/>
+                                </ObjectAnimationUsingKeyFrames>
+                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" From="-600" To="0" Duration="0:0:0.5" AccelerationRatio="0.2" DecelerationRatio="0.8"/>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.25"/>
                             </Storyboard>
                         </BeginStoryboard>
                     </DataTrigger.EnterActions>
-                </DataTrigger>
-
-                <!-- 🎯 ТРИГГЕР 3: 🔥 НАШ НОВЫЙ ПОРШЕНЬ: Выталкивание наверх при ОТМЕНЕ (IsCancelled == True) -->
-                <DataTrigger Binding="{Binding IsCancelled}" Value="True">
-                    <DataTrigger.EnterActions>
+                    <DataTrigger.ExitActions>
                         <BeginStoryboard>
                             <Storyboard>
-                                <!-- Точно так же уносим с отметки 0 наверх на -600 -->
-                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)"
-                                         To="-600" 
-                                         Duration="0:0:0.5"
-                                         AccelerationRatio="0.3" 
-                                         DecelerationRatio="0.7"/>
-                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                         To="0" 
-                                         Duration="0:0:0.4"/>
+                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" To="-600" Duration="0:0:0.4" AccelerationRatio="0.3" DecelerationRatio="0.7"/>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.2"/>
+                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility" BeginTime="0:0:0.4">
+                                    <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Collapsed}"/>
+                                </ObjectAnimationUsingKeyFrames>
                             </Storyboard>
                         </BeginStoryboard>
-                    </DataTrigger.EnterActions>
+                    </DataTrigger.ExitActions>
                 </DataTrigger>
             </Style.Triggers>
         </Style>
 
 
-
-
-
-
-        <!-- 🔼 ОКОНЧАТЕЛЬНЫЙ СТИЛЬ 2: Профиль пользователя (В дизайнере на месте, а в рантайме взлетает СТРОГО ПРИ УСПЕХЕ) -->
-        <Style x:Key="CyberpunkFlyInBottomStyle" TargetType="UserControl">
-
-            <!-- 🛠️ ЖЕСТКАЯ БАЗА: При старте приложения профиль ВСЕГДА мёртво сидит в подвале на +800 и скрыт -->
-            <!-- 🔥 ХАК ДЛЯ ДИЗАЙНЕРА: Через FallbackValue мы заставляем Студию думать, что по умолчанию Y=0 и Opacity=1, чтобы ты видел чат на превью! -->
+        <!-- 1. ПОЛЕТ СВЕРХУ (Top) -->
+        <Style x:Key="UniversalFlyOutTopStyle" TargetType="UserControl">
+            <!-- Базовое состояние в космосе, чтобы не мешать кликам, пока закрыто -->
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Setter Property="Opacity" Value="0"/>
             <Setter Property="RenderTransform">
                 <Setter.Value>
-                    <TranslateTransform Y="{Binding DummyProperty, FallbackValue=800, TargetNullValue=800}"/>
+                    <TranslateTransform Y="-600"/>
                 </Setter.Value>
             </Setter>
-            <Setter Property="Opacity" Value="0"/>
 
             <Style.Triggers>
-                <!-- 🚀 МОМЕНТ ВХОДА: Врубается ТОЛЬКО тогда, когда MainInterfaceVisibility реально становится Visible! -->
-                <DataTrigger Binding="{Binding DataContext.MainInterfaceVisibility, RelativeSource={RelativeSource AncestorType=Window}}" Value="Visible">
+                <!-- Слушаем ControlVisibility из твоей ViewModel напрямую через DataTrigger -->
+                <DataTrigger Binding="{Binding ControlVisibility}" Value="Visible">
                     <DataTrigger.EnterActions>
                         <BeginStoryboard>
                             <Storyboard>
-                                <!-- Плавно толкаем поршень снизу (+800) вверх в рабочую точку (0) за 550 мс -->
-                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)"
-                                         From="800" To="0" 
-                                         Duration="0:0:0.55"
-                                         AccelerationRatio="0.2" 
-                                         DecelerationRatio="0.8"/>
-
-                                <!-- Плавно зажигаем неоновое проявление из прозрачности -->
-                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                         From="0" To="1" 
-                                         Duration="0:0:0.45"/>
+                                <!-- 1. Мгновенно делаем видимым на экране -->
+                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility">
+                                    <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Visible}"/>
+                                </ObjectAnimationUsingKeyFrames>
+                                <!-- 2. Плавно спускаем и проявляем -->
+                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" 
+                                         From="-600" To="0" Duration="0:0:0.6" AccelerationRatio="0.2" DecelerationRatio="0.8"/>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity" 
+                                         From="0" To="1" Duration="0:0:0.3"/>
                             </Storyboard>
                         </BeginStoryboard>
                     </DataTrigger.EnterActions>
+
+                    <DataTrigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <!-- 1. Сначала плавно уносим наверх и гасим -->
+                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" 
+                                         To="-600" Duration="0:0:0.5" AccelerationRatio="0.3" DecelerationRatio="0.7"/>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity" 
+                                         To="0" Duration="0:0:0.3"/>
+                                <!-- 2. И только через 0.5 сек, когда форма уже в космосе, физически её гасим -->
+                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility" BeginTime="0:0:0.5">
+                                    <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Collapsed}"/>
+                                </ObjectAnimationUsingKeyFrames>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.ExitActions>
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+
+        <!-- 2. ПОЛЕТ СНИЗУ (Bottom) -->
+        <Style x:Key="UniversalFlyOutBottomStyle" TargetType="UserControl">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Setter Property="Opacity" Value="0"/>
+            <Setter Property="RenderTransform">
+                <Setter.Value>
+                    <TranslateTransform Y="600"/>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ControlVisibility}" Value="Visible">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility">
+                                    <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Visible}"/>
+                                </ObjectAnimationUsingKeyFrames>
+                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" From="600" To="0" Duration="0:0:0.6" AccelerationRatio="0.2" DecelerationRatio="0.8"/>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.3"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                    <DataTrigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" To="600" Duration="0:0:0.5" AccelerationRatio="0.3" DecelerationRatio="0.7"/>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.3"/>
+                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility" BeginTime="0:0:0.5">
+                                    <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Collapsed}"/>
+                                </ObjectAnimationUsingKeyFrames>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.ExitActions>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 3. ПОЛЕТ СЛЕВА (Left) -->
+        <Style x:Key="UniversalFlyOutLeftStyle" TargetType="UserControl">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Setter Property="Opacity" Value="0"/>
+            <Setter Property="RenderTransform">
+                <Setter.Value>
+                    <TranslateTransform X="-800"/>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ControlVisibility}" Value="Visible">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility">
+                                    <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Visible}"/>
+                                </ObjectAnimationUsingKeyFrames>
+                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.X)" From="-800" To="0" Duration="0:0:0.6" AccelerationRatio="0.2" DecelerationRatio="0.8"/>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.3"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                    <DataTrigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.X)" To="-800" Duration="0:0:0.5" AccelerationRatio="0.3" DecelerationRatio="0.7"/>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.3"/>
+                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility" BeginTime="0:0:0.5">
+                                    <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Collapsed}"/>
+                                </ObjectAnimationUsingKeyFrames>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.ExitActions>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+
 
 
 

@@ -93,6 +93,8 @@ protected override void OnStartup(StartupEventArgs e)
                     {
                         _serviceProvider.GetRequiredService<UsersTableViewModel>();
                         _serviceProvider.GetRequiredService<UserDashboardViewModel>();
+                        // 🔥 Будим и чат на всякий случай
+                        _serviceProvider.GetRequiredService<ChatViewModel>();
 
                         _serviceProvider.GetRequiredService<AdminMenuViewModel>();
                         _serviceProvider.GetRequiredService<RegistrationViewModel>();
@@ -163,6 +165,9 @@ protected override void OnStartup(StartupEventArgs e)
             services.AddSingleton<AdminMenuViewModel>();
             services.AddSingleton<DeleteUsersViewModel>();
             services.AddSingleton<UserDashboardViewModel>();
+            // 🔥 ДОБАВЬ ВОТ ЭТУ СТРОКУ, ЧТОБЫ КОНТЕЙНЕР НАШЕЛ МOЗГИ ЧАТA:
+            services.AddSingleton<ChatViewModel>();
+            
 
             services.AddSingleton(provider =>
             {

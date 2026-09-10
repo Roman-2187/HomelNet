@@ -10,85 +10,75 @@
     <ContentControl Style="{StaticResource CyberpunkStyle}" Margin="5,0,0,0" >
         <ContentControl.Tag>
             <CornerRadius>10</CornerRadius>
-            <!-- Внутренняя матрешка тоже хочет знать радиус! -->
         </ContentControl.Tag>
         <Grid >
-        <Grid.RowDefinitions>
-            <RowDefinition Height="60"/>
-            <!-- 0: Верхняя плашка (Имя + Статус) -->
-            <RowDefinition Height="*"/>
-            <!-- 1: Лента эсэмэсок (Скролл) -->
-            <RowDefinition Height="Auto"/>
-            <!-- 2: Нижняя панель (Ввод + Скрепка) -->
-        </Grid.RowDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="60"/>
+                <!-- 0: Верхняя плашка -->
+                <RowDefinition Height="*"/>
+                <!-- 1: Лента эсэмэсок -->
+                <RowDefinition Height="Auto"/>
+                <!-- 2: Нижняя панель ввода -->
+            </Grid.RowDefinitions>
 
-        <!-- ==================== ROW 0: ВЕРХНЯЯ ПЛАШКА ==================== -->
-        <Border Grid.Row="0" Background="Transparent"
-                BorderBrush="Transparent" BorderThickness="0,0,0,1">
-            <Grid Margin="15,0">
-                <StackPanel VerticalAlignment="Center">
-                    <!-- Имя собеседника (брата) -->
-                    <TextBlock Text="Брат " 
-                               FontWeight="Bold" FontSize="16"
-                               Foreground="#212121"/>
-                    <!-- Живой статус, под который мы потом прикрутим PostgreSQL -->
-                    <StackPanel Orientation="Horizontal"
-                                Margin="0,2,0,0">
-                        <Ellipse Width="8" Height="8"
-                                 Fill="#4CAF50" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                        <TextBlock Text="в сети"
-                                   FontSize="12" Foreground="#757575"/>
+            <!-- ==================== ROW 0: ВЕРХНЯЯ ПЛАШКА ==================== -->
+            <Border Grid.Row="0" Background="Transparent" BorderBrush="Transparent" BorderThickness="0,0,0,1">
+                <Grid Margin="15,0">
+                    <StackPanel VerticalAlignment="Center">
+                        <!-- 🔥 ДИНАМИКА: Имя собеседника из выбранного друга -->
+                        <TextBlock Text="{Binding SelectedFriend.FirstName, FallbackValue='Выберите собеседника'}" 
+                                   FontWeight="Bold" FontSize="16" Foreground="White"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                            <Ellipse Width="8" Height="8" Fill="#4CAF50" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <TextBlock Text="в сети" FontSize="12" Foreground="#757575"/>
+                        </StackPanel>
                     </StackPanel>
-                </StackPanel>
-            </Grid>
-        </Border>
+                </Grid>
+            </Border>
 
-        <!-- ==================== ROW 1: ЛЕНТА СООБЩЕНИЙ ==================== -->
-        <!-- Сюда мы позже прикрутим ListView с твоим любимым индексёром валидации и шаблонами сообщений -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="10">
-            <StackPanel>
-                <!-- Заглушка, чтобы увидеть, как будут выглядеть сообщения -->
-                <Border Background="#E3F2FD" CornerRadius="10" Padding="10"
-                        HorizontalAlignment="Left" Margin="0,5" MaxWidth="350">
-                    <TextBlock Text="Привет! Как там твой суверенный мессенджер поживает? 
-                               Сумел логгер настроить?" TextWrapping="Wrap"/>
-                </Border>
-                <Border Background="#DCF8C6" CornerRadius="10"
-                        Padding="10" HorizontalAlignment="Right" Margin="0,5" MaxWidth="350">
-                    <TextBlock
-                        Text="Привет! Да, сука, всё настроил, "
-                        TextWrapping="Wrap"/>
-                </Border>
-            </StackPanel>
-        </ScrollViewer>
+            <!-- ==================== ROW 1: ЛЕНТА СООБЩЕНИЙ ==================== -->
+            <!-- Выводим сообщения через ListBox, привязанный к коллекции Messages -->
+            <ListBox Grid.Row="1" 
+                     ItemsSource="{Binding Messages}" 
+                     Background="Transparent" 
+                     BorderThickness="0" 
+                     ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <!-- Временный простой вывод текста сообщения. Позже натянем красивые пузыри! -->
+                        <Border Background="#111115" BorderBrush="#222" BorderThickness="1" CornerRadius="6" Margin="2" Padding="8">
+                            <TextBlock Text="{Binding Text}" Foreground="White" TextWrapping="Wrap" FontSize="13"/>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
 
-      
-        <!-- ==================== ROW 2: НИЖНЯЯ ПАНЕЛЬ ВВОДА ==================== -->
-        <!-- ==================== ROW 2: НИЖНЯЯ ПАНЕЛЬ ВВОДА ==================== -->
-            <Border Grid.Row="2" CornerRadius="8" Background="#FF519183" Margin="5" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Padding="10">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <!-- 0: Кнопка Скрепка -->
-                    <ColumnDefinition Width="*"/>
-                    <!-- 1: Поле ввода текста -->
-                    <ColumnDefinition Width="Auto"/>
-                    <!-- 2: Кнопка Отправить -->
-                </Grid.ColumnDefinitions>
+            <!-- ==================== ROW 2: НИЖНЯЯ ПАНЕЛЬ ВВОДА ==================== -->
+            <Border Grid.Row="2" CornerRadius="8" Background="#FF519183" Margin="5" Padding="10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <!-- Скрепка -->
+                        <ColumnDefinition Width="*"/>
+                        <!-- Поле ввода -->
+                        <ColumnDefinition Width="Auto"/>
+                        <!-- Отправить -->
+                    </Grid.ColumnDefinitions>
 
-                <!-- Кнопка "Скрепка" для будущей отправки файлов брату -->
-                <Button Grid.Column="0" Content="📎" FontSize="20" Background="Transparent" BorderThickness="0" Width="40" Height="40" Cursor="Hand"/>
+                    <!-- Кнопка "Скрепка" -->
+                    <Button Grid.Column="0" Command="{Binding AttachFileCommand}" Content="📎" FontSize="20" Background="Transparent" BorderThickness="0" Width="40" Height="40" Cursor="Hand"/>
 
-                <!-- Текстовое поле для набора эсэмэски -->
-                <TextBox Grid.Column="1" Height="40" VerticalContentAlignment="Center" Padding="10,0" Margin="10,0" BorderBrush="#E0E0E0"/>
+                    <!-- 🔥 ДИНАМИКА: Текстовое поле с мгновенным обновлением свойства MessageText -->
+                    <TextBox Grid.Column="1" 
+                             Text="{Binding MessageText, UpdateSourceTrigger=PropertyChanged}"
+                             Height="40" VerticalContentAlignment="Center" Padding="10,0" Margin="10,0" BorderBrush="#E0E0E0"/>
 
-                <!-- Кнопка "Отправить" -->
-                <Button Grid.Column="2" Content="🚀" FontSize="18" Background="#2196F3" Foreground="White" BorderThickness="0" Width="50" Height="40"/>
-            </Grid>
-        </Border>
-
-
-    </Grid>
+                    <!-- 🔥 ДИНАМИКА: Кнопка "Отправить" привязана к команде SendMessageCommand -->
+                    <Button Grid.Column="2" Command="{Binding SendMessageCommand}" Content="🚀" FontSize="18" Background="#2196F3" Foreground="White" BorderThickness="0" Width="50" Height="40" Cursor="Hand"/>
+                </Grid>
+            </Border>
+        </Grid>
     </ContentControl>
 
 </UserControl>

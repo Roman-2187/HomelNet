@@ -20,6 +20,11 @@ namespace WpfHomeNet.ViewModels
         // Прописываем мост для личного кабинета в Локаторе 🚀
         public UserDashboardViewModel UserDashboardVm => Services.GetRequiredService<UserDashboardViewModel>();
 
+        // Прописываем мост для вложенного чата в Локаторе 🚀
+        
+
+        public ChatViewModel ChatVm => Services.GetRequiredService<ChatViewModel>();
+
 
     }
 }

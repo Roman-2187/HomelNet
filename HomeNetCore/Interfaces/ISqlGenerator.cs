@@ -14,6 +14,8 @@ namespace HomeNetCore.Data.Interfaces
         // Универсальные контракты для работы с бизнес-логикой
         string GenerateSelectByEmail();
         string GenerateEmailExists();
+
+        string GenerateSelectChatHistory();
     }
 }
 

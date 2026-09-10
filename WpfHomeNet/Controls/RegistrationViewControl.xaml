@@ -5,14 +5,16 @@
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:viewmodels="clr-namespace:WpfHomeNet.ViewModels"             
  xmlns:converter="clr-namespace:WpfHomeNet.Converters"
- Visibility="{Binding ControlVisibility, RelativeSource={RelativeSource AncestorType=UserControl}}"
+ Visibility="{Binding ControlVisibility,
+    RelativeSource={RelativeSource AncestorType=UserControl}}"
  x:Name="RegistrationControl"
  mc:Ignorable="d" 
  Background="Transparent"
  BorderThickness="0"   
  Height="Auto" 
- Width="Auto"
- Margin="0"    Style="{StaticResource CyberpunkFlyOutTopStyle}">
+ Width="600"
+ 
+             Style="{StaticResource UniversalFlyOutTopStyle}" d:Opacity="1" >
 
 
     <UserControl.Resources>
@@ -51,18 +53,23 @@
             <!-- USER NAME -->
             <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,0,0,5" Grid.ColumnSpan="2">
 
-                <Label Content="Имя пользователя:" VerticalAlignment="Center" Foreground="#FFB300"/>
+                <Label Content="Имя пользователя:"
+                       VerticalAlignment="Center"
+                       Foreground="#FFB300"/>
 
                 <TextBox
                 Text="{Binding UserData.FirstName}"
-                BorderBrush="{Binding ValidationResults[NameType].State, Converter={StaticResource StateToBrushConverter}}"
-                IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"/>
+                BorderBrush="{Binding ValidationResults[NameType].State,
+                    Converter={StaticResource StateToBrushConverter}}"
+                IsEnabled="{Binding IsComplete,
+                    Converter={StaticResource InverseBooleanConverter}}"/>
 
 
 
                 <Label
                 Content="{Binding ValidationResults[NameType].Message}"
-                Foreground="{Binding ValidationResults[NameType].State, Converter={StaticResource StateToBrushConverter}}"
+                Foreground="{Binding ValidationResults[NameType].State, 
+                    Converter={StaticResource StateToBrushConverter}}"
                 FontSize="11"
                 HorizontalAlignment="Center"/>
             </StackPanel>
@@ -134,7 +141,7 @@
 
                 <Label Grid.Column="0"
                   Content="{Binding StatusMessage}"
-                  MinWidth="50"
+                  MinWidth="50" Foreground="#FFF23E5C"
                         VerticalContentAlignment="Center"
                   HorizontalContentAlignment="Left"/>
 
@@ -153,6 +160,7 @@
                     <Button MinWidth="120"
                 Content="{Binding SubmitButtonText}"
                 Command="{Binding ToggleRegistrationCommand}"  
+                            IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"
                />
 
                 </StackPanel>

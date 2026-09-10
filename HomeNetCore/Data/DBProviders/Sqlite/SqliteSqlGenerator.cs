@@ -101,7 +101,37 @@ namespace HomeNetCore.Data.DBProviders.Sqlite
 
             // Твоё ночное исправление: оборачиваем имя таблицы в безопасные кавычки! ⚡
             return $"SELECT {_formattedTable.AllFields} FROM \"{_formattedTable.TableName}\"";
+
         }
+
+
+        // =================================================================
+        // 🔥 СПЕЦИАЛЬНЫЙ СЕКРЕТНЫЙ ОТСЕК ДЛЯ ЧАТА (Умный полиморфизм!)
+        // =================================================================
+
+        public string GenerateSelectChatHistory()
+        {
+            if (_formattedTable.Columns == null)
+            {
+                throw new InvalidOperationException("В схеме таблицы отсутствуют колонки!");
+            }
+
+            // Ищем в адаптированной схеме имена колонок для связи
+            string? senderCol = _formattedTable.Columns.FirstOrDefault(c => c.Name == "sender_id")?.Name;
+            string? receiverCol = _formattedTable.Columns.FirstOrDefault(c => c.Name == "receiver_id")?.Name;
+
+            if (string.IsNullOrEmpty(senderCol) || string.IsNullOrEmpty(receiverCol))
+            {
+                throw new InvalidOperationException($"Сущность {typeof(T).Name} не поддерживает историю чата (не найдены колонки sender_id/receiver_id)!");
+            }
+
+            // Штампуем идеальный SQL под твою snake_case таблицу в SQLite/Postgres
+            return $@"SELECT * FROM {_formattedTable.TableName} 
+              WHERE (sender_id = @userId AND receiver_id = @friendId) 
+                 OR (sender_id = @friendId AND receiver_id = @userId)
+              ORDER BY created_at ASC;";
+        }
+
 
         // =================================================================
         // 🔥 СПЕЦИАЛЬНЫЙ СЕКРЕТНЫЙ ОТСЕК ДЛЯ ТАБЛИЦ С EMAIL (Умный полиморфизм!)

@@ -38,6 +38,34 @@ namespace HomeNetCore.Data.DBProviders.Postgres
                 ?? throw new InvalidOperationException("Ошибка адаптера при конвертации схемы для Postgres");
         }
 
+
+
+        // =================================================================
+        // 🔥 СПЕЦИАЛЬНЫЙ СЕКРЕТНЫЙ ОТСЕК ДЛЯ ЧАТА В POSTGRES
+        // =================================================================
+        public string GenerateSelectChatHistory()
+        {
+            if (_formattedTable.Columns == null)
+            {
+                throw new InvalidOperationException("В схеме таблицы отсутствуют колонки!");
+            }
+
+            bool hasSender = _formattedTable.Columns.Any(c => c.Name == "sender_id");
+            bool hasReceiver = _formattedTable.Columns.Any(c => c.Name == "receiver_id");
+
+            if (!hasSender || !hasReceiver)
+            {
+                throw new InvalidOperationException($"Сущность {typeof(T).Name} не поддерживает историю чата!");
+            }
+
+            // Штампуем чистый Postgres-SQL (все таблицы оборачиваем в кавычки по твоему канону)
+            return $@"SELECT * FROM ""{_formattedTable.TableName}"" 
+                      WHERE (sender_id = @userId AND receiver_id = @friendId) 
+                         OR (sender_id = @friendId AND receiver_id = @userId)
+                      ORDER BY created_at ASC;";
+        }
+
+
         // Вставка (CRUD - Create) с фирменным синтаксисом RETURNING 🚀
         public string GenerateInsert()
         {

@@ -16,10 +16,6 @@ namespace WpfHomeNet.ViewModels
         // 1. Сюда напрямую биндятся Имя, Почта и Пароль
         public UserEntity UserData { get; set; } = new();
 
-        // 2. Изолированное свойство ТОЛЬКО для UI-проверки совпадения (в базу не летит!)
-        
-
-       
         public ICommand RegisterCommand { get; }
         public ICommand CancelCommand { get; }
         public ICommand ToggleRegistrationCommand { get; }
@@ -29,6 +25,19 @@ namespace WpfHomeNet.ViewModels
             _registerService = registerService ?? throw new ArgumentNullException(nameof(registerService));
 
             InitializeInitialHints();
+
+            // 🔥 ЗАДЕРЖКА ПОСЛЕ РЕГИСТРАЦИИ: плавно улетаем через 1 секунду, не ломая UI-поток
+            _eventBus.Subscribe<UserRegisteredMessage>(async msg =>
+            {
+                // Даем пользователю 1 секунду порадоваться успеху
+                await Task.Delay(1000);
+
+                // Безопасно закрываем форму в UI-потоке
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    CloseForm();
+                });
+            });
 
             RegisterCommand = new RelayCommand(
                 execute: async (obj) => await ExecuteRegisterCommand()
@@ -81,17 +90,11 @@ namespace WpfHomeNet.ViewModels
                 if (IsComplete)
                 {
                     StatusMessage = "Вы успешно зарегистрированы";
-
                     SubmitButtonText = "ща погодь!";
 
-                    if (_createdUser != null)
-                    {
-                        _eventBus.Publish(new UserRegisteredMessage(_createdUser));
-                    }
-
-                    // 🔥 МАГИЯ АВТОМАТИЗАЦИИ: замираем на 1 секунду и бесшумно схлопываем форму!
-                    await Task.Delay(1500);
-                    CloseForm();
+                    // 🔥 Просто кидаем сообщение в шину. Дашборд его поймает и прилетит,
+                    // а этот класс сам себя закроет через секунду (сработает подписка в конструкторе)
+                    _eventBus.Publish(new UserRegisteredMessage(_createdUser ?? UserData));
                 }
                 else
                 {

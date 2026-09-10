@@ -23,6 +23,14 @@ namespace WpfHomeNet.Controls
         public UserDashboardControl()
         {
             InitializeComponent();
+
+
+
+
+
         }
+
+
+
     }
 }

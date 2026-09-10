@@ -19,17 +19,35 @@ namespace WpfHomeNet.ViewModels
         public RelayCommand ToggleRegistrationCommand { get; private set; }
         #endregion
 
-        
-        public AuthenticationViewModel(AuthenticateService loginService,EventBus eventBus) : base(eventBus)
+        public AuthenticationViewModel(AuthenticateService loginService, EventBus eventBus) : base(eventBus)
         {
             _loginService = loginService ?? throw new ArgumentNullException(nameof(loginService));
 
             InitializeInitialHints();
 
-            LoginCommand = new RelayCommand(async (obj) => await ExecuteLoginCommand(),  (obj) => true );
-               
-             
            
+
+            // 🔥 ЗАДЕРЖКА ПОСЛЕ ВХОДА: плавно улетаем через 1 секунду, не блокируя UI-поток
+            _eventBus.Subscribe<UserLoggedMessage>(async msg =>
+            {
+                // Ждем 1 секунду (или 1500 мс, если хочешь паузу чуть дольше)
+                await Task.Delay(1000);
+
+                // Возвращаемся в UI-поток, чтобы безопасно изменить видимость контрола
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ControlVisibility = Visibility.Collapsed;
+                });
+            });
+
+
+
+
+            // Кнопка доступна для клика и наведения только если IsComplete == false
+            LoginCommand = new RelayCommand(
+                async (obj) => await ExecuteLoginCommand(),
+                (obj) => !IsComplete
+            );
 
             CancelCommand = new RelayCommand(
                 execute: (obj) =>
@@ -45,7 +63,9 @@ namespace WpfHomeNet.ViewModels
                 execute: async (parameter) =>
                 {
                     if (!IsComplete)
+                    {
                         await ExecuteLoginCommand();
+                    }
                     else
                     {
                         ResetForm();
@@ -79,9 +99,6 @@ namespace WpfHomeNet.ViewModels
             IsComplete = false;
         }
 
-
-
-
         private async Task ExecuteLoginCommand()
         {
             StatusMessage = string.Empty;
@@ -89,8 +106,6 @@ namespace WpfHomeNet.ViewModels
 
             try
             {
-                // Предполагаем, что сервис научился отдавать созданного юзера третьим параметром
-                // Если нет — ниже напишу, как выкрутиться!
                 var (isSuccess, validationList, loggedUser) = await _loginService.CheckUserAsync(UserData);
                 IsComplete = isSuccess;
 
@@ -100,17 +115,16 @@ namespace WpfHomeNet.ViewModels
                 {
                     StatusMessage = "Вход выполнен успешно";
                     SubmitButtonText = string.Empty;
-                    IsComplete = true;
 
-                    // 🔥 ВРЕЗАЕМ СЮДА — ПОЛЬЗОВАТЕЛЬ УСПЕШНО ПРОШЕЛ ПРОВЕРКУ!
-                    if (loggedUser != null)
-                    {
-                        _eventBus.Publish(new UserLoggedMessage(loggedUser));
-                    }
+                    // Публикуем сообщение об успехе — дашборд его поймает и вылетит снизу,
+                    // а этот класс благодаря подписке выше поймает его и плавно улетит вверх.
+                    _eventBus.Publish(new UserLoggedMessage(loggedUser ?? UserData));
+
+
                 }
                 else
                 {
-                    StatusMessage = "Есть ошибки в полях";
+                    StatusMessage = "Есть ошибки in полях";
                 }
             }
             catch (Exception ex)
@@ -118,7 +132,5 @@ namespace WpfHomeNet.ViewModels
                 StatusMessage = $"При входе произошла ошибка: {ex.Message}";
             }
         }
-
     }
 }
-

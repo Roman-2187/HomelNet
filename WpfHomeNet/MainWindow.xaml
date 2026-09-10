@@ -168,37 +168,47 @@
 
             <!-- ФОРМА РЕГИСТРАЦИИ -->
 
-
-            <!-- ФОРМА РЕГИСТРАЦИИ -->
+            <!-- ФОРМА РЕГИСТРАЦИИ: Перекрывает всё окно и встает строго по центру -->
             <controls:RegistrationViewControl x:Name="RegControl"
-    Grid.Row="1" Grid.Column="1" Margin="65,6,6,6"
-    Grid.ColumnSpan="5" Grid.RowSpan="4" 
-    Panel.ZIndex="99" 
-    DataContext="{Binding RegistrationVm, Source={StaticResource VmLocator}}" 
-    Visibility="{Binding ControlVisibility}"/>
+                                  Grid.Row="0" 
+                                  Grid.Column="0"  
+                                  Grid.ColumnSpan="10" 
+                                  Grid.RowSpan="10"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  Panel.ZIndex="99" 
+                                  DataContext="{Binding RegistrationVm, Source={StaticResource VmLocator}}" 
+                                  Visibility="{Binding ControlVisibility}"/>
 
-            <!-- ФОРМА ЛОГИНА -->
+
+            <!-- ФОРМА ЛОГИНА: Игнорирует сетку и встает ровно в центр всего MainWindow -->
             <controls:LoginViewControl x:Name="LogControl"
-    Grid.Row="1" Grid.Column="1"  Margin="65,6,6,6"
-    Grid.ColumnSpan="5" Grid.RowSpan="4"
-    Panel.ZIndex="99"
-    DataContext="{Binding LoginVm, Source={StaticResource VmLocator}}" 
-    Visibility="{Binding ControlVisibility}"/>
+                           Grid.Row="0" 
+                           Grid.Column="0"  
+                           Grid.ColumnSpan="10" 
+                           Grid.RowSpan="10"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Panel.ZIndex="99"
+                           DataContext="{Binding LoginVm, Source={StaticResource VmLocator}}" 
+                           Visibility="{Binding ControlVisibility}"/>
 
-            <!-- 👤 МАСКА АВТОРИЗОВАННОГО ПОЛЬЗОВАТЕЛЯ -->
-            <!-- 🔥 ХАК: Ставим жестко Visible, чтобы он был готов к взлету из подвала, а вьюмодель его не скрывала раньше времени! -->
+
             <controls:UserDashboardControl x:Name="DashboardControl"
-    Grid.Row="1" Grid.RowSpan="4"
-    Grid.Column="0" Grid.ColumnSpan="6"
-    Panel.ZIndex="50"
-    Visibility="Visible"
-    DataContext="{Binding UserDashboardVm, Source={StaticResource VmLocator}}" />
+                 Grid.Row="1" Grid.RowSpan="4"
+                 Grid.Column="0" Grid.ColumnSpan="6"
+                 Panel.ZIndex="50"
+                 Visibility="Visible"
+                 DataContext="{Binding UserDashboardVm,
+                Source={StaticResource VmLocator}}" />
 
 
             <!-- КОНТЕЙНЕР СТАТУС-БАР -->
             <controls:StatusBarControl
-                DataContext="{Binding StatusBarVm, Source={StaticResource VmLocator}}"
-                Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="6" 
+                DataContext="{Binding StatusBarVm,
+                Source={StaticResource VmLocator}}"
+                Grid.Row="5" Grid.Column="0"
+                Grid.ColumnSpan="6" 
                 VerticalAlignment="Bottom"/>
         </Grid>
 
