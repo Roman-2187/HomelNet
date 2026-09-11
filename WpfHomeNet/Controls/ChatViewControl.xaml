@@ -27,10 +27,11 @@
                     <StackPanel VerticalAlignment="Center">
                         <!-- 🔥 ДИНАМИКА: Имя собеседника из выбранного друга -->
                         <TextBlock Text="{Binding SelectedFriend.FirstName, FallbackValue='Выберите собеседника'}" 
-                                   FontWeight="Bold" FontSize="16" Foreground="White"/>
+                                   FontWeight="Bold" FontSize="16" Foreground="#FFB300"/>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                            <Ellipse Width="8" Height="8" Fill="#4CAF50" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0" >
+                            <Ellipse Width="8" Height="8" Fill="#4CAF50"
+                                     VerticalAlignment="Center" Margin="0,0,5,0"/>
                             <TextBlock Text="в сети" FontSize="12" Foreground="#757575"/>
                         </StackPanel>
                     </StackPanel>
@@ -47,15 +48,19 @@
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <!-- Временный простой вывод текста сообщения. Позже натянем красивые пузыри! -->
-                        <Border Background="#111115" BorderBrush="#222" BorderThickness="1" CornerRadius="6" Margin="2" Padding="8">
-                            <TextBlock Text="{Binding Text}" Foreground="White" TextWrapping="Wrap" FontSize="13"/>
+                        <Border Background="#1AADD8E6" BorderBrush="#00F0FF"
+                                BorderThickness="0.5"
+                                CornerRadius="25" Margin="2" Padding="25,5,25,5">
+                            <TextBlock Text="{Binding Text}" Foreground="#FFB300" 
+                                       TextWrapping="Wrap" FontSize="18"/>
                         </Border>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
 
             <!-- ==================== ROW 2: НИЖНЯЯ ПАНЕЛЬ ВВОДА ==================== -->
-            <Border Grid.Row="2" CornerRadius="8" Background="#FF519183" Margin="5" Padding="10">
+            <Border Grid.Row="2" CornerRadius="8" Background="Transparent" BorderBrush="#00F0FF"
+                    Margin="5" Padding="10">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -67,15 +72,20 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- Кнопка "Скрепка" -->
-                    <Button Grid.Column="0" Command="{Binding AttachFileCommand}" Content="📎" FontSize="20" Background="Transparent" BorderThickness="0" Width="40" Height="40" Cursor="Hand"/>
+                    <Button Grid.Column="0" Command="{Binding AttachFileCommand}"
+                            Background="#1AADD8E6" Foreground="White" Content="📎" 
+                            FontSize="20"  BorderThickness="0.5" BorderBrush="#00F0FF" Width="40" Height="40" Cursor="Hand"/>
 
                     <!-- 🔥 ДИНАМИКА: Текстовое поле с мгновенным обновлением свойства MessageText -->
                     <TextBox Grid.Column="1" 
                              Text="{Binding MessageText, UpdateSourceTrigger=PropertyChanged}"
-                             Height="40" VerticalContentAlignment="Center" Padding="10,0" Margin="10,0" BorderBrush="#E0E0E0"/>
+                             Height="40" VerticalContentAlignment="Center" BorderThickness="0.5" Foreground="#FFB300"
+                             Padding="10,0" Margin="10,0" BorderBrush="#00F0FF" Background="#1AADD8E6"  />
 
                     <!-- 🔥 ДИНАМИКА: Кнопка "Отправить" привязана к команде SendMessageCommand -->
-                    <Button Grid.Column="2" Command="{Binding SendMessageCommand}" Content="🚀" FontSize="18" Background="#2196F3" Foreground="White" BorderThickness="0" Width="50" Height="40" Cursor="Hand"/>
+                    <Button Grid.Column="2" Command="{Binding SendMessageCommand}" 
+                            Content="🚀" FontSize="18" Background="#1AADD8E6" 
+                            Foreground="White" BorderThickness="0.5" Width="50" BorderBrush="#00F0FF" Height="40" Cursor="Hand"/>
                 </Grid>
             </Border>
         </Grid>

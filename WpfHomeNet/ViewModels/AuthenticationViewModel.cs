@@ -25,30 +25,31 @@ namespace WpfHomeNet.ViewModels
 
             InitializeInitialHints();
 
-           
-
-            // 🔥 ЗАДЕРЖКА ПОСЛЕ ВХОДА: плавно улетаем через 1 секунду, не блокируя UI-поток
+            // 🔥 УЛЕТАЕМ ПОСЛЕ ВХОДА + ПОЛНАЯ ОЧИСТКА ФОРМЫ
             _eventBus.Subscribe<UserLoggedMessage>(async msg =>
             {
-                // Ждем 1 секунду (или 1500 мс, если хочешь паузу чуть дольше)
+                // Спокойно ждем 1 секунду в фоновом потоке
                 await Task.Delay(1000);
 
-                // Возвращаемся в UI-поток, чтобы безопасно изменить видимость контрола
+                // Возвращаемся в UI-поток для безопасного изменения интерфейса
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
+                    // Сначала полностью сбрасываем форму и подсказки, чтобы при следующем открытии всё было чисто
+                    ResetForm();
+                    InitializeInitialHints();
+
+                    // Хлопаем само окно
                     ControlVisibility = Visibility.Collapsed;
                 });
             });
 
-
-
-
-            // Кнопка доступна для клика и наведения только если IsComplete == false
+            // Команда "Вход" (на всякий случай, если где-то используется в коде)
             LoginCommand = new RelayCommand(
                 async (obj) => await ExecuteLoginCommand(),
                 (obj) => !IsComplete
             );
 
+            // Кнопка отмены — мгновенно сбрасывает данные и закрывает панель
             CancelCommand = new RelayCommand(
                 execute: (obj) =>
                 {
@@ -59,21 +60,18 @@ namespace WpfHomeNet.ViewModels
                 canExecute: (obj) => true
             );
 
+            // Твоя основная команда, к которой привязана кнопка в XAML
             ToggleRegistrationCommand = new RelayCommand(
                 execute: async (parameter) =>
                 {
+                    // Так как повторные клики ты намертво закрыл в XAML через IsEnabled,
+                    // этот метод гарантированно вызовется только один раз при валидации
                     if (!IsComplete)
                     {
                         await ExecuteLoginCommand();
                     }
-                    else
-                    {
-                        ResetForm();
-                        InitializeInitialHints();
-                        ControlVisibility = Visibility.Collapsed;
-                    }
                 },
-                canExecute: (parameter) => !IsComplete || true
+                canExecute: (parameter) => !IsComplete
             );
         }
 
@@ -114,17 +112,18 @@ namespace WpfHomeNet.ViewModels
                 if (IsComplete)
                 {
                     StatusMessage = "Вход выполнен успешно";
-                    SubmitButtonText = string.Empty;
 
-                    // Публикуем сообщение об успехе — дашборд его поймает и вылетит снизу,
-                    // а этот класс благодаря подписке выше поймает его и плавно улетит вверх.
+                    // Вместо пустой строки пишем "Входим...", чтобы заблокированная кнопка 
+                    // в течение секунды давала красивый текстовый отклик
+                    SubmitButtonText = "Входим...";
+
+                    // Публикуем в шину — MainViewModel/Dashboard ловят и открывают приложение,
+                    // а подписка в конструкторе выше запускает таймер удаления окна
                     _eventBus.Publish(new UserLoggedMessage(loggedUser ?? UserData));
-
-
                 }
                 else
                 {
-                    StatusMessage = "Есть ошибки in полях";
+                    StatusMessage = "Есть ошибки в полях"; // Поправили "in" на нормальное "в" :)
                 }
             }
             catch (Exception ex)

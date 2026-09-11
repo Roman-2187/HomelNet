@@ -96,7 +96,7 @@
                 Grid.Row="3"
                 Grid.ColumnSpan="2"
                 Orientation="Horizontal"
-                HorizontalAlignment="Right" >
+                HorizontalAlignment="Right" Height="35">
                 <Button
                     Content="Отмена" Style="{StaticResource NeonRegistrationButtonStyle}"
                     Command="{Binding CancelCommand}"   

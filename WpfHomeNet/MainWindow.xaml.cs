@@ -60,7 +60,7 @@ namespace WpfHomeNet
             var exitAnimation = new DoubleAnimation
             {
                 To = screenHeight + 50, // Улетает вниз за пределы экрана
-                Duration = TimeSpan.FromMilliseconds(800),
+                Duration = TimeSpan.FromMilliseconds(700),
                 EasingFunction = easeIn
             };
 

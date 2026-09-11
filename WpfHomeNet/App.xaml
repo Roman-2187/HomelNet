@@ -94,9 +94,9 @@
                         <ControlTemplate.Triggers>
                             <!-- НАВЕДЕНИЕ: Вспыхивает неоновым зеленым (Больше ничего не двигается!) -->
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#1000FF66"/>
-                                <Setter TargetName="contentPresenter" Property="TextElement.Foreground" Value="#00FF66"/>
-                                <Setter TargetName="border" Property="BorderBrush" Value="#00FF66"/>
+                               <Setter TargetName="border" Property="Background" Value="#FFF23E5C"/>
+<Setter TargetName="contentPresenter" Property="TextElement.Foreground" Value="#00F0FF"/>
+<Setter TargetName="border" Property="BorderBrush" Value="#00F0FF"/>
                                 <!-- Толщину больше не переопределяем, она зафиксирована на 1 -->
                             </Trigger>
 
@@ -125,7 +125,7 @@
         <Style x:Key="NeonTextBoxStyle" TargetType="TextBox">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderBrush" Value="#00F0FF"/>
-            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
 
             <!-- Возвращаем человеческие отступы и высоту, чтобы текст не прилипал к краям -->
             <Setter Property="MinHeight" Value="32"/>
@@ -160,7 +160,7 @@
             <Style.Triggers>
                 <!-- ТРИГГЕР ОШИБКИ: Если цвет рамки меняется на малиновый, утолщаем до 2 -->
                 <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=BorderBrush.Color}" Value="#FFF23E5C">
-                    <Setter Property="BorderThickness" Value="2"/>
+                    <Setter Property="BorderThickness" Value="0.5"/>
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -204,9 +204,9 @@
 
                             <!-- 🌌 АКТИВНЫЙ/ВЫБРАННЫЙ ЧАТ: Уход в глубокий темный с неоновой бирюзовой рамкой -->
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#FF131926"/>
+                                <Setter TargetName="border" Property="Background" Value="Transparent"/>
                                 <Setter Property="Foreground" Value="#00F0FF"/>
-                                <Setter TargetName="border" Property="BorderBrush" Value="#00F0FF"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="Transparent"/>
                             </Trigger>
 
                             <!-- 🚫 ОТКЛЮЧЕННОЕ СОСТОЯНИЕ -->
