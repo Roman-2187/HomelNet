@@ -9,141 +9,93 @@
     Background="Transparent" 
     mc:Ignorable="d" Margin="0"
     d:DesignHeight="500" d:DesignWidth="740"
-     > 
+     >
 
     <UserControl.Resources>
-        <BooleanToVisibilityConverter
-                x:Key="BooleanToVisibilityConverter"/>
-        <converter:InverseBooleanToVisibilityConverter 
-                x:Key="InverseBooleanVisibleConverter"/>
-        <converter:InverseBooleanConverter
-                x:Key="InverseBooleanConverter"/>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converter:InverseBooleanToVisibilityConverter x:Key="InverseBooleanVisibleConverter"/>
+        <converter:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
     </UserControl.Resources>
 
-  
-        <Grid >
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"/>
-                <!-- Левая боковая панель кнопок -->
-                <ColumnDefinition/>
-                <!-- Вся правая область под контент -->
-            </Grid.ColumnDefinitions>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200"/>
+            <!-- Левая боковая панель кнопок -->
+            <ColumnDefinition/>
+            <!-- Вся правая область под контент -->
+        </Grid.ColumnDefinitions>
 
-            <!-- ЛЕВАЯ ЧАСТЬ: Боковая панель кнопок управления -->
+        <!-- ЛЕВАЯ ЧАСТЬ: Боковая панель кнопок управления -->
+        <ContentControl Style="{StaticResource CyberpunkImageStyle}" Margin="0,0,10,10">
+            <ContentControl.Tag>
+                <CornerRadius>6</CornerRadius>
+            </ContentControl.Tag>
 
-            <ContentControl 
-         Style="{StaticResource CyberpunkStyle}" Margin="0,0,10,10"    >
-                <ContentControl.Tag>
+            <StackPanel Margin="3" 
+                        IsEnabled="{Binding MainVm.IsButtonsPanelEnabled, Source={StaticResource VmLocator}}" 
+                        Background="Transparent">
 
-                    <CornerRadius>8</CornerRadius>
-                </ContentControl.Tag>
+                <Label Content="АДМИН ПАНЕЛЬ" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,5,0,15"/>
 
-                <StackPanel 
-                    Grid.Column="0"  Margin="3" 
-                    IsEnabled="{Binding MainVm.IsButtonsPanelEnabled,
-                    Source={StaticResource VmLocator}}" Background="Transparent">
+                <Button Content="User Profile" Margin="0,3"  
+                        Command="{Binding MainVm.ToggleFormVisibilityCommand, Source={StaticResource VmLocator}}"
+                        CommandParameter="{Binding LoginVm, Source={StaticResource VmLocator}}" />
 
+                <Button Content="Test list Users" Margin="0,3" Command="{Binding SeedDataCommand}" />
 
+                <Button Content="Добавить юзера" Margin="0,3"                    
+                        Command="{Binding MainVm.ToggleFormVisibilityCommand, Source={StaticResource VmLocator}}"
+                        CommandParameter="{Binding RegistrationVm, Source={StaticResource VmLocator}}"
+                        IsEnabled="{Binding MainVm.IsComplete, Source={StaticResource VmLocator}, Converter={StaticResource InverseBooleanConverter}}"/>
 
-                    <Label 
-                        Content="АДМИН ПАНЕЛЬ" FontWeight="Bold"
-                        HorizontalAlignment="Center" Margin="0,5,0,15"
-                        />
+                <Button Content="Удалить юзера" Margin="0,3"
+                        Command="{Binding MainVm.ToggleFormVisibilityCommand, Source={StaticResource VmLocator}}" 
+                        CommandParameter="{Binding DeleteUsersVm, Source={StaticResource VmLocator}}" />
 
-                    <!-- Кнопки профиля и регистрации теперь бьют СТРОГО через VmLocator!-->
+                <Button Margin="0,3" Content="{Binding TableButtonText}" Command="{Binding UserTableViewCommand}"/>
 
-                    <Button Content="User Profile" Margin="0,3"  
-                        Command="{Binding MainVm.ToggleFormVisibilityCommand,
-                        Source={StaticResource VmLocator}}"
-                        CommandParameter="{Binding LoginVm,
-                        Source={StaticResource VmLocator}}" />
+                <!-- 👁️ Кнопка логов: теперь переключает видимость встроенного контрола -->
+                <Button Margin="0,3" Command="{Binding ToggleLogWindowCommand}" Content="{Binding ToggleButtonText}"/>
+            </StackPanel>
+        </ContentControl>
 
-                    <Button
-                        Content="Test list Users"
-                        Margin="0,3" 
-                        Command="{Binding SeedDataCommand}" />
+        <!-- ПРАВАЯ ЧАСТЬ: Динамическая рабочая зона (Разделена на Верх/Низ) -->
+        <Grid Grid.Column="1" Margin="0,0,0,10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <!-- Верх: Таблицы и Формы удаления -->
+                <RowDefinition Height="180"/>
+                <!-- Низ: Окно системных логов -->
+            </Grid.RowDefinitions>
 
-                    <Button 
-                        Content="Добавить юзера" Margin="0,3"                    
-                        Command="{Binding MainVm.ToggleFormVisibilityCommand,
-                        Source={StaticResource VmLocator}}"
-                        CommandParameter="{Binding RegistrationVm,
-                        Source={StaticResource VmLocator}}"
-                        IsEnabled="{Binding MainVm.IsComplete,
-                        Source={StaticResource VmLocator},
-                        Converter={StaticResource InverseBooleanConverter}}"
-                    />
-
-                    <!-- Кнопка вызова формы удаления юзеров -->
-                    <Button 
-                        Content="Удалить юзера" Margin="0,3"
-                        Command="{Binding MainVm.ToggleFormVisibilityCommand,
-                        Source={StaticResource VmLocator}}" 
-                        CommandParameter="{Binding DeleteUsersVm,
-                        Source={StaticResource VmLocator}}" />
-
-                    <!-- ВОЗВРАЩАЕМ НАШУ НАНО-КНОПКУ ТАБЛИЦЫ С БОЛЬШОЙ БУКВЫ! 👁️✨ -->
-                    <Button 
-                        Margin="0,3"
-                        Content="{Binding TableButtonText}"                    
-                        Command="{Binding UserTableViewCommand}"
-                    />
-
-                    <Button
-                        Margin="0,3"
-                        Command="{Binding ToggleLogWindowCommand}"     
-                        Content="{Binding ToggleButtonText}"
-                    />
-                </StackPanel>
-
-            </ContentControl>
-
-            <!-- ПРАВАЯ ЧАСТЬ: Динамическая рабочая зона  -->
-            <Grid 
-                    Grid.Column="1" Margin="0,0,0,10">
-
+            <!-- ВЕРХНЯЯ ЗОНА (Row 0) -->
+            <Grid Grid.Row="0" Margin="0,0,0,10">
                 <!-- 1. ТАБЛИЦА ПОЛЬЗОВАТЕЛЕЙ -->
-                <Border 
-                        Background="Transparent" CornerRadius="4" 
-                        BorderThickness="1" BorderBrush="#FF464545"
-                        Visibility="{Binding IsTableVisible,
-                        Converter={StaticResource BooleanToVisibilityConverter}}"
+                <Border Background="Transparent" CornerRadius="4" BorderThickness="1" BorderBrush="#FF464545"
+                        Visibility="{Binding IsTableVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
                         d:Visibility="Visible">
-                    <!-- Таблица сама берет свои мозги из глобального Локатора ресурсов -->
-                    <!-- БЫЛО: Source={StaticResource Locator} -->
-                    <!-- СТАЛО (Подключаемся к твоему реальному локатору): 🧼 -->
-                    <!-- БЫЛО: DataContext="{Binding Users, Source={StaticResource VmLocator}}" -->
-                    <!-- СТАЛО (Вытаскиваем из локатора именно ВьюМодель таблицы): 🧼 -->
-                    <controls:UsersTableView DataContext="{Binding UsersTable,
-                        Source={StaticResource VmLocator}}" />
-
-
-
+                    <controls:UsersTableView DataContext="{Binding UsersTable, Source={StaticResource VmLocator}}" />
                 </Border>
 
-                <!-- 2. ФОРМА УДАЛЕНИЯ ЮЗЕРОВ 🦾🔥 -->
-                <ContentControl 
-  Style="{StaticResource CyberpunkStyle}" 
-                        Background="Transparent"
-                        Margin="0"
-                        BorderThickness="1"                        
-                    
-                        Visibility="{Binding DeleteUsersVm.ControlVisibility, 
-                        Source={StaticResource VmLocator}}">
+                <!-- 2. ФОРМА УДАЛЕНИЯ ЮЗЕРОВ -->
+                <ContentControl Style="{StaticResource CyberpunkImageStyle}" Background="Transparent" Margin="0" BorderThickness="1"                        
+                                Visibility="{Binding DeleteUsersVm.ControlVisibility, Source={StaticResource VmLocator}}">
                     <ContentControl.Tag>
-
-                        <CornerRadius>8</CornerRadius>
+                        <CornerRadius>6</CornerRadius>
                     </ContentControl.Tag>
-
-                    <controls:DeleteUsers
-                            DataContext="{Binding DeleteUsersVm,
-                            Source={StaticResource VmLocator}}"
-                            Margin="0.5" 
-                        
-                        Loaded="DeleteUsers_Loaded"/>
+                    <controls:DeleteUsers DataContext="{Binding DeleteUsersVm, Source={StaticResource VmLocator}}" Margin="0.5" Loaded="DeleteUsers_Loaded"/>
                 </ContentControl>
-
             </Grid>
+
+            <!-- НИЖНЯЯ ЗОНА: Окно логов (Row 1) -->
+            <!-- Привязано к вашей команде ToggleLogWindowCommand через стандартный триггер видимости -->
+            <!-- НИЖНЯЯ ЗОНА: Окно логов (Row 1) -->
+            <!-- Теперь оно намертво привязано к свойству IsLogVisible текущей ВьюМодели админки! -->
+            <controls:LogRenderControl x:Name="AdminLogRender" 
+                           Grid.Row="1"
+                           Visibility="{Binding IsLogVisible, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
         </Grid>
-   
+    </Grid>
+
 </UserControl>  

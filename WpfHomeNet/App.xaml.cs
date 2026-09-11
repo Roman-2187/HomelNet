@@ -102,6 +102,18 @@ protected override void OnStartup(StartupEventArgs e)
 
                         // ШАГ В: Открываем главное окно
                         _mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+                        
+
+
+                        // 🛸 ТРЮК С ТЕЛЕПОРТАЦИЕЙ: Сразу вычисляем позицию под монитором
+                        double screenHeight = SystemParameters.PrimaryScreenHeight;
+                        double screenWidth = SystemParameters.PrimaryScreenWidth;
+
+                        _mainWindow.WindowStartupLocation = WindowStartupLocation.Manual; // Отключаем авто-центр
+                        _mainWindow.Left = (screenWidth - _mainWindow.Width) / 2;       // Центрируем по горизонтали
+                        _mainWindow.Top = screenHeight + 100;                           // Прячем глубоко под нижний край
+
+                        // Окно рендерится невидимым для пользователя там, где его никто не видит
                         _mainWindow.Show();
                     });
                 }
@@ -123,34 +135,31 @@ protected override void OnStartup(StartupEventArgs e)
     }
 
 
-    private void ConfigureServices(IServiceCollection services)
+        private void ConfigureServices(IServiceCollection services)
         {
             // 1. Системная инфраструктура (Singleton)
             services.AddSingleton<ILogger, Logger>();
             services.AddSingleton<EventBus>();
             services.AddSingleton<StatusBarViewModel>();
 
-            // Лог-менеджер
-            services.AddSingleton(provider => new LogWindow(provider.GetRequiredService<ILogger>()));
-            services.AddSingleton(provider =>
+            // 🔥 ИСПРАВЛЕНО: Убрали LogWindow. Менеджер теперь автономен и просто копит логи в очередь
+            services.AddSingleton<LogQueueManager>(provider =>
             {
-                var logWin = provider.GetRequiredService<LogWindow>();
-                var manager = new LogQueueManager(logWin, 5);
+                var manager = new LogQueueManager(5); // Передаем только размер пачки, без старого окна
                 provider.GetRequiredService<ILogger>().SetOutput(manager.WriteLog);
                 return manager;
             });
 
-            // 2. 🔥 КРАСИВО: Передаем в контейнер СРАЗУ ОБЕ строки подключения на вечное хранение!
+            // 2. Передаем в контейнер обе строки подключения
             services.AddSingleton(provider =>
                 new DbContextContainer(_postgresConnectionString, _sqliteConnectionString, provider.GetRequiredService<ILogger>()));
 
-            // 🚀 НОВЫЙ ЭТАЖ: Чистая регистрация репозиториев данных. 
-            // Они больше не привязаны к конкретному коннекту, они берут весь контекст и достают свойства на лету! 💎
+            // Регистрация репозиториев данных
             services.AddSingleton<HomeNetCore.Data.Repositories.UserRepository>();
             services.AddSingleton<HomeNetCore.Data.Repositories.MessageRepository>();
             services.AddSingleton<HomeNetCore.Data.Repositories.FriendRepository>();
 
-            // 🧠 НОВЫЙ ЭТАЖ: Регистрируем бизнес-сервисы в DI (Контейнер сам автоматически закинет в них репозитории!)
+            // Бизнес-сервисы
             services.AddSingleton<UserService>();
             services.AddSingleton<RegisterService>();
             services.AddSingleton<AuthenticateService>();
@@ -158,16 +167,14 @@ protected override void OnStartup(StartupEventArgs e)
             services.AddSingleton<MessageService>();
             services.AddSingleton<FriendService>();
 
-            // 3. 🎨 Регистрация Вьюмоделей (Тянут чистые сервисы напрямую из DI)
+            // 3. Регистрация Вьюмоделей
             services.AddSingleton<UsersTableViewModel>();
             services.AddSingleton<RegistrationViewModel>();
             services.AddSingleton<AuthenticationViewModel>();
             services.AddSingleton<AdminMenuViewModel>();
             services.AddSingleton<DeleteUsersViewModel>();
             services.AddSingleton<UserDashboardViewModel>();
-            // 🔥 ДОБАВЬ ВОТ ЭТУ СТРОКУ, ЧТОБЫ КОНТЕЙНЕР НАШЕЛ МOЗГИ ЧАТA:
             services.AddSingleton<ChatViewModel>();
-            
 
             services.AddSingleton(provider =>
             {
@@ -178,5 +185,6 @@ protected override void OnStartup(StartupEventArgs e)
 
             services.AddTransient<MainWindow>();
         }
+
     }
 }

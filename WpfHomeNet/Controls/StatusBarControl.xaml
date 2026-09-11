@@ -9,7 +9,7 @@
 
     <!-- Твоя фирменная подложка и цвета -->
     <Border BorderBrush="#FFF23E5C"  BorderThickness="1"
-        Padding="4" CornerRadius="8" 
+        Padding="4" CornerRadius="6" 
                     Background="Transparent">
         <StatusBar Background="#00A3C091">
             <StatusBarItem>

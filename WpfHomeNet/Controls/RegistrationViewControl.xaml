@@ -17,22 +17,17 @@
              Style="{StaticResource UniversalFlyOutTopStyle}" d:Opacity="1" >
 
 
+
+
+
     <UserControl.Resources>
         <converter:StateToBrushConverter x:Key="StateToBrushConverter"/>
         <converter:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
-
     </UserControl.Resources>
 
-
-
-
-
-
-
-    <ContentControl Style="{StaticResource CyberpunkStyle }" Padding="0" >
+    <ContentControl Style="{StaticResource CyberpunkImageStyle }" Padding="0" >
         <ContentControl.Tag>
-            <CornerRadius>10</CornerRadius>
-            <!-- Внутренняя матрешка тоже хочет знать радиус! -->
+            <CornerRadius>6</CornerRadius>
         </ContentControl.Tag>
         <Grid Margin="15" Background="Transparent">
             <Grid.RowDefinitions>
@@ -41,8 +36,6 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="45"/>
-
-
             </Grid.RowDefinitions>
 
             <Grid.ColumnDefinitions>
@@ -52,124 +45,86 @@
 
             <!-- USER NAME -->
             <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,0,0,5" Grid.ColumnSpan="2">
-
-                <Label Content="Имя пользователя:"
-                       VerticalAlignment="Center"
-                       Foreground="#FFB300"/>
-
+                <Label Content="Имя пользователя:" VerticalAlignment="Center" Foreground="#00F0FF"/>
                 <TextBox
+                Style="{StaticResource NeonTextBoxStyle}"
                 Text="{Binding UserData.FirstName}"
-                BorderBrush="{Binding ValidationResults[NameType].State,
-                    Converter={StaticResource StateToBrushConverter}}"
-                IsEnabled="{Binding IsComplete,
-                    Converter={StaticResource InverseBooleanConverter}}"/>
+                BorderBrush="{Binding ValidationResults[NameType].State, Converter={StaticResource StateToBrushConverter}}"
+                IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"/>
 
-
-
-                <Label
-                Content="{Binding ValidationResults[NameType].Message}"
-                Foreground="{Binding ValidationResults[NameType].State, 
-                    Converter={StaticResource StateToBrushConverter}}"
-                FontSize="11"
-                HorizontalAlignment="Center"/>
+                <Label Content="{Binding ValidationResults[NameType].Message}"
+                Foreground="{Binding ValidationResults[NameType].State, Converter={StaticResource StateToBrushConverter}}"
+                FontSize="11" HorizontalAlignment="Center"/>
             </StackPanel>
 
             <!-- EMAIL -->
             <StackPanel Orientation="Vertical" Margin="0,89,0,5" Grid.ColumnSpan="2" Grid.RowSpan="2">
-
-                <Label Content="Email:" VerticalAlignment="Center" Foreground="#FFB300"  />
-
+                <Label Content="Email:" VerticalAlignment="Center" Foreground="#00F0FF"  />
                 <TextBox 
+                Style="{StaticResource NeonTextBoxStyle}"
                 Text="{Binding UserData.Email}"
                 BorderBrush="{Binding ValidationResults[EmailType].State, Converter={StaticResource StateToBrushConverter}}"
-                IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"   >
-                </TextBox>
+                IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"/>
 
-                <Label
-                Content="{Binding ValidationResults[EmailType].Message}"  
+                <Label Content="{Binding ValidationResults[EmailType].Message}"  
                 Foreground="{Binding ValidationResults[EmailType].State, Converter={StaticResource StateToBrushConverter}}"
-                FontSize="11"
-                HorizontalAlignment="Center"/>
-
+                FontSize="11" HorizontalAlignment="Center"/>
             </StackPanel>
 
             <!-- PASSWORD -->
-            <StackPanel Grid.Row="2" Orientation="Vertical" Margin="0,0,0,5" Grid.ColumnSpan="2"   >
-
-                <Label Content="Пароль:" VerticalAlignment="Center"  Foreground="#FFB300"/>
-
+            <StackPanel Grid.Row="2" Orientation="Vertical" Margin="0,0,0,5" Grid.ColumnSpan="2">
+                <Label Content="Пароль:" VerticalAlignment="Center" Foreground="#00F0FF"/>
                 <TextBox
+                Style="{StaticResource NeonTextBoxStyle}"
                 Text="{Binding UserData.Password}"
                 BorderBrush="{Binding ValidationResults[PasswordType].State, Converter={StaticResource StateToBrushConverter}}"
-                IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"
-                
-               
-                />
+                IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"/>
 
-                <Label
-                Content="{Binding ValidationResults[PasswordType].Message}"
+                <Label Content="{Binding ValidationResults[PasswordType].Message}"
                 Foreground="{Binding ValidationResults[PasswordType].State, Converter={StaticResource StateToBrushConverter}}"
-                FontSize="11"
-                HorizontalAlignment="Center"/>
-
+                FontSize="11" HorizontalAlignment="Center"/>
             </StackPanel>
-
 
             <!-- CONFIRMED PASSWORD -->
             <StackPanel Grid.Row="3" Orientation="Vertical" Margin="0,0,0,5" Grid.ColumnSpan="2">
-
-                <Label Content="Повторите пароль:" VerticalAlignment="Center"  Foreground="#FFB300"/>
-                <TextBox
+                <Label Content="Повторите пароль:" VerticalAlignment="Center" Foreground="#00F0FF"/>
+                <TextBox 
+                Style="{StaticResource NeonTextBoxStyle}"
                 Text="{Binding UserData.ConfirmPassword}"
                 BorderBrush="{Binding ValidationResults[ConfirmedPasswordType].State, Converter={StaticResource StateToBrushConverter}}"
                 IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"/>
 
-
-                <Label
-                Content="{Binding ValidationResults[ConfirmedPasswordType].Message}"
+                <Label Content="{Binding ValidationResults[ConfirmedPasswordType].Message}"
                 Foreground="{Binding ValidationResults[ConfirmedPasswordType].State, Converter={StaticResource StateToBrushConverter}}"
-                FontSize="11"
-                HorizontalAlignment="Center"/>
+                FontSize="11" HorizontalAlignment="Center"/>
             </StackPanel>
 
-
-            <Grid Grid.Row="3" Grid.ColumnSpan="2" Margin="0,89,0,0" Grid.RowSpan="2" >
+            <!-- НИЖНЯЯ ПАНЕЛЬ С КНОПКАМИ -->
+            <Grid Grid.Row="3" Grid.ColumnSpan="2" Margin="0,89,0,0" Grid.RowSpan="2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <Label Grid.Column="0"
-                  Content="{Binding StatusMessage}"
-                  MinWidth="50" Foreground="#FFF23E5C"
-                        VerticalContentAlignment="Center"
-                  HorizontalContentAlignment="Left"/>
-
+                <Label Grid.Column="0" Content="{Binding StatusMessage}" MinWidth="50" Foreground="#00F0FF" VerticalContentAlignment="Center" HorizontalContentAlignment="Left"/>
 
                 <!-- BUTTONS -->
-                <StackPanel Grid.Column="1" Margin="0,0,0,0" Height="45"                           
-                Orientation="Horizontal"  
-                HorizontalAlignment="Right"   >
+                <StackPanel Grid.Column="1" Margin="0,0,0,0" Height="45" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Отмена" 
+                            Style="{StaticResource NeonRegistrationButtonStyle}"
+                            Command="{Binding CancelCommand}" 
+                            IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}" 
+                            Width="120"/>
 
-                    <Button
-                Content="Отмена"
-                Command="{Binding CancelCommand}"
-                IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"
-                MinWidth="120"  />
-
-                    <Button MinWidth="120"
-                Content="{Binding SubmitButtonText}"
-                Command="{Binding ToggleRegistrationCommand}"  
+                    <Button Content="{Binding SubmitButtonText}" 
+                            Style="{StaticResource NeonRegistrationButtonStyle}"
+                            Command="{Binding ToggleRegistrationCommand}"  
                             IsEnabled="{Binding IsComplete, Converter={StaticResource InverseBooleanConverter}}"
-               />
-
+                            Width="120"/>
                 </StackPanel>
-
             </Grid>
         </Grid>
     </ContentControl>
-
-
 
 </UserControl>
 

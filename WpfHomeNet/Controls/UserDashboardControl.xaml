@@ -21,7 +21,7 @@
         </Grid.ColumnDefinitions>
 
         <!-- ЛЕВАЯ ПАНЕЛЬ: СПИСОК ДРУЗЕЙ -->
-        <ContentControl Grid.Column="0" Style="{StaticResource CyberpunkStyle}">
+        <ContentControl Grid.Column="0" Style="{StaticResource CyberpunkImageStyle}">
             <ContentControl.Tag>
                 <CornerRadius>10</CornerRadius>
             </ContentControl.Tag>

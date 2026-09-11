@@ -30,9 +30,9 @@
 
 
 
-    <ContentControl Style="{StaticResource CyberpunkStyle}"  Padding="4" >
+    <ContentControl Style="{StaticResource CyberpunkImageStyle}"  Padding="4" >
         <ContentControl.Tag>
-            <CornerRadius>10</CornerRadius>
+            <CornerRadius>6</CornerRadius>
             <!-- Внутренняя матрешка тоже хочет знать радиус! -->
         </ContentControl.Tag>
         <Grid Margin="15">
@@ -47,8 +47,9 @@
 
             <!-- EMAIL -->
             <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Vertical" Margin="0,0,0,5">
-                <Label Content="Email:" VerticalAlignment="Center" Foreground="#FFB300"/>
+                <Label Content="Email:" VerticalAlignment="Center" Foreground="#00F0FF"/>
                 <TextBox
+                    Style="{StaticResource NeonTextBoxStyle}"
                     Text="{Binding UserData.Email, UpdateSourceTrigger=PropertyChanged}"
                     BorderBrush="{Binding ValidationResults[EmailType].State,
                     Converter={StaticResource StateToBrushConverter}}"
@@ -66,9 +67,9 @@
             <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Vertical" 
                          >
                 <Label Content="Пароль:" VerticalAlignment="Center"
-                       Foreground="#FFB300"/>
+                       Foreground="#00F0FF"/>
                 <TextBox
-                    x:Name="PasswordBox"
+                    Style="{StaticResource NeonTextBoxStyle}"                   
                     Text="{Binding UserData.Password, UpdateSourceTrigger=PropertyChanged,
                     Mode=TwoWay}"
                     BorderBrush="{Binding ValidationResults[PasswordType].State,
@@ -87,7 +88,7 @@
 
 
             <Label Grid.Row="2" Content="{Binding StatusMessage}"
-                   Foreground="#FFB300" />
+                   Foreground="#00F0FF" />
 
 
             <!-- BUTTONS -->
@@ -97,12 +98,12 @@
                 Orientation="Horizontal"
                 HorizontalAlignment="Right" >
                 <Button
-                    Content="Отмена"
+                    Content="Отмена" Style="{StaticResource NeonRegistrationButtonStyle}"
                     Command="{Binding CancelCommand}"   
                     IsEnabled="{Binding IsComplete,
                     Converter={StaticResource InverseBooleanConverter}}"
                     Width="Auto" MinWidth="120"/>
-                <Button
+                <Button Style="{StaticResource NeonRegistrationButtonStyle}"
                     Content="{Binding SubmitButtonText}"
                      Command="{Binding ToggleRegistrationCommand}"  
                        IsEnabled="{Binding IsComplete,

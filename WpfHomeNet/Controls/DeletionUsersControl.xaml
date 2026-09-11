@@ -51,15 +51,15 @@
             </StackPanel>
 
             <!-- Список найденных пользователей -->
-        <Border Background="#66ABC8AB"
+        <Border Background="Transparent"
                 Grid.Row="2"               
                 BorderThickness="0.3"
-                BorderBrush="Black"
+                BorderBrush="#FFF23E5C"
                 CornerRadius="6"
                 
                 Margin="10" >
                 <ListBox
-                    Style="{StaticResource RoundedListBox}"    
+                    
                     DisplayMemberPath="DisplayInfo" Background="#66ABC8AB"
                    
                     ItemsSource="{Binding UsersTable.Users, Source={StaticResource VmLocator}}"
@@ -68,30 +68,7 @@
                     SelectedValuePath="Id"  
                     Margin="10"  
                     RenderTransformOrigin="0.507,0.617" >
-                    <ListBox.Resources>
-                        <Style TargetType="{x:Type ScrollViewer}">
-                            <Setter Property="VerticalScrollBarVisibility" Value="Hidden"/>
-                        </Style>
-                    </ListBox.Resources>
-                    <ListBox.ItemContainerStyle>
-                        <Style TargetType="{x:Type ListBoxItem}">
-                            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                            <Setter Property="Background" Value="Transparent"/>
-                            <Setter Property="BorderBrush" Value="Transparent"/>
-                            <Setter Property="FontWeight" Value="Normal"/>
-
-                            <!-- 🔥 ТОЛКАЕМ ТЕКСТ ВНУТРЕННИМ ОТСТУПОМ НА 10 ПИКСЕЛЕЙ СЛЕВА -->
-                            <!-- Формат: Слева, Сверху, Справа, Снизу -->
-                            <Setter Property="Padding" Value="10,0,0,0"/>
-
-                            <Style.Triggers>
-                                <Trigger Property="Tag" Value="Found">
-                                    <Setter Property="FontWeight" Value="Bold"/>
-                                    <Setter Property="Foreground" Value="Black"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </ListBox.ItemContainerStyle>
+                   
 
                 </ListBox>
             </Border>

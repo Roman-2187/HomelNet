@@ -1,27 +1,30 @@
-﻿
-using HomeNetCore.Models;
+﻿using HomeNetCore.Models;
 using HomeNetCore.Services;
 using System.Windows.Input;
-using CommunityToolkit.Mvvm.ComponentModel; 
+using CommunityToolkit.Mvvm.ComponentModel;
 using WpfHomeNet.Messaging;
+using WpfHomeNet.UiHelpers;
 
 namespace WpfHomeNet.ViewModels
 {
     public partial class AdminMenuViewModel : FormViewModelBase
     {
-        #region Поля (Штамповочный цех генератора) 🦾
+        #region Поля 🦾
         private readonly UserService _userService;
+        private readonly LogQueueManager _logQueueManager; // 🔥 Добавили менеджер сюда
 
         [ObservableProperty]
-        private string _toggleButtonText = "Показать лог"; 
+        private string _toggleButtonText = "Показать лог";
 
         [ObservableProperty]
-        private string _tableButtonText = "Показать users"; 
+        private string _tableButtonText = "Показать users";
 
-        private bool _isLogVisible;
+        // 🔥 Сделали свойство видимости лога автоматическим и наблюдаемым!
+        [ObservableProperty]
+        private bool _isLogVisible = false;
 
         [ObservableProperty]
-        private bool _isTableVisible = false; 
+        private bool _isTableVisible = false;
         #endregion
 
         #region Команды
@@ -31,9 +34,10 @@ namespace WpfHomeNet.ViewModels
         #endregion
 
         #region Конструктор
-        public AdminMenuViewModel(UserService userService, EventBus eventBus) : base(eventBus)
+        public AdminMenuViewModel(UserService userService, LogQueueManager logQueueManager, EventBus eventBus) : base(eventBus)
         {
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+            _logQueueManager = logQueueManager ?? throw new ArgumentNullException(nameof(logQueueManager));
 
             InitializeCommands();
             InitializeBusSubscriptions();
@@ -43,13 +47,26 @@ namespace WpfHomeNet.ViewModels
         #region Инициализация команд и подписок
         private void InitializeCommands()
         {
+            // 🎯 ТУТ ВСЯ МАГИЯ: Клик по кнопке теперь рулит и свойством, и запуском бэкенда логов!
             ToggleLogWindowCommand = new RelayCommand(_ =>
             {
-                _eventBus.Publish(new LogWindowVisibilityChangedMessage(!_isLogVisible));
-            });
-     
-            UserTableViewCommand = new RelayCommand(_ => ToggleUserTable());
+                // Инвертируем видимость
+                IsLogVisible = !IsLogVisible;
 
+                // Переключаем текст на кнопке
+                ToggleButtonText = IsLogVisible ? "Скрыть лог" : "Показать лог";
+
+                if (IsLogVisible)
+                {
+                    // 🚀 ВКЛЮЧАЕМ: Если админ открыл панель логов — пинаем конвейер задач
+                    _logQueueManager.SetReady();
+                }
+
+                // Старая подписка через шину (если нужно для внешних окон)
+                _eventBus.Publish(new LogWindowVisibilityChangedMessage(IsLogVisible));
+            });
+
+            UserTableViewCommand = new RelayCommand(_ => ToggleUserTable());
             SeedDataCommand = new RelayCommand(async _ => await ExecuteSeedDataAsync());
         }
 
@@ -57,19 +74,18 @@ namespace WpfHomeNet.ViewModels
         {
             _eventBus.Subscribe<LogWindowVisibilityChangedMessage>(msg =>
             {
-                _isLogVisible = msg.IsVisible;
-                ToggleButtonText = _isLogVisible ? "Скрыть лог" : "Показать лог"; // Работаем через Большую букву!
+                IsLogVisible = msg.IsVisible;
+                ToggleButtonText = IsLogVisible ? "Скрыть лог" : "Показать лог";
             });
         }
         #endregion
 
-        #region Логика тумблера таблицы (Прямая и неуязвимая)
+        #region Логика тумблера таблицы
         private void ToggleUserTable()
-        {      
+        {
             IsTableVisible = !IsTableVisible;
-        
             TableButtonText = IsTableVisible ? "Скрыть users 🙈" : "Показать users 👁️";
-            
+
             string status = IsTableVisible ? "Таблица пользователей открыта" : "Таблица пользователей скрыта";
             _eventBus.Publish(new StatusTextChangedMessage(status));
         }
@@ -109,3 +125,4 @@ namespace WpfHomeNet.ViewModels
         #endregion
     }
 }
+

@@ -1,122 +1,82 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Animation; // 🔥 Подключаем движок анимаций Microsoft!
-using WpfHomeNet.Messaging;
-using WpfHomeNet.UiHelpers; // 🔥 Не забываем для LogQueueManager
+using System.Windows.Media.Animation;
 using WpfHomeNet.ViewModels;
+
 namespace WpfHomeNet
 {
     public partial class MainWindow : Window
     {
         private readonly MainViewModel _mainVm;
-        private readonly LogWindow _logWindow; // 🔥 Прямая ссылка на соседа
-        private readonly LogQueueManager _queueManager; // 🔥 Вытащили сюда из LogViewModel
 
-        public MainWindow(MainViewModel mainVm, LogWindow logWindow, LogQueueManager logQueueManager)
+        public MainWindow(MainViewModel mainVm)
         {
             _mainVm = mainVm ?? throw new ArgumentNullException(nameof(mainVm));
-            _logWindow = logWindow ?? throw new ArgumentNullException(nameof(logWindow));
-            _queueManager = logQueueManager ?? throw new ArgumentNullException(nameof(logQueueManager));
 
             DataContext = _mainVm;
             InitializeComponent();
-            _logWindow.Show();
-            PositionLogWindow();
-            _logWindow.Hide();
 
-            this.ContentRendered += (s, e) => PositionLogWindow();
-            this.LocationChanged += (s, e) => PositionLogWindow();
-            this.SizeChanged += (s, e) => PositionLogWindow();
-
-            _mainVm.EventBus.Subscribe<LogWindowVisibilityChangedMessage>(OnVisibilityCommandReceived);
-
-           
-
-
+            // 🚀 ЗАПУСКАЕМ АНИМАЦИЮ ВЫЛЕТА ОКНА ПРИ СТАРТЕ
+            this.Loaded += MainWindow_Loaded;
         }
 
-
-
-       
-
-
-        private void PositionLogWindow()
+      
+        // ====== 🎬 АНИМАЦИЯ ПОЯВЛЕНИЯ ПРИ СТАРТЕ (СТРОГИЙ МЕДЛЕННЫЙ ВЗЛЕТ) ======
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            if (!this.IsLoaded || _logWindow == null) return;
+            double screenHeight = SystemParameters.PrimaryScreenHeight;
+            double targetTop = (screenHeight - this.Height) / 2;
 
-            // 1. Узнаем полную ширину текущего рабочего стола (без панели задач)
-            double screenWidth = SystemParameters.WorkArea.Width;
+            // 1. Принудительно ставим окно вниз перед стартом, чтобы сбросить любые авто-сдвиги
+            this.Top = screenHeight + 100;
 
-            // 2. Рассчитываем левую границу лога (она прилипла к правому боку главного окна)
-            double logLeft = this.Left + this.Width;
+            // 2. Настраиваем сильное сглаживание (Power = 3 делает торможение в конце ещё более мягким)
+            var easeOut = new CubicEase { EasingMode = EasingMode.EaseOut };
 
-            // 3. Железно привязываем координаты
-            _logWindow.Left = logLeft;
-            _logWindow.Top = this.Top;
-            _logWindow.Height = this.Height;
-
-            // 4. 🔥 МАГИЯ: Ширина лога — это строго ВСЁ оставшееся место до правого края экрана!
-            // Если главное окно уехало в ноль, то лог займет вообще всё свободное пространство справа!
-            double remainingWidth = screenWidth - logLeft;
-
-            // Страховка, чтобы ширина не ушла в минус, если главное окно частично вылезло за экран
-            _logWindow.Width = remainingWidth > 0 ? remainingWidth : 100;
-        }
-
-
-
-
-
-
-        private double _originalLeftPosition; // 📌 Переменная-память: запомнит, где окно стояло изначально
-
-    private void OnVisibilityCommandReceived(LogWindowVisibilityChangedMessage msg)
-    {
-        // Настраиваем плавное замедление для обеих анимаций
-        var ease = new QuadraticEase { EasingMode = EasingMode.EaseOut };
-
-        if (msg.IsVisible)
-        {
-            // 🔥 Шаг 1: Запоминаем текущую координату КРАЙНИЙ раз, перед тем как уехать
-            _originalLeftPosition = this.Left;
-
-            var winMoveLeftAnimation = new DoubleAnimation
+            var startAnimation = new DoubleAnimation
             {
-                To = 0, // Уезжаем к левому краю
-                Duration = TimeSpan.FromMilliseconds(800), // Плавная, вальяжная скорость
-                EasingFunction = ease
+                // ⚡️ ЯВНО фиксируем старт и финиш, чтобы WPF не срезал время анимации
+                From = screenHeight + 100,
+                To = targetTop,
+
+                // Попробуем поставить 1.8 секунды — при жестком From/To это будет прямо вальяжный, тяжелый заплыв вверх
+                Duration = TimeSpan.FromSeconds(1.6),
+                EasingFunction = easeOut
             };
 
-            this.BeginAnimation(Window.LeftProperty, winMoveLeftAnimation);
-
-            _logWindow.Show();
-            _queueManager.SetReady();
+            // 3. Поехали! Теперь оно пойдет плавно с самой нижней точки
+            this.BeginAnimation(Window.TopProperty, startAnimation);
         }
-        else
+
+
+
+        // ====== 🎬 АНИМАЦИЯ УЕЗЖАНИЯ ПРИ КЛИКЕ НА КРЕСТИК ======
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
-            // 🔥 Шаг 2: При скрытии логов плавно возвращаем окно на сохраненное место!
-            var winMoveBackAnimation = new DoubleAnimation
+            double screenHeight = SystemParameters.PrimaryScreenHeight;
+            var easeIn = new QuadraticEase { EasingMode = EasingMode.EaseIn };
+
+            var exitAnimation = new DoubleAnimation
             {
-                To = _originalLeftPosition, // Едем обратно домой 🏠
+                To = screenHeight + 50, // Улетает вниз за пределы экрана
                 Duration = TimeSpan.FromMilliseconds(800),
-                EasingFunction = ease
+                EasingFunction = easeIn
             };
 
-            // Лог-окно сначала прячем, а главное красиво уезжает назад
-            _logWindow.Hide();
-            this.BeginAnimation(Window.LeftProperty, winMoveBackAnimation);
+            // Жестко закрываем программу только ПОСЛЕ завершения анимации падения
+            exitAnimation.Completed += (s, args) =>
+            {
+                Application.Current.Shutdown();
+            };
+
+            this.BeginAnimation(Window.TopProperty, exitAnimation);
         }
-    }
 
-
-
-
-
-
-    private void CloseButton_Click(object sender, RoutedEventArgs e) => Application.Current.Shutdown();
-
-        private void WindowDrag_MouseDown(object sender, MouseButtonEventArgs e) => this.DragMove();
+        private void WindowDrag_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton == MouseButton.Left)
+                this.DragMove();
+        }
     }
 }

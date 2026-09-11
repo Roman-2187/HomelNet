@@ -13,53 +13,42 @@
         <vm:ViewModelLocator x:Key="VmLocator" />
         <cv:CornerRadiusConverter x:Key="RadiusCalc" />
 
-        <Style TargetType="Button">
+        <!-- 1. ВАШ СТИЛЬ (ПЕРЕИМЕНОВАННЫЙ В ИМЕННОЙ) -->
+        <Style x:Key="OrangeDefaultButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Height" Value="Auto"/>
-            <Setter Property="Width" Value="Auto"/>
             <Setter Property="Padding" Value="10"/>
             <Setter Property="Margin" Value="1"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <!-- 🍊 СТАТИКА: Оранжево-золотые буквы по умолчанию -->
+            <!-- Оранжево-золотые буквы по умолчанию -->
             <Setter Property="Foreground" Value="#FFB300"/>
-
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="border"
-                         Background="{TemplateBinding Background}"
-                         BorderBrush="{TemplateBinding BorderBrush}"
-                         BorderThickness="{TemplateBinding BorderThickness}"
-                         CornerRadius="6"
-                         Padding="{TemplateBinding Padding}">
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="5"
+                        Padding="{TemplateBinding Padding}">
                             <ContentPresenter x:Name="contentPresenter"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       TextElement.FontWeight="{TemplateBinding FontWeight}"
-                                       TextElement.Foreground="{TemplateBinding Foreground}"/>
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      TextElement.FontWeight="{TemplateBinding FontWeight}"
+                                      TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </Border>
-
                         <ControlTemplate.Triggers>
-                            <!-- 🚨 НАВЕДЕНИЕ КУРСОРA: Красный фон + Неоновый текст -->
                             <Trigger Property="IsMouseOver" Value="True">
-                                <!-- Заполнение кнопки плотным красным цветом (из палитры Киберпанка) -->
                                 <Setter TargetName="border" Property="Background" Value="#FFF23E5C"/>
-                                <!-- Текст горит неоновым голубым/бирюзовым -->
                                 <Setter TargetName="contentPresenter" Property="TextElement.Foreground" Value="#00F0FF"/>
-                                <!-- Тонкая неоновая рамка вокруг красной заливки -->
                                 <Setter TargetName="border" Property="BorderBrush" Value="#00F0FF"/>
                             </Trigger>
-
-                            <!-- 🌌 НАЖАТИЕ: Уход в глубокий темный -->
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="border" Property="Background" Value="#FF131926"/>
                                 <Setter TargetName="contentPresenter" Property="TextElement.Foreground" Value="White"/>
                                 <Setter TargetName="border" Property="BorderBrush" Value="#FF0D111A"/>
                             </Trigger>
-
-                            <!-- 🚫 ОТКЛЮЧЕННОЕ СОСТОЯНИЕ -->
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="border" Property="Background" Value="Transparent"/>
                                 <Setter TargetName="contentPresenter" Property="TextElement.Foreground" Value="#FF615959"/>
@@ -68,6 +57,112 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+        </Style>
+        
+        
+        
+        
+        <!-- 2. НОВЫЙ НЕОНОВЫЙ СТИЛЬ ДЛЯ РЕГИСТРАЦИИ -->
+        <Style x:Key="NeonRegistrationButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <!-- ⚡️ Исправлено: рамка невидимая, но её толщина изначально 1, чтобы кнопка не дёргалась -->
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+
+            <Setter Property="Padding" Value="10,0,10,0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="MinWidth" Value="160"/>
+            <Setter Property="MaxHeight" Value="35"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <!-- Неоновые голубые буквы по умолчанию -->
+            <Setter Property="Foreground" Value="#00F0FF"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="5"
+                        Padding="{TemplateBinding Padding}">
+                            <ContentPresenter x:Name="contentPresenter"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      TextElement.FontWeight="{TemplateBinding FontWeight}"
+                                      TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <!-- НАВЕДЕНИЕ: Вспыхивает неоновым зеленым (Больше ничего не двигается!) -->
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#1000FF66"/>
+                                <Setter TargetName="contentPresenter" Property="TextElement.Foreground" Value="#00FF66"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#00FF66"/>
+                                <!-- Толщину больше не переопределяем, она зафиксирована на 1 -->
+                            </Trigger>
+
+                            <!-- НАЖАТИЕ: Уход в глубокий кибер-синий -->
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FF002B3D"/>
+                                <Setter TargetName="contentPresenter" Property="TextElement.Foreground" Value="#00F0FF"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#00F0FF"/>
+                            </Trigger>
+
+                            <!-- ОТКЛЮЧЕННОЕ СОСТОЯНИЕ -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="Transparent"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FF404040"/>
+                                <Setter TargetName="contentPresenter" Property="TextElement.Foreground" Value="#FF615959"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+
+        <!-- 🚀 ИМЕНОВАННЫЙ НЕОНОВЫЙ СТИЛЬ ДЛЯ TEXTBOX (С РАДИУСАМИ И ОТСТУПАМИ) -->
+        <Style x:Key="NeonTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="#00F0FF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+
+            <!-- Возвращаем человеческие отступы и высоту, чтобы текст не прилипал к краям -->
+            <Setter Property="MinHeight" Value="32"/>
+            <Setter Property="Padding" Value="8,5,8,5"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+
+            <!-- Неоновые буквы ввода и каретка -->
+            <Setter Property="Foreground" Value="#00F0FF"/>
+            <Setter Property="CaretBrush" Value="#00F0FF"/>
+
+            <!-- Переопределяем шаблон, чтобы вернуть заветные скругления (CornerRadius) -->
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <!-- Обертка поля с закруглением углов на 4 (или поставьте 5-6, как вам больше нравится) -->
+                        <Border x:Name="border"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="4"
+                        SnapsToDevicePixels="True">
+                            <!-- Область, где непосредственно отображается набираемый текст -->
+                            <ScrollViewer x:Name="PART_ContentHost" 
+                                  Focusable="false" 
+                                  HorizontalScrollBarVisibility="Hidden" 
+                                  VerticalScrollBarVisibility="Hidden"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+
+            <Style.Triggers>
+                <!-- ТРИГГЕР ОШИБКИ: Если цвет рамки меняется на малиновый, утолщаем до 2 -->
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=BorderBrush.Color}" Value="#FFF23E5C">
+                    <Setter Property="BorderThickness" Value="2"/>
+                </DataTrigger>
+            </Style.Triggers>
         </Style>
 
 
@@ -91,7 +186,7 @@
                         Background="{TemplateBinding Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}"
-                        CornerRadius="6"
+                        CornerRadius="5"
                         Padding="{TemplateBinding Padding}">
                             <!-- ContentPresenter сам выведет FirstName благодаря DisplayMemberPath -->
                             <ContentPresenter x:Name="contentPresenter"
@@ -126,42 +221,7 @@
         </Style>
 
 
-        <Style x:Key="PanelFlyOutTopStyle" TargetType="FrameworkElement">
-            <Setter Property="Visibility" Value="Collapsed"/>
-            <Setter Property="Opacity" Value="0"/>
-            <Setter Property="RenderTransform">
-                <Setter.Value>
-                    <TranslateTransform Y="-600"/>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <!-- Триггер слушает логический булен из UserDashboardViewModel -->
-                <DataTrigger Binding="{Binding IsChatOpen}" Value="True">
-                    <DataTrigger.EnterActions>
-                        <BeginStoryboard>
-                            <Storyboard>
-                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility">
-                                    <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Visible}"/>
-                                </ObjectAnimationUsingKeyFrames>
-                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" From="-600" To="0" Duration="0:0:0.5" AccelerationRatio="0.2" DecelerationRatio="0.8"/>
-                                <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.25"/>
-                            </Storyboard>
-                        </BeginStoryboard>
-                    </DataTrigger.EnterActions>
-                    <DataTrigger.ExitActions>
-                        <BeginStoryboard>
-                            <Storyboard>
-                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" To="-600" Duration="0:0:0.4" AccelerationRatio="0.3" DecelerationRatio="0.7"/>
-                                <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.2"/>
-                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility" BeginTime="0:0:0.4">
-                                    <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Collapsed}"/>
-                                </ObjectAnimationUsingKeyFrames>
-                            </Storyboard>
-                        </BeginStoryboard>
-                    </DataTrigger.ExitActions>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
+      
 
 
         <!-- 1. ПОЛЕТ СВЕРХУ (Top) -->
@@ -189,7 +249,7 @@
                                 <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" 
                                          From="-600" To="0" Duration="0:0:0.6" AccelerationRatio="0.2" DecelerationRatio="0.8"/>
                                 <DoubleAnimation Storyboard.TargetProperty="Opacity" 
-                                         From="0" To="1" Duration="0:0:0.3"/>
+                                         From="0" To="1" Duration="0:0:1"/>
                             </Storyboard>
                         </BeginStoryboard>
                     </DataTrigger.EnterActions>
@@ -201,7 +261,7 @@
                                 <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" 
                                          To="-600" Duration="0:0:0.5" AccelerationRatio="0.3" DecelerationRatio="0.7"/>
                                 <DoubleAnimation Storyboard.TargetProperty="Opacity" 
-                                         To="0" Duration="0:0:0.3"/>
+                                         To="0" Duration="0:0:1"/>
                                 <!-- 2. И только через 0.5 сек, когда форма уже в космосе, физически её гасим -->
                                 <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility" BeginTime="0:0:0.5">
                                     <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Collapsed}"/>
@@ -212,6 +272,8 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+        
+        
 
         <!-- 2. ПОЛЕТ СНИЗУ (Bottom) -->
         <Style x:Key="UniversalFlyOutBottomStyle" TargetType="UserControl">
@@ -230,15 +292,19 @@
                                 <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility">
                                     <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Visible}"/>
                                 </ObjectAnimationUsingKeyFrames>
-                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" From="600" To="0" Duration="0:0:0.6" AccelerationRatio="0.2" DecelerationRatio="0.8"/>
-                                <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.3"/>
+                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" 
+                                                 From="600" To="0" Duration="0:0:0.6" 
+                                                 AccelerationRatio="0.2" DecelerationRatio="0.8"/>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                 From="0" To="1" Duration="0:0:0.3"/>
                             </Storyboard>
                         </BeginStoryboard>
                     </DataTrigger.EnterActions>
                     <DataTrigger.ExitActions>
                         <BeginStoryboard>
                             <Storyboard>
-                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" To="600" Duration="0:0:0.5" AccelerationRatio="0.3" DecelerationRatio="0.7"/>
+                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)"
+                                                 To="600" Duration="0:0:1" AccelerationRatio="0.3" DecelerationRatio="0.7"/>
                                 <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.3"/>
                                 <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility" BeginTime="0:0:0.5">
                                     <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Collapsed}"/>
@@ -249,6 +315,8 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+        
+        
 
         <!-- 3. ПОЛЕТ СЛЕВА (Left) -->
         <Style x:Key="UniversalFlyOutLeftStyle" TargetType="UserControl">
@@ -313,6 +381,10 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        
+        
+        
+        
 
         <!-- 🧊 КУБИК 1: Синяя сталь на ContentControl через честный Tag! 🎛️ -->
         <Style x:Key="TripleBorderBlueStyle" TargetType="ContentControl">
@@ -362,53 +434,12 @@
             </Setter>
         </Style>
 
-        <!-- 🧊 КУБИК 1: Истинный DarkBlue (Мягкое затемнение на 10% от исходного сине-зелёного) 🎛️ -->
-        <Style x:Key="TripleBorderDarkBlueStyle" TargetType="ContentControl">
-            <!-- 🎯 ЗАДАЕМ РАДИУС ПО УМОЛЧАНИЮ (Пользователь может переопределить его в своем элементе) -->
-            <Setter Property="Tag" Value="8"/>
-
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ContentControl">
-                        <Grid>
-                            <!-- 👑 ВНЕШНИЙ БОРДЕР -->
-                            <Border CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" 
-                            BorderThickness="0.65" BorderBrush="DarkRed" Background="White">
-                                <Grid>
-                                    <!-- 🥈 СРЕДНИЙ БОРДЕР -->
-                                    <Border BorderThickness="1.1" Margin="-0.15" BorderBrush="#FF4B7E7C" 
-                                    CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent},
-                                    Converter={StaticResource RadiusCalc}, ConverterParameter=-0.6}"/>
-
-                                    <!-- 🥉 ВНУТРЕННИЙ БОРДЕР -->
-                                    <Border Margin="0.35" BorderThickness="0.6" BorderBrush="Black"
-                                    CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, 
-                                    Converter={StaticResource RadiusCalc}, ConverterParameter=-0.65}">
-                                        <Border.Background>
-                                            <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
-                                                <GradientStop Color="#FF65A2A0" Offset="0.0"/>
-                                                <GradientStop Color="#FF8AA9A9" Offset="0.4"/>
-                                                <GradientStop Color="#FF8AA9A9" Offset="0.75"/>
-                                                <GradientStop Color="#FF65A2A0" Offset="1.0"/>
-                                            </LinearGradientBrush>
-                                        </Border.Background>
-                                        <ContentPresenter Margin="{TemplateBinding Padding}"/>
-                                    </Border>
-                                </Grid>
-                            </Border>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+       
 
 
-        <!-- 🦾 КУБИК 2: Киберпанк (Неоновый контур + Сочный Сдержанный Красно-Бордовый фон) 🌌 -->
       
 
-
-
-        <Style x:Key="CyberpunkStyle" TargetType="ContentControl">
+        <Style x:Key="CyberpunkImageStyle" TargetType="ContentControl">
             <Setter Property="Tag" Value="0"/>
             <Setter Property="Padding" Value="5"/>
 
@@ -425,14 +456,31 @@
                                     CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent},
                                     Converter={StaticResource RadiusCalc}, ConverterParameter=-0.5}"/>
 
-                                    <!-- 🥉 ВНУТРЕННИЙ БОРДЕР: Основной фон карточки осветлен на 10% (#1C2433 вместо #0C121D) -->
+                                    <!-- 🥉 ВНУТРЕННИЙ БОРДЕР: Основной фон карточки -->
                                     <Border Margin="1.5" BorderThickness="0"
                                     CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, 
                                     Converter={StaticResource RadiusCalc}, ConverterParameter=-1.0}"
                                     Background="#FF1C2433">
                                         <!-- Мягкий темно-сизый графит -->
 
-                                        <ContentPresenter Margin="{TemplateBinding Padding}"/>
+                                        <Grid>
+                                            <!-- 🖼️ СЛОЙ С КАРТИНКОЙ -->
+                                            <!-- ImageBrush заполнит весь фон. Opacity="0.15" сделает картинку полупрозрачной, 
+                                         чтобы она не перекрывала текст и сохраняла общую темную атмосферу. -->
+                                            <Border CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, 
+                                            Converter={StaticResource RadiusCalc}, ConverterParameter=-1.0}">
+                                                <Border.Background>
+
+                                                    <ImageBrush ImageSource="pack://application:,,,/WpfHomeNet;component/resourses/68fadad90ca053b59b3e0178c4983607.png" 
+                                                      Stretch="UniformToFill" 
+                                                           Opacity="0.15"/>
+
+                                                </Border.Background>
+                                            </Border>
+
+                                            <!-- КОНТЕНТ КАРТОЧКИ -->
+                                            <ContentPresenter Margin="{TemplateBinding Padding}"/>
+                                        </Grid>
                                     </Border>
                                 </Grid>
                             </Border>
@@ -443,70 +491,14 @@
         </Style>
 
 
-        <Style x:Key="InnerBorderSolidColorStyle" TargetType="ContentControl">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ContentControl">
-                        <Border CornerRadius="8"
-                        BorderThickness="0.6"
-                        BorderBrush="Black"
-                        Background="Transparent">
-                            <Border Margin="-0.2"
-                           CornerRadius="8"
-                           BorderThickness="0.6"
-                           BorderBrush="LightBlue"
-                           Background="Transparent">
-                                <Border Margin="-0.1"
-                               BorderThickness="0.3"
-                               BorderBrush="DarkRed"
-                               CornerRadius="8"
-                               Background="{TemplateBinding Background}">
-                                    <ContentPresenter Margin="{TemplateBinding Padding}"/>
-                                </Border>
-                            </Border>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
 
-        <!--  КУБИК 2:  на ContentControl через честный Tag! 🎛️ -->
-        <Style x:Key="TripleBordergreenStyle" TargetType="ContentControl">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ContentControl">
-                        <Grid>
-                            <!-- 👑 ВНЕШНИЙ БОРДЕР: Тянет CornerRadius напрямую из кармашка Tag! -->
-                            <Border CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" 
-                              BorderThickness="0.65" BorderBrush="Black" Background="White">
-                                <Grid>
 
-                                    <!-- 🥈 СРЕДНИЙ БОРДЕР: Берет радиус из Tag и вычитает 0.6 через калькулятор -->
-                                    <Border BorderThickness="1.1" Margin="-0.15" BorderBrush="LightBlue" 
-                                      CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent},
-                                  Converter={StaticResource RadiusCalc}, ConverterParameter=-0.6}"/>
 
-                                    <!-- 🥉 ВНУТРЕННИЙ БОРДЕР: Берет радиус из Tag и вычитает 0.65 -->
-                                    <Border Margin="0.35" BorderThickness="0.6" BorderBrush="Black"
-                                      CornerRadius="{Binding Tag,
-                                  RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource RadiusCalc}, ConverterParameter=-0.65}">
-                                        <Border.Background>
-                                            <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
-                                                <GradientStop Color="#FF668C66" Offset="0.0"/>
-                                                <GradientStop Color="Tan" Offset="0.7"/>
-                                                <GradientStop Color="#99104710" Offset="1.0"/>
-                                            </LinearGradientBrush>
-                                        </Border.Background>
-                                        <ContentPresenter Margin="{TemplateBinding Padding}"/>
-                                    </Border>
+        
+        
 
-                                </Grid>
-                            </Border>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+       
+        
 
         <Style x:Key="TripleBorderDeepBlueStyle" TargetType="ContentControl">
             <Setter Property="Template">
@@ -552,6 +544,8 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        
+        
 
 
         <Style TargetType="TextBox">
@@ -588,24 +582,10 @@
             </Setter>
         </Style>
 
+        
 
-        <Style x:Key="RoundedListBox" TargetType="ListBox">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ListBox">
-                        <Border CornerRadius="4"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                Padding="{TemplateBinding Padding}">
-                                <ScrollViewer Padding="{TemplateBinding Padding}" Focusable="false">
-                                    <ItemsPresenter />
-                                </ScrollViewer>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+       
+        
         
 
         <Style x:Key="InnerBorderTitleStyle" TargetType="ContentControl">

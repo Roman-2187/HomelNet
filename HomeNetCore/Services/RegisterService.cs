@@ -3,10 +3,6 @@ using HomeNetCore.Interfaces;
 using HomeNetCore.Models;
 using HomeNetCore.Models.Validation;
 using HomeNetCore.Services.UsersServices;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace HomeNetCore.Services
 {

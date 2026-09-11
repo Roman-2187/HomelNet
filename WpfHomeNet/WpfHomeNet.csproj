@@ -32,6 +32,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="resourses\68fadad90ca053b59b3e0178c4983607.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.0-preview2.25289.6" />
@@ -41,6 +45,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HomeNetCore\HomeNetCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="resourses\68fadad90ca053b59b3e0178c4983607.png" />
   </ItemGroup>
 
 </Project>
