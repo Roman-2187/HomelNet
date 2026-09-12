@@ -13,14 +13,15 @@ namespace WpfHomeNet.UiHelpers
     {
         private readonly RichTextBox _logTextBox;
         private readonly Dictionary<LogColor, Brush> _colorMap = new()
-    {
-        
-        { LogColor.Error, Brushes.OrangeRed },
-        { LogColor.Warning, Brushes.Orange },
-        { LogColor.Information, Brushes.LightGreen},
-        { LogColor.Debug, Brushes.Tan }
-        
-    };
+{
+    { LogColor.Debug, new SolidColorBrush((Color)ColorConverter.ConvertFromString("#00F0FF")) },
+    { LogColor.Warning, new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFB300")) },
+    { LogColor.Error, new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFF23E5C")) },
+    // Ставим твой сочный неоново-зеленый для информации! 🦾
+    { LogColor.Information, new SolidColorBrush(Color.FromRgb(0x00, 0xFF, 0x66)) }
+};
+
+
 
         public LogRenderer(RichTextBox logTextBox)
         {

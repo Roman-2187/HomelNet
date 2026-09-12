@@ -7,7 +7,7 @@
              mc:Ignorable="d"  Background="Transparent"
              d:DesignHeight="600" d:DesignWidth="500">
 
-    <ContentControl Style="{StaticResource CyberpunkImageStyle}" Margin="5,0,0,0" >
+    <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}" Margin="5,0,0,0" >
         <ContentControl.Tag>
             <CornerRadius>6</CornerRadius>
         </ContentControl.Tag>
@@ -22,6 +22,8 @@
             </Grid.RowDefinitions>
 
             <!-- ==================== ROW 0: ВЕРХНЯЯ ПЛАШКА ==================== -->
+            
+            
             <Border Grid.Row="0" Background="Transparent" BorderBrush="Transparent" BorderThickness="0,0,0,1">
                 <Grid Margin="15,0">
                     <StackPanel VerticalAlignment="Center">
@@ -43,14 +45,14 @@
             <ListBox Grid.Row="1" 
                      ItemsSource="{Binding Messages}" 
                      Background="Transparent" 
-                     BorderThickness="0" 
+                     BorderThickness="0" HorizontalAlignment="Right"
                      ScrollViewer.VerticalScrollBarVisibility="Auto">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <!-- Временный простой вывод текста сообщения. Позже натянем красивые пузыри! -->
                         <Border Background="#1AADD8E6" BorderBrush="#00F0FF"
-                                BorderThickness="0.5"
-                                CornerRadius="25" Margin="2" Padding="25,5,25,5">
+                                BorderThickness="0.5" HorizontalAlignment="Right"
+                                CornerRadius="5" Margin="2" Padding="25,5,25,5">
                             <TextBlock Text="{Binding Text}" Foreground="#FFB300" 
                                        TextWrapping="Wrap" FontSize="18"/>
                         </Border>

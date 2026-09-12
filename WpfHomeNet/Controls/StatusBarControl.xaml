@@ -8,9 +8,10 @@
              d:DesignHeight="50" d:DesignWidth="800">
 
     <!-- Твоя фирменная подложка и цвета -->
-    <Border BorderBrush="#FFF23E5C"  BorderThickness="1"
-        Padding="4" CornerRadius="6" 
-                    Background="Transparent">
+    <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}"  >
+        <ContentControl.Tag>
+            <CornerRadius>6</CornerRadius>
+        </ContentControl.Tag>
         <StatusBar Background="#00A3C091">
             <StatusBarItem>
                 <TextBlock Text="{Binding StatusText, FallbackValue='Загрузка системы...'}"
@@ -19,6 +20,5 @@
                            Foreground="#FFB300"/>
             </StatusBarItem>
         </StatusBar>
-       </Border>
-
+        </ContentControl>
 </UserControl>

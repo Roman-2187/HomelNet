@@ -27,6 +27,11 @@ namespace WpfHomeNet.ViewModels
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             InitializeBusSubscriptions();
+
+            _logger.LogInformation("test");
+            _logger.LogDebug("test");
+            _logger.LogWarning("test");
+            _logger.LogError("test");
         }
         #endregion
 

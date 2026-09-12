@@ -7,7 +7,7 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
-        <RichTextBox x:Name="LogTextBox" 
+        <RichTextBox x:Name="LogTextBox"
                                     
                      VerticalScrollBarVisibility="Hidden"
                      IsReadOnly="True" 
@@ -16,18 +16,21 @@
                      Foreground="White" 
                      SelectionBrush="#FF297AB8">
             <RichTextBox.Style>
-                <Style TargetType="RichTextBox">
+                <Style TargetType="RichTextBox" >
                     <Setter Property="Template">
                         <Setter.Value>
                             <!-- Кастомный контейнер с круглыми углами, как в оригинале -->
                             <ControlTemplate TargetType="RichTextBox">
-                                <Border x:Name="bg" 
-                                        CornerRadius="6" 
-                                        Background="#FF464545" 
-                                        BorderBrush="#FFF23E5C" 
-                                        BorderThickness="1">
-                                    <ScrollViewer x:Name="PART_ContentHost" Margin="5"/>
-                                </Border>
+                                <ContentControl  Style="{StaticResource CyberpunkImageChaildStyle}"  
+                                         
+                                        
+                                        >
+                                    <ContentControl.Tag>
+                                        <CornerRadius>6</CornerRadius>
+                                    </ContentControl.Tag>
+                                    <ScrollViewer x:Name="PART_ContentHost" Margin="5"   HorizontalScrollBarVisibility="Disabled"
+  VerticalScrollBarVisibility="Hidden"/>
+                                   </ContentControl>
                             </ControlTemplate>
                         </Setter.Value>
                     </Setter>

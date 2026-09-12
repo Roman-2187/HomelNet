@@ -6,7 +6,7 @@
              mc:Ignorable="d"  
              Height="Auto" Width="Auto">
 
-    <ContentControl Style="{StaticResource CyberpunkImageStyle}" Padding="4" Background="#FF9ABCBC"  >
+    <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}" Padding="4" Background="#FF9ABCBC"  >
         <ContentControl.Tag>
             <CornerRadius>6</CornerRadius>
         </ContentControl.Tag>
@@ -20,7 +20,11 @@
             </Grid.RowDefinitions>
 
             <!-- 1. Заголовки с внутренней рамкой -->
-            <ContentControl Style="{StaticResource InnerBorderTitleStyle}" Grid.Row="0" Margin="2" Grid.ColumnSpan="7" Padding="8"  >
+            <ContentControl
+                Style="{StaticResource InnerBorderTitleStyle}" 
+                Grid.Row="0" Margin="2"
+                Grid.ColumnSpan="7"
+                Padding="8"  >
                 <Grid>
                  
                     <Grid.ColumnDefinitions>
@@ -32,24 +36,35 @@
                         <ColumnDefinition MinWidth="90"/>
                         <ColumnDefinition MinWidth="120"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="  ID" />
-                    <TextBlock Grid.Column="1" Text="Имя" />
-                    <TextBlock Grid.Column="2" Text="Фамилия" />
-                    <TextBlock Grid.Column="3" Text="Телефон"/>
-                    <TextBlock Grid.Column="4" Text="Email" />
-                    <TextBlock Grid.Column="5" Text="Пароль" />
-                    <TextBlock Grid.Column="6" Text="Дата создания" />
+                    <TextBlock Grid.Column="0" Text="  ID" Foreground="#FFB300" />
+                    <TextBlock Grid.Column="1" Text="Имя" Foreground="#FFB300"/>
+                    <TextBlock Grid.Column="2" Text="Фамилия" Foreground="#FFB300"/>
+                    <TextBlock Grid.Column="3" Text="Телефон" Foreground="#FFB300"/>
+                    <TextBlock Grid.Column="4" Text="Email" Foreground="#FFB300"/>
+                    <TextBlock Grid.Column="5" Text="Пароль" Foreground="#FFB300"/>
+                    <TextBlock Grid.Column="6" Text="Дата создания" Foreground="#FFB300"/>
                
                 </Grid>
             </ContentControl>
-            <ScrollViewer Grid.Row="1" x:Name="UserPanel" HorizontalScrollBarVisibility="Disabled"
-                          VerticalScrollBarVisibility="Hidden" Foreground="#FFB300" Focusable="False" Background="Transparent">
-                <ItemsControl ItemsSource="{Binding Users}" VerticalAlignment="Top" HorizontalAlignment="Stretch">
+            <ScrollViewer
+     Grid.Row="1"
+     x:Name="UserPanel"
+     HorizontalScrollBarVisibility="Disabled"
+     VerticalScrollBarVisibility="Hidden"
+     Focusable="False"
+     Background="Transparent">
 
-                   
+                <ItemsControl
+         ItemsSource="{Binding Users}"
+         VerticalAlignment="Top"
+         HorizontalAlignment="Stretch" 
+         Foreground="#FFB300"
+         >
+                    <!-- Этот цвет теперь применится к ячейкам -->
+
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Grid Margin="2">
+                            <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="40"/>
                                     <ColumnDefinition MinWidth="70" MaxWidth="170"/>
@@ -59,25 +74,42 @@
                                     <ColumnDefinition MinWidth="100"/>
                                     <ColumnDefinition MinWidth="120"/>
                                 </Grid.ColumnDefinitions>
+
+                                <!-- Мы привязываем BorderBrush каждой ячейки к BorderBrush родительского ItemsControl -->
                                 <ContentControl Grid.Column="0" Content="{Binding Id}"   
-                                                Style="{StaticResource BorderedContentStyle}" HorizontalAlignment="Stretch"/>
+                                     Style="{StaticResource BorderedContentStyle}" 
+                                     BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                     HorizontalAlignment="Stretch"/>
                                 <ContentControl Grid.Column="1" Content="{Binding FirstName}"
-                                                Style="{StaticResource BorderedContentStyle}" HorizontalAlignment="Stretch"/>
+                                     Style="{StaticResource BorderedContentStyle}"
+                                     BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                     HorizontalAlignment="Stretch"/>
                                 <ContentControl Grid.Column="2" Content="{Binding LastName}" 
-                                                Style="{StaticResource BorderedContentStyle}" HorizontalAlignment="Stretch"/>
+                                     Style="{StaticResource BorderedContentStyle}"
+                                     BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                     HorizontalAlignment="Stretch"/>
                                 <ContentControl Grid.Column="3" Content="{Binding PhoneNumber}" 
-                                                Style="{StaticResource BorderedContentStyle}" HorizontalAlignment="Stretch"/>
+                                     Style="{StaticResource BorderedContentStyle}"
+                                     BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                     HorizontalAlignment="Stretch"/>
                                 <ContentControl Grid.Column="4" Content="{Binding Email}"   
-                                                Style="{StaticResource BorderedContentStyle}" HorizontalAlignment="Stretch"/>
+                                     Style="{StaticResource BorderedContentStyle}" 
+                                     BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                     HorizontalAlignment="Stretch"/>
                                 <ContentControl Grid.Column="5" Content="{Binding Password}" 
-                                                Style="{StaticResource BorderedContentStyle}" HorizontalAlignment="Stretch"/>
+                                     Style="{StaticResource BorderedContentStyle}"
+                                     BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                     HorizontalAlignment="Stretch"/>
                                 <ContentControl Grid.Column="6" Content="{Binding CreatedAt, StringFormat={}{0:dd.MM.yyyy HH:mm:ss}}"
-                                                Style="{StaticResource BorderedContentStyle}" HorizontalAlignment="Stretch"/>
+                                     Style="{StaticResource BorderedContentStyle}"
+                                     BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                     HorizontalAlignment="Stretch"/>
                             </Grid>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </ScrollViewer>
+
         </Grid>
     </ContentControl>
 </UserControl>

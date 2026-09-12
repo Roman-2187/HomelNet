@@ -41,7 +41,7 @@ namespace WpfHomeNet
                 To = targetTop,
 
                 // Попробуем поставить 1.8 секунды — при жестком From/To это будет прямо вальяжный, тяжелый заплыв вверх
-                Duration = TimeSpan.FromSeconds(1.6),
+                Duration = TimeSpan.FromSeconds(0.7),
                 EasingFunction = easeOut
             };
 
@@ -60,7 +60,7 @@ namespace WpfHomeNet
             var exitAnimation = new DoubleAnimation
             {
                 To = screenHeight + 50, // Улетает вниз за пределы экрана
-                Duration = TimeSpan.FromMilliseconds(700),
+                Duration = TimeSpan.FromMilliseconds(500),
                 EasingFunction = easeIn
             };
 

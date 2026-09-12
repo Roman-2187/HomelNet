@@ -18,7 +18,7 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="10"/>
+            <Setter Property="Padding" Value="5"/>
             <Setter Property="Margin" Value="1"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <!-- Оранжево-золотые буквы по умолчанию -->
@@ -365,12 +365,13 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ContentControl">
                         <Border 
-                    BorderThickness="0.15"
-                    Margin="1,1,1,0"
-                    BorderBrush="Black"
+                    BorderThickness="0.15" 
+                            Margin="2.5, 5, 2.5, 5"
+                           
+                            BorderBrush="#00F0FF"
                     Padding="4"
                     CornerRadius="8" 
-                            HorizontalAlignment="{TemplateBinding HorizontalAlignment}">
+                    HorizontalAlignment="{TemplateBinding HorizontalAlignment}">
                             <TextBlock
                         Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}, StringFormat={}{0}}"
                         VerticalAlignment="Center"
@@ -381,10 +382,10 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        
-        
-        
-        
+
+
+
+
 
         <!-- 🧊 КУБИК 1: Синяя сталь на ContentControl через честный Tag! 🎛️ -->
         <Style x:Key="TripleBorderBlueStyle" TargetType="ContentControl">
@@ -492,13 +493,62 @@
 
 
 
+        <Style x:Key="CyberpunkImageChaildStyle" TargetType="ContentControl">
+            <Setter Property="Tag" Value="0"/>
+            <Setter Property="Padding" Value="5"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContentControl">
+                        <Grid>
+                            <!-- 👑 ВНЕШНИЙ БОРДЕР: Рамка та же, но фон подкладки осветлен на 10% -->
+                            <Border CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" 
+                    BorderThickness="0.4" BorderBrush="#00F0FF" Background="#FF1B222E">
+                                <Grid>
+                                    <!-- 🥈 СРЕДНИЙ БОРДЕР -->
+                                    <Border BorderThickness="0.1" Margin="0" BorderBrush="#40F23E5C" 
+                            CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent},
+                            Converter={StaticResource RadiusCalc}, ConverterParameter=-0.5}"/>
+
+                                    <!-- 🥉 ВНУТРЕННИЙ БОРДЕР: Основной фон карточки -->
+                                    <Border Margin="1.5" BorderThickness="0"
+                            CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, 
+                            Converter={StaticResource RadiusCalc}, ConverterParameter=-1.0}"
+                            Background="#FF1C2433">
+                                        <!-- Мягкий темно-сизый графит -->
+
+                                        <Grid>
+                                            <!-- 🖼️ СЛОЙ С КАРТИНКОЙ -->
+                                            <!-- ImageBrush заполнит весь фон. Opacity="0.15" сделает картинку полупрозрачной, 
+                                 чтобы она не перекрывала текст и сохраняла общую темную атмосферу. -->
+                                            <Border CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, 
+                                    Converter={StaticResource RadiusCalc}, ConverterParameter=-1.0}">
+                                                <Border.Background>
+
+                                                    <ImageBrush ImageSource="pack://application:,,,/WpfHomeNet;component/resourses/68fadad90ca053b59b3e0178c4983607.png" 
+                                              Stretch="UniformToFill" 
+                                                   Opacity="0.3"/>
+
+                                                </Border.Background>
+                                            </Border>
+
+                                            <!-- КОНТЕНТ КАРТОЧКИ -->
+                                            <ContentPresenter Margin="{TemplateBinding Padding}"/>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
 
-        
-        
 
-       
-        
+
+
+
 
         <Style x:Key="TripleBorderDeepBlueStyle" TargetType="ContentControl">
             <Setter Property="Template">
@@ -594,8 +644,8 @@
                     <ControlTemplate TargetType="ContentControl">
                         <Border                        
                          BorderThickness="0.3"
-                         BorderBrush="Black"
-                         CornerRadius="7"
+                         BorderBrush="#00F0FF"
+                         CornerRadius="8"
                          Background="#66ABC8AB">
                             <ContentPresenter Margin="{TemplateBinding Padding}"/>
                         </Border>

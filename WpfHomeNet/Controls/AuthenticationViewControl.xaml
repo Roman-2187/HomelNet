@@ -30,16 +30,16 @@
 
 
 
-    <ContentControl Style="{StaticResource CyberpunkImageStyle}"  Padding="4" >
+    <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}"  Padding="10" >
         <ContentControl.Tag>
             <CornerRadius>6</CornerRadius>
             <!-- Внутренняя матрешка тоже хочет знать радиус! -->
         </ContentControl.Tag>
-        <Grid Margin="15">
+        <Grid Margin="50,30,50,20">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -47,8 +47,8 @@
 
             <!-- EMAIL -->
             <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Vertical" Margin="0,0,0,5">
-                <Label Content="Email:" VerticalAlignment="Center" Foreground="#00F0FF"/>
-                <TextBox
+                <Label Content="Email:" VerticalAlignment="Center" Foreground="#FFB300"/>
+                <TextBox Background="#66ABC8AB"
                     Style="{StaticResource NeonTextBoxStyle}"
                     Text="{Binding UserData.Email, UpdateSourceTrigger=PropertyChanged}"
                     BorderBrush="{Binding ValidationResults[EmailType].State,
@@ -67,8 +67,8 @@
             <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Vertical" 
                          >
                 <Label Content="Пароль:" VerticalAlignment="Center"
-                       Foreground="#00F0FF"/>
-                <TextBox
+                       Foreground="#FFB300"/>
+                <TextBox Background="#66ABC8AB"
                     Style="{StaticResource NeonTextBoxStyle}"                   
                     Text="{Binding UserData.Password, UpdateSourceTrigger=PropertyChanged,
                     Mode=TwoWay}"
@@ -81,34 +81,37 @@
                 <Label
                     Content="{Binding ValidationResults[PasswordType].Message}"
                     Foreground="{Binding ValidationResults[PasswordType].State, 
-                    Converter={StaticResource StateToBrushConverter}}"
+                    Converter={StaticResource StateToBrushConverter}}" Height="25"
                     FontSize="10"
                     HorizontalContentAlignment="Center"/>
             </StackPanel>
 
-
-            <Label Grid.Row="2" Content="{Binding StatusMessage}"
-                   Foreground="#00F0FF" />
+<Label Grid.Row="2" Content="{Binding StatusMessage}"
+                   Foreground="#FFB300" Height="45"/>
+            
 
 
             <!-- BUTTONS -->
-            <StackPanel
+            <StackPanel  Margin="5"
                 Grid.Row="3"
                 Grid.ColumnSpan="2"
                 Orientation="Horizontal"
-                HorizontalAlignment="Right" Height="35">
-                <Button
-                    Content="Отмена" Style="{StaticResource NeonRegistrationButtonStyle}"
+                HorizontalAlignment="Right" Height="40">
+
+                <Button BorderBrush="#00F0FF" BorderThickness="0.2"
+                    Content="Отмена" Margin="0,0,5,0"
+                    Style="{StaticResource OrangeDefaultButtonStyle}"
                     Command="{Binding CancelCommand}"   
                     IsEnabled="{Binding IsComplete,
                     Converter={StaticResource InverseBooleanConverter}}"
-                    Width="Auto" MinWidth="120"/>
-                <Button Style="{StaticResource NeonRegistrationButtonStyle}"
+                    Width="Auto" MinWidth="120" Height="35"/>
+                <Button BorderBrush="#00F0FF" BorderThickness="0.2"
+                    Style="{StaticResource OrangeDefaultButtonStyle}"
                     Content="{Binding SubmitButtonText}"
                      Command="{Binding ToggleRegistrationCommand}"  
                        IsEnabled="{Binding IsComplete,
                     Converter={StaticResource InverseBooleanConverter}}"
-                    Width="Auto" MinWidth="120"/>
+                    Width="Auto" MinWidth="120"  Height="35"/>
             </StackPanel>
         </Grid>
     </ContentControl>
