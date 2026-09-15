@@ -1,8 +1,6 @@
-﻿using HomeNetCore.Models;
-using HomeNetCore.Services;
-using HomeNetCore.Services.UsersServices;
-using HomeNetCore.Models.Validation;
-namespace HomeNetCore.Interfaces
+﻿using HomeNetCore.Messaging;
+using HomeNetCore.Models;
+namespace HomeNetOrm.Interfaces
 {
     public interface IRegisterService
     {

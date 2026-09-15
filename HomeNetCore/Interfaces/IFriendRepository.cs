@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using HomeNetCore.Models;
 
-namespace HomeNetCore.Data.Interfaces
+namespace HomeNetCore.Interfaces
 {
     public interface IFriendRepository
     {

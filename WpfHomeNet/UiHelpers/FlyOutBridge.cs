@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace WpfHomeNet.Helpers
+namespace WpfHomeNet.UiHelpers
 {
     public static class FlyOutBridge
     {

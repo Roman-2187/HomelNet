@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -15,15 +15,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="Models\Validation\ValidationVerdicts.cs" />
+    <None Include="Messaging\ValidationVerdicts.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-    <PackageReference Include="Dapper" Version="2.1.66" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.0-preview2.25289.6" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.0-rc.2" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Dapper" Version="2.1.86" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.0-preview3.26238.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Helpers\" />
   </ItemGroup>
 
 </Project>

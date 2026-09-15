@@ -1,6 +1,6 @@
 ﻿using HomeNetCore.Models;
 
-namespace HomeNetCore.Data.Interfaces
+namespace HomeNetCore.Interfaces
 {
     public interface IUserRepository
     {

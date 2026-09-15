@@ -1,13 +1,12 @@
-﻿using HomeNetCore.Enums;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
+using HomeNetCore.Enums;
 
-namespace HomeNetCore.Data.Interfaces
+namespace HomeNetCore.Interfaces
 {
-
     public interface ILogger
     {
+        void SetOutput(Action<string, LogLevel> output);
 
-        public void SetOutput(Action<(string Message, LogColor Color)> output);
         void Log(
             LogLevel level,
             string message,
@@ -15,44 +14,5 @@ namespace HomeNetCore.Data.Interfaces
             [CallerFilePath] string filePath = "",
             [CallerLineNumber] int lineNumber = 0,
             params object[] args);
-
-        void LogDebug(
-            string message,
-            [CallerMemberName] string memberName = "",
-            [CallerFilePath] string filePath = "",
-            [CallerLineNumber] int lineNumber = 0,
-            params object[] args);
-
-        void LogInformation(
-            string message,
-            [CallerMemberName] string memberName = "",
-            [CallerFilePath] string filePath = "",
-            [CallerLineNumber] int lineNumber = 0,
-            params object[] args);
-
-        void LogWarning(
-            string message,
-            [CallerMemberName] string memberName = "",
-            [CallerFilePath] string filePath = "",
-            [CallerLineNumber] int lineNumber = 0,
-            params object[] args);
-
-        void LogError(
-            string message,
-            [CallerMemberName] string memberName = "",
-            [CallerFilePath] string filePath = "",
-            [CallerLineNumber] int lineNumber = 0,
-            params object[] args);
-
-        void LogCritical(
-            string message,
-            [CallerMemberName] string memberName = "",
-            [CallerFilePath] string filePath = "",
-            [CallerLineNumber] int lineNumber = 0,
-            params object[] args);
-
-
-
     }
-
 }

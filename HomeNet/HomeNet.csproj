@@ -1,0 +1,51 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="resourses\68fadad90ca053b59b3e0178c4983607.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HomeNetCore\HomeNetCore.csproj" />
+    <ProjectReference Include="..\HomeNetOrm\HomeNetOrm.csproj" />
+    <ProjectReference Include="..\HomeNetPresentation\HomeNetPresentation.csproj" />
+    <ProjectReference Include="..\HomeNetServices\HomeNetServices.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="resourses\68fadad90ca053b59b3e0178c4983607.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Controls\ChatViewControl.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Controls\DeletionUsersControl.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Controls\FriendsListViewControl.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Controls\LogRenderControl.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Controls\StatusBarControl.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Controls\UserDashboardControl.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+
+</Project>

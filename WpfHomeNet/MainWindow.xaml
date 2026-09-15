@@ -16,7 +16,7 @@
     FontSize="14"                             
     Background="Transparent"  WindowStartupLocation="CenterScreen"
     
-    Width="950" Height="650">
+    Width="900" Height="600">
 
     <Window.Resources>
         <!-- 🎯 ГЛАВНЫЙ МОСТ: Говорим окну использовать ваш оранжевый стиль как базовый -->
@@ -34,7 +34,7 @@
 
     <ContentControl Style="{StaticResource CyberpunkImageStyle}" 
                 
-                Width="950" Height="650" 
+                Width="900" Height="600" 
                 HorizontalAlignment="Center" VerticalAlignment="Center"
                 MouseLeftButtonDown="WindowDrag_MouseDown">
         <ContentControl.Tag>
@@ -63,7 +63,7 @@
             <Border Grid.Row="0" Grid.Column="0">
                 <Label HorizontalAlignment="Center" 
                        FontWeight="Bold"
-                       Content="HomeNet"
+                       Content="SiberNet"
                        FontSize="20"
                        Foreground="#FFB300"/>
             </Border>
@@ -75,14 +75,7 @@
                     Content="×" Width="Auto"/>
 
             <!-- АДМИНКА -->
-            <controls:AdminMenu d:Visibility="Collapsed"
-                Grid.Row="1" Grid.RowSpan="4"
-                Grid.Column="0" Grid.ColumnSpan="6"
-                Panel.ZIndex="98" 
-                HorizontalAlignment="Stretch" 
-                VerticalAlignment="Stretch" 
-                Visibility="{Binding DataContext.AdminMenuVisibility, RelativeSource={RelativeSource AncestorType=Window}}"
-                DataContext="{Binding AdminMenuVm, Source={StaticResource VmLocator}}" />
+          
 
             <!-- ================================================================= -->
             <!-- 🛸 ЦЕНТРАЛЬНЫЙ СТАК ШАПКИ: КНОПКА АДМИНКИ И ГОСТЕВОЙ ИНТЕРФЕЙС -->
@@ -94,53 +87,15 @@
                 Grid.ColumnSpan="3"
                 Margin="0,0,45,0">
 
-                <StackPanel.Style>
-                    <Style TargetType="StackPanel">
-                        <Setter Property="Visibility" Value="Visible"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding MainVm.MainInterfaceVisibility, Source={StaticResource VmLocator}}" Value="Visible">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </StackPanel.Style>
+               
 
                 <!-- КНОПКА АДМИНКИ -->
                 <Button MinWidth="100"   
                         Command="{Binding ToggleAdminMenuCommand}"                      
                         Content="🛠️ Админка"
-                        IsEnabled="{Binding MainVm.IsButtonsPanelEnabled, Source={StaticResource VmLocator}}"/>
+                        />
 
-                <!-- ВНУТРЕННИЙ Контейнер кнопок Входа и Регистрации -->
-                <StackPanel Orientation="Horizontal" Margin="10,0,0,0">
-                    <StackPanel.Resources>
-                        <!-- Наследуемся от нашего обновленного оранжевого стиля, чтобы сохранить логику блокировок -->
-                        <Style TargetType="Button" BasedOn="{StaticResource OrangeDefaultButtonStyle}">
-                            <Setter Property="IsEnabled" Value="True"/>
-                            <!-- Сохраняем ваши точечные размеры из шапки, чтобы верстка не поплыла -->
-                            <Setter Property="Padding" Value="9.4"/>
-                            <Setter Property="BorderThickness" Value="0.6"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding MainVm.IsButtonsPanelEnabled, Source={StaticResource VmLocator}}" Value="False">
-                                    <Setter Property="IsEnabled" Value="False"/>
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding MainVm.AdminMenuVisibility, Source={StaticResource VmLocator}}" Value="Visible">
-                                    <Setter Property="IsEnabled" Value="False"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </StackPanel.Resources>
-
-                    <Button MinWidth="120"   
-                            Command="{Binding ToggleFormVisibilityCommand}"
-                            CommandParameter="{Binding RegistrationVm, Source={StaticResource VmLocator}}" 
-                            Content="Регистрация" />
-
-                    <Button MinWidth="120"                       
-                            Command="{Binding ToggleFormVisibilityCommand}"
-                            CommandParameter="{Binding LoginVm, Source={StaticResource VmLocator}}"                    
-                            Content="Вход в профиль" />
-                </StackPanel>
+              
             </StackPanel>
 
             <!-- КНОПКА ВЫХОДА -->
@@ -163,7 +118,7 @@
                                   HorizontalAlignment="Center"
                                   VerticalAlignment="Center"
                                   Panel.ZIndex="99" 
-                                  DataContext="{Binding RegistrationVm, Source={StaticResource VmLocator}}" 
+                                 
                                   Visibility="{Binding ControlVisibility}"/>
 
             <!-- ФОРМА ЛОГИНА -->
@@ -175,20 +130,14 @@
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
                            Panel.ZIndex="99"
-                           DataContext="{Binding LoginVm, Source={StaticResource VmLocator}}" 
+                           
                            Visibility="{Binding ControlVisibility}"/>
 
-            <!-- ЮЗЕР ПАНЕЛЬ -->
-            <controls:UserDashboardControl x:Name="DashboardControl"
-                 Grid.Row="1" Grid.RowSpan="4"
-                 Grid.Column="0" Grid.ColumnSpan="6"
-                 Panel.ZIndex="50"
-                 Visibility="Visible"
-                 DataContext="{Binding UserDashboardVm, Source={StaticResource VmLocator}}" />
+           
 
             <!-- КОНТЕЙНЕР СТАТУС-БАР -->
             <controls:StatusBarControl
-                DataContext="{Binding StatusBarVm, Source={StaticResource VmLocator}}"
+                
                 Grid.Row="5" Grid.Column="0"
                 Grid.ColumnSpan="6" 
                 VerticalAlignment="Bottom"/>

@@ -4,13 +4,13 @@
              xmlns:local="clr-namespace:WpfHomeNet" 
              xmlns:vm="clr-namespace:WpfHomeNet.ViewModels"   
              xmlns:cv="clr-namespace:WpfHomeNet.Converters"
-              xmlns:helpers="clr-namespace:WpfHomeNet.Helpers">
+              >
     
 
     <Application.Resources>
        
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
-        <vm:ViewModelLocator x:Key="VmLocator" />
+       
         <cv:CornerRadiusConverter x:Key="RadiusCalc" />
 
         <!-- 1. ВАШ СТИЛЬ (ПЕРЕИМЕНОВАННЫЙ В ИМЕННОЙ) -->

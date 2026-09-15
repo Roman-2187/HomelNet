@@ -1,5 +1,5 @@
 ﻿using System.Text.RegularExpressions;
-namespace HomeNetCore.Services.UsersServices
+namespace HomeNetCore.Models.Validation
 {
     public class ValidationFormat
     {

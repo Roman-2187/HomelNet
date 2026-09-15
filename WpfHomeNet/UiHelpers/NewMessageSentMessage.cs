@@ -1,4 +1,4 @@
-﻿namespace WpfHomeNet.Messaging
+﻿namespace WpfHomeNet.UiHelpers
 {
     // Класс-посылка для шины сообщений 📦
     public class NewMessageSentMessage
