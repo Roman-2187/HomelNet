@@ -1,0 +1,75 @@
+﻿<UserControl
+    x:Class="WpfHomeNet.Controls.AdminMenu"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"  
+    xmlns:converter="clr-namespace:WpfHomeNet.Converters"
+    xmlns:controls="clr-namespace:WpfHomeNet.Controls"
+    Background="Transparent" 
+    mc:Ignorable="d" 
+    d:DesignHeight="500" d:DesignWidth="740"
+    Margin="0,10,0,0" >
+
+    
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="160"/>
+            <!-- Левая боковая панель кнопок -->
+            <ColumnDefinition/>
+            <!-- Вся правая область под контент -->
+        </Grid.ColumnDefinitions>
+
+        <!-- ЛЕВАЯ ЧАСТЬ: Боковая панель кнопок управления -->
+        <ContentControl 
+                        Margin="0,0,10,10">
+            <ContentControl.Tag>
+                <CornerRadius>6</CornerRadius>
+            </ContentControl.Tag>
+
+            <StackPanel Margin="3" 
+                        
+                        Background="Transparent">
+
+                <Label Content="АДМИН ПАНЕЛЬ" FontWeight="Bold" 
+                       HorizontalAlignment="Center" Margin="0,5,0,15"/>
+
+                <Button Content="User Profile" Margin="0,3"  
+                        />
+
+                <Button Content="Test list Users" Margin="0,3"
+                        Command="{Binding SeedDataCommand}" />
+
+                <Button Content="Добавить юзера" Margin="0,3"                    
+                    />
+
+                <Button Content="Удалить юзера" Margin="0,3"
+                         />
+
+                <Button Margin="0,3" Content="{Binding TableButtonText}" 
+                        Command="{Binding UserTableViewCommand}"/>
+
+                <!-- 👁️ Кнопка логов: теперь переключает видимость встроенного контрола -->
+                <Button Margin="0,3"
+                        Command="{Binding ToggleLogWindowCommand}" 
+                        Content="{Binding ToggleButtonText}"/>
+            </StackPanel>
+        </ContentControl>
+
+        <!-- ПРАВАЯ ЧАСТЬ: Динамическая рабочая зона (Разделена на Верх/Низ) -->
+        <Grid Grid.Column="1" Margin="0,0,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <!-- Верх: Таблицы и Формы удаления -->
+                
+            </Grid.RowDefinitions>
+
+         
+            
+           
+
+        </Grid>
+    </Grid>
+
+</UserControl>  

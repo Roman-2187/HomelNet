@@ -1,12 +1,108 @@
-﻿<Window x:Class="SiberNet.UI.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:SiberNet.UI"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+﻿<Window x:Class="SiberNet.UI.MainWindow"      
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:controls="clr-namespace:WpfHomeNet.Controls"       
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:viewmodels="clr-namespace:SiberNet.UI"  
+    xmlns:relayComand="clr-namespace:SiberNet.UI"    
+    xmlns:converter="clr-namespace:SiberNet.UI.Converters"
+    mc:Ignorable="d"        
+    WindowStyle="None"
+    ResizeMode="CanResize"                             
+    AllowsTransparency="True"
+    FontFamily="Calibri"
+    FontSize="14"                             
+    Background="DarkGray"  WindowStartupLocation="CenterScreen"
+    
+    Width="900" Height="600">
 
-    </Grid>
+    <Window.Resources>
+        <!-- 🎯 ГЛАВНЫЙ МОСТ: Говорим окну использовать ваш оранжевый стиль как базовый -->
+        <!-- Без этого моста кнопки сбрасывались в дефолтный серый дизайн Windows -->
+        <Style TargetType="Button" BasedOn="{StaticResource OrangeDefaultButtonStyle}">
+            <!-- Оставляем ваши точечные корректировки размеров для разметки главного окна -->
+            <Setter Property="Padding" Value="9.4"/>
+            <Setter Property="BorderThickness" Value="0.6"/>
+        </Style>
+
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+       
+    </Window.Resources>
+
+
+    <ContentControl 
+                
+                Width="900" Height="600" 
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                MouseLeftButtonDown="WindowDrag_MouseDown">
+        <ContentControl.Tag>
+            <CornerRadius>6</CornerRadius>
+        </ContentControl.Tag>
+
+        <Grid x:Name="MainGrid" Margin="4">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="100"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="40"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="140"/>
+                <ColumnDefinition Width="50"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="40"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Шапка приложения -->
+            <Border Grid.Row="0" Grid.Column="0">
+                <Label HorizontalAlignment="Center" 
+                       FontWeight="Bold"
+                       Content="SiberNet"
+                       FontSize="20"
+                       Foreground="#FFB300"/>
+            </Border>
+
+            <!-- Кнопка закрытия -->
+            <Button Grid.Row="0" Grid.Column="5"              
+                    Click="CloseButton_Click"
+                    Panel.ZIndex="100"
+                    Content="×" Width="Auto"/>
+
+            <!-- АДМИНКА -->
+          
+
+            <!-- ================================================================= -->
+            <!-- 🛸 ЦЕНТРАЛЬНЫЙ СТАК ШАПКИ: КНОПКА АДМИНКИ И ГОСТЕВОЙ ИНТЕРФЕЙС -->
+            <!-- ================================================================= -->
+            <StackPanel
+                HorizontalAlignment="Right"
+                Grid.Row="0" Grid.Column="2"                                                  
+                Orientation="Horizontal"                        
+                Grid.ColumnSpan="3"
+                Margin="0,0,45,0">
+
+               
+
+                <!-- КНОПКА АДМИНКИ -->
+                <Button MinWidth="100"   
+                        Command="{Binding ToggleAdminMenuCommand}"                      
+                        Content="🛠️ Админка"
+                        />
+
+              
+            </StackPanel>
+
+         
+           
+        </Grid>
+    </ContentControl>
 </Window>
+
+
+
+

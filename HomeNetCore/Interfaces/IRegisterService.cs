@@ -1,5 +1,6 @@
 ﻿using HomeNetCore.Messaging;
 using HomeNetCore.Models;
+using HomeNetCore.Models.Validation;
 namespace HomeNetOrm.Interfaces
 {
     public interface IRegisterService

@@ -3,14 +3,13 @@ using HomeNetCore.Interfaces;             // Контракты репозито
 using HomeNetCore.Messaging;              // Наши обновленные чистые рекорды-сигналы из Ядра
 using HomeNetCore.Models;
 using HomeNetServices.Services.Identity;
-using HomeNetServices.Services.Messaging;
 using System.Collections.ObjectModel;
 
 namespace HomeNetPresentation.ViewModels
 {
     public partial class UserDashboardViewModel : FormViewModelBase
     {
-        private readonly UserService _userService;
+        private readonly IUserService _userService;
         private readonly IMessageRepository _messageRepo;
 
         public ChatViewModel ChatVm { get; }
@@ -22,7 +21,7 @@ namespace HomeNetPresentation.ViewModels
         [ObservableProperty] private ObservableCollection<UserEntity> _friends = new();
 
         // 🔥 ИСПРАВЛЕНО: Конструктор принимает чистый интерфейс IEventBus из Ядра и прокидывает в базу через base
-        public UserDashboardViewModel(IEventBus eventBus, UserService userService, ChatViewModel chatVm, IMessageRepository messageRepo) : base(eventBus)
+        public UserDashboardViewModel(IEventBus eventBus, IUserService userService, ChatViewModel chatVm, IMessageRepository messageRepo) : base(eventBus)
         {
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             ChatVm = chatVm ?? throw new ArgumentNullException(nameof(chatVm));

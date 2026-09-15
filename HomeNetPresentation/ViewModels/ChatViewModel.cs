@@ -1,9 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using HomeNetCore.Interfaces;          
-using HomeNetCore.Messaging;             
+using HomeNetCore.Extensions;
+using HomeNetCore.Interfaces;
+using HomeNetCore.Messaging;
 using HomeNetCore.Models;
-using HomeNetServices.Services.Messaging;
 using System.Collections.ObjectModel;
 
 namespace HomeNetPresentation.ViewModels

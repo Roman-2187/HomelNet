@@ -1,6 +1,6 @@
 ﻿
 
-namespace HomeNetServices.Services.Messaging
+namespace HomeNetCore.Interfaces
 {
     public interface IEventBus
     {

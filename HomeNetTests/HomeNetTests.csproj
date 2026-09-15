@@ -16,8 +16,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\HomeNetCore\HomeNetCore.csproj" />
     <ProjectReference Include="..\HomeNetOrm\HomeNetOrm.csproj" />
     <ProjectReference Include="..\HomeNetPresentation\HomeNetPresentation.csproj" />
+    <ProjectReference Include="..\HomeNetServices\HomeNetServices.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,11 +1,11 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HomeNetCore.Extensions;
+using HomeNetCore.Interfaces;
 using HomeNetCore.Messaging;                  // Чистые сигналы-рекорды из Ядра
 using HomeNetCore.Models;
 using HomeNetPresentation.Enums;
 using HomeNetServices.Services.Diagnostics;
-using HomeNetServices.Services.Identity;
-using HomeNetServices.Services.Messaging;               // Твой UserService из Сервисов
 
 namespace HomeNetPresentation.ViewModels
 {
@@ -14,8 +14,8 @@ namespace HomeNetPresentation.ViewModels
     public partial class AdminMenuViewModel : FormViewModelBase
     {
         // 🔒 ИЗОЛИРОВАННЫЕ ПРИВАТНЫЕ ПОЛЯ (Компилятор больше не двоит!)
-        private readonly UserService _adminUserService;
-        private readonly LogQueueManager _adminLogQueueManager;
+        private readonly IUserService _adminUserService;
+        private readonly ILogQueueManager _adminLogQueueManager;
 
         // ВСЕГО ОДИН ХОЗЯИН ЭКРАНА! Заменяет кучу булевых флагов
         [ObservableProperty] private AdminSubPanelVisuability _activePanel = AdminSubPanelVisuability.None;
@@ -28,7 +28,7 @@ namespace HomeNetPresentation.ViewModels
         [ObservableProperty] private string _tableButtonText = "Показать users";
 
         // Конструктор — теперь принимает чистый IEventBus из Ядра! 🛸✨
-        public AdminMenuViewModel(UserService userService, LogQueueManager logQueueManager, IEventBus eventBus) : base(eventBus)
+        public AdminMenuViewModel(IUserService userService, ILogQueueManager logQueueManager, IEventBus eventBus) : base(eventBus)
         {
             _adminUserService = userService ?? throw new ArgumentNullException(nameof(userService));
             _adminLogQueueManager = logQueueManager ?? throw new ArgumentNullException(nameof(logQueueManager));
@@ -60,9 +60,9 @@ namespace HomeNetPresentation.ViewModels
             ActivePanel = AdminSubPanelVisuability.EventInspector;
 
             // Дёргаем инспектора напрямую через наш зашитый в базу EventBus
-            if (EventBus is EventBus concreteBus)
+            if (EventBus is IEventBus concreteBus)
             {
-                EventInspectorReport = concreteBus.Inspector.GenerateReport();
+                EventInspectorReport = concreteBus.GenerateInspectorReport();
             }
             else
             {

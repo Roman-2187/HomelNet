@@ -1,20 +1,19 @@
-﻿using HomeNetCore.Messaging;              // Чистые сигналы-рекорды из Ядра
+﻿using HomeNetCore.Interfaces;
+using HomeNetCore.Messaging;              // Чистые сигналы-рекорды из Ядра
 using HomeNetCore.Models;
-using HomeNetServices.Services.Identity;
-using HomeNetServices.Services.Messaging;
 using System.Collections.ObjectModel;
 
 namespace HomeNetPresentation.ViewModels
 {
     public partial class UsersTableViewModel : FormViewModelBase
     {
-        private readonly UserService _userService;
+        private readonly IUserService _userService;
 
         // ObservableCollection Тулкит сам обернёт в свойство, если нужно, но мы оставляем её открытой для биндинга
         public ObservableCollection<UserEntity> Users { get; private set; } = new();
 
         // Конструктор принимает чистый IEventBus из Ядра и прокидывает в базу через base(eventBus)
-        public UsersTableViewModel(IEventBus eventBus, UserService userService) : base(eventBus)
+        public UsersTableViewModel(IEventBus eventBus, IUserService userService) : base(eventBus)
         {
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
 

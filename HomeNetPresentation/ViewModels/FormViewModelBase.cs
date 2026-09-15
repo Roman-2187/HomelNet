@@ -1,8 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNetCore.Enums;
+using HomeNetCore.Interfaces;
 using HomeNetCore.Messaging; // Подключаем наши чистые рекорды из Ядра
 using HomeNetCore.Models.Validation;
-using HomeNetServices.Services.Messaging; // Твой универсальный автобус из Сервисов
 
 namespace HomeNetPresentation.ViewModels
 {

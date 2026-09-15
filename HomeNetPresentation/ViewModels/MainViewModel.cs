@@ -1,9 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;             // Наш чистый контракт IEventBus и ILogger из Ядра 🧼
 using HomeNetCore.Messaging;              // Наши чистые сигналы-рекорды из Ядра
 using HomeNetCore.Models;
-using HomeNetServices.Services.Messaging;
 
 namespace HomeNetPresentation.ViewModels
 {
