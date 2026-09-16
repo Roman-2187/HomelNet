@@ -1,18 +1,19 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Enums;
+using HomeNetCore.Events;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;             // Наш чистый контракт ILogger и IEventBus из Ядра 🧼
-using HomeNetCore.Messaging;              // Наши чистые сигналы-рекорды из Ядра
 using HomeNetCore.Models;
 using HomeNetCore.Models.Validation;
+using HomeNetOrm.Interfaces;
 using HomeNetServices.Services.Identity;
 
 namespace HomeNetPresentation.ViewModels
 {
     public partial class RegistrationViewModel : FormViewModelBase
     {
-        private readonly RegisterService _registerService;
+        private readonly IRegisterService _registerService;
         private readonly ILogger _logger;
         private UserEntity? _createdUser;
 
@@ -20,7 +21,7 @@ namespace HomeNetPresentation.ViewModels
         [ObservableProperty] private UserEntity _userData = new();
 
         // Конструктор принимает чистые интерфейсы Ядра и передает шину в базу через base(eventBus)
-        public RegistrationViewModel(RegisterService registerService, IEventBus eventBus, ILogger logger) : base(eventBus)
+        public RegistrationViewModel(IRegisterService registerService, IEventBus eventBus, ILogger logger) : base(eventBus)
         {
             _registerService = registerService ?? throw new ArgumentNullException(nameof(registerService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

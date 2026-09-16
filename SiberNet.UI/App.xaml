@@ -6,10 +6,155 @@
     
 
     <Application.Resources>
-       
-        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
-       
-        
+          
+        <cv:CornerRadiusConverter x:Key="RadiusCalc" />
+
+
+
+        <!-- Обновленный киберпанк-стиль для обводки полей ввода с подсветкой фокуса -->
+        <Style x:Key="CyberInputBorderStyle" TargetType="Border">
+            <!-- Дефолтное состояние: неоновый Cyan #00F0FF -->
+            <Setter Property="BorderBrush" Value="#00F0FF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+
+            <Style.Triggers>
+                <!-- 🟢 ТРИГГЕР 1: Если прилетел УСПЕХ -->
+                <DataTrigger Binding="{Binding State}" Value="Success">
+                    <Setter Property="BorderBrush" Value="#00FF66"/>
+                </DataTrigger>
+
+                <!-- 🔴 ТРИГГЕР 2: Если прилетела ОШИБКА -->
+                <DataTrigger Binding="{Binding State}" Value="Error">
+                    <Setter Property="BorderBrush" Value="#F23E5C"/>
+                </DataTrigger>
+
+                <!-- 👑 ТРИГГЕР 3: ГЛАВНЫЙ ПРИОРИТЕТ — АКТИВНОЕ ПОЛЕ (ФОКУС) -->
+                <!-- Мы смотрим на свойство IsKeyboardFocusWithin у самого Бордера. -->
+                <!-- Оно автоматически становится True, если курсор стоит внутри встроенного TextBox! -->
+                <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                    <Setter Property="BorderBrush" Value="#FFB300"/>
+                    <!-- Можно даже сделать рамку чуть толще при фокусе, чтобы подчеркнуть активность -->
+                    <Setter Property="BorderThickness" Value="1.2"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+
+
+
+        <Style x:Key="CyberpunkImageStyle" TargetType="ContentControl">
+            <Setter Property="Tag" Value="0"/>
+            <Setter Property="Padding" Value="5"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContentControl">
+                        <Grid>
+                            <!-- 👑 ВНЕШНИЙ БОРДЕР: Рамка та же, но фон подкладки осветлен на 10% -->
+                            <Border CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" 
+                      BorderThickness="1" BorderBrush="#FFF23E5C" Background="#FF1B222E">
+                                <Grid>
+                                    <!-- 🥈 СРЕДНИЙ БОРДЕР -->
+                                    <Border BorderThickness="1.5" Margin="0" BorderBrush="#40F23E5C" 
+                              CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent},
+                              Converter={StaticResource RadiusCalc}, ConverterParameter=-0.5}"/>
+
+                                    <!-- 🥉 ВНУТРЕННИЙ БОРДЕР: Основной фон карточки -->
+                                    <Border Margin="1.5" BorderThickness="0"
+                              CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, 
+                              Converter={StaticResource RadiusCalc}, ConverterParameter=-1.0}"
+                              Background="#FF1C2433">
+                                        <!-- Мягкий темно-сизый графит -->
+
+                                        <Grid>
+                                            <!-- 🖼️ СЛОЙ С КАРТИНКОЙ -->
+                                            <!-- ImageBrush заполнит весь фон. Opacity="0.15" сделает картинку полупрозрачной, 
+                                   чтобы она не перекрывала текст и сохраняла общую темную атмосферу. -->
+                                            <Border CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, 
+                                      Converter={StaticResource RadiusCalc}, ConverterParameter=-1.0}">
+                                                <Border.Background>
+
+                                                    <!-- 🔥 Сменили проект на SiberNet.UI и сделали правильный регистр папки Resourses! -->
+                                                    <ImageBrush ImageSource="pack://application:,,,/SiberNet.UI;component/Resourses/68fadad90ca053b59b3e0178c4983607.png" 
+                                                    Stretch="UniformToFill" 
+                                                    Opacity="0.3"/>
+
+
+                                                </Border.Background>
+                                            </Border>
+
+                                            <!-- КОНТЕНТ КАРТОЧКИ -->
+                                            <ContentPresenter Margin="{TemplateBinding Padding}"/>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+
+        <Style x:Key="CyberpunkImageChaildStyle" TargetType="ContentControl">
+            <Setter Property="Tag" Value="0"/>
+            <Setter Property="Padding" Value="5"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContentControl">
+                        <Grid>
+                            <!-- 👑 ВНЕШНИЙ БОРДЕР: Рамка та же, но фон подкладки осветлен на 10% -->
+                            <Border CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" 
+              BorderThickness="0.4" BorderBrush="#00F0FF" Background="#FF1B222E">
+                                <Grid>
+                                    <!-- 🥈 СРЕДНИЙ БОРДЕР -->
+                                    <Border BorderThickness="0.1" Margin="0" BorderBrush="#40F23E5C" 
+                      CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent},
+                      Converter={StaticResource RadiusCalc}, ConverterParameter=-0.5}"/>
+
+                                    <!-- 🥉 ВНУТРЕННИЙ БОРДЕР: Основной фон карточки -->
+                                    <Border Margin="1.5" BorderThickness="0"
+                      CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, 
+                      Converter={StaticResource RadiusCalc}, ConverterParameter=-1.0}"
+                      Background="#FF1C2433">
+                                        <!-- Мягкий темно-сизый графит -->
+
+                                        <Grid>
+                                            <!-- 🖼️ СЛОЙ С КАРТИНКОЙ -->
+                                            <!-- ImageBrush заполнит весь фон. Opacity="0.15" сделает картинку полупрозрачной, 
+                           чтобы она не перекрывала текст и сохраняла общую темную атмосферу. -->
+                                            <Border CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, 
+                              Converter={StaticResource RadiusCalc}, ConverterParameter=-1.0}">
+                                                <Border.Background>
+
+                                                    <!-- 🔥 Сменили проект на SiberNet.UI и сделали правильный регистр папки Resourses! -->
+                                                    <ImageBrush ImageSource="pack://application:,,,/SiberNet.UI;component/Resourses/68fadad90ca053b59b3e0178c4983607.png" 
+                                                         Stretch="UniformToFill" 
+                                                          Opacity="0.3"/>
+
+
+                                                </Border.Background>
+                                            </Border>
+
+                                            <!-- КОНТЕНТ КАРТОЧКИ -->
+                                            <ContentPresenter Margin="{TemplateBinding Padding}"/>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+
+
+
+
 
         <!-- 1. ВАШ СТИЛЬ (ПЕРЕИМЕНОВАННЫЙ В ИМЕННОЙ) -->
         <Style x:Key="OrangeDefaultButtonStyle" TargetType="Button">

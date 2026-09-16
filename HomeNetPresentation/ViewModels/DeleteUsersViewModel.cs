@@ -1,8 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HomeNetCore.Events;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces; // Чистые контракты из Ядра
-using HomeNetCore.Messaging;
 using HomeNetCore.Models;
 using HomeNetServices.Services.Identity;
 

@@ -1,7 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNetCore.Enums;
+using HomeNetCore.Events;
 using HomeNetCore.Interfaces;
-using HomeNetCore.Messaging; // Подключаем наши чистые рекорды из Ядра
 using HomeNetCore.Models.Validation;
 
 namespace HomeNetPresentation.ViewModels

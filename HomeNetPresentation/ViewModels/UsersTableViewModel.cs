@@ -1,5 +1,5 @@
-﻿using HomeNetCore.Interfaces;
-using HomeNetCore.Messaging;              // Чистые сигналы-рекорды из Ядра
+﻿using HomeNetCore.Events;
+using HomeNetCore.Interfaces;
 using HomeNetCore.Models;
 using System.Collections.ObjectModel;
 
@@ -31,7 +31,7 @@ namespace HomeNetPresentation.ViewModels
             try
             {
                 // 1. Честно читаем базу данных напрямую через асинхронный метод сервиса
-                var list = await _userService.GetAllUsersAsync();
+                var list = await _userService.GetAllAsync();
 
                 await Task.Delay(1000); // Наша кинематографичная пауза 🎬
 

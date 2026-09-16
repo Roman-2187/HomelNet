@@ -13,14 +13,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\HomeNetCore\HomeNetCore.csproj" />
-    <ProjectReference Include="..\HomeNetOrm\HomeNetOrm.csproj" />
+    <ProjectReference Include="..\HomeNet.DI\HomeNet.DI.csproj" />
     <ProjectReference Include="..\HomeNetPresentation\HomeNetPresentation.csproj" />
-    <ProjectReference Include="..\HomeNetServices\HomeNetServices.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="resourses\68fadad90ca053b59b3e0178c4983607.png" />
+    <Resource Include="Resourses\68fadad90ca053b59b3e0178c4983607.png" />
   </ItemGroup>
 
   <ItemGroup>

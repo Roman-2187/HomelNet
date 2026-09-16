@@ -1,17 +1,16 @@
-﻿using Data.Repositories;
-using HomeNetCore.Extensions;
+﻿using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Models;
-using HomeNetOrm.Data.Repositories;
+using HomeNetOrm.Repositories;
 
 namespace HomeNetServices.Services.Identity
 {
-    public class FriendService
+    public class FriendService : IFriendService
     {
-        private readonly FriendRepository _friendRepository;
+        private readonly IFriendRepository _friendRepository;
         private readonly ILogger _logger;
 
-        public FriendService(FriendRepository friendRepository, ILogger logger)
+        public FriendService(IFriendRepository friendRepository, ILogger logger)
         {
             _friendRepository = friendRepository ?? throw new ArgumentNullException(nameof(friendRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

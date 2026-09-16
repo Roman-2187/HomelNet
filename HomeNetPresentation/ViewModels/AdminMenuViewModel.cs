@@ -1,8 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HomeNetCore.Events;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;
-using HomeNetCore.Messaging;                  // Чистые сигналы-рекорды из Ядра
 using HomeNetCore.Models;
 using HomeNetPresentation.Enums;
 using HomeNetServices.Services.Diagnostics;
@@ -86,7 +86,7 @@ namespace HomeNetPresentation.ViewModels
                     bool emailExists = await _adminUserService.CheckEmailExistsAsync(user.Email);
                     if (!emailExists)
                     {
-                        await _adminUserService.AddUserAsync(user);
+                        await _adminUserService.AddUserSecureAsync(user);
                         _eventBus.Publish(this, new UserAddedMessage(user));
                         addedCount++;
                     }

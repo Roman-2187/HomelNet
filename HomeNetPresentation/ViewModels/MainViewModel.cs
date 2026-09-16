@@ -1,8 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HomeNetCore.Enums;
+using HomeNetCore.Events;
 using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces;             // Наш чистый контракт IEventBus и ILogger из Ядра 🧼
-using HomeNetCore.Messaging;              // Наши чистые сигналы-рекорды из Ядра
+using HomeNetCore.Interfaces;
 using HomeNetCore.Models;
 
 namespace HomeNetPresentation.ViewModels
@@ -11,58 +12,31 @@ namespace HomeNetPresentation.ViewModels
     {
         #region Поля и Зависимости 🦾
         private readonly ILogger _logger;
-        private readonly HashSet<Type> _openedForms = new(); // Наш умный радар окон 🧼
 
-        // 🔥 ПОБЕДА НАД WPF: Заменили Visibility на чистый bool для Авалонии! 🧼🛸
-        [ObservableProperty] private bool _isMainInterfaceVisible = false;
-        [ObservableProperty] private bool _isAdminMenuVisible = false;
+        // 🔥 НАШИ ТРИ КИТА: Главные рубильники автоматов состояний!
+        [ObservableProperty] private MainTab _currentMainTab = MainTab.AuthZone;
+        [ObservableProperty] private ClientSubTab _currentClientTab = ClientSubTab.Authentication;
+        [ObservableProperty] private AdminSubTab _currentAdminTab = AdminSubTab.LogsView;
 
-        // Кнопки активны, если в радаре 0 открытых окон! 🛸🛡️
-        public bool IsButtonsPanelEnabled => _openedForms.Count == 0;
+        // Дополнительные логические свойства для модулей панели администратора
+        public bool IsLoggerModuleActive => CurrentMainTab == MainTab.AdminZone && CurrentAdminTab == AdminSubTab.LogsView;
         #endregion
 
         #region Конструктор
-        // Принимаем чистый интерфейс IEventBus из Ядра и передаем в базу через base(eventBus)
         public MainViewModel(ILogger logger, IEventBus eventBus) : base(eventBus)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             InitializeBusSubscriptions();
-
-            _logger.LogInformation("test");
-            _logger.LogDebug("test");
-            _logger.LogWarning("test");
-            _logger.LogError("test");
         }
         #endregion
 
-        #region Инициализация подписок шины (Только глобальный интерфейс)
+        #region Инициализация подписок шины
         private void InitializeBusSubscriptions()
         {
-            // 🔥 МАКСИМАЛЬНОЕ СЖАТИЕ БЕЗ ДИСПЕТЧЕРОВ WPF: 
-            // Возврат в UI-поток кроссплатформенно обеспечивает SynchronizationContext нашей шины Routing! 🧼⚡
-            EventBus.Subscribe<FormVisibilityChangedMessage>(msg =>
-            {
-                if (msg.IsVisible)
-                {
-                    _openedForms.Add(msg.FormType);
-                }
-                else
-                {
-                    _openedForms.Remove(msg.FormType);
-                }
-
-                OnPropertyChanged(nameof(IsButtonsPanelEnabled));
-            });
-
-            // Лямбда-сжатие для меню админа
-            EventBus.Subscribe<AdminMenuVisibilityChangedMessage>(msg =>
-                IsAdminMenuVisible = msg.IsVisible);
-
-            // Подписка на регистрацию и авторизацию
+            // Ловим успешный вход или успешную регистрацию из шины событий
             EventBus.Subscribe<UserLoggedMessage>(msg => OnAuthSuccess(msg.User, msg.IsFromAdminPanel));
-
-            // В Ядре мы объединили регистрацию под UserAddedMessage 🧼
             EventBus.Subscribe<UserAddedMessage>(msg => OnAuthSuccess(msg.User, false));
+            EventBus.Subscribe<StatusTextChangedMessage>(msg => _logger.LogInformation($"[СТАТУС]: {msg.NewStatus}"));
         }
         #endregion
 
@@ -70,61 +44,57 @@ namespace HomeNetPresentation.ViewModels
         {
             if (user == null) return;
 
-            if (isFromAdminPanel || IsAdminMenuVisible)
+            if (isFromAdminPanel)
             {
-                // Сценарий админа
-                _openedForms.Clear();
-                OnPropertyChanged(nameof(IsButtonsPanelEnabled));
-                EventBus.Publish(this, new StatusTextChangedMessage($"[Админ-Режим] Успешное действие: {user.FirstName}"));
+                // 🛠️ СЦЕНАРИЙ АДМИНА: переключаем макро-зону в админку, открываем логи
+                CurrentMainTab = MainTab.AdminZone;
+                CurrentAdminTab = AdminSubTab.LogsView;
+
+                OnPropertyChanged(nameof(IsLoggerModuleActive));
+                EventBus.Publish(this, new StatusTextChangedMessage($"[Админ-Режим] Активен: {user.FirstName}"));
             }
             else
             {
-                // 👤 СЦЕНАРИЙ ОБЫЧНОГО ЮЗЕРА
-                IsMainInterfaceVisible = true;
-                IsAdminMenuVisible = false;
+                // 👤 СЦЕНАРИЙ ОБЫЧНОГО ЮЗЕРА: уходим в рабочую зону клиента и врубаем мессенджер!
+                CurrentMainTab = MainTab.ClientZone;
+                CurrentClientTab = ClientSubTab.Messenger;
 
-                // 🔥 АВТОМАТИЗАЦИЯ ЧЕРЕЗ АВТОБУС (С БОЛЬШОЙ БУКВЫ):
-                // Шлём в шину приказы на чистом bool: "Наглухо скрыть формы регистрации и входа с экрана!"
-                EventBus.Publish(this, new FormVisibilityChangedMessage(typeof(RegistrationViewModel), false));
-                EventBus.Publish(this, new FormVisibilityChangedMessage(typeof(AuthenticationViewModel), false));
-
-                _openedForms.Clear();
-                OnPropertyChanged(nameof(IsButtonsPanelEnabled));
-
-                EventBus.Publish(this, new StatusTextChangedMessage($"Добро пожаловать, {user.FirstName}!"));
+                EventBus.Publish(this, new StatusTextChangedMessage($"Добро пожаловать в SiberNet, {user.FirstName}!"));
             }
         }
 
-        #region НАНО-КОМАНДЫ (Чистое управление экраном без WPF) 🛸
+        #region НАНО-КОМАНДЫ (Управление автоматом без единого флага) 🛸
 
         [RelayCommand]
-        private void ToggleAdminMenu() =>
-            EventBus.Publish(this, new AdminMenuVisibilityChangedMessage(!IsAdminMenuVisible));
+        private void ToggleAdminZone()
+        {
+            // Если мы уже в админке — возвращаемся в рабочую зону, иначе — заходим в админку
+            CurrentMainTab = CurrentMainTab == MainTab.AdminZone ? MainTab.ClientZone : MainTab.AdminZone;
+            OnPropertyChanged(nameof(IsLoggerModuleActive));
+
+            EventBus.Publish(this, new StatusTextChangedMessage($"Переключение зоны. Текущая макро-зона: {CurrentMainTab}"));
+        }
+
+        [RelayCommand]
+        private void SwitchClientTab(ClientSubTab targetTab)
+        {
+            // Команда для переключения между Входом и Регистрацией, пока пользователь не авторизован
+            if (CurrentMainTab == MainTab.AuthZone)
+            {
+                CurrentClientTab = targetTab;
+            }
+        }
 
         [RelayCommand]
         private void Logout()
         {
-            IsMainInterfaceVisible = false;
-            _openedForms.Clear(); // Чистим радар окон при выходе
-            OnPropertyChanged(nameof(IsButtonsPanelEnabled));
+            // Сброс автомата в начальное состояние "Окно входа"
+            CurrentMainTab = MainTab.AuthZone;
+            CurrentClientTab = ClientSubTab.Authentication;
 
+            OnPropertyChanged(nameof(IsLoggerModuleActive));
             OnGlobalResetRequested?.Invoke();
             EventBus.Publish(this, new StatusTextChangedMessage("Выход из аккаунта выполнен успешно"));
-        }
-
-        [RelayCommand]
-        private void ToggleFormVisibility(object parameter)
-        {
-            if (parameter is FormViewModelBase vm && !IsMainInterfaceVisible)
-            {
-                // Переключаем чистый инвертированный bool флаг!
-                vm.IsControlVisible = !vm.IsControlVisible;
-                OnPropertyChanged(nameof(IsButtonsPanelEnabled));
-
-                // База FormViewModelBase сама внутри себя вызовет отправку сообщения, 
-                // но для надежности дублируем по нашему исходнику
-                EventBus.Publish(this, new FormVisibilityChangedMessage(vm.GetType(), vm.IsControlVisible));
-            }
         }
         #endregion
     }

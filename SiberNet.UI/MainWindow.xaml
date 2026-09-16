@@ -13,7 +13,7 @@
     AllowsTransparency="True"
     FontFamily="Calibri"
     FontSize="14"                             
-    Background="DarkGray"  WindowStartupLocation="CenterScreen"
+    Background="Transparent"  WindowStartupLocation="CenterScreen"
     
     Width="900" Height="600">
 
@@ -31,7 +31,7 @@
     </Window.Resources>
 
 
-    <ContentControl 
+    <ContentControl Style="{StaticResource CyberpunkImageStyle}" 
                 
                 Width="900" Height="600" 
                 HorizontalAlignment="Center" VerticalAlignment="Center"

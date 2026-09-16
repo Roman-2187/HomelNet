@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using HomeNetCore.Events;
 using HomeNetCore.Interfaces;
-using HomeNetCore.Messaging;              // Наши чистые сигналы-рекорды из Ядра
 
 namespace HomeNetPresentation.ViewModels
 {

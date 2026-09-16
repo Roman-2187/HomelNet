@@ -1,5 +1,5 @@
-﻿using HomeNetOrm.Data.Schemes.CreateSchemaBd;
-using HomeNetOrm.Enums;
+﻿using HomeNetOrm.Enums;
+using HomeNetOrm.Models;
 
 
 namespace HomeNetOrm.Interfaces

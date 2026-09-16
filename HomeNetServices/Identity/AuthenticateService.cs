@@ -1,13 +1,14 @@
 ﻿using HomeNetCore.Enums;
+using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Models;
 using HomeNetCore.Models.Validation;
 
 
 
-namespace HomeNetServices.Services.Identity
+namespace HomeNetServices.Identity
 {
-        public class AuthenticateService
+        public class AuthenticateService:IAuthenticateService
         {
             private readonly IUserService _userService;
             private readonly ValidationFormat _validateField = new();
@@ -31,7 +32,7 @@ namespace HomeNetServices.Services.Identity
                 // На строке 32 пиши вот так:
                 if (!hasCriticalErrors && !string.IsNullOrWhiteSpace(userInput.Email))
                 {
-                    authenticatedUser = await _userService.GetUserByEmailAsync(userInput.Email);
+                    authenticatedUser = await _userService.GetByEmailAsync(userInput.Email);
                 }
 
             }
@@ -99,7 +100,7 @@ namespace HomeNetServices.Services.Identity
                     if (string.IsNullOrWhiteSpace(password))
                         return SetResult(result, ValidationState.Error, "Пароль не может быть пустым");
 
-                    var user = await _userService.GetUserByEmailAsync(email);
+                    var user = await _userService.GetByEmailAsync(email);
                     if (user == null)
                         return SetResult(result, ValidationState.Error, "Пользователь не найден");
 

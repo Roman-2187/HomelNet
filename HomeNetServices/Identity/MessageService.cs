@@ -1,16 +1,15 @@
 ﻿using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Models;
-using HomeNetOrm.Data.Repositories;
 
 namespace HomeNetServices.Services.Identity
 {
-    public class MessageService
+    public class MessageService : IMessageService
     {
-        private readonly MessageRepository _messageRepository;
+        private readonly IMessageRepository _messageRepository;
         private readonly ILogger _logger;
 
-        public MessageService(MessageRepository messageRepository, ILogger logger)
+        public MessageService(IMessageRepository messageRepository, ILogger logger)
         {
             _messageRepository = messageRepository ?? throw new ArgumentNullException(nameof(messageRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

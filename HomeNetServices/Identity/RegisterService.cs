@@ -1,6 +1,6 @@
 ﻿using HomeNetCore.Enums;
+using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;
-using HomeNetCore.Messaging;
 using HomeNetCore.Models;
 using HomeNetCore.Models.Validation;
 using HomeNetOrm.Interfaces;
@@ -29,7 +29,7 @@ namespace HomeNetServices.Services.Identity
             // 2. Чистое сохранение — объект уже готов, никакого маппинга! 💎
             try
             {
-                await _userService.AddUserAsync(user);
+                await _userService.AddUserSecureAsync(user);
                 return new RegistrationVerdict(true, validationResults, user);
             }
             catch (Exception ex)

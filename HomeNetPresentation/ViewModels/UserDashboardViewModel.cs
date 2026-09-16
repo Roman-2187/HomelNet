@@ -1,8 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using HomeNetCore.Events;
 using HomeNetCore.Interfaces;             // Контракты репозиториев и IEventBus из Ядра 🧼 UFO
-using HomeNetCore.Messaging;              // Наши обновленные чистые рекорды-сигналы из Ядра
 using HomeNetCore.Models;
-using HomeNetServices.Services.Identity;
 using System.Collections.ObjectModel;
 
 namespace HomeNetPresentation.ViewModels
@@ -96,7 +95,7 @@ namespace HomeNetPresentation.ViewModels
             try
             {
                 // Асинхронный запрос к базе данных (SQLite или Postgres)
-                var allUsers = await _userService.GetAllUsersAsync();
+                var allUsers = await _userService.GetAllAsync();
 
                 CurrentUser = user;
                 Friends.Clear();

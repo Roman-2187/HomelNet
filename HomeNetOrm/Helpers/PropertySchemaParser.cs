@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Linq.Expressions;
 using System.Reflection;
-using HomeNetOrm.Data.Schemes.CreateSchemaBd;
 using HomeNetOrm.Enums;
+using HomeNetOrm.Models;
 
 namespace HomeNetOrm.Helpers
 {

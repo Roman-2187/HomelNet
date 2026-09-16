@@ -1,4 +1,4 @@
-﻿using HomeNetOrm.Data.Schemes.CreateSchemaBd;
+﻿using HomeNetOrm.Models;
 
 
 namespace HomeNetOrm.Interfaces

@@ -1,8 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HomeNetCore.Events;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;
-using HomeNetCore.Messaging;
 using HomeNetCore.Models;
 using System.Collections.ObjectModel;
 
