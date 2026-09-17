@@ -80,6 +80,36 @@ namespace HomeNetServices.Routing
                 }
             }
         }
+
+
+        /// <summary>
+        /// Отписка компонента от определенного типа сигнала для предотвращения утечек памяти.
+        /// </summary>
+        public void Unsubscribe<TMessage>(Action<TMessage> action)
+        {
+            if (action == null) return;
+
+            var type = typeof(TMessage);
+
+            // Если такой тип сообщения вообще есть в словаре подписчиков
+            if (_subscribers.TryGetValue(type, out var actions))
+            {
+                if (actions.Contains(action))
+                {
+                    actions.Remove(action);
+
+                    // Заодно просим инспектора убрать отметку, если твой профайлер это поддерживает
+                    // Inspector.RecordUnsubscribe(action.Target?.GetType().Name ?? "UnknownSource", type);
+                }
+
+                // Если подписчиков на этот тип больше не осталось — чистим ячейку словаря
+                if (actions.Count == 0)
+                {
+                    _subscribers.Remove(type);
+                }
+            }
+        }
+
     }
 }
 

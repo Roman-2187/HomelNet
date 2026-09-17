@@ -8,7 +8,7 @@ using HomeNetCore.Models;
 
 namespace HomeNetPresentation.ViewModels
 {
-    public partial class MainViewModel : FormViewModelBase
+    public partial class MainViewModel : FormViewModelBase, IMainViewModel
     {
         #region Поля и Зависимости 🦾
         private readonly ILogger _logger;
@@ -17,6 +17,10 @@ namespace HomeNetPresentation.ViewModels
         [ObservableProperty] private MainTab _currentMainTab = MainTab.AuthZone;
         [ObservableProperty] private ClientSubTab _currentClientTab = ClientSubTab.Authentication;
         [ObservableProperty] private AdminSubTab _currentAdminTab = AdminSubTab.LogsView;
+
+        // 🔥 НАШ ГЛОБАЛЬНЫЙ ТУМБЛЕР ТЕРМИНАЛА ЛОГОВ!
+        [ObservableProperty]  private bool _isGlobalLoggerVisible = false;
+        
 
         // Дополнительные логические свойства для модулей панели администратора
         public bool IsLoggerModuleActive => CurrentMainTab == MainTab.AdminZone && CurrentAdminTab == AdminSubTab.LogsView;
@@ -96,6 +100,42 @@ namespace HomeNetPresentation.ViewModels
             OnGlobalResetRequested?.Invoke();
             EventBus.Publish(this, new StatusTextChangedMessage("Выход из аккаунта выполнен успешно"));
         }
+
+
+        [RelayCommand]
+        private void RequestCloseApplication()
+        {
+            _logger.LogInformation("[АВТОМАТ]: Пользователь инициировал выход. Шлём сигнал закрытия в шину...");
+
+            // 🔥 ПИНАЕМ АВТОБУС! Наш WindowAnimator поймает этот сигнал, запустить анимацию падения и закроет приложение
+            EventBus.Publish(this, new RequestWindowCloseMessage());
+        }
+
+
+
+        [RelayCommand]
+        private void ToggleGlobalLogger()
+        {
+            IsGlobalLoggerVisible = !IsGlobalLoggerVisible;
+            _logger.LogInformation($"[СИСТЕМА]: Глобальный оверлей логов переключен. Статус: {IsGlobalLoggerVisible}");
+
+            // 🔥 Выкидываем в автобус себя под маской общего интерфейса!
+            EventBus.Publish(this, new ToggleGlobalLoggerAnimationMessage(this));
+        }
+
+
+        [RelayCommand]
+        private void ToggleGrowWindow()
+        {
+            _logger.LogInformation("[АВТОМАТ]: Запущен триггер плавного киберпанк-вырастания окна.");
+
+            // 🔥 ПИНАЕМ НАШ ШИНОПРОВОД! 
+            // Аниматор на стороне UI поймает этот сигнал и плавно раздует окно во все стороны
+            EventBus.Publish(this, new ToggleWindowSizeMessage());
+        }
+
+
+
         #endregion
     }
 }

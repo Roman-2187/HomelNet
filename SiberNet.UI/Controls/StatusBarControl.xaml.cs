@@ -1,6 +1,6 @@
 ﻿using System.Windows.Controls;
 
-namespace WpfHomeNet.Controls
+namespace SiberNet.UI.Controls
 {
     /// <summary>
     /// Interaction logic for StatusBarControl.xaml

@@ -1,4 +1,5 @@
-﻿using HomeNetCore.Models;
+﻿using HomeNetCore.Interfaces;
+using HomeNetCore.Models;
 using System;
 using System.Collections.Generic;
 
@@ -60,4 +61,31 @@ namespace HomeNetCore.Events
     /// <summary> Сигнал-уведомление об успешной авторизации пользователя в системе. </summary>
     public record UserLoggedMessage(UserEntity User, bool IsFromAdminPanel = false);
     #endregion
+
+
+
+  
+        /// <summary>
+        /// Глобальный сигнал из ВьюМодели на закрытие и уничтожение главного окна приложения.
+        /// </summary>
+        public record RequestWindowCloseMessage();
+
+
+
+
+
+    /// <summary>
+    /// Сигнал из ВьюМодели на плавное изменение размера окна (эффект киберпанк-вырастания).
+    /// </summary>
+    public record ToggleWindowSizeMessage();
+
+
+
+
+    // 🔥 Теперь тут строгий интерфейс на Майн Модел!
+    public record ToggleGlobalLoggerAnimationMessage(IMainViewModel MainViewModel);
+
 }
+
+
+

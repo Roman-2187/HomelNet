@@ -1,21 +1,20 @@
 ﻿<Window x:Class="SiberNet.UI.MainWindow"      
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:controls="clr-namespace:WpfHomeNet.Controls"       
+          
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:viewmodels="clr-namespace:SiberNet.UI"  
-    xmlns:relayComand="clr-namespace:SiberNet.UI"    
     xmlns:converter="clr-namespace:SiberNet.UI.Converters"
-    mc:Ignorable="d"        
-    WindowStyle="None"
-    ResizeMode="CanResize"                             
+        xmlns:controls="clr-namespace:SiberNet.UI.Controls" 
+    mc:Ignorable="d"                                    
     AllowsTransparency="True"
     FontFamily="Calibri"
     FontSize="14"                             
-    Background="Transparent"  WindowStartupLocation="CenterScreen"
-    
-    Width="900" Height="600">
+   
+            
+    WindowStartupLocation="CenterScreen"         
+    Style="{StaticResource CyberpunkWindowLaunchStyle}"
+    DataContext="{Binding MainViewModel, Source={StaticResource ComponentHub}}">
 
     <Window.Resources>
         <!-- 🎯 ГЛАВНЫЙ МОСТ: Говорим окну использовать ваш оранжевый стиль как базовый -->
@@ -32,74 +31,50 @@
 
 
     <ContentControl Style="{StaticResource CyberpunkImageStyle}" 
-                
-                Width="900" Height="600" 
-                HorizontalAlignment="Center" VerticalAlignment="Center"
-                MouseLeftButtonDown="WindowDrag_MouseDown">
+                HorizontalAlignment="Stretch" 
+                VerticalAlignment="Stretch">
         <ContentControl.Tag>
             <CornerRadius>6</CornerRadius>
         </ContentControl.Tag>
-
         <Grid x:Name="MainGrid" Margin="4">
+            <!-- Твоя шикарная 3-этажная сетка, которую мы утвердили! 🏢 -->
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="100"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
                 <RowDefinition Height="40"/>
+                <!-- Этаж 0: Шапка TitleBar -->
+                <RowDefinition Height="*"/>
+                <!-- Этаж 1: Рабочая зона -->
+                <RowDefinition Height="35"/>
+                <!-- Этаж 2: Статус-бар -->
             </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="140"/>
-                <ColumnDefinition Width="50"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="100"/>
-                <ColumnDefinition Width="40"/>
-            </Grid.ColumnDefinitions>
 
-            <!-- Шапка приложения -->
-            <Border Grid.Row="0" Grid.Column="0">
-                <Label HorizontalAlignment="Center" 
-                       FontWeight="Bold"
-                       Content="SiberNet"
-                       FontSize="20"
-                       Foreground="#FFB300"/>
+            <!-- Колонку оставляем одну на 100% ширины по дефолту -->
+
+            <!-- 👑 ЭТАЖ 0: ГЛОБАЛЬНЫЙ МОСТ ШАПКИ -->
+            <!-- Повесили пропуск мыши WindowChrome ОДИН раз на весь Бордер! -->
+            <Border Grid.Row="0" 
+                Background="Transparent" 
+                Height="40" 
+                VerticalAlignment="Top"
+                WindowChrome.IsHitTestVisibleInChrome="True">
+
+                <!-- 🔥 САЖАЕМ НАШ КИБЕРПАНК-МОДУЛЬ ОДНОЙ СТРОЧКОЙ! -->
+                <controls:TitleBarControl/>
+
             </Border>
 
-            <!-- Кнопка закрытия -->
-            <Button Grid.Row="0" Grid.Column="5"              
-                    Click="CloseButton_Click"
-                    Panel.ZIndex="100"
-                    Content="×" Width="Auto"/>
+            <!-- 🌌 ЭТАЖ 1: ЦЕНТРАЛЬНЫЙ РОУТЕР (Сюда будут влетать подэкраны по энумам) -->
+            <ContentControl Grid.Row="1" 
+                        Content="{Binding CurrentMainTab}"
+                        HorizontalAlignment="Stretch" 
+                        VerticalAlignment="Stretch"/>
 
-            <!-- АДМИНКА -->
-          
+            <!-- 📡 ЭТАЖ 2: НАШ РЕАКТИВНЫЙ СТАТУС-BAR -->
+            <Border Grid.Row="2" Background="Transparent" Margin="5,0,5,5">
+                <controls:StatusBarControl/>
+            </Border>
 
-            <!-- ================================================================= -->
-            <!-- 🛸 ЦЕНТРАЛЬНЫЙ СТАК ШАПКИ: КНОПКА АДМИНКИ И ГОСТЕВОЙ ИНТЕРФЕЙС -->
-            <!-- ================================================================= -->
-            <StackPanel
-                HorizontalAlignment="Right"
-                Grid.Row="0" Grid.Column="2"                                                  
-                Orientation="Horizontal"                        
-                Grid.ColumnSpan="3"
-                Margin="0,0,45,0">
-
-               
-
-                <!-- КНОПКА АДМИНКИ -->
-                <Button MinWidth="100"   
-                        Command="{Binding ToggleAdminMenuCommand}"                      
-                        Content="🛠️ Админка"
-                        />
-
-              
-            </StackPanel>
-
-         
-           
         </Grid>
+
     </ContentControl>
 </Window>
 
