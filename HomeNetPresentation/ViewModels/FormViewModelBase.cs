@@ -1,7 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNetCore.Enums;
-using HomeNetCore.Events;
-using HomeNetCore.Interfaces;
+using HomeNetCore.Interfaces.Events;
+using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models.Validation;
 
 namespace HomeNetPresentation.ViewModels
@@ -29,7 +29,7 @@ namespace HomeNetPresentation.ViewModels
         {
             IsComplete = false;
             IsCancelled = false;
-            IsControlVisible = false; // <-- Чистый сброс видимости через bool! 🧼
+            IsControlVisible = false; 
             OnResetForm();
         }
 
@@ -53,7 +53,7 @@ namespace HomeNetPresentation.ViewModels
         partial void OnIsControlVisibleChanged(bool value)
         {
             // Публикуем наше очищенное от WPF сообщение (передаем текущий тип и bool флаг!)
-            _eventBus.Publish(this, new FormVisibilityChangedMessage(this.GetType(), value));
+            _eventBus.Publish(this, new IFormViewModelBase.VisibilityChanged(this.GetType(), value));
         }
 
         [ObservableProperty]

@@ -1,8 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using HomeNetCore.Events;
 using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces;
+using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetCore.Interfaces.Events;
+using HomeNetCore.Interfaces.ViewModels; 
 using HomeNetCore.Models;
 using System.Collections.ObjectModel;
 
@@ -10,7 +11,7 @@ namespace HomeNetPresentation.ViewModels
 {
     public partial class ChatViewModel : ObservableObject
     {
-        private readonly IEventBus _eventBus; // Перевели на чистый интерфейс Ядра! 🧼🛸
+        private readonly IEventBus _eventBus;
         private readonly ILogger _logger;
 
         // Текущий собеседник, чат с которым открыт
@@ -33,15 +34,14 @@ namespace HomeNetPresentation.ViewModels
 
             _logger.LogInformation($"[ChatVM] Конструктор запущен. Хэш-код экземпляра: {this.GetHashCode()}");
 
-            // 🔥 Магия синхронизации через автобус данных (БЕЗ ДИСПЕТЧЕРОВ WPF!) 🧼⚡
-            _eventBus.Subscribe<FriendSelectedMessage>(msg =>
+            // 🔥 Магия синхронизации через автобус данных! Слушаем левую панель контактов 🧼⚡
+            _eventBus.Subscribe<IContactsListViewModel.FriendSelected>(msg =>
             {
                 if (msg.Friend == null) return;
 
-                _logger.LogDebug($"[ChatVM] Шина EventBus доставила FriendSelectedMessage! Прилетел: {msg.Friend.FirstName} (ID: {msg.Friend.Id})");
+                _logger.LogDebug($"[ChatVM] Шина EventBus доставила FriendSelected! Прилетел: {msg.Friend.FirstName} (ID: {msg.Friend.Id})");
 
                 // Записываем друга в свойство, и тулкит сам вызовет OnSelectedFriendChanged. 
-                // Возврат в UI-поток кроссплатформенно обеспечит SynchronizationContext шины!
                 SelectedFriend = msg.Friend;
             });
         }
@@ -63,8 +63,8 @@ namespace HomeNetPresentation.ViewModels
 
             _logger.LogInformation($"[ChatVM] Отправка сообщения. Кому ID: {SelectedFriend.Id}, Текст: {textToSend}");
 
-            // Публикуем чистый рекорд-сообщение в воздух
-            _eventBus.Publish(this, new NewMessageSentMessage(textToSend, SelectedFriend.Id));
+            // 🔥 ПОПРАВИЛИ: Публикуем чистый, укороченный по хозяину рекорд-сообщение в воздух
+            _eventBus.Publish(this, new IChatViewModel.NewSent(textToSend, SelectedFriend.Id));
 
             await Task.CompletedTask;
         }

@@ -1,10 +1,10 @@
 ﻿using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Models;
 using System.Data;
 using System.Data.Common;
 using HomeNetCore.Exeptions;
+using HomeNetCore.Interfaces.Diagnostics;
 namespace HomeNetOrm.DBProviders
 {
     public class GenericSchemaProvider : ISchemaProvider

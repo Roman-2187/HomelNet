@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using HomeNetCore.Events;
-using HomeNetCore.Interfaces;
+using HomeNetCore.Interfaces.Events;
+using HomeNetCore.Interfaces.ViewModels; 
 
 namespace HomeNetPresentation.ViewModels
 {
@@ -9,7 +9,7 @@ namespace HomeNetPresentation.ViewModels
         [ObservableProperty]
         private string _statusText = "Инициализация приложения...";
 
-        // 🔥 ИСПРАВЛЕНО: Конструктор принимает чистый интерфейс IEventBus из Ядра и прокидывает в базу через base
+        // 🔥 Конструктор принимает чистый интерфейс IEventBus из Ядра и прокидывает в базу через base
         public StatusBarViewModel(IEventBus eventBus) : base(eventBus)
         {
             InitializeBusSubscriptions();
@@ -17,12 +17,12 @@ namespace HomeNetPresentation.ViewModels
 
         private void InitializeBusSubscriptions()
         {
-            // 1. Слушаем прямые текстовые статусы через базовое свойство EventBus с БОЛЬШОЙ буквы! 🧼⚡
-            EventBus.Subscribe<StatusTextChangedMessage>(async msg =>
+            // 1. 🔥 ПОПРАВИЛИ: Слушаем новые короткие текстовые статусы строки состояния
+            EventBus.Subscribe<IStatusBarViewModel.TextChanged>(async msg =>
                 await UpdateStatusAsync(msg.NewStatus));
 
-            // 2. Слушаем открытие/закрытие форм (перевели на наш новый чистый bool флаг видимости!)
-            EventBus.Subscribe<FormVisibilityChangedMessage>(async msg =>
+            // 2. 🔥 ПОПРАВИЛИ: Слушаем открытие/закрытие форм через базовый интерфейс
+            EventBus.Subscribe<IFormViewModelBase.VisibilityChanged>(async msg =>
             {
                 string formFriendlyName = msg.FormType.Name switch
                 {
@@ -32,7 +32,6 @@ namespace HomeNetPresentation.ViewModels
                     _ => "Форма"
                 };
 
-                // Больше никаких Visibility.Visible! Проверяем чистый кроссплатформенный bool 🛸
                 if (msg.IsVisible)
                 {
                     await UpdateStatusAsync($"Открыта форма: {formFriendlyName}");
@@ -43,8 +42,8 @@ namespace HomeNetPresentation.ViewModels
                 }
             });
 
-            // 3. ПРИЁМ СЧЁТЧИКА: Таблица прислала живой список — просто выводим каунт! 🚀💎
-            EventBus.Subscribe<UsersListRefreshedMessage>(msg =>
+            // 3. 🔥 ПОПРАВИЛИ: Принимаем короткий рекорд обновления таблицы пользователей
+            EventBus.Subscribe<IUsersTableViewModel.Refreshed>(msg =>
             {
                 StatusText = msg.Users != null
                     ? $"Загружено {msg.Users.Count} пользователей"
@@ -59,8 +58,8 @@ namespace HomeNetPresentation.ViewModels
             StatusText = text;
             await Task.Delay(2000);
 
-            // Пишущая машинка закончила? Просим таблицу вернуть счётчик на экран! 👌
-            EventBus.Publish(this, new RequestStatusRefreshMessage());
+            // 🔥 ПОПРАВИЛИ: Публикуем короткий запрос на обновление статуса/счетчика обратно в таблицу
+            EventBus.Publish(this, new IUsersTableViewModel.RefreshRequest());
         }
     }
 }

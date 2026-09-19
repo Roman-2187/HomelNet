@@ -1,4 +1,5 @@
-﻿using HomeNetCore.Interfaces;
+﻿using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetCore.Interfaces.Events;
 using System;
 
 namespace HomeNetCore.Extensions

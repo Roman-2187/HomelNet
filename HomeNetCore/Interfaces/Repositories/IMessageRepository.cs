@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using HomeNetCore.Models;
+﻿using HomeNetCore.Models;
 
-namespace HomeNetCore.Interfaces
+namespace HomeNetCore.Interfaces.Repositories
 {
     public interface IMessageRepository
     {

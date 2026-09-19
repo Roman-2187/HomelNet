@@ -1,11 +1,12 @@
 ﻿using System.Runtime.CompilerServices;
 using HomeNetCore.Enums;
 
-namespace HomeNetCore.Interfaces
+namespace HomeNetCore.Interfaces.Diagnostics
 {
     public interface ILogger
     {
-        void SetOutput(Action<string, LogLevel> output);
+        // 🔥 Добавили третий параметр (namespace) в Action
+        void SetOutput(Action<string, LogLevel, string> output);
 
         void Log(
             LogLevel level,

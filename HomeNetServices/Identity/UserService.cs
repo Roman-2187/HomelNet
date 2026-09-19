@@ -1,6 +1,7 @@
 ﻿using HomeNetCore.Exeptions;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;
+using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Models;
 
 namespace HomeNetServices.Services.Identity

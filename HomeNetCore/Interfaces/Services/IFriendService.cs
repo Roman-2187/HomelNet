@@ -1,6 +1,6 @@
 ﻿using HomeNetCore.Models;
 
-namespace HomeNetServices.Services.Identity
+namespace HomeNetCore.Interfaces.Services
 {
     public interface IFriendService
     {

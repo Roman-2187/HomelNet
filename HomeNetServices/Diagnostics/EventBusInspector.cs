@@ -1,4 +1,4 @@
-﻿using HomeNetCore.Interfaces;
+﻿using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Models.Diagnostics;
 
 
@@ -11,7 +11,7 @@ namespace HomeNetServices.Diagnostics
         private readonly Dictionary<string, ComponentNode> _nodes = new();
 
         // Хронология сигналов (история) в виде объектов метаданных
-        private readonly List<SignalEvent> _signalTimeline = new();
+        private readonly List<ComponentNode.SignalEvent> _signalTimeline = new();
 
         /// <summary>
         /// Фиксация публикации: O(1) сложность, никаких переборов.
@@ -31,7 +31,7 @@ namespace HomeNetServices.Diagnostics
             }
 
             // Пишем структурированное событие в ленту таймлайна
-            _signalTimeline.Add(new SignalEvent(DateTime.Now, componentName, messageType));
+            _signalTimeline.Add(new ComponentNode.SignalEvent(DateTime.Now, componentName, messageType));
         }
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace HomeNetServices.Diagnostics
             bool alreadyExists = node.Subscriptions.Any(s => s.MessageType == messageType && s.MethodName == methodName);
             if (!alreadyExists)
             {
-                node.Subscriptions.Add(new SubscriptionLink(messageType, methodName));
+                node.Subscriptions.Add(new ComponentNode.SubscriptionLink(messageType, methodName));
             }
         }
 

@@ -1,8 +1,8 @@
-﻿using HomeNet.DI;                 
-using HomeNetCore.Enums;           
-using HomeNetCore.Interfaces;
+﻿using HomeNet.DI;
+using HomeNetCore.Enums;
+using HomeNetCore.Interfaces.Events;
 using HomeNetOrm.Builders;
-using HomeNetOrm.Enums;           
+using HomeNetOrm.Enums;
 using HomeNetOrm.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using SiberNet.UI.Infrastructure;

@@ -1,19 +1,21 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Enums;
-using HomeNetCore.Events;
 using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces;             // Наш чистый контракт ILogger и IEventBus из Ядра 🧼
+using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetCore.Interfaces.Events;
+using HomeNetCore.Interfaces.Services;
+using HomeNetCore.Interfaces.ViewModels; // 🔥 Подключили интерфейсы Ядра с новыми рекордами
 using HomeNetCore.Models;
-using HomeNetCore.Models.Validation;
-using HomeNetOrm.Interfaces;
-using HomeNetServices.Services.Identity;
+
+// 🔥 Жёсткий алиас: используем только твою модель валидации во избежание неоднозначности!
+using ValidationResult = HomeNetCore.Models.Validation.ValidationResult;
 
 namespace HomeNetPresentation.ViewModels
 {
     public partial class RegistrationViewModel : FormViewModelBase
     {
-        private readonly IRegisterService _registerService;
+        private readonly IRegistrationService _registerService;
         private readonly ILogger _logger;
         private UserEntity? _createdUser;
 
@@ -21,16 +23,15 @@ namespace HomeNetPresentation.ViewModels
         [ObservableProperty] private UserEntity _userData = new();
 
         // Конструктор принимает чистые интерфейсы Ядра и передает шину в базу через base(eventBus)
-        public RegistrationViewModel(IRegisterService registerService, IEventBus eventBus, ILogger logger) : base(eventBus)
+        public RegistrationViewModel(IRegistrationService registerService, IEventBus eventBus, ILogger logger) : base(eventBus)
         {
             _registerService = registerService ?? throw new ArgumentNullException(nameof(registerService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             InitializeInitialHints();
 
-            // 🔥 ЗАДЕРЖКА ПОСЛЕ РЕГИСТРАЦИИ: плавно улетаем через 1 секунду, не ломая UI-поток!
-            // За счёт SynchronizationContext в шине Routing, возврат в UI выполнится кроссплатформенно БЕЗ ДИСПЕТЧЕРОВ! 🛸✨
-            EventBus.Subscribe<UserAddedMessage>(async msg =>
+            // 🔥 ЗАДЕРЖКА ПОСЛЕ РЕГИСТРАЦИИ: Слушаем новый короткий рекорд таблицы пользователей!
+            EventBus.Subscribe<IUsersTableViewModel.Added>(async msg =>
             {
                 // Даем пользователю 1 секунду порадоваться успеху
                 await Task.Delay(1000);
@@ -76,8 +77,14 @@ namespace HomeNetPresentation.ViewModels
 
             try
             {
-                (IsComplete, ValidationResult, _createdUser) = await _registerService.RegisterUserAsync(UserData);
-                ValidationResults = ValidationResult.ToDictionary(r => r.Field, r => r);
+                // 🔥 ПОПРАВИЛИ: Принимаем красивый вложенный Verdict вместо старого сырого кортежа
+                IRegistrationService.Verdict verdict = await _registerService.RegisterUserAsync(UserData);
+
+                IsComplete = verdict.IsValid;
+                _createdUser = verdict.VerifiedUser;
+
+                // Переводим список результатов в словарь полей
+                ValidationResults = verdict.Results.ToDictionary(r => r.Field, r => r);
 
                 if (IsComplete)
                 {
@@ -86,8 +93,8 @@ namespace HomeNetPresentation.ViewModels
 
                     _logger.LogInformation($"[RegisterVM] Пользователь {_createdUser?.Email ?? UserData.Email} успешно прошёл валидацию СУБД.");
 
-                    // 🔥 Публикуем наше системное бизнес-сообщение в автобус через свойство с БОЛЬШОЙ буквы
-                    EventBus.Publish(this, new UserAddedMessage(_createdUser ?? UserData));
+                    // 🔥 ПОПРАВИЛИ: Публикуем новое лаконичное бизнес-сообщение о добавлении юзера
+                    EventBus.Publish(this, new IUsersTableViewModel.Added(_createdUser ?? UserData));
                 }
                 else
                 {

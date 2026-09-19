@@ -1,25 +1,28 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Enums;
-using HomeNetCore.Events;
 using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces;             // Контракты интерфейсов IEventBus и ILogger из Ядра 🧼
+using HomeNetCore.Interfaces;
+using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetCore.Interfaces.Events;
+using HomeNetCore.Interfaces.ViewModels; // 🔥 Подключили интерфейсы Ядра с новыми рекордами
 using HomeNetCore.Models;
-using HomeNetCore.Models.Validation;
-using HomeNetServices.Identity;
+
+// 🔥 Жёсткий алиас: используем только твою модель валидации во избежание неоднозначности!
+using ValidationResult = HomeNetCore.Models.Validation.ValidationResult;
 
 namespace HomeNetPresentation.ViewModels
 {
     public partial class AuthenticationViewModel : FormViewModelBase
     {
-        private readonly AuthenticateService _loginService;
+        private readonly IAuthenticateService _loginService;
         private readonly ILogger _logger;
 
         // 🔥 НАША ВИТРИНА: Сюда напрямую биндятся Почта и Пароль из XAML
         [ObservableProperty] private UserEntity _userData = new();
 
         // Конструктор принимает чистые интерфейсы Ядра и передает шину в базу через base(eventBus)
-        public AuthenticationViewModel(AuthenticateService loginService, IEventBus eventBus, ILogger logger) : base(eventBus)
+        public AuthenticationViewModel(IAuthenticateService loginService, IEventBus eventBus, ILogger logger) : base(eventBus)
         {
             _loginService = loginService ?? throw new ArgumentNullException(nameof(loginService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -27,8 +30,8 @@ namespace HomeNetPresentation.ViewModels
             InitializeInitialHints();
 
             // 🔥 УЛЕТАЕМ ПОСЛЕ ВХОДА + ПОЛНАЯ ОЧИСТКА ФОРМЫ
-            // Кроссплатформенный возврат в UI-поток обеспечит SynchronizationContext нашей шины Routing! 🛸⚡
-            EventBus.Subscribe<UserLoggedMessage>(async msg =>
+            // Слушаем новый короткий рекорд из интерфейса-хозяина!
+            EventBus.Subscribe<IAuthenticationViewModel.UserLogged>(async msg =>
             {
                 // Спокойно ждем 1 секунду в фоновом потоке
                 await Task.Delay(1000);
@@ -76,10 +79,14 @@ namespace HomeNetPresentation.ViewModels
 
             try
             {
-                var (isSuccess, validationList, loggedUser) = await _loginService.CheckUserAsync(UserData);
-                IsComplete = isSuccess;
+                // 🔥 ПОПРАВИЛИ: Принимаем красивый вложенный Verdict вместо старого сырого кортежа
+                IAuthenticateService.Verdict verdict = await _loginService.CheckUserAsync(UserData);
 
-                ValidationResults = validationList.ToDictionary(r => r.Field, r => r);
+                IsComplete = verdict.IsSuccess;
+                var loggedUser = verdict.User;
+
+                // Переводим список результатов в словарь полей
+                ValidationResults = verdict.Messages.ToDictionary(r => r.Field, r => r);
 
                 if (IsComplete)
                 {
@@ -88,8 +95,8 @@ namespace HomeNetPresentation.ViewModels
 
                     _logger.LogInformation($"[AuthVM] Пользователь {loggedUser?.Email ?? UserData.Email} успешно авторизован.");
 
-                    // 🔥 Публикуем системное сообщение в автобус через свойство с БОЛЬШОЙ буквы
-                    EventBus.Publish(this, new UserLoggedMessage(loggedUser ?? UserData));
+                    // 🔥 ПОПРАВИЛИ: Публикуем новое короткое и лаконичное сообщение в автобус
+                    EventBus.Publish(this, new IAuthenticationViewModel.UserLogged(loggedUser ?? UserData));
                 }
                 else
                 {

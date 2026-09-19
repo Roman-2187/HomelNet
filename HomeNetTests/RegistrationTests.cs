@@ -1,8 +1,8 @@
 ﻿using HomeNetCore.Enums;
-using HomeNetCore.Interfaces;
+using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Models;
 using HomeNetCore.Models.Validation;
-using HomeNetOrm.Interfaces;
 using HomeNetPresentation.ViewModels;
 using HomeNetServices.Routing;
 using HomeNetServices.Services.Identity;
@@ -88,7 +88,7 @@ namespace HomeNet.Tests
             var testLogger = new TestLogger();
 
             // Используем NSubstitute, чтобы на лету сгенерировать фейковый сервис регистрации
-            var mockRegisterService = Substitute.For<IRegisterService>(/* передай сюда зависимости сервиса, если нужны, либо сделай пустой мок */);
+            var mockRegisterService = Substitute.For<IRegistrationService>(/* передай сюда зависимости сервиса, если нужны, либо сделай пустой мок */);
 
             var testUser = new UserEntity { Id = 42, FirstName = "Роман", Email = "roman@sibernet.ru" };
             var fakeVerdict = new RegistrationVerdict(true, new List<ValidationResult>(), testUser);
@@ -124,7 +124,7 @@ namespace HomeNet.Tests
             // 1. АРРАНЖ
             var testEventBus = new EventBus();
             var testLogger = new TestLogger();
-            var mockRegisterService = Substitute.For<IRegisterService>();
+            var mockRegisterService = Substitute.For<IRegistrationService>();
 
             var viewModel = new RegistrationViewModel(mockRegisterService, testEventBus, testLogger);
             viewModel.IsControlVisible = true;

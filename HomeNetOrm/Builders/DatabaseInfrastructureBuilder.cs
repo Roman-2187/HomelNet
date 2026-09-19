@@ -1,4 +1,4 @@
-﻿using HomeNetCore.Interfaces;
+﻿using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetOrm.DBProviders;
 using HomeNetOrm.DBProviders.Postgres;
 using HomeNetOrm.DBProviders.Sqlite;

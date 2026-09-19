@@ -1,5 +1,5 @@
 ﻿using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces;
+using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Models;
 using HomeNetOrm.DbTableInitializer;
 using HomeNetOrm.Enums;

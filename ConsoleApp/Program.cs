@@ -1,11 +1,11 @@
 ﻿using HomeNet.DI;
 using HomeNetCore.Enums;
 using HomeNetCore.Events;
-using HomeNetCore.Interfaces; // Подключаем наш универсальный куб
+using HomeNetCore.Interfaces.Events;
+using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Models;
 using HomeNetOrm.Builders;
 using HomeNetOrm.Enums;
-using HomeNetOrm.Interfaces;
 using HomeNetPresentation.ViewModels;
 using HomeNetServices.Diagnostics;
 using System;
@@ -69,7 +69,7 @@ namespace ConsoleApp
             // =================================================================
             // 🔥 ШАГ: ИСПЫТАНИЕ БЭКЕНДА И СУБД (ПРАВИЛЬНЫЙ И НЕПРАВИЛЬНЫЙ ВВОД)
             // =================================================================
-            var registerService = AppBootstrapper.GetViewModel<IRegisterService>();
+            var registerService = AppBootstrapper.GetViewModel<IRegistrationService>();
 
             // -----------------------------------------------------------------
             // 🟢 СЦЕНАРИЙ А: ЗАВЕДОМО ПРАВИЛЬНЫЙ ЮЗЕР (Должен улететь в базу)

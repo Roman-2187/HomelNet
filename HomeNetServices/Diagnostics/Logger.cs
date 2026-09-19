@@ -1,48 +1,57 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using HomeNetCore.Enums;
-using HomeNetCore.Interfaces;
+﻿using HomeNetCore.Enums;
+using HomeNetCore.Interfaces.Diagnostics;
 
 namespace HomeNetServices.Diagnostics
 {
-    public class Logger : ILogger
-    {
-        private Action<string, LogLevel>? _output;
+   
 
-        public Logger()
+   
+        public class Logger : ILogger
         {
-            // По умолчанию пишем в стандартное окно отладки Visual Studio
-            System.Diagnostics.Debug.WriteLine("[Logger] Инициализирован вывод по умолчанию.");
-        }
+            private Action<string, LogLevel, string>? _output;
 
-        public void SetOutput(Action<string, LogLevel> output)
-        {
-            _output = output ?? throw new ArgumentNullException(nameof(output), "Вывод не может быть null");
-        }
+            public Logger()
+            {
+                System.Diagnostics.Debug.WriteLine("[Logger] Инициализирован вывод по умолчанию.");
+            }
 
-        // Реализуем единственный метод интерфейса 🧼✨
-        public void Log(LogLevel level, string message, string memberName = "", string filePath = "", int lineNumber = 0, params object[] args)
-        {
-            if (_output == null) return;
+            public void SetOutput(Action<string, LogLevel, string> output)
+            {
+                _output = output ?? throw new ArgumentNullException(nameof(output), "Вывод не может быть null");
+            }
 
-            string formattedMessage = args.Length > 0 ? string.Format(message, args) : message;
+            public void Log(LogLevel level, string message, string memberName = "", string filePath = "", int lineNumber = 0, params object[] args)
+            {
+                string formattedMessage = args.Length > 0 ? string.Format(message, args) : message;
 
-            // Вытаскиваем имя класса на лету без рефлексии
-            string className = string.IsNullOrEmpty(filePath)
-                ? "UnknownClass"
-                : Path.GetFileNameWithoutExtension(filePath).Split('.').Last() ?? "Unknown";
+                // Вытаскиваем имя класса
+                string className = string.IsNullOrEmpty(filePath)
+                    ? "UnknownClass"
+                    : Path.GetFileNameWithoutExtension(filePath).Split('.').Last() ?? "Unknown";
 
-            className = className.Replace('_', ' ').Trim().Replace(".", " ").Replace("`", "");
-            memberName = memberName.Replace('_', ' ').Trim().Replace(".", " ").Replace("`", "");
+                // 🔥 ВЫТАСКИВАЕМ ИМЯ ПАПКИ (Архитектурный Namespace)
+                string detectedNamespace = "Core";
+                if (!string.IsNullOrEmpty(filePath))
+                {
+                    var directory = Path.GetDirectoryName(filePath);
+                    if (!string.IsNullOrEmpty(directory))
+                    {
+                        detectedNamespace = Path.GetFileName(directory) ?? "Core";
+                    }
+                }
 
-            var timestamp = DateTime.UtcNow.ToString("MM/dd HH:mm:ss.fff");
-            var levelStr = level.ToString().ToUpper();
+                className = className.Replace('_', ' ').Trim();
+                memberName = memberName.Replace('_', ' ').Trim();
 
-            var logEntry = $"[{timestamp}] [{levelStr}] [{className}.{memberName}:{lineNumber}] | {formattedMessage}";
+                var timestamp = DateTime.UtcNow.ToString("MM/dd HH:mm:ss.fff");
+                var levelStr = level.ToString().ToUpper();
 
-            // Пуляем готовый текст и уровень лога в LogQueueManager
-            _output(logEntry, level);
+                var logEntry = $"[{timestamp}] [{levelStr}] [{detectedNamespace} -> {className}.{memberName}:{lineNumber}] | {formattedMessage}";
+
+                // 🔥 Просто пуляем данные в кабель, улетит и текст, и уровень, и папка!
+                _output?.Invoke(logEntry, level, detectedNamespace);
+            }
         }
     }
-}
+
+

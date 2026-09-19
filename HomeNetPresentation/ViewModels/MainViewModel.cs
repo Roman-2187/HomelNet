@@ -1,9 +1,10 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using HomeNetCore.Enums;
-using HomeNetCore.Events;
+using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces;
+using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetCore.Interfaces.Events;
+using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
 
 namespace HomeNetPresentation.ViewModels
@@ -13,17 +14,15 @@ namespace HomeNetPresentation.ViewModels
         #region Поля и Зависимости 🦾
         private readonly ILogger _logger;
 
-        // 🔥 НАШИ ТРИ КИТА: Главные рубильники автоматов состояний!
-        [ObservableProperty] private MainTab _currentMainTab = MainTab.AuthZone;
+        // 🔥 НАШИ ДВА МАКРО-РУБИЛЬНИКА: Главные автоматы состояний!
+        [ObservableProperty] private MainTab _currentMainTab = MainTab.None;
         [ObservableProperty] private ClientSubTab _currentClientTab = ClientSubTab.Authentication;
-        [ObservableProperty] private AdminSubTab _currentAdminTab = AdminSubTab.LogsView;
 
-        // 🔥 НАШ ГЛОБАЛЬНЫЙ ТУМБЛЕР ТЕРМИНАЛА ЛОГОВ!
-        [ObservableProperty]  private bool _isGlobalLoggerVisible = false;
-        
+        // Текст для реактивного статус-бара на нижнем этаже
+        [ObservableProperty] private string _statusText = "Система готова...";
 
-        // Дополнительные логические свойства для модулей панели администратора
-        public bool IsLoggerModuleActive => CurrentMainTab == MainTab.AdminZone && CurrentAdminTab == AdminSubTab.LogsView;
+        // Глобальный тумблер терминала логов
+        [ObservableProperty] private bool _isGlobalLoggerVisible = false;
         #endregion
 
         #region Конструктор
@@ -37,53 +36,57 @@ namespace HomeNetPresentation.ViewModels
         #region Инициализация подписок шины
         private void InitializeBusSubscriptions()
         {
-            // Ловим успешный вход или успешную регистрацию из шины событий
-            EventBus.Subscribe<UserLoggedMessage>(msg => OnAuthSuccess(msg.User, msg.IsFromAdminPanel));
-            EventBus.Subscribe<UserAddedMessage>(msg => OnAuthSuccess(msg.User, false));
-            EventBus.Subscribe<StatusTextChangedMessage>(msg => _logger.LogInformation($"[СТАТУС]: {msg.NewStatus}"));
+            // 🔥 ПОПРАВИЛИ: Слушаем новые вложенные рекорды
+            EventBus.Subscribe<IAuthenticationViewModel.UserLogged>(msg => OnAuthSuccess(msg.User, msg.IsFromAdminPanel));
+            EventBus.Subscribe<IUsersTableViewModel.Added>(msg => OnAuthSuccess(msg.User, false));
+
+            // 🔥 ВОТ ОН — НАШ НОВЫЙ ГЛАВНЫЙ ПЕРЕХВАТЧИК СИГНАЛА ИЗ АВТОБУСА!
+            EventBus.Subscribe<IMainViewModel.ZoneChanged>(msg =>
+            {
+                _logger.LogInformation($"[АВТОБУС РОУТЕРА]: Перехватили смену зоны на {msg.TargetTab}");
+
+                // Насильно пинаем свойство, чтобы XAML проснулся от сигнала шины
+                CurrentMainTab = msg.TargetTab;
+            });
         }
         #endregion
 
+        #region Обработчик авторизации
         private void OnAuthSuccess(UserEntity user, bool isFromAdminPanel)
         {
             if (user == null) return;
 
             if (isFromAdminPanel)
             {
-                // 🛠️ СЦЕНАРИЙ АДМИНА: переключаем макро-зону в админку, открываем логи
+                // 👤 СЦЕНАРИЙ АДМИНА: переключаем только макро-зону в админку
                 CurrentMainTab = MainTab.AdminZone;
-                CurrentAdminTab = AdminSubTab.LogsView;
-
-                OnPropertyChanged(nameof(IsLoggerModuleActive));
-                EventBus.Publish(this, new StatusTextChangedMessage($"[Админ-Режим] Активен: {user.FirstName}"));
             }
             else
             {
-                // 👤 СЦЕНАРИЙ ОБЫЧНОГО ЮЗЕРА: уходим в рабочую зону клиента и врубаем мессенджер!
+                // 💬 СЦЕНАРИЙ ОБЫЧНОГО ЮЗЕРА: уходим в рабочую зону клиента и врубаем мессенджер
                 CurrentMainTab = MainTab.ClientZone;
                 CurrentClientTab = ClientSubTab.Messenger;
-
-                EventBus.Publish(this, new StatusTextChangedMessage($"Добро пожаловать в SiberNet, {user.FirstName}!"));
             }
         }
+        #endregion
 
         #region НАНО-КОМАНДЫ (Управление автоматом без единого флага) 🛸
 
         [RelayCommand]
         private void ToggleAdminZone()
         {
-            // Если мы уже в админке — возвращаемся в рабочую зону, иначе — заходим в админку
+            // 🎛️ Перещёлкиваем макро-энум
             CurrentMainTab = CurrentMainTab == MainTab.AdminZone ? MainTab.ClientZone : MainTab.AdminZone;
-            OnPropertyChanged(nameof(IsLoggerModuleActive));
 
-            EventBus.Publish(this, new StatusTextChangedMessage($"Переключение зоны. Текущая макро-зона: {CurrentMainTab}"));
+            // 🔥 ПОПРАВИЛИ: Сигнал смены зоны через короткий рекорд из Ядра
+            _eventBus.Publish(this, new IMainViewModel.ZoneChanged(CurrentMainTab));
         }
 
         [RelayCommand]
         private void SwitchClientTab(ClientSubTab targetTab)
         {
             // Команда для переключения между Входом и Регистрацией, пока пользователь не авторизован
-            if (CurrentMainTab == MainTab.AuthZone)
+            if (CurrentMainTab == MainTab.None)
             {
                 CurrentClientTab = targetTab;
             }
@@ -93,25 +96,23 @@ namespace HomeNetPresentation.ViewModels
         private void Logout()
         {
             // Сброс автомата в начальное состояние "Окно входа"
-            CurrentMainTab = MainTab.AuthZone;
+            CurrentMainTab = MainTab.None;
             CurrentClientTab = ClientSubTab.Authentication;
 
-            OnPropertyChanged(nameof(IsLoggerModuleActive));
             OnGlobalResetRequested?.Invoke();
-            EventBus.Publish(this, new StatusTextChangedMessage("Выход из аккаунта выполнен успешно"));
-        }
 
+            // 🔥 ПОПРАВИЛИ: Короткий рекорд статус-бара
+            EventBus.Publish(this, new IStatusBarViewModel.TextChanged("Выход из аккаунта выполнен успешно"));
+        }
 
         [RelayCommand]
         private void RequestCloseApplication()
         {
             _logger.LogInformation("[АВТОМАТ]: Пользователь инициировал выход. Шлём сигнал закрытия в шину...");
 
-            // 🔥 ПИНАЕМ АВТОБУС! Наш WindowAnimator поймает этот сигнал, запустить анимацию падения и закроет приложение
-            EventBus.Publish(this, new RequestWindowCloseMessage());
+            // 🔥 ПОПРАВИЛИ: WindowAnimator поймает этот чистый короткий сигнал из IMainViewModel
+            EventBus.Publish(this, new IMainViewModel.CloseRequest());
         }
-
-
 
         [RelayCommand]
         private void ToggleGlobalLogger()
@@ -119,23 +120,18 @@ namespace HomeNetPresentation.ViewModels
             IsGlobalLoggerVisible = !IsGlobalLoggerVisible;
             _logger.LogInformation($"[СИСТЕМА]: Глобальный оверлей логов переключен. Статус: {IsGlobalLoggerVisible}");
 
-            // 🔥 Выкидываем в автобус себя под маской общего интерфейса!
-            EventBus.Publish(this, new ToggleGlobalLoggerAnimationMessage(this));
+            // 🔥 ПОПРАВИЛИ: Публикуем короткую команду анимации логгера
+            EventBus.Publish(this, new IAdminMenuViewModel.ToggleAnimation(this));
         }
-
 
         [RelayCommand]
         private void ToggleGrowWindow()
         {
             _logger.LogInformation("[АВТОМАТ]: Запущен триггер плавного киберпанк-вырастания окна.");
 
-            // 🔥 ПИНАЕМ НАШ ШИНОПРОВОД! 
-            // Аниматор на стороне UI поймает этот сигнал и плавно раздует окно во все стороны
-            EventBus.Publish(this, new ToggleWindowSizeMessage());
+            // 🔥 ПОПРАВИЛИ: Сигнал киберпанк-вырастания окна
+            EventBus.Publish(this, new IMainViewModel.ToggleSize());
         }
-
-
-
         #endregion
     }
 }

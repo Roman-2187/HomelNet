@@ -1,29 +1,27 @@
 ﻿using System.Threading.Channels;
 using HomeNetCore.Enums;
-using HomeNetServices.Services.Diagnostics;
+using HomeNetCore.Interfaces.OutputLogging.HomeNetCore.Interfaces.OutputLogging;
 
 namespace HomeNetServices.Diagnostics
 {
     public class LogQueueManager : IDisposable, ILogQueueManager
     {
-        // 🔥 Событие теперь возвращает только LogLevel! Никакого упоминания графического LogColor
-        public event Func<string, LogLevel, bool, Task>? OnLogReceived;
+        // 🔥 Событие теперь возвращает еще и имя неймспейса
+        public event Func<string, LogLevel, string, bool, Task>? OnLogReceived;
 
-        // Канал теперь гоняет чистый кортеж без лишней краски
-        private readonly Channel<(LogLevel level, string message)> _channel;
+        // Канал гоняет кортеж из трех элементов
+        private readonly Channel<(LogLevel level, string message, string ns)> _channel;
         private readonly CancellationTokenSource _cts = new();
         private readonly int _typingDelayMs;
-        private readonly SynchronizationContext? _syncContext; // Кроссплатформенный пульт возврата в UI поток
+        private readonly SynchronizationContext? _syncContext;
         private bool _isReady;
 
         public LogQueueManager(int typingDelayMs = 0)
         {
             _typingDelayMs = typingDelayMs >= 0 ? typingDelayMs : throw new ArgumentOutOfRangeException(nameof(typingDelayMs));
-
-            // Запоминаем контекст потока (WPF или Avalonia подхватят его автоматически на старте)
             _syncContext = SynchronizationContext.Current;
 
-            _channel = Channel.CreateUnbounded<(LogLevel, string)>(new UnboundedChannelOptions
+            _channel = Channel.CreateUnbounded<(LogLevel, string, string)>(new UnboundedChannelOptions
             {
                 SingleReader = true
             });
@@ -34,18 +32,13 @@ namespace HomeNetServices.Diagnostics
             if (_isReady) return;
             _isReady = true;
 
-            // Запускаем долгоиграющую задачу чтения из канала на пуле потоков
             Task.Run(() => ProcessLogQueueAsync(_cts.Token));
         }
 
-        // 🔥 Принимает чистый текст и уровень логирования напрямую от Logger.cs
-        public void WriteLog(string message, LogLevel level)
+        // 🔥 Принимает неймспейс из логгера
+        public void WriteLog(string message, LogLevel level, string namespaceName)
         {
-            string cleanMessage = message
-                .Replace(Environment.NewLine + Environment.NewLine, Environment.NewLine)
-                .Trim('\r', '\n');
-
-            _channel.Writer.TryWrite((level, cleanMessage));
+            _channel.Writer.TryWrite((level, message, namespaceName));
         }
 
         private async Task ProcessLogQueueAsync(CancellationToken token)
@@ -62,12 +55,12 @@ namespace HomeNetServices.Diagnostics
                             token.ThrowIfCancellationRequested();
                             currentText += c;
 
-                            // Возвращаемся в UI-поток кроссплатформенно
                             await InvokeOnUiCtxAsync(async () =>
                             {
                                 if (OnLogReceived != null)
                                 {
-                                    await OnLogReceived.Invoke(currentText, logEntry.level, true);
+                                    // Передаем неймспейс во View
+                                    await OnLogReceived.Invoke(currentText, logEntry.level, logEntry.ns, true);
                                 }
                             });
 
@@ -75,12 +68,11 @@ namespace HomeNetServices.Diagnostics
                                 await Task.Delay(_typingDelayMs, token);
                         }
 
-                        // Печатаем перенос строки в конце лога
                         await InvokeOnUiCtxAsync(async () =>
                         {
                             if (OnLogReceived != null)
                             {
-                                await OnLogReceived.Invoke(Environment.NewLine, logEntry.level, false);
+                                await OnLogReceived.Invoke(Environment.NewLine, logEntry.level, logEntry.ns, false);
                             }
                         });
                     }
@@ -93,27 +85,15 @@ namespace HomeNetServices.Diagnostics
             }
         }
 
-        /// <summary>
-        /// Помощник для перенаправления выполнения задачи в UI контекст без жесткой привязки к WPF Application
-        /// </summary>
         private Task InvokeOnUiCtxAsync(Func<Task> action)
         {
             if (_syncContext == null) return action();
-
             var tcs = new TaskCompletionSource();
             _syncContext.Post(async _ =>
             {
-                try
-                {
-                    await action();
-                    tcs.SetResult();
-                }
-                catch (Exception ex)
-                {
-                    tcs.SetException(ex);
-                }
+                try { await action(); tcs.SetResult(); }
+                catch (Exception ex) { tcs.SetException(ex); }
             }, null);
-
             return tcs.Task;
         }
 

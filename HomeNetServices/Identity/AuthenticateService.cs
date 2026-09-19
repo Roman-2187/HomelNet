@@ -3,49 +3,47 @@ using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Models;
 using HomeNetCore.Models.Validation;
+using HomeNetCore.Utils; 
 
 
 
 namespace HomeNetServices.Identity
 {
-        public class AuthenticateService:IAuthenticateService
+    public class AuthenticateService : IAuthenticateService
+    {
+        private readonly IUserService _userService;
+
+        // 🔥 СТАТИКА: Больше не плодим _validateField = new() через DI или приватные поля!
+
+        public AuthenticateService(IUserService userService)
         {
-            private readonly IUserService _userService;
-            private readonly ValidationFormat _validateField = new();
+            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+        }
 
-            public AuthenticateService(IUserService userService)
-            {
-                _userService = userService ?? throw new ArgumentNullException(nameof(userService));
-            }
-
-        // 1. Меняем возвращаемый тип: добавляем третьим параметром UserEntity?
-        public async Task<(bool IsSuccess, List<ValidationResult> Messages, UserEntity? User)> CheckUserAsync(UserEntity userInput)
+        /// <summary>
+        /// Выполняет проверку пользователя. Возвращает лаконичный вложенный вердикт из интерфейса Ядра.
+        /// </summary>
+        public async Task<IAuthenticateService.Verdict> CheckUserAsync(UserEntity userInput)
         {
             var validationResults = await ValidateInputAsync(userInput);
             var hasCriticalErrors = validationResults.Any(r => r.State == ValidationState.Error);
 
             UserEntity? authenticatedUser = null;
 
-            // 2. Если ошибок нет — вытаскиваем тёпленького юзера из базы для логгера и UI
-            if (!hasCriticalErrors)
+            // Если критических ошибок нет — вытаскиваем тёпленького юзера из базы для логгера и UI
+            if (!hasCriticalErrors && !string.IsNullOrWhiteSpace(userInput.Email))
             {
-                // На строке 32 пиши вот так:
-                if (!hasCriticalErrors && !string.IsNullOrWhiteSpace(userInput.Email))
-                {
-                    authenticatedUser = await _userService.GetByEmailAsync(userInput.Email);
-                }
-
+                authenticatedUser = await _userService.GetByEmailAsync(userInput.Email);
             }
 
-            return (!hasCriticalErrors, validationResults, authenticatedUser);
+            // 🔥 Возвращаем наш красивый вложенный рекорд
+            return new IAuthenticateService.Verdict(!hasCriticalErrors, validationResults, authenticatedUser);
         }
-
 
         private async Task<List<ValidationResult>> ValidateInputAsync(UserEntity input)
         {
             var results = new List<ValidationResult>();
 
-            // Ставим "!", гася панику компилятора по поводу возможного null 🤫
             var emailResult = await ValidateEmailAsync(input.Email!);
             results.Add(emailResult);
 
@@ -57,7 +55,6 @@ namespace HomeNetServices.Identity
                     State = ValidationState.Info,
                     Message = "Текущий пароль"
                 },
-                // И здесь глушим предупреждение через "!"
                 ValidationState.Success => await VerifyPasswordPlainTextAsync(input.Email!, input.Password!),
                 _ => await VerifyPasswordPlainTextAsync(input.Email!, input.Password!)
             };
@@ -66,64 +63,60 @@ namespace HomeNetServices.Identity
             return results;
         }
 
-
         private async Task<ValidationResult> ValidateEmailAsync(string email)
+        {
+            var result = new ValidationResult { Field = TypeField.EmailType };
+
+            try
             {
-                var result = new ValidationResult { Field = TypeField.EmailType };
+                if (string.IsNullOrWhiteSpace(email))
+                    return SetResult(result, ValidationState.Error, "Email не может быть пустым");
 
-                try
-                {
-                    if (string.IsNullOrWhiteSpace(email))
-                        return SetResult(result, ValidationState.Error, "Email не может быть пустым");
+                // 🔥 Вызов через статический инструмент-алгоритм из Utils
+                if (!ValidationFormat.IsValidEmail(email))
+                    return SetResult(result, ValidationState.Error, "Некорректный формат email");
 
-                    if (!_validateField.IsValidEmailFormat(email))
-                        return SetResult(result, ValidationState.Error, "Некорректный формат email");
+                var emailExists = await _userService.CheckEmailExistsAsync(email);
 
-                    var emailExists = await _userService.CheckEmailExistsAsync(email);
-
-                    return emailExists
-                        ? SetResult(result, ValidationState.Success, "Email найден")
-                        : SetResult(result, ValidationState.Error, "Email не найден");
-                }
-                catch (Exception ex)
-                {
-                    return SetResult(result, ValidationState.Error, $"Ошибка проверки email: {ex.Message}");
-                }
+                return emailExists
+                    ? SetResult(result, ValidationState.Success, "Email найден")
+                    : SetResult(result, ValidationState.Error, "Email не найден");
             }
-
-            private async Task<ValidationResult> VerifyPasswordPlainTextAsync(string email, string password)
+            catch (Exception ex)
             {
-                var result = new ValidationResult { Field = TypeField.PasswordType };
-
-                try
-                {
-                    if (string.IsNullOrWhiteSpace(password))
-                        return SetResult(result, ValidationState.Error, "Пароль не может быть пустым");
-
-                    var user = await _userService.GetByEmailAsync(email);
-                    if (user == null)
-                        return SetResult(result, ValidationState.Error, "Пользователь не найден");
-
-                    return user.Password == password
-                        ? SetResult(result, ValidationState.Success, "Пароль верен")
-                        : SetResult(result, ValidationState.Error, "Неверный пароль");
-                }
-                catch (Exception ex)
-                {
-                    return SetResult(result, ValidationState.Error, $"Ошибка проверки пароля: {ex.Message}");
-                }
-            }
-
-            // Вспомогательный хелпер для лаконичной мутации и возврата объекта результата
-            private ValidationResult SetResult(ValidationResult res, ValidationState state, string message)
-            {
-                res.State = state;
-                res.Message = message;
-                return res;
+                return SetResult(result, ValidationState.Error, $"Ошибка проверки email: {ex.Message}");
             }
         }
+
+        private async Task<ValidationResult> VerifyPasswordPlainTextAsync(string email, string password)
+        {
+            var result = new ValidationResult { Field = TypeField.PasswordType };
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(password))
+                    return SetResult(result, ValidationState.Error, "Пароль не может быть пустым");
+
+                var user = await _userService.GetByEmailAsync(email);
+                if (user == null)
+                    return SetResult(result, ValidationState.Error, "Пользователь не найден");
+
+                return user.Password == password
+                    ? SetResult(result, ValidationState.Success, "Пароль верен")
+                    : SetResult(result, ValidationState.Error, "Неверный пароль");
+            }
+            catch (Exception ex)
+            {
+                return SetResult(result, ValidationState.Error, $"Ошибка проверки пароля: {ex.Message}");
+            }
+        }
+
+        private ValidationResult SetResult(ValidationResult res, ValidationState state, string message)
+        {
+            res.State = state;
+            res.Message = message;
+            return res;
+        }
     }
-
-
-
+}
 

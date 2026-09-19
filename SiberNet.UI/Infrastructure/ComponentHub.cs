@@ -18,6 +18,6 @@ namespace SiberNet.UI.Infrastructure
         // 💬 Вьюмодель мессенджера / чата
         public ChatViewModel ChatViewModel => AppBootstrapper.GetViewModel<ChatViewModel>();
 
-        // 🛠️ Сюда же по мере восстановления экранов будем накидывать остальные (AdminMenuViewModel и т.д.)
+        public AdminMenuViewModel AdminMenuViewModel => AppBootstrapper.GetViewModel<AdminMenuViewModel>();
     }
 }

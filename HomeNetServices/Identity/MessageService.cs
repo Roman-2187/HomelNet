@@ -1,5 +1,7 @@
 ﻿using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces;
+using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetCore.Interfaces.Repositories;
+using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Models;
 
 namespace HomeNetServices.Services.Identity

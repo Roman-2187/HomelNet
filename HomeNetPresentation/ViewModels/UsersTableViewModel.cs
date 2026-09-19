@@ -1,7 +1,13 @@
-﻿using HomeNetCore.Events;
-using HomeNetCore.Interfaces;
-using HomeNetCore.Models;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
+using HomeNetCore.Interfaces;             // Контракты репозиториев и IEventBus из Ядра 🧼 UFO
+using HomeNetCore.Interfaces.Events;
+using HomeNetCore.Interfaces.ViewModels; // 🔥 Подключили новые интерфейсы Ядра с укороченными рекордами
+using HomeNetCore.Models;
 
 namespace HomeNetPresentation.ViewModels
 {
@@ -25,8 +31,8 @@ namespace HomeNetPresentation.ViewModels
 
         private async Task InitializeDataAsync()
         {
-            // Публикуем статус через базовое свойство EventBus с БОЛЬШОЙ буквы! 🧼🛸
-            EventBus.Publish(this, new StatusTextChangedMessage("Синхронизация с базой данных HomeNet..."));
+            // 🔥 ПОПРАВИЛИ: Короткий рекорд строки состояния
+            EventBus.Publish(this, new IStatusBarViewModel.TextChanged("Синхронизация с базой данных HomeNet..."));
 
             try
             {
@@ -45,20 +51,20 @@ namespace HomeNetPresentation.ViewModels
                     }
                 }
 
-                // Кормим статус-бар финальными циферками
-                EventBus.Publish(this, new UsersListRefreshedMessage(Users.ToList()));
-                EventBus.Publish(this, new StatusTextChangedMessage("База данных успешно синхронизирована."));
+                // 🔥 ПОПРАВИЛИ: Кормим статус-бар финальными циферками через короткие рекорды
+                EventBus.Publish(this, new IUsersTableViewModel.Refreshed(Users.ToList()));
+                EventBus.Publish(this, new IStatusBarViewModel.TextChanged("База данных успешно синхронизирована."));
             }
             catch (Exception ex)
             {
-                EventBus.Publish(this, new StatusTextChangedMessage($"Ошибка синхронизации данных: {ex.Message}"));
+                EventBus.Publish(this, new IStatusBarViewModel.TextChanged($"Ошибка синхронизации данных: {ex.Message}"));
             }
         }
 
         private void InitializeBusSubscriptions()
         {
-            // 1. Ловим сообщение об удалении пользователя
-            EventBus.Subscribe<UserDeletedMessage>(msg =>
+            // 1. 🔥 ПОПРАВИЛИ: Ловим короткое сообщение об удалении пользователя
+            EventBus.Subscribe<IDeleteUserViewModel.Deleted>(msg =>
             {
                 var userToRemove = Users.FirstOrDefault(u => u.Id == msg.UserId);
                 if (userToRemove != null)
@@ -66,31 +72,31 @@ namespace HomeNetPresentation.ViewModels
                     string deletedName = $"{userToRemove.FirstName} {userToRemove.LastName}";
                     Users.Remove(userToRemove);
 
-                    // Стреляем точной коллекцией сразу после удаления!
-                    EventBus.Publish(this, new UsersListRefreshedMessage(Users.ToList()));
+                    // 🔥 ПОПРАВИЛИ: Стреляем точной укороченной коллекцией сразу после удаления!
+                    EventBus.Publish(this, new IUsersTableViewModel.Refreshed(Users.ToList()));
 
                     // Асинхронный статус без блокировки потоков
                     _ = Task.Run(async () =>
                     {
                         await Task.Delay(1000);
-                        EventBus.Publish(this, new StatusTextChangedMessage($"Пользователь {deletedName} успешно удалён"));
+                        EventBus.Publish(this, new IStatusBarViewModel.TextChanged($"Пользователь {deletedName} успешно удалён"));
                     });
                 }
             });
 
-            // 2. Ловим добавление нового пользователя (исправили на UserAddedMessage для стыковки!) 🧼
-            EventBus.Subscribe<UserAddedMessage>(msg =>
+            // 2. 🔥 ПОПРАВИЛИ: Ловим короткое добавление нового пользователя
+            EventBus.Subscribe<IUsersTableViewModel.Added>(msg =>
             {
                 if (msg.User == null) return;
 
                 Users.Add(msg.User);
-                EventBus.Publish(this, new UsersListRefreshedMessage(Users.ToList()));
+                EventBus.Publish(this, new IUsersTableViewModel.Refreshed(Users.ToList()));
             });
 
-            // 3. ОТВЕТ НА ЗАПРОС: Строка состояния попросила обновить экран
-            EventBus.Subscribe<RequestStatusRefreshMessage>(msg =>
+            // 3. 🔥 ПОПРАВИЛИ: ОТВЕТ НА ЗАПРОС: Строка состояния попросила обновить экран (короткий рекорд)
+            EventBus.Subscribe<IUsersTableViewModel.RefreshRequest>(msg =>
             {
-                EventBus.Publish(this, new UsersListRefreshedMessage(Users.ToList()));
+                EventBus.Publish(this, new IUsersTableViewModel.Refreshed(Users.ToList()));
             });
         }
     }

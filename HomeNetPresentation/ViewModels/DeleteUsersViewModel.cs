@@ -1,8 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using HomeNetCore.Events;
 using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces; // Чистые контракты из Ядра
+using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetCore.Interfaces.Events;
+using HomeNetCore.Interfaces.ViewModels; 
 using HomeNetCore.Models;
 using HomeNetServices.Services.Identity;
 
@@ -83,13 +84,14 @@ namespace HomeNetPresentation.ViewModels
 
             if (isSuccess)
             {
-                EventBus.Publish(this, new UserDeletedMessage(id));
+                // 🔥 ПОПРАВИЛИ: Публикуем короткий ивент удаления юзера
+                EventBus.Publish(this, new IDeleteUserViewModel.Deleted(id));
                 _logger.LogInformation($"Пользователь с ID {id} успешно удален.");
                 ResetForm();
             }
             else
             {
-                _logger.LogWarning($"Не удалось удалить пользователя с ID {id}: {message}");
+                _logger.LogWarning($"Не удалось удалить пользователя с ID {id} : {message}");
             }
         }
 
@@ -104,9 +106,10 @@ namespace HomeNetPresentation.ViewModels
         #region Вспомогательная логика
         private void InitEventBus()
         {
-            EventBus.Publish(this, new FormVisibilityChangedMessage(GetType(), false));
+            // 🔥 ПОПРАВИЛИ: Перешли на короткий ивент базового класса форм
+            EventBus.Publish(this, new IFormViewModelBase.VisibilityChanged(GetType(), false));
 
-            EventBus.Subscribe<FormVisibilityChangedMessage>(msg =>
+            EventBus.Subscribe<IFormViewModelBase.VisibilityChanged>(msg =>
             {
                 if (msg.FormType != GetType() && msg.IsVisible)
                 {
@@ -126,6 +129,3 @@ namespace HomeNetPresentation.ViewModels
         #endregion
     }
 }
-
-
-

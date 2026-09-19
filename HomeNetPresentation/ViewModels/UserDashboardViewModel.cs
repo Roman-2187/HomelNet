@@ -1,41 +1,45 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using HomeNetCore.Events;
-using HomeNetCore.Interfaces;             // Контракты репозиториев и IEventBus из Ядра 🧼 UFO
+using HomeNetCore.Interfaces.Events;
+using HomeNetCore.Interfaces.Repositories;
+using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
-using System.Collections.ObjectModel;
 
 namespace HomeNetPresentation.ViewModels
 {
+    /// <summary>
+    /// Идеально пустая доска-контейнер клиентской зоны.
+    /// </summary>
     public partial class UserDashboardViewModel : FormViewModelBase
     {
-        private readonly IUserService _userService;
         private readonly IMessageRepository _messageRepo;
 
+        // 🔥 НАШИ ДВА АВТОНОМНЫХ БЛОКА
+        public ContactsListViewModel ContactsListVM { get; }
         public ChatViewModel ChatVm { get; }
 
-        [ObservableProperty] private UserEntity? _selectedFriend;
         [ObservableProperty] private UserEntity? _currentUser;
 
-        // Оставляем ObservableCollection — фреймворки (WPF/Avalonia) ее одинаково обожают! 🤝
-        [ObservableProperty] private ObservableCollection<UserEntity> _friends = new();
-
-        // 🔥 ИСПРАВЛЕНО: Конструктор принимает чистый интерфейс IEventBus из Ядра и прокидывает в базу через base
-        public UserDashboardViewModel(IEventBus eventBus, IUserService userService, ChatViewModel chatVm, IMessageRepository messageRepo) : base(eventBus)
+        public UserDashboardViewModel(
+            IEventBus eventBus,
+            IMessageRepository messageRepo,
+            ContactsListViewModel contactsListViewModel,
+            ChatViewModel chatVm) : base(eventBus)
         {
-            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
-            ChatVm = chatVm ?? throw new ArgumentNullException(nameof(chatVm));
             _messageRepo = messageRepo ?? throw new ArgumentNullException(nameof(messageRepo));
+            ContactsListVM = contactsListViewModel ?? throw new ArgumentNullException(nameof(contactsListViewModel));
+            ChatVm = chatVm ?? throw new ArgumentNullException(nameof(chatVm));
 
-            // 🔥 ИСПРАВЛЕНО: Обращаемся к базовому свойству EventBus с БОЛЬШОЙ буквы!
-            EventBus.Subscribe<UserLoggedMessage>(async msg => await OnUserAuthenticatedAsync(msg.User));
 
-            // 🔥 ИСПРАВЛЕНО: Заменили старый UserRegisteredMessage на наш системный UserAddedMessage из Ядра! 🧼
-            EventBus.Subscribe<UserAddedMessage>(async msg => await OnUserAuthenticatedAsync(msg.User));
+            IsControlVisible = false;
 
-            // ЛОВИМ ОТПРАВКУ ИЗ ВЛОЖЕННОГО ЧАТА И СОХРАНЯЕМ В БАЗУ ДАННЫХ
-            EventBus.Subscribe<NewMessageSentMessage>(async msg =>
+            // Слушаем логин только для того, чтобы поджечь флаг видимости самого дашборда на экране
+            EventBus.Subscribe<IAuthenticationViewModel.UserLogged>(async msg => { CurrentUser = msg.User; IsControlVisible = true; await Task.CompletedTask; });
+            EventBus.Subscribe<IUsersTableViewModel.Added>(async msg => { CurrentUser = msg.User; IsControlVisible = true; await Task.CompletedTask; });
+
+            // 🔥 Перехватчик отправки сообщений из чата для записи в БД переезжает на связку с ContactsListVM
+            EventBus.Subscribe<IChatViewModel.NewSent>(async msg =>
             {
-                if (CurrentUser == null || SelectedFriend == null) return;
+                if (CurrentUser == null) return;
 
                 var entity = new MessageEntity
                 {
@@ -49,83 +53,23 @@ namespace HomeNetPresentation.ViewModels
 
                 try
                 {
-                    // 1. Загоняем эсэмэску в нашу базу данных через внедренный репозиторий
+                    // 1. Сохраняем эсэмэску в SQLite / Postgres
                     await _messageRepo.SaveMessageAsync(entity);
 
-                    // 2. Мгновенно отображаем в ленте чата (без жестких диспетчеров WPF) 🧼
-                    if (SelectedFriend != null && SelectedFriend.Id == msg.ReceiverId)
+                    // 2. Пушим в визуальную ленту чата, если открыт именно этот собеседник
+                    if (ContactsListVM.SelectedFriend != null && ContactsListVM.SelectedFriend.Id == msg.ReceiverId)
                     {
                         ChatVm.Messages.Add(entity);
                     }
                 }
                 catch (Exception ex)
                 {
-                    // Сигнализируем в статус-бар о системной ошибке бэкенда через EventBus с большой буквы
-                    EventBus.Publish(this, new StatusTextChangedMessage($"[БЭКЕНД ЧАТА СБОЙ]: {ex.Message}"));
+                    EventBus.Publish(this, new IStatusBarViewModel.TextChanged($"[БЭКЕНД ЧАТА СБОЙ]: {ex.Message}"));
                 }
             });
-        }
 
-        /// <summary>
-        /// Перехватчик Toolkit: автоматически срабатывает при клике на друга в списке 🎯
-        /// </summary>
-        partial void OnSelectedFriendChanged(UserEntity? value)
-        {
-            if (value != null)
-            {
-                // 🔥 ИСПРАВЛЕНО: ПУЛЯЕМ СОБЫТИЕ В АВТОБУС С БОЛЬШОЙ БУКВЫ! 
-                EventBus.Publish(this, new FriendSelectedMessage(value));
-
-                // Включаем флаг анимации полёта чата
-                ChatVm.IsChatOpen = true;
-            }
-            else
-            {
-                ChatVm.IsChatOpen = false;
-            }
-        }
-
-        private async Task OnUserAuthenticatedAsync(UserEntity user)
-        {
-            if (user == null) return;
-
-            // Даем 1 секунду форме логина, чтобы она красиво улетела вверх
-            await Task.Delay(1000);
-
-            try
-            {
-                // Асинхронный запрос к базе данных (SQLite или Postgres)
-                var allUsers = await _userService.GetAllAsync();
-
-                CurrentUser = user;
-                Friends.Clear();
-
-                if (allUsers != null)
-                {
-                    foreach (var u in allUsers)
-                    {
-                        if (u.Id != CurrentUser.Id)
-                        {
-                            if (u.FirstName == null)
-                            {
-                                u.FirstName = "Пользователь без имени";
-                            }
-                            Friends.Add(u);
-                        }
-                    }
-                }
-
-                // Включаем видимость через наш новый булевый флаг из FormViewModelBase! 🧼✨
-                IsControlVisible = true;
-            }
-            catch (Exception ex)
-            {
-                // Перевели на БОЛЬШУЮ БУКВУ
-                EventBus.Publish(this, new StatusTextChangedMessage($"Ошибка загрузки пользователей: {ex.Message}"));
-
-                // Даже если база упала, открываем пустой дашборд, чтобы приложение не зависло
-                IsControlVisible = true;
-            }
+            // Синхронизируем анимацию открытия чата: когда в левой панели выбрали друга, правая панель взлетает
+            EventBus.Subscribe<IContactsListViewModel.FriendSelected>(msg => ChatVm.IsChatOpen = true);
         }
     }
 }

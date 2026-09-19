@@ -1,11 +1,7 @@
-﻿using System;
-using System.Windows;
-using System.Windows.Controls;
-using HomeNetServices.Services.Diagnostics;
-using Microsoft.Extensions.DependencyInjection;
+﻿using System.Windows.Controls;
 
 
-namespace WpfHomeNet.Controls
+namespace SiberNet.UI.Controls
 {
     public partial class AdminMenu : UserControl
     {

@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using HomeNetCore.Enums;
-using HomeNetCore.Interfaces;
+using HomeNetCore.Interfaces.Diagnostics;
 
 namespace HomeNetCore.Extensions
 {

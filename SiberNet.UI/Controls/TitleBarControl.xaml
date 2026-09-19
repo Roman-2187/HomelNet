@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:SiberNet.UI.Controls"
-             xmlns:enums="clr-namespace:HomeNetCore.Enums;assembly=HomeNetCore"
+             xmlns:enums="clr-namespace:HomeNetCore.Enums.Navigation;assembly=HomeNetCore"
              mc:Ignorable="d" 
              d:DesignHeight="50" d:DesignWidth="800">
     
@@ -29,73 +29,76 @@
                    Margin="15,0,0,0" 
                    FontWeight="Bold"/>
         <!-- 🌌 ЕДИНЫЙ ПУЛЬТ УПРАВЛЕНИЯ СПРАВА -->
-        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,15,0">
+        <StackPanel Grid.Column="2" Orientation="Horizontal"
+                    VerticalAlignment="Center" Margin="0,0,15,0">
 
             <!-- ================================================================= -->
-            <!-- 🔑 СЕКЦИЯ А: СТАРТОВЫЙ ПУЛЬТ (Вход / Регистрация / Админка)       -->
-            <!-- Горит ТОЛЬКО на чистом начальном экране (пока не выбрана форма)   -->
+            <!-- 🔑 СЕКЦИЯ А: СТАРТОВЫЙ ПУЛЬТ (Вход / Регистрация)                 -->
+            <!-- Горит ТОЛЬКО на чистом начальном экране                          -->
             <!-- ================================================================= -->
-            <StackPanel Orientation="Horizontal" Margin="0,0,20,0">
+            <StackPanel Orientation="Horizontal" Margin="0,0,10,0">
                 <StackPanel.Style>
                     <Style TargetType="StackPanel">
                         <Setter Property="Visibility" Value="Visible"/>
                         <Style.Triggers>
-                            <!-- 🛑 ХИТРЫЙ ХОД: Если мы залогинились (ClientZone) -->
-                            <!-- ИЛИ если мы провалились внутрь формы админки (AdminZone) — ГАСИМ ВСЮ СТАРТОВУЮ ТРОЙКУ! -->
                             <DataTrigger Binding="{Binding MainViewModel.CurrentMainTab, Source={StaticResource ComponentHub}}" Value="ClientZone">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding MainViewModel.CurrentMainTab, Source={StaticResource ComponentHub}}" Value="AdminZone">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                             </DataTrigger>
-
-                            <!-- 💡 Дополнительное условие: Если ты в AuthZone, но уже выбрал под-таб (Вход/Регистрация), -->
-                            <!-- мы тоже можем погасить эту панель. Пока привязываем к макро-зонам, как ты просил! -->
                         </Style.Triggers>
                     </Style>
                 </StackPanel.Style>
                 
-                <Button Content="🛠️ Админка"  Width="110"
-                    Command="{Binding MainViewModel.ToggleAdminZoneCommand, Source={StaticResource ComponentHub}}"
-                    Style="{StaticResource OrangeDefaultButtonStyle}"/>
+                
+            <!-- 🛠️ КНОПКА АДМИНКИ (Вне панели скрытия, работает как независимый тумблер!) -->
+            <Button x:Name="Adminka" Content="🛠️ Админка" Width="110" Margin="0,0,20,0"
+    Command="{Binding MainViewModel.ToggleAdminZoneCommand, Source={StaticResource ComponentHub}}"
+    Style="{StaticResource OrangeDefaultButtonStyle}"/>
+
+
+                
 
                 <!-- Кнопка Входа -->
                 <Button Content="🔑 Вход"
-                    Command="{Binding MainViewModel.SwitchClientTabCommand, Source={StaticResource ComponentHub}}"
-                    CommandParameter="{x:Static enums:ClientSubTab.Authentication}"
-                    Style="{StaticResource OrangeDefaultButtonStyle}"   Width="110"
-                    Margin="0,0,10,0"/>
+        Command="{Binding MainViewModel.SwitchClientTabCommand, Source={StaticResource ComponentHub}}"
+        CommandParameter="{x:Static enums:ClientSubTab.Authentication}"
+        Style="{StaticResource OrangeDefaultButtonStyle}" Width="110" Margin="0,0,10,0"/>
 
                 <!-- Кнопка Регистрации -->
                 <Button Content="📝 Регистрация"
-                    Command="{Binding MainViewModel.SwitchClientTabCommand, Source={StaticResource ComponentHub}}"
-                    CommandParameter="{x:Static enums:ClientSubTab.Registration}"
-                    Style="{StaticResource OrangeDefaultButtonStyle}"   Width="110"
-                    Margin="0,0,10,0"/>
-
-                <!-- Кнопка Админки (Пока без пароля, горит сразу на старте!) -->
-               
+        Command="{Binding MainViewModel.SwitchClientTabCommand, Source={StaticResource ComponentHub}}"
+        CommandParameter="{x:Static enums:ClientSubTab.Registration}"
+        Style="{StaticResource OrangeDefaultButtonStyle}" Width="110"/>
+                
+                
+                
             </StackPanel>
 
 
             <!-- 🛠️ СЕКЦИЯ Б: КНОПКА ГЛОБАЛЬНОГО ВЫХОДА / ОТМЕНЫ -->
             <!-- Убрали Style="..." из самого тега Button! -->
             <Button Content="↩ Выход" 
-                Command="{Binding MainViewModel.LogoutCommand, Source={StaticResource ComponentHub}}"
+                Command="{Binding MainViewModel.LogoutCommand,
+                Source={StaticResource ComponentHub}}"
                 Width="65"
                 Margin="0,0,20,0">
 
                 <Button.Style>
                     <!-- Базовый стиль наследуем через BasedOn прямо тут! -->
-                    <Style TargetType="Button" BasedOn="{StaticResource CyberpunkCloseButtonStyle}">
+                    <Style TargetType="Button"
+                           BasedOn="{StaticResource CyberpunkCloseButtonStyle}">
                         <!-- По умолчанию скрываем на старте -->
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <!-- Включаем видимость в рабочих зонах -->
-                            <DataTrigger Binding="{Binding MainViewModel.CurrentMainTab, Source={StaticResource ComponentHub}}" Value="ClientZone">
+                            <DataTrigger Binding="{Binding MainViewModel.CurrentMainTab,
+                                Source={StaticResource ComponentHub}}" Value="ClientZone">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding MainViewModel.CurrentMainTab, Source={StaticResource ComponentHub}}" Value="AdminZone">
+                            <DataTrigger Binding="{Binding MainViewModel.CurrentMainTab,
+                                Source={StaticResource ComponentHub}}" Value="AdminZone">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
@@ -111,7 +114,8 @@
             <StackPanel Orientation="Horizontal">
                 <!-- ⚡ Дебаг -->
                 <Button Content="⚡ Дебаг" 
-                    Command="{Binding MainViewModel.ToggleGlobalLoggerCommand, Source={StaticResource ComponentHub}}"
+                    Command="{Binding MainViewModel.ToggleGlobalLoggerCommand,
+                    Source={StaticResource ComponentHub}}"
                     Style="{StaticResource CyberpunkCloseButtonStyle}"
                     Width="80"
                     Margin="0,0,10,0"
@@ -119,13 +123,15 @@
 
                 <!-- 🔳 Вырастание -->
                 <Button Content="🔳" 
-                    Command="{Binding MainViewModel.ToggleGrowWindowCommand, Source={StaticResource ComponentHub}}"
+                    Command="{Binding MainViewModel.ToggleGrowWindowCommand,
+                    Source={StaticResource ComponentHub}}"
                     Style="{StaticResource CyberpunkCloseButtonStyle}"
                     Margin="0,0,5,0"/>
 
                 <!-- ✕ Крестик -->
                 <Button Content="✕" 
-                    Command="{Binding MainViewModel.RequestCloseApplicationCommand, Source={StaticResource ComponentHub}}"
+                    Command="{Binding MainViewModel.RequestCloseApplicationCommand,
+                    Source={StaticResource ComponentHub}}"
                     Style="{StaticResource CyberpunkCloseButtonStyle}"/>
             </StackPanel>
 

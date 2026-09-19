@@ -2,8 +2,14 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace HomeNetCore.Enums
+namespace HomeNetCore.Enums.Navigation
 {
     // Внутренние вкладки обычной зоны пользователя
-    public enum ClientSubTab { Authentication, Registration, Messenger }
+    public enum ClientSubTab 
+    { 
+        Authentication,
+        Registration,
+        Messenger,
+        None
+    }
 }

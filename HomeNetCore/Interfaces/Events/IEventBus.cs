@@ -1,6 +1,4 @@
-﻿
-
-namespace HomeNetCore.Interfaces
+﻿namespace HomeNetCore.Interfaces.Events
 {
     public interface IEventBus
     {

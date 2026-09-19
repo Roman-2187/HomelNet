@@ -1,12 +1,13 @@
-﻿using HomeNetCore.Interfaces;
+﻿using System;
+using System.Collections.Generic;
+using HomeNetCore.Interfaces.Events;
 using HomeNetServices.Diagnostics;
 
 namespace HomeNetServices.Routing
 {
-
     public class EventBus : IEventBus
     {
-        // Основная коллекция подписчиков шины
+        // Основная collection подписчиков шины
         private readonly Dictionary<Type, List<object>> _subscribers = new();
 
         // Наш автономный робот-картограф (Инспектор событий)
@@ -41,7 +42,6 @@ namespace HomeNetServices.Routing
             }
             catch (Exception ex)
             {
-                // Защита: если рефлексия сбойнет, это не должно сорвать инициализацию приложения
                 System.Diagnostics.Debug.WriteLine($"[Profiler Error] Ошибка регистрации подписки: {ex.Message}");
             }
         }
@@ -49,13 +49,13 @@ namespace HomeNetServices.Routing
         /// <summary>
         /// Публикация сигнала в воздух.
         /// </summary>
-        /// <param name="sender">Указывай 'this' (текущий экземпляр вьюмодели или контрола)</param>
-        /// <param name="message">Сам объект-рекорд сообщения</param>
         public void Publish<TMessage>(object sender, TMessage message)
         {
             if (message == null) return;
 
-            var type = typeof(TMessage);
+            // 🔥 УЛУЧШЕНИЕ: Берем РЕАЛЬНЫЙ тип объекта рантайма вместо compile-time TMessage.
+            // Это гарантирует, что инспектор увидит точное имя вложенного рекорда!
+            var type = message.GetType();
 
             // 🛡️ БРОНЕЖИЛЕТ ДЛЯ ИНСПЕКТОРА
             try
@@ -65,14 +65,13 @@ namespace HomeNetServices.Routing
             }
             catch (Exception ex)
             {
-                // Если профайлер упадет — пишем лог, но основное приложение продолжает жить!
                 System.Diagnostics.Debug.WriteLine($"[Profiler Error] Не удалось залогировать публикацию: {ex.Message}");
             }
 
             // 🚀 КРИТИЧЕСКИЙ ПУТЬ: Доставка сигналов до подписчиков (выполняется железно)
+            // Ищем подписчиков по точному типу сообщения
             if (_subscribers.TryGetValue(type, out var actions))
             {
-                // Делаем копию списка, чтобы избежать падений при изменении коллекции во время обхода
                 var actionsCopy = new List<object>(actions);
                 foreach (var action in actionsCopy)
                 {
@@ -81,9 +80,8 @@ namespace HomeNetServices.Routing
             }
         }
 
-
         /// <summary>
-        /// Отписка компонента от определенного типа сигнала для предотвращения утечек памяти.
+        /// Отписка компонента от определенного типа сигнала.
         /// </summary>
         public void Unsubscribe<TMessage>(Action<TMessage> action)
         {
@@ -91,26 +89,18 @@ namespace HomeNetServices.Routing
 
             var type = typeof(TMessage);
 
-            // Если такой тип сообщения вообще есть в словаре подписчиков
             if (_subscribers.TryGetValue(type, out var actions))
             {
                 if (actions.Contains(action))
                 {
                     actions.Remove(action);
-
-                    // Заодно просим инспектора убрать отметку, если твой профайлер это поддерживает
-                    // Inspector.RecordUnsubscribe(action.Target?.GetType().Name ?? "UnknownSource", type);
                 }
 
-                // Если подписчиков на этот тип больше не осталось — чистим ячейку словаря
                 if (actions.Count == 0)
                 {
                     _subscribers.Remove(type);
                 }
             }
         }
-
     }
 }
-
-

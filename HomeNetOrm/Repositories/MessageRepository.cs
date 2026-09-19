@@ -1,6 +1,6 @@
 ﻿using System.Data.Common;
 using Dapper;
-using HomeNetCore.Interfaces;
+using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Models;
 using HomeNetOrm.Builders;
 using HomeNetOrm.Enums;
