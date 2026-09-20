@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNetCore.Interfaces.Events;
-using HomeNetCore.Interfaces.ViewModels; 
+using HomeNetCore.Interfaces.ViewModels;
+using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels
 {
@@ -9,40 +10,19 @@ namespace HomeNetPresentation.ViewModels
         [ObservableProperty]
         private string _statusText = "Инициализация приложения...";
 
-        // 🔥 Конструктор принимает чистый интерфейс IEventBus из Ядра и прокидывает в базу через base
-        public StatusBarViewModel(IEventBus eventBus) : base(eventBus)
+        // Конструктор принимает чистый интерфейс IEventBus из Ядра и прокидывает в базу через base
+        public StatusBarViewModel(IEventBus eventBus, NavigationStateManager navigation) : base(eventBus, navigation)
         {
             InitializeBusSubscriptions();
         }
 
         private void InitializeBusSubscriptions()
         {
-            // 1. 🔥 ПОПРАВИЛИ: Слушаем новые короткие текстовые статусы строки состояния
+            // 1. 🔥 Слушаем новые короткие текстовые статусы строки состояния
             EventBus.Subscribe<IStatusBarViewModel.TextChanged>(async msg =>
                 await UpdateStatusAsync(msg.NewStatus));
 
-            // 2. 🔥 ПОПРАВИЛИ: Слушаем открытие/закрытие форм через базовый интерфейс
-            EventBus.Subscribe<IFormViewModelBase.VisibilityChanged>(async msg =>
-            {
-                string formFriendlyName = msg.FormType.Name switch
-                {
-                    "DeleteUsersViewModel" => "Удаление пользователей",
-                    "RegistrationViewModel" => "Регистрация",
-                    "AuthenticationViewModel" => "Авторизация",
-                    _ => "Форма"
-                };
-
-                if (msg.IsVisible)
-                {
-                    await UpdateStatusAsync($"Открыта форма: {formFriendlyName}");
-                }
-                else
-                {
-                    await UpdateStatusAsync("Система готова к работе");
-                }
-            });
-
-            // 3. 🔥 ПОПРАВИЛИ: Принимаем короткий рекорд обновления таблицы пользователей
+            // 2. 🔥 Принимаем короткий рекорд обновления таблицы пользователей
             EventBus.Subscribe<IUsersTableViewModel.Refreshed>(msg =>
             {
                 StatusText = msg.Users != null
@@ -58,7 +38,7 @@ namespace HomeNetPresentation.ViewModels
             StatusText = text;
             await Task.Delay(2000);
 
-            // 🔥 ПОПРАВИЛИ: Публикуем короткий запрос на обновление статуса/счетчика обратно в таблицу
+            // Публикуем короткий запрос на обновление статуса/счетчика обратно в таблицу
             EventBus.Publish(this, new IUsersTableViewModel.RefreshRequest());
         }
     }

@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using HomeNetCore.Interfaces;             // Контракты репозиториев и IEventBus из Ядра 🧼 UFO
+﻿using HomeNetCore.Interfaces;             
 using HomeNetCore.Interfaces.Events;
-using HomeNetCore.Interfaces.ViewModels; // 🔥 Подключили новые интерфейсы Ядра с укороченными рекордами
+using HomeNetCore.Interfaces.ViewModels; 
 using HomeNetCore.Models;
+using HomeNetPresentation.Services;
+using System.Collections.ObjectModel;
 
 namespace HomeNetPresentation.ViewModels
 {
@@ -19,7 +15,7 @@ namespace HomeNetPresentation.ViewModels
         public ObservableCollection<UserEntity> Users { get; private set; } = new();
 
         // Конструктор принимает чистый IEventBus из Ядра и прокидывает в базу через base(eventBus)
-        public UsersTableViewModel(IEventBus eventBus, IUserService userService) : base(eventBus)
+        public UsersTableViewModel(IEventBus eventBus, IUserService userService, NavigationStateManager navigation) : base(eventBus, navigation)
         {
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
 

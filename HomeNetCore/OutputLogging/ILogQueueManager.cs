@@ -2,8 +2,8 @@
 
 namespace HomeNetCore.Interfaces.OutputLogging
 {
-    namespace HomeNetCore.Interfaces.OutputLogging
-    {
+    
+    
         public interface ILogQueueManager
         {
             // 🔥 Добавили string (namespace) третьим параметром в делегат!
@@ -16,4 +16,3 @@ namespace HomeNetCore.Interfaces.OutputLogging
             void Dispose();
         }
     }
-}

@@ -1,12 +1,12 @@
-﻿<Window x:Class="SiberNet.UI.MainWindow"      
+﻿<Window
+    x:Class="SiberNet.UI.MainWindow"      
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:vm="clr-namespace:HomeNetPresentation.ViewModels;assembly=HomeNetPresentation"
-  
+    xmlns:vm="clr-namespace:HomeNetPresentation.ViewModels;assembly=HomeNetPresentation"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:converter="clr-namespace:SiberNet.UI.Converters"
-        xmlns:controls="clr-namespace:SiberNet.UI.Controls" 
+    xmlns:controls="clr-namespace:SiberNet.UI.Controls" 
     mc:Ignorable="d"                                    
     AllowsTransparency="True"
     FontFamily="Calibri"
@@ -15,43 +15,29 @@
             
     WindowStartupLocation="CenterScreen"         
     Style="{StaticResource CyberpunkWindowLaunchStyle}"
+   
     DataContext="{Binding MainViewModel, Source={StaticResource ComponentHub}}">
 
     <Window.Resources>
         <!-- 🎯 ГЛАВНЫЙ МОСТ: Говорим окну использовать ваш оранжевый стиль как базовый -->
-        <!-- Без этого моста кнопки сбрасывались в дефолтный серый дизайн Windows -->
         <Style TargetType="Button" BasedOn="{StaticResource OrangeDefaultButtonStyle}">
-            <!-- Оставляем ваши точечные корректировки размеров для разметки главного окна -->
             <Setter Property="Padding" Value="9.4"/>
             <Setter Property="BorderThickness" Value="0.6"/>
         </Style>
 
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-
-        <!-- 🎭 НАШ РЕАКТИВНЫЙ РОУТЕР: Говорим окну, как натягивать шкуру на ВьюМодели -->
-
-
-        
-           
-
-          
-
-
-
-
-
     </Window.Resources>
 
-
+    <!-- Твой верхний фоновый киберпанк-контейнер -->
     <ContentControl Style="{StaticResource CyberpunkImageStyle}" 
-                HorizontalAlignment="Stretch" 
-                VerticalAlignment="Stretch">
+                    HorizontalAlignment="Stretch" 
+                    VerticalAlignment="Stretch">
         <ContentControl.Tag>
             <CornerRadius>6</CornerRadius>
         </ContentControl.Tag>
-        <Grid x:Name="MainGrid" Margin="4"  VerticalAlignment="Stretch"
-            HorizontalAlignment="Stretch">
-            <!-- Твоя шикарная 3-этажная сетка, которую мы утвердили! 🏢 -->
+
+        <!-- НАША РОДНАЯ СЕТКА С ТРЕМЯ ЭТАЖАМИ 🏢 -->
+        <Grid x:Name="MainGrid" Margin="4" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <!-- Этаж 0: Шапка TitleBar -->
@@ -61,77 +47,103 @@
                 <!-- Этаж 2: Статус-бар -->
             </Grid.RowDefinitions>
 
-            <!-- Колонку оставляем одну на 100% ширины по дефолту -->
-
-            <!-- 👑 ЭТАЖ 0: ГЛОБАЛЬНЫЙ МОСТ ШАПКИ -->
-            <!-- Повесили пропуск мыши WindowChrome ОДИН раз на весь Бордер! -->
+            <!-- 👑 ЭТАЖ 0: ГЛОБАЛЬНЫЙ МОСТ ШАПКИ (Твой TitleBarControl) -->
             <Border Grid.Row="0" 
-                Background="Transparent" 
-                Height="40" 
-                VerticalAlignment="Top"
-                WindowChrome.IsHitTestVisibleInChrome="True">
-
-                <!-- 🔥 САЖАЕМ НАШ КИБЕРПАНК-МОДУЛЬ ОДНОЙ СТРОЧКОЙ! -->
+                    Background="Transparent" 
+                    Height="40" 
+                    VerticalAlignment="Top"
+                    WindowChrome.IsHitTestVisibleInChrome="True">
                 <controls:TitleBarControl/>
-                
-
             </Border>
-            <!-- 🌌 ЭТАЖ 1: ЦЕНТРАЛЬНЫЙ СЛЕСАРНЫЙ ШЛЮЗ -->
-            <ContentControl Grid.Row="1" 
-                HorizontalAlignment="Stretch" 
-                VerticalAlignment="Stretch">
 
-                <!-- 🗂️ ВШИВАЕМ КАРТУ ШКУР ПРЯМО СЮДА ПОД НОС ШЛЮЗУ -->
-                <ContentControl.Resources>
-                    <!-- Говорим шлюзу: если в контент прилетела AdminMenuViewModel — рожай контрол AdminMenu! -->
-                    <!-- Убедись, что префикс vm: указывает на HomeNetPresentation.ViewModels -->
-                    <!-- А префикс controls: указывает на SiberNet.UI.Controls -->
+            <!-- 🌌 ЭТАЖ 1: ЦЕНТРАЛЬНЫЙ СЛЕСАРНЫЙ ШЛЮЗ (Разделен на 2 горизонтальные колонки) -->
+            <Grid Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+                <Grid.ColumnDefinitions>
+                    <!-- Левая колонка: Жестко 900px для мессенджера/админки, чтобы ничего не ехало -->
+                    <ColumnDefinition Width="900"/>
+                    <!-- Правая колонка: Забирает все остальное пространство под терминал логов -->
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Grid.Resources>
+                    <!-- КАРТА ШКУР: Связываем ВьюМодели с их реальными UI-контролами -->
+                    <DataTemplate DataType="{x:Type vm:AuthenticationViewModel}">
+                        <controls:AuthenticationViewControl HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    </DataTemplate>
+
+                    <DataTemplate DataType="{x:Type vm:RegistrationViewModel}">
+                        <controls:RegistrationViewControl HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    </DataTemplate>
+
                     <DataTemplate DataType="{x:Type vm:AdminMenuViewModel}">
                         <controls:AdminMenu HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
                     </DataTemplate>
+                    
+                    
 
-                   
-                </ContentControl.Resources>
+                    <DataTemplate DataType="{x:Type vm:UserDashboardViewModel}">
+                        <controls:UserDashboardControl HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    </DataTemplate>
+                </Grid.Resources>
 
-                <ContentControl.Style>
-                    <Style TargetType="ContentControl">
-                        <!-- Дефолтный контент на старте (теперь он тоже подхватит шаблон!) -->
-                        <Setter Property="Content" Value="{Binding AuthenticationViewModel, Source={StaticResource ComponentHub}}"/>
+                <!-- 👤 ЛЕВАЯ ЗОНА (Column="0"): Полностью управляется через сквозной Navigation -->
+                <ContentControl Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <ContentControl.Style>
+                        <Style TargetType="ContentControl">
+                            <!-- По умолчанию на старте холст чист, ждём выбора пользователя -->
+                            <Setter Property="Content" Value="{x:Null}"/>
+                            <Style.Triggers>
+                                <!-- 🔑 ЭТАП 1 ЮЗЕРА: Нажали вход — выкатываем форму авторизации -->
+                                <DataTrigger Binding="{Binding Navigation.CurrentClientTab}" Value="Authentication">
+                                    <Setter Property="Content" Value="{Binding AuthenticationViewModel, Source={StaticResource ComponentHub}}"/>
+                                </DataTrigger>
 
-                        <Style.Triggers>
-                            <!-- Твой рабочий триггер, который снайперски бьет по энуму -->
-                            <DataTrigger Binding="{Binding CurrentMainTab}" Value="AdminZone">
-                                <Setter Property="Content" Value="{Binding AdminMenuViewModel, Source={StaticResource ComponentHub}}"/>
-                            </DataTrigger>
+                                <DataTrigger Binding="{Binding Navigation.CurrentMainZone}" Value="AdminZone">
+                                    <Setter Property="Content" Value="{Binding AdminMenuViewModel, Source={StaticResource ComponentHub}}"/>
+                                </DataTrigger>
 
-                            <DataTrigger Binding="{Binding CurrentMainTab}" Value="ClientZone">
-                                <Setter Property="Content" Value="{Binding ChatViewModel, Source={StaticResource ComponentHub}}"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </ContentControl.Style>
-            </ContentControl>
+                                <!-- 📝 ЭТАП 1 ЮЗЕРА: Нажали регистрацию — выкатываем форму регистрации -->
+                                <DataTrigger Binding="{Binding Navigation.CurrentClientTab}" Value="Registration">
+                                    <Setter Property="Content" Value="{Binding RegistrationViewModel, Source={StaticResource ComponentHub}}"/>
+                                </DataTrigger>
 
+                                <!-- 💬 ЭТАП 2 ЮЗЕРА: Форма получила УСПЕХ — переключаемся на дашборд мессенджера -->
+                                <DataTrigger Binding="{Binding Navigation.CurrentMainZone}" Value="ClientZone">
+                                    <Setter Property="Content" Value="{Binding UserDashboardViewModel, Source={StaticResource ComponentHub}}"/>
+                                </DataTrigger>
 
+                               
+                            </Style.Triggers>
+                        </Style>
+                    </ContentControl.Style>
+                </ContentControl>
 
-
-
-
-
-
-
-
+                <!-- ⚡ ПРАВАЯ ЗОНА (Column="1"): Выдвижной терминал логов админки -->
+                <!-- Показываем её на экране, только если админ зашёл в свою макро-зону! -->
+                <ContentControl Grid.Column="1" 
+                                Content="{Binding AdminMenuViewModel, Source={StaticResource ComponentHub}}"
+                                HorizontalAlignment="Stretch" 
+                                VerticalAlignment="Stretch">
+                    <ContentControl.Style>
+                        <Style TargetType="ContentControl">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <!-- Логи выезжают шторкой только когда макро-зона переключена в AdminZone -->
+                                <DataTrigger Binding="{Binding Navigation.CurrentMainZone}" Value="AdminZone">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ContentControl.Style>
+                </ContentControl>
+            </Grid>
 
             <!-- 📡 ЭТАЖ 2: НАШ РЕАКТИВНЫЙ СТАТУС-BAR -->
             <Border Grid.Row="2" Background="Transparent" Margin="5,0,5,5">
                 <controls:StatusBarControl/>
             </Border>
-
         </Grid>
-
     </ContentControl>
 </Window>
-
-
 
 

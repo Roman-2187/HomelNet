@@ -3,55 +3,87 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Interfaces.Events;
-using HomeNetCore.Interfaces.ViewModels; // 🔥 Где лежат все наши новые чистые интерфейсы рекордов
+using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
 
 namespace HomeNetPresentation.Services
 {
     public partial class NavigationStateManager : ObservableObject
     {
-        [ObservableProperty] private MainTab _currentMainZone = MainTab.ClientZone;
-        [ObservableProperty] private ClientSubTab _currentClientTab = ClientSubTab.None; // Стартовый хаб
-        [ObservableProperty] private AdminSubTab _currentAdminTab = AdminSubTab.None;   // Стерильный ноль!
+        // 🔥 СТАРТОВЫЙ ХАБ: Начинаем с абсолютного, стерильного нуля везде!
+        [ObservableProperty] private MainTab _currentMainZone = MainTab.None;
+        [ObservableProperty] private ClientSubTab _currentClientTab = ClientSubTab.None;
+        [ObservableProperty] private AdminSubTab _currentAdminTab = AdminSubTab.None;
         [ObservableProperty] private UserEntity? _currentUser;
 
         public NavigationStateManager(IEventBus eventBus)
         {
-            // 🛡️ 1. УСПЕШНЫЙ ВХОД
-            // 🔥 ПОПРАВИЛИ: Слушаем короткий рекорд из интерфейса входа
+            // 👤 ЮЗЕР ПРИШЕЛ
             eventBus.Subscribe<IAuthenticationViewModel.UserLogged>(msg =>
             {
                 CurrentUser = msg.User;
-
                 CurrentMainZone = MainTab.ClientZone;
-                CurrentClientTab = ClientSubTab.Messenger; // СРАЗУ открываем мессенджер (со списком юзеров!)
-                CurrentAdminTab = AdminSubTab.None;        // Админка спит
+                CurrentClientTab = ClientSubTab.Messenger;
+                CurrentAdminTab = AdminSubTab.None;
             });
 
-            // 🧬 2. УСПЕШНАЯ РЕГИСТРАЦИЯ
-            // 🔥 ПОПРАВИЛИ: Слушаем короткий рекорд из интерфейса таблицы пользователей
             eventBus.Subscribe<IUsersTableViewModel.Added>(msg =>
             {
                 CurrentUser = msg.User;
-
                 CurrentMainZone = MainTab.ClientZone;
-                CurrentClientTab = ClientSubTab.Messenger; // Тоже сразу отправляем в чаты
+                CurrentClientTab = ClientSubTab.Messenger;
                 CurrentAdminTab = AdminSubTab.None;
+            });
+
+            // 🔥 ВОТ ОН — НАШ ЕДИНЫЙ ПЕРЕХВАТЧИК ЗОН ВНУТРИ КОМАНДИРА НАВИГАЦИИ!
+            eventBus.Subscribe<IMainViewModel.ZoneChanged>(msg =>
+            {
+                // Теперь сам навигатор переключает свои макро-зоны по сигналу из шины!
+                CurrentMainZone = msg.TargetTab;
             });
         }
 
-        // ====== 🦾 РУЧНОЕ УПРАВЛЕНИЕ ======
 
-        // Ручной переход в режим админки
+        #region 🧠 РЕАКТИВНЫЕ ХУКИ (Контролируют зачистку взаимных исключений) 🧼
+
+        /// <summary>
+        /// Контроль макро-зон. Если ушли на старт — гасим рабочие подпанели.
+        /// </summary>
+        partial void OnCurrentMainZoneChanged(MainTab value)
+        {
+            if (value == MainTab.None)
+            {
+                // На стартовом экране никакого мессенджера или панелей логов быть не может!
+                _currentAdminTab = AdminSubTab.None;
+                // Не зануляем CurrentClientTab здесь, чтобы дать пользователю открывать формы входа/регистрации на старте!
+            }
+        }
+
+        #endregion
+
+        // ====== 🦾 РУЧНОЕ УПРАВЛЕНИЕ ШАПКИ (Твоя двухэтапная логика) ======
+
+        // 🛠️ ПРЯМОЙ ВХОД АДМИНА (В 1 клик): Сразу летит на свой экран
         [RelayCommand]
         public void OpenAdminZone()
         {
             CurrentMainZone = MainTab.AdminZone;
-            CurrentAdminTab = AdminSubTab.None;   // 🔥 ЖЕСТКО: Ничего не стартует сразу! Чистый None
-            CurrentClientTab = ClientSubTab.None; // Гасим клиентский хаб
+            CurrentAdminTab = AdminSubTab.None; 
+            CurrentClientTab = ClientSubTab.None;   // Гасим клиента
         }
 
-        // Ручной возврат из админки обратно в чат
+        // 👤 ЮЗЕР: ЭТАП 1 (Выбор формы). Переключает табы, оставаясь на стартовом экране (MainTab.None)
+        [RelayCommand]
+        public void NavigateInClient(ClientSubTab subTab)
+        {
+            // Разрешаем открывать формы только если мы не авторизованы (находимся в макро-ноле)
+            if (CurrentMainZone == MainTab.None)
+            {
+                CurrentClientTab = subTab;
+            }
+        }
+
+        // Ручной возврат из админки обратно в чат (если админ хочет почитать сообщения)
         [RelayCommand]
         public void ReturnToMessenger()
         {
@@ -60,63 +92,57 @@ namespace HomeNetPresentation.Services
             CurrentAdminTab = AdminSubTab.None;
         }
 
+        // Навигация админа по внутренним кнопкам своей панели
         [RelayCommand]
         public void NavigateInAdmin(AdminSubTab subTab)
         {
             if (CurrentMainZone != MainTab.AdminZone) return;
-            CurrentAdminTab = subTab; // Админ сам манипулирует своими экранами по кнопкам
+            CurrentAdminTab = subTab;
         }
 
-        [RelayCommand]
-        public void NavigateInClient(ClientSubTab subTab)
-        {
-            CurrentClientTab = subTab;
-        }
-
-        // 🧼 ТОТАЛЬНЫЙ СБРОС (Выйти из аккаунта)
+        // 🧼 ТОТАЛЬНЫЙ СБРОС (Кнопка "↪ Выход" возвращает в абсолютный ноль)
         [RelayCommand]
         public void ResetToGuest()
         {
             CurrentUser = null;
+            CurrentMainZone = MainTab.None;
+            CurrentClientTab = ClientSubTab.None; // Абсолютный чистый холст на старте!
             CurrentAdminTab = AdminSubTab.None;
-            CurrentClientTab = ClientSubTab.None; // Возврат на Welcome-экран
-            CurrentMainZone = MainTab.ClientZone;
         }
 
-        // 🛠️ КНОПКА В АДМИНКЕ: "Открыть Мессенджер" (Прямой прыжок без авторизации!)
+        // Кнопка в админке для прыжка в мессенджер
         [RelayCommand]
         public void AdminEnterMessenger()
         {
-            if (CurrentUser == null) return;
-
             CurrentMainZone = MainTab.ClientZone;
             CurrentClientTab = ClientSubTab.Messenger;
         }
 
-        // 🔙 КНОПКА В МЕССЕНДЖЕРЕ (Видна ТОЛЬКО если вошел админ): "Вернуться в Админку"
+        // Кнопка мессенджера для возврата в админку
         [RelayCommand]
         public void AdminReturnToAdmin()
         {
-            if (CurrentUser == null) return;
-
             CurrentMainZone = MainTab.AdminZone;
-
-            if (CurrentAdminTab == AdminSubTab.None)
-            {
-                CurrentAdminTab = AdminSubTab.LogPanel; // Маленькая страховка
-            }
+            CurrentAdminTab = AdminSubTab.LogPanel;
         }
+
+        
+
+
 
         // Умный геттер для XAML: видна ли кнопка "[ ВЕРНУТЬСЯ В АДМИНКУ ]"?
         public bool IsAdminReturnButtonVisible
         {
             get
             {
+                // 🛡️ ЖЕСТКАЯ ЗАЩИТА: Если пользователя нет, или мы не в чате — мгновенно гасим кнопку
                 if (CurrentUser == null) return false;
                 if (CurrentMainZone != MainTab.ClientZone || CurrentClientTab != ClientSubTab.Messenger) return false;
 
-                return CurrentUser.Email.Contains("admin", StringComparison.OrdinalIgnoreCase);
+                // 🔥 ПОПРАВИЛИ: Безопасный вызов через ?. предотвращает любые предупреждения компилятора!
+                return CurrentUser.Email?.Contains("admin", StringComparison.OrdinalIgnoreCase) ?? false;
             }
         }
+
     }
 }

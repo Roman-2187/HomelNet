@@ -3,11 +3,13 @@ using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
+using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels
 {
     /// <summary>
-    /// Идеально пустая доска-контейнер клиентской зоны.
+    /// Чистая доска-контейнер клиентской зоны мессенджера SiberNet.
+    /// Полностью управляется через шину событий и глобальный автомат энумов.
     /// </summary>
     public partial class UserDashboardViewModel : FormViewModelBase
     {
@@ -23,20 +25,26 @@ namespace HomeNetPresentation.ViewModels
             IEventBus eventBus,
             IMessageRepository messageRepo,
             ContactsListViewModel contactsListViewModel,
-            ChatViewModel chatVm) : base(eventBus)
+            ChatViewModel chatVm, NavigationStateManager navigation) : base(eventBus, navigation)
         {
             _messageRepo = messageRepo ?? throw new ArgumentNullException(nameof(messageRepo));
             ContactsListVM = contactsListViewModel ?? throw new ArgumentNullException(nameof(contactsListViewModel));
             ChatVm = chatVm ?? throw new ArgumentNullException(nameof(chatVm));
 
+            // Стерильно ловим логин, чтобы просто запомнить текущую сессию пользователя
+            EventBus.Subscribe<IAuthenticationViewModel.UserLogged>(async msg =>
+            {
+                CurrentUser = msg.User;
+                await Task.CompletedTask;
+            });
 
-            IsControlVisible = false;
+            EventBus.Subscribe<IUsersTableViewModel.Added>(async msg =>
+            {
+                CurrentUser = msg.User;
+                await Task.CompletedTask;
+            });
 
-            // Слушаем логин только для того, чтобы поджечь флаг видимости самого дашборда на экране
-            EventBus.Subscribe<IAuthenticationViewModel.UserLogged>(async msg => { CurrentUser = msg.User; IsControlVisible = true; await Task.CompletedTask; });
-            EventBus.Subscribe<IUsersTableViewModel.Added>(async msg => { CurrentUser = msg.User; IsControlVisible = true; await Task.CompletedTask; });
-
-            // 🔥 Перехватчик отправки сообщений из чата для записи в БД переезжает на связку с ContactsListVM
+            // 🔥 Перехватчик отправки сообщений из чата для записи в БД
             EventBus.Subscribe<IChatViewModel.NewSent>(async msg =>
             {
                 if (CurrentUser == null) return;

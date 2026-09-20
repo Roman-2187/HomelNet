@@ -5,9 +5,9 @@ namespace SiberNet.UI.Controls
     /// <summary>
     /// Interaction logic for LoginViewControl.xaml
     /// </summary>
-    public partial class LoginViewControl : UserControl
+    public partial class AuthenticationViewControl : UserControl
     {
-        public LoginViewControl()
+        public AuthenticationViewControl()
         {
             InitializeComponent();
         }

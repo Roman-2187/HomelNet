@@ -1,6 +1,6 @@
 ﻿using System.Threading.Channels;
 using HomeNetCore.Enums;
-using HomeNetCore.Interfaces.OutputLogging.HomeNetCore.Interfaces.OutputLogging;
+using HomeNetCore.Interfaces.OutputLogging;
 
 namespace HomeNetServices.Diagnostics
 {

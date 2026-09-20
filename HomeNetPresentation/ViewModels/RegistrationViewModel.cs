@@ -1,15 +1,15 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Enums;
+using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Services;
-using HomeNetCore.Interfaces.ViewModels; // 🔥 Подключили интерфейсы Ядра с новыми рекордами
+using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
-
-// 🔥 Жёсткий алиас: используем только твою модель валидации во избежание неоднозначности!
-using ValidationResult = HomeNetCore.Models.Validation.ValidationResult;
+using HomeNetCore.Models.Validation;
+using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels
 {
@@ -17,27 +17,22 @@ namespace HomeNetPresentation.ViewModels
     {
         private readonly IRegistrationService _registerService;
         private readonly ILogger _logger;
-        private UserEntity? _createdUser;
 
-        // 🔥 НАША ВИТРИНА: Сюда напрямую биндятся Имя, Почта и Пароль из XAML
         [ObservableProperty] private UserEntity _userData = new();
 
-        // Конструктор принимает чистые интерфейсы Ядра и передает шину в базу через base(eventBus)
-        public RegistrationViewModel(IRegistrationService registerService, IEventBus eventBus, ILogger logger) : base(eventBus)
+        public RegistrationViewModel(IRegistrationService registerService, IEventBus eventBus, ILogger logger, NavigationStateManager navigation) : base(eventBus, navigation)
         {
             _registerService = registerService ?? throw new ArgumentNullException(nameof(registerService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             InitializeInitialHints();
 
-            // 🔥 ЗАДЕРЖКА ПОСЛЕ РЕГИСТРАЦИИ: Слушаем новый короткий рекорд таблицы пользователей!
+            // Слушаем таблицу пользователей: при успешном создании тихо затираем за собой поля
             EventBus.Subscribe<IUsersTableViewModel.Added>(async msg =>
             {
-                // Даем пользователю 1 секунду порадоваться успеху
-                await Task.Delay(1000);
-
-                // Безопасно закрываем форму. Свойство IsControlVisible из базы само уведомит систему!
-                CloseForm();
+                await Task.Delay(500);
+                ResetForm();
+                InitializeInitialHints();
             });
         }
 
@@ -50,25 +45,19 @@ namespace HomeNetPresentation.ViewModels
                 new(TypeField.NameType, "Имя пользователя должно содержать 3 буквы подряд", ValidationState.Info, true),
                 new(TypeField.ConfirmedPasswordType, "Пароли должны совпадать", ValidationState.Info, true)
             };
-
             UpdateValidation(initialHints);
             SubmitButtonText = "Зарегистрироваться";
         }
 
-        private void CloseForm()
+        public  void ResetForm()
         {
             UserData = new();
             StatusMessage = string.Empty;
             ValidationResults = new Dictionary<TypeField, ValidationResult>();
-            InitializeInitialHints();
-
-            // Заменили Visibility.Collapsed на чистый bool базового класса! 🧼🦾
-            IsControlVisible = false;
         }
 
         #region 🦾 НАНО-КОМАНДЫ ДЛЯ КНОПОК РЕГИСТРАЦИИ (CommunityToolkit)
 
-        // Кнопка "Зарегистрироваться"
         [RelayCommand]
         private async Task RegisterAsync()
         {
@@ -77,24 +66,17 @@ namespace HomeNetPresentation.ViewModels
 
             try
             {
-                // 🔥 ПОПРАВИЛИ: Принимаем красивый вложенный Verdict вместо старого сырого кортежа
                 IRegistrationService.Verdict verdict = await _registerService.RegisterUserAsync(UserData);
-
-                IsComplete = verdict.IsValid;
-                _createdUser = verdict.VerifiedUser;
-
-                // Переводим список результатов в словарь полей
                 ValidationResults = verdict.Results.ToDictionary(r => r.Field, r => r);
 
-                if (IsComplete)
+                if (verdict.IsValid)
                 {
                     StatusMessage = "Вы успешно зарегистрированы";
-                    SubmitButtonText = "ща погодь!";
+                    SubmitButtonText = "Готово!";
+                    _logger.LogInformation($"[RegisterVM] Пользователь {verdict.VerifiedUser?.Email ?? UserData.Email} успешно прошёл СУБД.");
 
-                    _logger.LogInformation($"[RegisterVM] Пользователь {_createdUser?.Email ?? UserData.Email} успешно прошёл валидацию СУБД.");
-
-                    // 🔥 ПОПРАВИЛИ: Публикуем новое лаконичное бизнес-сообщение о добавлении юзера
-                    EventBus.Publish(this, new IUsersTableViewModel.Added(_createdUser ?? UserData));
+                    // Публикуем добавление, навигатор поймает и в два этапа пропихнет юзера в мессенджер! ✨
+                    EventBus.Publish(this, new IUsersTableViewModel.Added(verdict.VerifiedUser ?? UserData));
                 }
                 else
                 {
@@ -109,9 +91,14 @@ namespace HomeNetPresentation.ViewModels
             }
         }
 
-        // Кнопка "Отмена"
         [RelayCommand]
-        private void Cancel() => CloseForm();
+        private void Cancel()
+        {
+            ResetForm();
+            InitializeInitialHints();
+            // Отмена уводит роутер обратно в чистый ноль стартового экрана
+            EventBus.Publish(this, new IMainViewModel.ZoneChanged(MainTab.None));
+        }
 
         #endregion
     }

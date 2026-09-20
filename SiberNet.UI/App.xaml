@@ -3,9 +3,10 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:infrastructure="clr-namespace:SiberNet.UI.Infrastructure"             
-    xmlns:cv="clr-namespace:SiberNet.UI.Converters" xmlns:enums="clr-namespace:HomeNetCore.Enums.Navigation;assembly=HomeNetCore" 
-            xmlns:controls="clr-namespace:SiberNet.UI.Controls" 
-            xmlns:vm="clr-namespace:HomeNetPresentation.ViewModels;assembly=HomeNetPresentation" 
+    xmlns:cv="clr-namespace:SiberNet.UI.Converters" 
+    xmlns:enums="clr-namespace:HomeNetCore.Enums.Navigation;assembly=HomeNetCore" 
+    xmlns:controls="clr-namespace:SiberNet.UI.Controls" 
+    xmlns:vm="clr-namespace:HomeNetPresentation.ViewModels;assembly=HomeNetPresentation" 
     StartupUri="MainWindow.xaml">
     
 

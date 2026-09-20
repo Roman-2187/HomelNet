@@ -1,81 +1,38 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.Events;
-using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models.Validation;
+using HomeNetPresentation.Services; // 🔥 Подключили пространство навигатора
 
 namespace HomeNetPresentation.ViewModels
 {
+    /// <summary>
+    /// Стерильный базовый фундамент для всех интерактивных форм проекта SiberNet.
+    /// Автоматически предоставляет доступ к шине и глобальному командиру навигации.
+    /// </summary>
     public abstract partial class FormViewModelBase : ObservableObject
     {
-        // ГЛОБАЛЬНЫЙ СИГНАЛ ЛОГАУТА
-        public static Action? OnGlobalResetRequested;
-
-        // Защищенное поле автобуса для дочерних форм
         protected readonly IEventBus _eventBus;
+        protected readonly NavigationStateManager _navigation; // 🔥 Спрятали командира в фундамент базы!
 
-        // Один кабель на весь проект! Все дочерние формы теперь имеют доступ к шине
         public IEventBus EventBus => _eventBus;
 
-        // Конструктор
-        public FormViewModelBase(IEventBus eventBus)
-        {
-            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+        // 🔥 ПУБЛИЧНЫЙ МОСТ: Теперь ЛЮБАЯ дочерняя вьюмодель может читать энумы и текущего юзера!
+        public NavigationStateManager Navigation => _navigation;
 
-            OnGlobalResetRequested += ResetSession;
-        }
-
-        public void ResetSession()
-        {
-            IsComplete = false;
-            IsCancelled = false;
-            IsControlVisible = false; 
-            OnResetForm();
-        }
-
-        protected virtual void OnResetForm() { }
-
-        private List<ValidationResult>? _validationResult;
-        public List<ValidationResult> ValidationResult
-        {
-            get => _validationResult ?? throw new InvalidOperationException("пустая коллекция");
-            set => _validationResult = value;
-        }
-
-        #region АВТОМАТИЧЕСКИЕ СВОЙСТВА (Штамповочный цех Microsoft) 🦾
-
-        // 🔥 ЧИСТЫЙ ФЛАГ ВИДИМОСТИ: Заменил Visibility на bool и перевел в атрибут! 🧼
-        // Toolkit сам создаст публичное свойство IsControlVisible
-        [ObservableProperty]
-        private bool _isControlVisible = false;
-
-        // Магия Toolkit: этот метод автоматически вызывается СРАЗУ после изменения _isControlVisible
-        partial void OnIsControlVisibleChanged(bool value)
-        {
-            // Публикуем наше очищенное от WPF сообщение (передаем текущий тип и bool флаг!)
-            _eventBus.Publish(this, new IFormViewModelBase.VisibilityChanged(this.GetType(), value));
-        }
-
-        [ObservableProperty]
-        private bool _isCancelled = false;
-
-        [ObservableProperty]
-        private bool _isOpen;
-
-        [ObservableProperty]
-        private bool _isComplete = false;
-
-        [ObservableProperty]
-        private string _statusMessage = string.Empty;
-
-        [ObservableProperty]
-        private string _submitButtonText = "Выполнить";
+        [ObservableProperty] private string _statusMessage = string.Empty;
+        [ObservableProperty] private string _submitButtonText = "Выполнить";
 
         [ObservableProperty]
         private IReadOnlyDictionary<TypeField, ValidationResult> _validationResults
             = new Dictionary<TypeField, ValidationResult>();
 
-        #endregion
+        // 🔥 Конструктор теперь принимает ДВА главных силовых кабеля системы
+        public FormViewModelBase(IEventBus eventBus, NavigationStateManager navigationManager)
+        {
+            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+            _navigation = navigationManager ?? throw new ArgumentNullException(nameof(navigationManager));
+        }
 
         public void UpdateValidation(IEnumerable<ValidationResult> results)
         {
@@ -83,5 +40,3 @@ namespace HomeNetPresentation.ViewModels
         }
     }
 }
-
-

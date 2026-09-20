@@ -4,9 +4,10 @@ using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Events;
-using HomeNetCore.Interfaces.OutputLogging.HomeNetCore.Interfaces.OutputLogging;
+using HomeNetCore.Interfaces.OutputLogging;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
+using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels
 {
@@ -32,7 +33,7 @@ namespace HomeNetPresentation.ViewModels
         [ObservableProperty] private string _tableButtonText = "Показать users";
 
         // Конструктор — принимает чистый IEventBus из Ядра
-        public AdminMenuViewModel(IUserService userService, ILogQueueManager logQueueManager, IEventBus eventBus) : base(eventBus)
+        public AdminMenuViewModel(IUserService userService, ILogQueueManager logQueueManager, IEventBus eventBus, NavigationStateManager navigation) : base(eventBus, navigation)
         {
             _adminUserService = userService ?? throw new ArgumentNullException(nameof(userService));
             _adminLogQueueManager = logQueueManager ?? throw new ArgumentNullException(nameof(logQueueManager));

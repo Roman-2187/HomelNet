@@ -3,8 +3,9 @@ using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
-using HomeNetCore.Interfaces.ViewModels; 
+using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
+using HomeNetPresentation.Services;
 using HomeNetServices.Services.Identity;
 
 namespace HomeNetPresentation.ViewModels
@@ -22,16 +23,13 @@ namespace HomeNetPresentation.ViewModels
         #endregion
 
         #region Конструктор
-        public DeleteUsersViewModel(DeleteService deleteService, IEventBus eventBus, ILogger logger) : base(eventBus)
+        public DeleteUsersViewModel(DeleteService deleteService, IEventBus eventBus, ILogger logger, NavigationStateManager navigation  ) : base(eventBus, navigation)
         {
             _deleteService = deleteService ?? throw new ArgumentNullException(nameof(deleteService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            IsControlVisible = false;
             SubmitButtonText = "Удалить";
             StatusMessage = "Введите ID ";
-
-            InitEventBus();
         }
         #endregion
 
@@ -84,7 +82,7 @@ namespace HomeNetPresentation.ViewModels
 
             if (isSuccess)
             {
-                // 🔥 ПОПРАВИЛИ: Публикуем короткий ивент удаления юзера
+                // 🔥 Публикуем короткий ивент удаления юзера
                 EventBus.Publish(this, new IDeleteUserViewModel.Deleted(id));
                 _logger.LogInformation($"Пользователь с ID {id} успешно удален.");
                 ResetForm();
@@ -99,26 +97,10 @@ namespace HomeNetPresentation.ViewModels
         private void Cancel()
         {
             ResetForm();
-            IsControlVisible = false;
         }
         #endregion
 
         #region Вспомогательная логика
-        private void InitEventBus()
-        {
-            // 🔥 ПОПРАВИЛИ: Перешли на короткий ивент базового класса форм
-            EventBus.Publish(this, new IFormViewModelBase.VisibilityChanged(GetType(), false));
-
-            EventBus.Subscribe<IFormViewModelBase.VisibilityChanged>(msg =>
-            {
-                if (msg.FormType != GetType() && msg.IsVisible)
-                {
-                    ResetForm();
-                    IsControlVisible = false;
-                }
-            });
-        }
-
         private void ResetForm()
         {
             TargetUserId = string.Empty;
