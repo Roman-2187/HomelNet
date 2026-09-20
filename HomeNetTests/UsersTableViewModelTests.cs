@@ -1,10 +1,4 @@
-﻿using HomeNetCore.Events;
-using HomeNetCore.Interfaces;
-using HomeNetCore.Models;
-using HomeNetPresentation.ViewModels;
-using HomeNetServices.Routing;
-
-namespace HomeNet.Tests
+﻿namespace HomeNet.Tests
 {
     //public class UsersTableViewModelTests
     //{

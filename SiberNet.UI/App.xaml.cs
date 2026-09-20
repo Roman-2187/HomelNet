@@ -27,6 +27,7 @@ namespace SiberNet.UI
 
             try
             {
+
                 // Наш глобальный рубильник режимов бэкенда (Real / Local / Mock)
                 BackendMode currentMode = BackendMode.Real;
 

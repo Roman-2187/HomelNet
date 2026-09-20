@@ -1,11 +1,11 @@
 ﻿
 using System.Windows.Controls;
 
-namespace WpfHomeNet.Controls
+namespace SiberNet.UI.Controls
 {
-    public partial class UsersTableView : UserControl
+    public partial class UsersTableViewControl : UserControl
     {
-        public UsersTableView()
+        public UsersTableViewControl()
         {
             InitializeComponent();          
         }

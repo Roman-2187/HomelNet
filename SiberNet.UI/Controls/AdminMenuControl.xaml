@@ -8,7 +8,7 @@
     mc:Ignorable="d" 
     d:DesignHeight="500" d:DesignWidth="740"
     Margin="0,10,0,0" 
-
+xmlns:controls="clr-namespace:SiberNet.UI.Controls" 
 
 
    
@@ -24,66 +24,64 @@
             <ColumnDefinition Width="160"/>
             <!-- Лево: Пульт кнопок -->
             <ColumnDefinition Width="*"/>
-            <!-- Право: Рабочая зона -->
+            <!--+ Право: Рабочая зона -->
         </Grid.ColumnDefinitions>
 
         <!-- ЛЕВАЯ ЧАСТЬ: Киберпанк боковая панель кнопок -->
-        <!-- Натянули твой фирменный CyberpunkImageStyle карточки -->
         <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}" Tag="6" Margin="0,0,10,10">
             <StackPanel Margin="5" Background="Transparent">
 
                 <Label Content="АДМИН ПАНЕЛЬ" 
-                       FontWeight="Bold" 
-                       Foreground="#FFB300"
-                       HorizontalAlignment="Center" 
-                       Margin="0,5,0,15"/>
+                    FontWeight="Bold" 
+                    Foreground="#FFB300"
+                    HorizontalAlignment="Center" 
+                    Margin="0,5,0,15"/>
 
-                <!-- 📢 Кнопка: Показать Users (Биндится к ShowUserTableCommand) -->
+                <!-- 📢 Кнопка: Показать Users -->
                 <Button Content="{Binding TableButtonText, FallbackValue='Показать users'}" 
-                        Command="{Binding ShowUserTableCommand}"
-                        Style="{StaticResource OrangeDefaultButtonStyle}"
-                        Margin="0,3"/>
+                     Command="{Binding ShowUserTableCommand}"
+                     Style="{StaticResource OrangeDefaultButtonStyle}"
+                     Margin="0,3"/>
 
-                <!-- 📢 Кнопка: Показать Логи (Биндится к ShowLogPanelCommand) -->
-                <Button Content="{Binding ToggleButtonText, FallbackValue='Показать лог'}"
-                        Command="{Binding ShowLogPanelCommand}" 
-                        Style="{StaticResource OrangeDefaultButtonStyle}"
-                        Margin="0,3"/>
+                <!-- 📢 Кнопка: Показать Логи -->
+                <Button Content="{Binding ToggleButtonText, FallbackValue='Показать log'}"
+                     Command="{Binding ShowLogPanelCommand}" 
+                     Style="{StaticResource OrangeDefaultButtonStyle}"
+                     Margin="0,3"/>
 
-                <!-- 📢 Кнопка: Удалить юзера (Биндится к ShowDeleteFormCommand) -->
+                <!-- 📢 Кнопка: Удалить юзера -->
                 <Button Content="Удалить юзера"
-                        Command="{Binding ShowDeleteFormCommand}"
-                        Style="{StaticResource OrangeDefaultButtonStyle}"
-                        Margin="0,3"/>
+                     Command="{Binding ShowDeleteFormCommand}"
+                     Style="{StaticResource OrangeDefaultButtonStyle}"
+                     Margin="0,3"/>
 
-                <!-- 📢 Кнопка: Тестовый Сидинг данных (Биндится к SeedDataCommand) -->
+                <!-- 📢 Кнопка: Тестовый Сидинг данных -->
                 <Button Content="Сидинг Users" 
-                        Command="{Binding SeedDataCommand}"
-                        Style="{StaticResource OrangeDefaultButtonStyle}"
-                        Margin="0,3"/>
+                     Command="{Binding SeedDataCommand}"
+                     Style="{StaticResource OrangeDefaultButtonStyle}"
+                     Margin="0,3"/>
             </StackPanel>
         </ContentControl>
 
-        <!-- ПРАВАЯ ЧАСТЬ: Динамическая рабочая зона (Слой переключения панелей админки) -->
+        <!-- ПРАВАЯ ЧАСТЬ: Динамическая рабочая зона -->
         <Grid Grid.Column="1" Margin="5,0,0,10">
 
-            <!-- 🎭 РЕАКТИВНЫЙ ВНУТРЕННИЙ РОУТЕР АДМИНКИ НА ТРИГГЕРАХ! -->
-            <!-- Каждая панель загорается ТОЛЬКО под свой энум из AdminSubTab -->
-
-            <!-- Блок А: Таблица пользователей -->
+            <!-- Блок А: Настоящая таблица пользователей -->
             <Border x:Name="UserTableContainer" Background="Transparent">
                 <Border.Style>
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding CurrentAdminTab}" Value="UserTable">
+                            <!-- 🎯 НАСТРОИЛИ ТРИГГЕР: Следим за энумом через NavigationStateManager -->
+                            <DataTrigger Binding="{Binding Navigation.CurrentAdminTab}" Value="UserTable">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </Border.Style>
-                <!-- Тут будет сидеть твоя таблица DataGrid с юзерами, Иван! -->
-                <TextBlock Text="[ТАБЛИЦА ПОЛЬЗОВАТЕЛЕЙ ИЗ SQLite / POSTGRES]" Foreground="#00F0FF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                <!-- 🦾 ВШИЛИ ТВОЙ КОНТРОЛЬ: Теперь здесь отображается реальная таблица с ItemsControl -->
+                <controls:UsersTableViewControl/>
             </Border>
 
             <!-- Блок Б: Панель Логов -->
@@ -92,13 +90,12 @@
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding CurrentAdminTab}" Value="LogPanel">
+                            <DataTrigger Binding="{Binding Navigation.CurrentAdminTab}" Value="LogPanel">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </Border.Style>
-                <!-- Тут будут сидеть наши логи админки! -->
                 <TextBlock Text="[ОТЛАДОЧНЫЕ ЛОГИ БЭКЕНДА]" Foreground="#FFB300" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
 
@@ -108,7 +105,7 @@
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding CurrentAdminTab}" Value="DeleteUserForm">
+                            <DataTrigger Binding="{Binding Navigation.CurrentAdminTab}" Value="DeleteUserForm">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
@@ -119,5 +116,7 @@
 
         </Grid>
     </Grid>
+
+
 
 </UserControl>  

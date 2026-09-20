@@ -55,6 +55,16 @@ namespace HomeNetPresentation.ViewModels
             {
                 EventBus.Publish(this, new IStatusBarViewModel.TextChanged($"Ошибка синхронизации данных: {ex.Message}"));
             }
+
+
+
+
+            // 🎯 ЛОВИМ ТОТ ЖЕ ПИНОК АДМИНА: Перезапускаем честную выгрузку из БД!
+            EventBus.Subscribe<IAdminMenuViewModel.UserTableRequested>(async msg =>
+            {
+                // Вызываем твой метод, который очищает коллекцию и закидывает свежие данные
+                await InitializeDataAsync();
+            });
         }
 
         private void InitializeBusSubscriptions()

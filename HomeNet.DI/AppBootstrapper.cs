@@ -40,19 +40,29 @@ namespace HomeNet.DI
             services.AddSingleton<AppCrashLogger>(provider => new AppCrashLogger("crash_debug.txt"));
 
             // Логгер-менеджер для админки
+            // Внутри AppBootstrapper.cs переписываем блок фабрики ILogQueueManager:
             services.AddSingleton<ILogQueueManager>(provider =>
             {
                 var uiManager = new LogQueueManager(0);
                 var crashLogger = provider.GetRequiredService<AppCrashLogger>();
 
+                // Настраиваем тройной снайперский шлюз вывода! 🎯
                 provider.GetRequiredService<ILogger>().SetOutput((msg, level, ns) =>
                 {
+                    // 1. Сквозная жесткая запись на диск в .log
                     crashLogger.WriteImmediately(msg, level);
+
+                    // 2. Пуш в UI админки для посимвольной анимации на экране
                     uiManager.WriteLog(msg, level, ns);
+
+                    // 3. 🔥 ВЫСТРЕЛ ПРЯМО В ЖИВУЮ КОНСОЛЬ WINDOWS!
+                    // И так как в строке уже лежат ANSI-коды, консоль сама раскрасит её в сочные цвета!
+                    Console.WriteLine(msg);
                 });
 
                 return uiManager;
             });
+
 
             // Контекст БД принимает строки подключения извне
             services.AddSingleton(provider =>

@@ -17,6 +17,8 @@ namespace HomeNetPresentation.ViewModels
     {
         private readonly IRegistrationService _registerService;
         private readonly ILogger _logger;
+        // 🧠 Сохраняем прямую ссылку на наш манипулятор состояний
+      
 
         [ObservableProperty] private UserEntity _userData = new();
 
@@ -24,6 +26,7 @@ namespace HomeNetPresentation.ViewModels
         {
             _registerService = registerService ?? throw new ArgumentNullException(nameof(registerService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            
 
             InitializeInitialHints();
 
@@ -49,7 +52,7 @@ namespace HomeNetPresentation.ViewModels
             SubmitButtonText = "Зарегистрироваться";
         }
 
-        public  void ResetForm()
+        public void ResetForm()
         {
             UserData = new();
             StatusMessage = string.Empty;
@@ -75,8 +78,13 @@ namespace HomeNetPresentation.ViewModels
                     SubmitButtonText = "Готово!";
                     _logger.LogInformation($"[RegisterVM] Пользователь {verdict.VerifiedUser?.Email ?? UserData.Email} успешно прошёл СУБД.");
 
-                    // Публикуем добавление, навигатор поймает и в два этапа пропихнет юзера в мессенджер! ✨
-                    EventBus.Publish(this, new IUsersTableViewModel.Added(verdict.VerifiedUser ?? UserData));
+                    var finalUser = verdict.VerifiedUser ?? UserData;
+
+                    // 🎯 ОДИН СИНХРОННЫЙ ВЫЗОВ: Манипулятор мгновенно переключает все энумы, отправляя нового юзера в мессенджер!
+                    Navigation.SetClientZone(finalUser);
+
+                    // Публикуем добавление в автобус для обновления списков и локальной зачистки полей
+                    EventBus.Publish(this, new IUsersTableViewModel.Added(finalUser));
                 }
                 else
                 {
@@ -91,14 +99,23 @@ namespace HomeNetPresentation.ViewModels
             }
         }
 
+
+
+
         [RelayCommand]
         private void Cancel()
         {
             ResetForm();
             InitializeInitialHints();
-            // Отмена уводит роутер обратно в чистый ноль стартового экрана
+
+            // 1. Сбрасываем глобальный автомат состояний
+            Navigation.SetStartZone();
+
+            // 2. 📢 Пуляем точечный сигнал в автобус! Шапка его поймает и сбросит свои кнопки
             EventBus.Publish(this, new IMainViewModel.ZoneChanged(MainTab.None));
         }
+
+
 
         #endregion
     }

@@ -1,6 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using HomeNet.DI;
+﻿using HomeNet.DI;
 using HomeNetCore.Enums;
+using HomeNetCore.Interfaces.OutputLogging;
+using Microsoft.Extensions.DependencyInjection;
 using SiberNet.UI.Infrastructure.Animators;
 
 namespace SiberNet.UI.Infrastructure
@@ -31,6 +32,13 @@ namespace SiberNet.UI.Infrastructure
             // 3. Собираем ОДИН монолитный контейнер на всё приложение
             IServiceProvider provider = fullCollection.BuildServiceProvider();
 
+
+
+            // 🔥 ШАГ 1: ПЕРВЫМ ДЕЛОМ БУДИМ МЕНЕДЖЕР ЛОГОВ! 
+            // Это мгновенно выполнит фабрику в AppBootstrapper и прикрутит запись на диск!
+            provider.GetRequiredService<ILogQueueManager>();
+
+          
 
             // 🔥 ВОТ ОНА — ЗАПЛАТКА ВЕКА! Говорим бэкенд-локатору использовать наш общий куб!
             AppBootstrapper.SetProvider(provider);

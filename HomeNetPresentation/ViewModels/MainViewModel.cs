@@ -6,7 +6,6 @@ using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
 using HomeNetPresentation.Services;
-using System;
 
 namespace HomeNetPresentation.ViewModels
 {
@@ -26,6 +25,9 @@ namespace HomeNetPresentation.ViewModels
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             InitializeBusSubscriptions();
+
+            // 🔥 БЛИН-ТЕСТ: Заставляем бэкенд намертво бахнуть строкой в логгер при старте!
+            _logger.LogError("=== [СИСТЕМА SIBERNET ЗАПУЩЕНА]: ТЕСТ КИБЕРПАНК ЛОГГЕРА ===");
         }
 
         private void InitializeBusSubscriptions()

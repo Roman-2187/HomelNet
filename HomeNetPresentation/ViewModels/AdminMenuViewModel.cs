@@ -16,8 +16,9 @@ namespace HomeNetPresentation.ViewModels
         // 🔒 ИЗОЛИРОВАННЫЕ ПРИВАТНЫЕ ПОЛЯ
         private readonly IUserService _adminUserService;
         private readonly ILogQueueManager _adminLogQueueManager;
+        
 
-        // 🎛️ РУБИЛЬНИК 1: Главный макро-экран админки
+        // 🎛️ РУБИЛЬНИК 1: Локальная копия для реактивного изменения текста кнопок
         [ObservableProperty]
         private AdminSubTab _currentAdminTab = AdminSubTab.None;
 
@@ -33,28 +34,53 @@ namespace HomeNetPresentation.ViewModels
         [ObservableProperty] private string _tableButtonText = "Показать users";
 
         // Конструктор — принимает чистый IEventBus из Ядра
-        public AdminMenuViewModel(IUserService userService, ILogQueueManager logQueueManager, IEventBus eventBus, NavigationStateManager navigation) : base(eventBus, navigation)
+        // Больше не нужно объявлять приватное поле _navigationStateManager! 
+        // Конструктор просто пробрасывает навигатор в base:
+        public AdminMenuViewModel(IUserService userService, ILogQueueManager logQueueManager, IEventBus eventBus, NavigationStateManager navigation)
+            : base(eventBus, navigation)
         {
             _adminUserService = userService ?? throw new ArgumentNullException(nameof(userService));
             _adminLogQueueManager = logQueueManager ?? throw new ArgumentNullException(nameof(logQueueManager));
+
+            _eventBus.Subscribe<IAuthenticationViewModel.UserLogged>(msg =>
+            {
+                Navigation.SetAdminZone(); // 🎯 Используем свойство из базы!
+                CurrentAdminTab = AdminSubTab.None;
+            });
         }
 
-        #region 🦾 ОДНОСТРОЧНЫЕ КОМАНДЫ ПЕРЕКЛЮЧЕНИЯ ПАНЕЛЕЙ (Toolkit)
-
-        // 📢 Переключение на таблицу пользователей
         [RelayCommand]
-        private void ShowUserTable() => CurrentAdminTab = AdminSubTab.UserTable;
+        private void ShowUserTable()
+        {
+            Navigation.ToggleAdminSubTab(AdminSubTab.UserTable); // 🎯 Чисто и без дубликатов полей!
+            CurrentAdminTab = Navigation.CurrentAdminTab;
 
-        // 📢 Переключение на форму удаления
-        [RelayCommand]
-        private void ShowDeleteForm() => CurrentAdminTab = AdminSubTab.DeleteUserForm;
+            if (CurrentAdminTab == AdminSubTab.UserTable)
+            {
+                _eventBus.Publish(this, new IAdminMenuViewModel.UserTableRequested());
+            }
+        }
 
-        // 📢 Переключение на панель отладочных логов
+
+        // 📢 Кнопка: Показать/Скрыть панель логов
         [RelayCommand]
         private void ShowLogPanel()
         {
-            CurrentAdminTab = AdminSubTab.LogPanel;
-            _adminLogQueueManager.SetReady();
+            Navigation.ToggleAdminSubTab(AdminSubTab.LogPanel);
+            CurrentAdminTab = Navigation.CurrentAdminTab;
+
+            if (CurrentAdminTab == AdminSubTab.LogPanel)
+            {
+                _adminLogQueueManager.SetReady();
+            }
+        }
+
+        // 📢 Кнопка: Показать/Скрыть форму удаления
+        [RelayCommand]
+        private void ShowDeleteForm()
+        {
+            Navigation.ToggleAdminSubTab(AdminSubTab.DeleteUserForm);
+            CurrentAdminTab = Navigation.CurrentAdminTab;
         }
 
         // 📢 Переключение внутренних микро-фильтров логов (Warning/Error/Critical)
@@ -62,8 +88,6 @@ namespace HomeNetPresentation.ViewModels
         private void SwitchLogFilter(LogLevelFilter targetFilter)
         {
             CurrentLogFilter = targetFilter;
-
-            // 🔥 ПОПРАВИЛИ: Сигнал в строку состояния через новый короткий рекорд хозяина
             _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"[Лог-Фильтр]: Установлен режим {targetFilter}"));
         }
 
@@ -71,20 +95,21 @@ namespace HomeNetPresentation.ViewModels
         [RelayCommand]
         private void ShowEventInspector()
         {
-            CurrentAdminTab = AdminSubTab.EventInspector;
+            Navigation.ToggleAdminSubTab(AdminSubTab.EventInspector);
+            CurrentAdminTab = Navigation.CurrentAdminTab;
 
-            if (EventBus is IEventBus concreteBus)
+            if (CurrentAdminTab == AdminSubTab.EventInspector)
             {
-                // Подтягиваем сгенерированный отчет из нашего EventBusInspector
-                EventInspectorReport = concreteBus.GenerateInspectorReport();
+                if (EventBus is IEventBus concreteBus)
+                {
+                    EventInspectorReport = concreteBus.GenerateInspectorReport();
+                }
+                else
+                {
+                    EventInspectorReport = "🧠 Ошибка: Не удалось подключиться к объектному графу шины событий.";
+                }
+                _eventBus.Publish(this, new IStatusBarViewModel.TextChanged("Объектный граф шины событий успешно обновлен"));
             }
-            else
-            {
-                EventInspectorReport = "🧠 Ошибка: Не удалось подключиться к объектному графу шины событий.";
-            }
-
-            // 🔥 ПОПРАВИЛИ: Короткий рекорд
-            _eventBus.Publish(this, new IStatusBarViewModel.TextChanged("Объектный граф шины событий успешно обновлен"));
         }
 
         // 📢 СИДИНГ ТЕСТОВЫХ ДАННЫХ
@@ -102,8 +127,6 @@ namespace HomeNetPresentation.ViewModels
                     if (!emailExists)
                     {
                         await _adminUserService.AddUserSecureAsync(user);
-
-                        // 🔥 ПОПРАВИЛИ: Сигнал добавления юзера улетел через короткий рекорд таблицы
                         _eventBus.Publish(this, new IUsersTableViewModel.Added(user));
                         addedCount++;
                     }
@@ -113,21 +136,19 @@ namespace HomeNetPresentation.ViewModels
                     ? $"Успешно добавлено {addedCount} тестовых юзеров."
                     : "Все пользователи уже добавлены!";
 
-                // 🔥 ПОПРАВИЛИ: Короткий рекорд
                 _eventBus.Publish(this, new IStatusBarViewModel.TextChanged(statusReport));
             }
             catch (Exception ex)
             {
-                // 🔥 ПОПРАВИЛИ: Короткий рекорд
                 _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"Ошибка генерации: {ex.Message}"));
             }
         }
 
-        #endregion
+       
 
         #region 🧠 РЕАКТИВНЫЕ ПЕРЕХВАТЧИКИ ТЕКСТА КНОПОК
 
-        // Следит за изменением главного макро-энума и автоматически меняет подписи кнопок
+        // Следит за изменением локального макро-энума и автоматически меняет подписи кнопок
         partial void OnCurrentAdminTabChanged(AdminSubTab value)
         {
             ToggleButtonText = value == AdminSubTab.LogPanel ? "Скрыть лог" : "Показать лог";
@@ -135,8 +156,6 @@ namespace HomeNetPresentation.ViewModels
 
             // Отправляем чистый статус в строку состояния
             string statusText = value == AdminSubTab.None ? "Панель управления очищена" : $"Переключение на panel: {value}";
-
-            // 🔥 ПОПРАВИЛИ: Короткий рекорд
             _eventBus.Publish(this, new IStatusBarViewModel.TextChanged(statusText));
         }
 

@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Enums;
+using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Diagnostics;
@@ -10,14 +11,14 @@ using HomeNetCore.Models;
 using HomeNetCore.Models.Validation;
 using HomeNetPresentation.Services;
 
-
-
 namespace HomeNetPresentation.ViewModels
 {
     public partial class AuthenticationViewModel : FormViewModelBase
     {
         private readonly IAuthenticateService _loginService;
         private readonly ILogger _logger;
+        // 🧠 Сохраняем прямую ссылку на наш манипулятор состояний
+        private readonly NavigationStateManager _navigationStateManager;
 
         [ObservableProperty] private UserEntity _userData = new();
 
@@ -25,14 +26,14 @@ namespace HomeNetPresentation.ViewModels
         {
             _loginService = loginService ?? throw new ArgumentNullException(nameof(loginService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _navigationStateManager = navigation ?? throw new ArgumentNullException(nameof(navigation));
 
             InitializeInitialHints();
 
-            // Перехват успешного входа: очищаем поля для следующего раза, 
-            // а переключением экрана теперь командует чистый энум навигации! 🛸
+            // Локальная зачистка полей после успешного входа (автобус теперь дергаем только для этого!)
             EventBus.Subscribe<IAuthenticationViewModel.UserLogged>(async msg =>
             {
-                await Task.Delay(500); // Небольшая задержка для плавности
+                await Task.Delay(500); // Небольшая задержка для плавности анимации
                 ResetForm();
                 InitializeInitialHints();
             });
@@ -49,7 +50,7 @@ namespace HomeNetPresentation.ViewModels
             StatusMessage = string.Empty;
         }
 
-        public  void ResetForm()
+        public void ResetForm()
         {
             UserData = new();
             StatusMessage = string.Empty;
@@ -76,8 +77,13 @@ namespace HomeNetPresentation.ViewModels
                     SubmitButtonText = "Входим...";
                     _logger.LogInformation($"[AuthVM] Пользователь {verdict.User?.Email ?? UserData.Email} успешно авторизован.");
 
-                    // Стреляем короткой ракетой в автобус, роутер перехватит её и откроет ClientZone! 🚀
-                    EventBus.Publish(this, new IAuthenticationViewModel.UserLogged(verdict.User ?? UserData));
+                    var finalUser = verdict.User ?? UserData;
+
+                    // 🎯 ОДИН СИНХРОННЫЙ ВЫЗОВ: Манипулятор мгновенно переключает все энумы в мессенджер!
+                    _navigationStateManager.SetClientZone(finalUser);
+
+                    // Оставляем выстрел в автобус ТОЛЬКО для того, чтобы сработал локальный сброс полей (ResetForm)
+                    EventBus.Publish(this, new IAuthenticationViewModel.UserLogged(finalUser));
                 }
                 else
                 {
@@ -97,9 +103,14 @@ namespace HomeNetPresentation.ViewModels
         {
             ResetForm();
             InitializeInitialHints();
-            // Сигнал отмены просто шлёт команду возврата в абсолютный ноль навигации! 🧼
-            EventBus.Publish(this, new IMainViewModel.ZoneChanged(HomeNetCore.Enums.Navigation.MainTab.None));
+
+            // 1. Сбрасываем глобальный автомат состояний
+            Navigation.SetStartZone();
+
+            // 2. 📢 Пуляем точечный сигнал в автобус! Шапка его поймает и сбросит свои кнопки
+            EventBus.Publish(this, new IMainViewModel.ZoneChanged(MainTab.None));
         }
+
 
         #endregion
     }
