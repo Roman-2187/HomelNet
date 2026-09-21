@@ -18,8 +18,7 @@ namespace SiberNet.UI.Infrastructure
         public ChatViewModel ChatViewModel => AppBootstrapper.GetViewModel<ChatViewModel>();
 
         public AdminMenuViewModel AdminMenuViewModel => AppBootstrapper.GetViewModel<AdminMenuViewModel>();
-
-        // 🔥 ВОТ ОНО! Возвращаем на место главный контейнер мессенджера!
+  
         public UserDashboardViewModel UserDashboardViewModel => AppBootstrapper.GetViewModel<UserDashboardViewModel>();
 
         public TitleBarViewModel TitleBarViewModel => AppBootstrapper.GetViewModel<TitleBarViewModel>();

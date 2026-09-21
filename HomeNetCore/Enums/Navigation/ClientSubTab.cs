@@ -7,9 +7,9 @@ namespace HomeNetCore.Enums.Navigation
     // Внутренние вкладки обычной зоны пользователя
     public enum ClientSubTab 
     { 
-        Authentication,
-        Registration,
-        Messenger,
-        None
+        None,
+        Profile,
+        Messenger
+       
     }
 }

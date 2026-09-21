@@ -28,7 +28,7 @@ namespace SiberNet.UI
             try
             {
 
-                // Наш глобальный рубильник режимов бэкенда (Real / Local / Mock)
+                
                 BackendMode currentMode = BackendMode.Real;
 
                 // 1. Строки подключения
@@ -43,7 +43,7 @@ namespace SiberNet.UI
                 if (currentMode == BackendMode.Real)
                 {
                     var dbCore = _serviceProvider.GetRequiredService<DbContextContainer>();
-                    await dbCore.InitializeAsync(DatabaseType.PostGreSQL);
+                    await dbCore.InitializeAsync(DatabaseType.SQLite);
                 }
             }
             catch (Exception ex)

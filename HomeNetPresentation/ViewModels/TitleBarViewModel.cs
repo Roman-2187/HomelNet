@@ -15,8 +15,8 @@ namespace HomeNetPresentation.ViewModels
         [ObservableProperty] private ClientSubTab _currentClientTab = ClientSubTab.None;
         [ObservableProperty] private bool _isGlobalLoggerVisible = false;
 
-        public TitleBarViewModel(IEventBus eventBus, NavigationStateManager navigationStateManager)
-      : base(eventBus, navigationStateManager)
+        public TitleBarViewModel(IEventBus eventBus, NavigationStateManager navigationStateManager): base(eventBus, navigationStateManager)
+      
         {
             // 🎯 Слушаем автобус через твой новый интерфейс!
             _eventBus.Subscribe<ITitleBarViewModel.ZoneChanged>(msg =>
@@ -25,23 +25,10 @@ namespace HomeNetPresentation.ViewModels
                 CurrentMainTab = msg.TargetTab;
                 CurrentClientTab = msg.ClientTab;
             });
-
-
-            // 🎯 ВОТ СЮДА ДОБАВЛЯЕМ СНАЙПЕРСКИЙ ПЕРЕХВАТ ВЫХОДА ИЗ МЕНЮ!
-            _eventBus.Subscribe<ITitleBarViewModel.LogoutRequested>(msg =>
-            {
-                Logout(); // Вызываем твой готовый метод, который чистит сессию [8]
-            });
+            
         }
 
-
-
-
-        private void SyncState()
-        {
-            CurrentMainTab = Navigation.CurrentMainZone;
-            CurrentClientTab = Navigation.CurrentClientTab;
-        }
+    
 
         // 🛠️ КНОПКА: Админка
         [RelayCommand]

@@ -29,13 +29,19 @@ namespace HomeNetPresentation.ViewModels
             // _eventBus.Publish(this, new IMainViewModel.OpenProfileRequest());
         }
 
+      
+
+
         [RelayCommand]
         private void Logout()
         {
-            // Никаких новых рекордов! Публикуем проверенную макро-навигацию
-            // Передаем MainTab.None (или MainTab.StartZone / что у тебя сбрасывает в гостя)
+            IsMenuOpen = false; // Схлопываем шторку
+
+            // 🚀 СТРЕЛЯЕМ СРАЗУ В ЦЕЛЬ! 
+            // Напрямую публикуем макро-навигацию, которую твой Навигатор/Шапка уже умеют обрабатывать.
             _eventBus.Publish(this, new ITitleBarViewModel.MacroNavigation(MainTab.None));
         }
+
 
     }
 }

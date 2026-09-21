@@ -12,15 +12,7 @@ namespace HomeNetCore.Interfaces.ViewModels
 
         // 📢 Ответный сигнал: Навигатор переключил зону, шапка — обновляй UI!
         public record ZoneChanged(MainTab TargetTab, ClientSubTab ClientTab);
-
-        // Было: public record ToggleAnimation(IMainViewModel MainViewModel);
-        // Стало:
+ 
         public record ToggleAnimation(bool IsVisible);
-
-
-        // 🟢 Вот сюда добавляем наше событие выхода
-        public record LogoutRequested();
-
-
     }
 }
