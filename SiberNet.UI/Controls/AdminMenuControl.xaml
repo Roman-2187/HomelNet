@@ -1,5 +1,5 @@
 ﻿<UserControl
-    x:Class="SiberNet.UI.Controls.AdminMenu"
+    x:Class="SiberNet.UI.Controls.AdminMenuViewControl"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -7,7 +7,7 @@
     Background="Transparent" 
     mc:Ignorable="d" 
     d:DesignHeight="500" d:DesignWidth="740"
-    Margin="0,10,0,0" 
+    Margin="0,0,0,0" 
 xmlns:controls="clr-namespace:SiberNet.UI.Controls" 
 
 
@@ -28,14 +28,14 @@ xmlns:controls="clr-namespace:SiberNet.UI.Controls"
         </Grid.ColumnDefinitions>
 
         <!-- ЛЕВАЯ ЧАСТЬ: Киберпанк боковая панель кнопок -->
-        <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}" Tag="6" Margin="0,0,10,10">
-            <StackPanel Margin="5" Background="Transparent">
+        <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}" Tag="6" Margin="0,0,5,0">
+            <StackPanel Margin="0" Background="Transparent">
 
                 <Label Content="АДМИН ПАНЕЛЬ" 
                     FontWeight="Bold" 
                     Foreground="#FFB300"
                     HorizontalAlignment="Center" 
-                    Margin="0,5,0,15"/>
+                    Margin="5"/>
 
                 <!-- 📢 Кнопка: Показать Users -->
                 <Button Content="{Binding TableButtonText, FallbackValue='Показать users'}" 
@@ -64,7 +64,7 @@ xmlns:controls="clr-namespace:SiberNet.UI.Controls"
         </ContentControl>
 
         <!-- ПРАВАЯ ЧАСТЬ: Динамическая рабочая зона -->
-        <Grid Grid.Column="1" Margin="5,0,0,10">
+        <Grid Grid.Column="1" Margin="0,0,0,0">
 
             <!-- Блок А: Настоящая таблица пользователей -->
             <Border x:Name="UserTableContainer" Background="Transparent">

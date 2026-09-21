@@ -1,122 +1,169 @@
-﻿<UserControl x:Class="SiberNet.UI.Controls.RegistrationViewControl"
-  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
- xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
- xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
- xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"            
- xmlns:converter="clr-namespace:SiberNet.UI.Converters"
- Visibility="{Binding ControlVisibility,
-    RelativeSource={RelativeSource AncestorType=UserControl}}"
- x:Name="RegistrationControl"
- mc:Ignorable="d" 
- Background="Transparent"
- BorderThickness="0"   
- Height="Auto" 
- Width="600"
- 
-            d:Opacity="1" >
+﻿<UserControl
+     x:Class="SiberNet.UI.Controls.RegistrationViewControl"
+     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"            
+     xmlns:converter="clr-namespace:SiberNet.UI.Converters"
+     mc:Ignorable="d" 
+     Background="Transparent"
+     BorderThickness="0"   
+     Height="Auto" 
+     Width="600"
+     d:Opacity="1" >
 
+    <UserControl.Resources>
+        <!-- 🎨 СТИЛЬ ДЛЯ ТЕКСТА ПОДСКАЗОК -->
+        <Style x:Key="ValidationLabelStyle" TargetType="Label">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="#00F0FF"/>
+            <!-- Бирюзовый инфо -->
 
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding DataContext.State,
+                    RelativeSource={RelativeSource Self}}" Value="Error">
+                    <Setter Property="Foreground" Value="#FF0055"/>
+                    <!-- Красный -->
+                </DataTrigger>
+                <DataTrigger Binding="{Binding DataContext.State,
+                    RelativeSource={RelativeSource Self}}" Value="Success">
+                    <Setter Property="Foreground" Value="#00FF66"/>
+                    <!-- Зеленый -->
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
 
-
-
-
-    <ContentControl  Padding="0" Style="{StaticResource CyberpunkImageChaildStyle}" >
+        <!-- 🎨 НОВЫЙ СТИЛЬ ДЛЯ ДИНАМИЧЕСКИХ РАМОК TEXTBOX -->
+        <!-- Наследуется от твоего базового стиля, чтобы не ломать киберпанк-дизайн -->
+        <Style x:Key="ValidationTextBoxStyle" TargetType="TextBox" 
+               BasedOn="{StaticResource NeonTextBoxStyle}">
+            <Style.Triggers>
+                <!-- 🚨 ТРИГГЕР НА ОШИБКУ: делаем рамку толще и красим в красный неон -->
+                <DataTrigger Binding="{Binding DataContext.State,
+                    RelativeSource={RelativeSource AncestorType=StackPanel}}" Value="Error">
+                    <Setter Property="BorderBrush" Value="#FF0055"/>
+                    <Setter Property="BorderThickness" Value="1.5"/>
+                </DataTrigger>
+                <!-- 🍏 ТРИГГЕР НА УСПЕХ: подсвечиваем тонким зеленым неоном -->
+                <DataTrigger Binding="{Binding DataContext.State,
+                    RelativeSource={RelativeSource AncestorType=StackPanel}}" Value="Success">
+                    <Setter Property="BorderBrush" Value="#00FF66"/>
+                    <Setter Property="BorderThickness" Value="1"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+    <ContentControl Padding="0" Style="{StaticResource CyberpunkImageChaildStyle}">
         <ContentControl.Tag>
             <CornerRadius>6</CornerRadius>
         </ContentControl.Tag>
+
         <Grid Margin="50,30,50,20" Background="Transparent">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
+                <!-- Строка 0: Имя пользователя -->
                 <RowDefinition Height="Auto"/>
+                <!-- Строка 1: Email -->
                 <RowDefinition Height="Auto"/>
+                <!-- Строка 2: Пароль -->
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="45"/>
+                <!-- Строка 3: Повтор пароль -->
+                <RowDefinition Height="70"/>
+                <!-- Строка 4: Панель кнопок (выделили четкое место!) -->
             </Grid.RowDefinitions>
 
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="110*"/>
-                <ColumnDefinition Width="37*"/>
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- USER NAME -->
-            <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,0,0,5" Grid.ColumnSpan="2">
+            <!-- 0️⃣ USER NAME -->
+            <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,0,0,5"
+                    DataContext="{Binding ValidationResults[NameType]}">
                 <Label Content="Имя пользователя:" VerticalAlignment="Center" Foreground="#FFB300"/>
-                <TextBox
-                Style="{StaticResource NeonTextBoxStyle}"
-                Text="{Binding UserData.FirstName}" Background="#66ABC8AB"
-               />
 
-                <Label Content="{Binding ValidationResults[NameType].Message}"
-                
-                FontSize="11" HorizontalAlignment="Center"/>
+                <TextBox Style="{StaticResource ValidationTextBoxStyle}" 
+                     Text="{Binding DataContext.UserData.FirstName,
+                    RelativeSource={RelativeSource AncestorType=UserControl}}" 
+                     Background="#66ABC8AB"/>
+
+                <Label Content="{Binding Message}" 
+                   Style="{StaticResource ValidationLabelStyle}"/>
             </StackPanel>
 
-            <!-- EMAIL -->
-            <StackPanel Orientation="Vertical" Margin="0,89,0,5" Grid.ColumnSpan="2" Grid.RowSpan="2">
-                <Label Content="Email:" VerticalAlignment="Center" Foreground="#FFB300"  />
-                <TextBox Background="#66ABC8AB"
-                Style="{StaticResource NeonTextBoxStyle}"
-                Text="{Binding UserData.Email}"
-                />
+            <!-- 1️⃣ EMAIL -->
+            <StackPanel Grid.Row="1" Orientation="Vertical" Margin="0,0,0,5"
+                    DataContext="{Binding ValidationResults[EmailType]}">
+                <Label Content="Email:" VerticalAlignment="Center" Foreground="#FFB300"/>
 
-                <Label Content="{Binding ValidationResults[EmailType].Message}"  
-                
-                FontSize="11" HorizontalAlignment="Center"/>
+                <TextBox Background="#66ABC8AB" 
+                     Style="{StaticResource ValidationTextBoxStyle}" 
+                     Text="{Binding DataContext.UserData.Email,
+                    RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+
+                <Label Content="{Binding Message}" 
+                   Style="{StaticResource ValidationLabelStyle}"/>
             </StackPanel>
 
-            <!-- PASSWORD -->
-            <StackPanel Grid.Row="2" Orientation="Vertical" Margin="0,0,0,5" Grid.ColumnSpan="2">
+            <!-- 2️⃣ PASSWORD -->
+            <StackPanel Grid.Row="2" Orientation="Vertical" Margin="0,0,0,5"
+                    DataContext="{Binding ValidationResults[PasswordType]}">
                 <Label Content="Пароль:" VerticalAlignment="Center" Foreground="#FFB300"/>
-                <TextBox Background="#66ABC8AB"
-                Style="{StaticResource NeonTextBoxStyle}"
-                Text="{Binding UserData.Password}"
-                
-               />
 
-                <Label Content="{Binding ValidationResults[PasswordType].Message}"
-                
-                FontSize="11" HorizontalAlignment="Center"/>
+                <TextBox Background="#66ABC8AB" 
+                     Style="{StaticResource ValidationTextBoxStyle}" 
+                     Text="{Binding DataContext.UserData.Password,
+                    RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+
+                <Label Content="{Binding Message}" 
+                   Style="{StaticResource ValidationLabelStyle}"/>
             </StackPanel>
 
-            <!-- CONFIRMED PASSWORD -->
-            <StackPanel Grid.Row="3" Orientation="Vertical" Margin="0,0,0,5" Grid.ColumnSpan="2">
+            <!-- 3️⃣ CONFIRMED PASSWORD -->
+            <StackPanel Grid.Row="3" Orientation="Vertical" Margin="0,0,0,5"
+                    DataContext="{Binding ValidationResults[ConfirmedPasswordType]}">
                 <Label Content="Повторите пароль:" VerticalAlignment="Center" Foreground="#FFB300"/>
-                <TextBox Background="#66ABC8AB"
-                Style="{StaticResource NeonTextBoxStyle}"
-                Text="{Binding UserData.ConfirmPassword}"
-                />
 
-                <Label Content="{Binding ValidationResults[ConfirmedPasswordType].Message}"
-                
-                FontSize="11" HorizontalAlignment="Center"/>
+                <TextBox Background="#66ABC8AB" 
+                     Style="{StaticResource ValidationTextBoxStyle}" 
+                     Text="{Binding DataContext.UserData.ConfirmPassword,
+                    RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+
+                <Label Content="{Binding Message}" 
+                   Style="{StaticResource ValidationLabelStyle}"/>
             </StackPanel>
 
-            <!-- НИЖНЯЯ ПАНЕЛЬ С КНОПКАМИ -->
-            <Grid Grid.Row="3" Grid.ColumnSpan="2" Margin="0,89,0,0" Grid.RowSpan="2">
+            <!-- 4️⃣ НИЖНЯЯ ПАНЕЛЬ С КНОПКАМИ (Чётко сидит в Строке 4) -->
+            <Grid Grid.Row="4" Margin="0,15,0,0">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <Label Grid.Column="0" Content="{Binding StatusMessage}" MinWidth="50" Foreground="#FFB300" VerticalContentAlignment="Center" HorizontalContentAlignment="Left"/>
+                <!-- Статус бар выводится слева -->
+                <Label Grid.Column="0" Content="{Binding StatusMessage}"
+                       Foreground="#FFB300" 
+                   VerticalContentAlignment="Center" 
+                       HorizontalContentAlignment="Left" FontSize="12"/>
 
-                <!-- BUTTONS -->
-                <StackPanel Grid.Column="1" Margin="0,0,0,0" Height="45" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="Отмена" MinWidth="150" Height="35"  BorderBrush="#00F0FF" BorderThickness="0.25"
-                            Style="{StaticResource OrangeDefaultButtonStyle}" Margin="0,0,5,0"
-                            Command="{Binding CancelCommand}" 
-                         
-                            Width="120"/>
+                <!-- Кнопки выводятся справа -->
+                <StackPanel Grid.Column="1" Height="45" Orientation="Horizontal"
+                            HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Content="Отмена" MinWidth="150" 
+                            Height="35" BorderBrush="#00F0FF"
+                            BorderThickness="0.25"
+                        Style="{StaticResource OrangeDefaultButtonStyle}" Margin="0,0,10,0"
+                        Command="{Binding CancelCommand}" Width="120"/>
 
-                    <Button Content="{Binding SubmitButtonText}"  MinWidth="150" Height="35"
-                            Style="{StaticResource OrangeDefaultButtonStyle}"  BorderBrush="#00F0FF" BorderThickness="0.25"
-                            Command="{Binding ToggleRegistrationCommand}"  
-                            
-                            Width="120"/>
+                    <Button Content="{Binding SubmitButtonText}" MinWidth="150" Height="35"
+                        Style="{StaticResource OrangeDefaultButtonStyle}"
+                            BorderBrush="#00F0FF" BorderThickness="0.25"
+                        Command="{Binding RegisterCommand}" Width="120"/>
                 </StackPanel>
             </Grid>
         </Grid>
     </ContentControl>
+
 
 </UserControl>
 

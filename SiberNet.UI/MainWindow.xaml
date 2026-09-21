@@ -16,105 +16,43 @@
     WindowStartupLocation="CenterScreen"         
     Style="{StaticResource CyberpunkWindowLaunchStyle}">
 
-    <Window.Resources>
-    <Style TargetType="Button" BasedOn="{StaticResource OrangeDefaultButtonStyle}">
-        <Setter Property="Padding" Value="9.4"/>
-        <Setter Property="BorderThickness" Value="0.6"/>
-    </Style>
-    <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+   <Window.Resources>
+        <Style TargetType="Button"
+               BasedOn="{StaticResource OrangeDefaultButtonStyle}">
+            <Setter Property="Padding" Value="1.4"/>
+            <Setter Property="BorderThickness" Value="0.6"/>
+        </Style>
     </Window.Resources>
 
-    <!-- Твой верхний фоновый киберпанк-контейнер -->
-    <ContentControl Style="{StaticResource CyberpunkImageStyle}" 
-                    HorizontalAlignment="Stretch" 
-                    VerticalAlignment="Stretch">
+    <!-- Киберпанк-контейнер -->
+    <ContentControl Style="{StaticResource CyberpunkImageStyle}"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
         <ContentControl.Tag>
             <CornerRadius>6</CornerRadius>
         </ContentControl.Tag>
 
-        <!-- НАША РОДНАЯ СЕТКА С ТРЕМЯ ЭТАЖАМИ 🏢 -->
-        <Grid x:Name="MainGrid" Margin="4" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+        <!-- Разметка Майна сократилась до двух элементов! 🏢 -->
+        <Grid x:Name="MainGrid" Margin="0" 
+              VerticalAlignment="Stretch"
+              HorizontalAlignment="Stretch">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <!-- Этаж 0: Шапка TitleBar -->
-                <RowDefinition Height="*"/>
-                <!-- Этаж 1: Рабочая зона -->
-                <RowDefinition Height="Auto"/>
-                <!-- Этаж 2: Статус-бар -->
+                <RowDefinition Height="*"/>   
+                <!-- Строка 0: Занимает ВСЁ место (Тут живет Шапка + Контент) -->
+                <RowDefinition Height="Auto"/>  
+                <!-- Строка 1: Статус-бар внизу -->
             </Grid.RowDefinitions>
 
-            <!-- 👑 ЭТАЖ 0: ГЛОБАЛЬНЫЙ МОСТ ШАПКИ (Отображается сразу) -->
-            <Border Grid.Row="0" 
-                    Background="Transparent" 
-                    Height="40" 
-                    VerticalAlignment="Top"
-                    WindowChrome.IsHitTestVisibleInChrome="True">
-                <controls:TitleBarControl/>
-            </Border>
+            <!-- 👑 ТАЙТЛ-БАР ЗАБРАЛ СЕБЕ СТРОКУ И УПРАВЛЯЕТ ВСЕМ ВНУТРИ -->
+            <controls:TitleBarControl 
+                Grid.Row="0"
+                VerticalAlignment="Stretch" 
+                HorizontalAlignment="Stretch"/>
 
-            <!-- 🌌 ЭТАЖ 1: ЦЕНТРАЛЬНЫЙ ШЛЮЗ ДЛЯ ОТОБРАЖЕНИЯ ОБЪЕКТОВ -->
-            <Grid Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-
-                <Grid.Resources>
-                    <!-- КАРТА ШКУР: Связываем ВьюМодели с их реальными UI-контролами -->
-                    <DataTemplate DataType="{x:Type vm:AuthenticationViewModel}">
-                        <controls:AuthenticationViewControl HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-                    </DataTemplate>
-
-                    <DataTemplate DataType="{x:Type vm:RegistrationViewModel}">
-                        <controls:RegistrationViewControl HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-                    </DataTemplate>
-
-                    <DataTemplate DataType="{x:Type vm:AdminMenuViewModel}">
-                        <controls:AdminMenu HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-                    </DataTemplate>
-                    
-                    
-                    
-
-                    <DataTemplate DataType="{x:Type vm:UserDashboardViewModel}">
-                        <controls:UserDashboardControl HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-                    </DataTemplate>
-                </Grid.Resources>
-
-                <!-- 🎛️ ДИНАМИЧЕСКИЙ ХОЛСТ: Теперь ВСЕ триггеры смотрят через один рабочий канал шапки! -->
-<ContentControl HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-    <ContentControl.Style>
-        <Style TargetType="ContentControl">
-            <!-- По умолчанию холст пустой -->
-            <Setter Property="Content" Value="{x:Null}"/>
-            <Style.Triggers>
-
-                <!-- 🔑 ТРИГГЕР 1: Нажали вход в шапке (🎯 ИСПРАВИЛИ ПУТЬ) -->
-                <DataTrigger Binding="{Binding TitleBarViewModel.CurrentClientTab, Source={StaticResource ComponentHub}}" Value="Authentication">
-                    <Setter Property="Content" Value="{Binding AuthenticationViewModel, Source={StaticResource ComponentHub}}"/>
-                </DataTrigger>
-
-                <!-- 🦾 ТРИГГЕР 2: Нажали Админку в шапке (Уже работает!) -->
-                <DataTrigger Binding="{Binding TitleBarViewModel.CurrentMainTab, Source={StaticResource ComponentHub}}" Value="AdminZone">
-                    <Setter Property="Content" Value="{Binding AdminMenuViewModel, Source={StaticResource ComponentHub}}"/>
-                </DataTrigger>
-
-                <!-- 📝 ТРИГГЕР 3: Нажали регистрацию в шапке (🎯 ИСПРАВИЛИ ПУТЬ) -->
-                <DataTrigger Binding="{Binding TitleBarViewModel.CurrentClientTab, Source={StaticResource ComponentHub}}" Value="Registration">
-                    <Setter Property="Content" Value="{Binding RegistrationViewModel, Source={StaticResource ComponentHub}}"/>
-                </DataTrigger>
-
-                <!-- 💬 ТРИГГЕР 4: Переключились в клиентскую зону чата (Уже работает!) -->
-                <DataTrigger Binding="{Binding TitleBarViewModel.CurrentMainTab, Source={StaticResource ComponentHub}}" Value="ClientZone">
-                    <Setter Property="Content" Value="{Binding UserDashboardViewModel, Source={StaticResource ComponentHub}}"/>
-                </DataTrigger>
-
-            </Style.Triggers>
-        </Style>
-    </ContentControl.Style>
-</ContentControl>
-
-            </Grid>
-
-            <!-- 📡 ЭТАЖ 2: НАШ РЕАКТИВНЫЙ СТАТУС-BAR (Отображается сразу) -->
-            <Border Grid.Row="2" Background="Transparent" Margin="5,0,5,5">
-                <controls:StatusBarControl/>
+            <!-- 📡 СТАТУС-BAR ОСТАЛСЯ СНИЗУ -->
+            <Border
+                Grid.Row="1"
+                Background="Transparent" Margin="0">
+                <controls:StatusBarControl Height="40"/>
             </Border>
         </Grid>
     </ContentControl>

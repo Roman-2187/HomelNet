@@ -5,16 +5,17 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:SiberNet.UI.Controls"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800"  Margin="0,0,0,5"
-            
+             d:DesignHeight="450" d:DesignWidth="800"  
+            Background="Transparent"
              
              d:Opacity="1"
                
-    Style="{StaticResource UniversalFlyOutBottomStyle}"
+   
             
              >
 
-    <Grid>
+
+    <Grid Background="Transparent">
         <Grid.ColumnDefinitions>
             <!-- Левая панель под список контактов -->
             <ColumnDefinition Width="200"/>
@@ -22,25 +23,28 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- 👤 ЛЕВАЯ ПАНЕЛЬ: СПИСОК ДРУЗЕЙ (Смотрит в изолированную ContactsListVM) -->
-        <ContentControl Grid.Column="0" Style="{StaticResource CyberpunkImageChaildStyle}">
-            <ContentControl.Tag>
-                <CornerRadius>10</CornerRadius>
-            </ContentControl.Tag>
+        <!-- 👤 ЛЕВАЯ ПАНЕЛЬ: ТЕПЕРЬ ТУТ КРАСИВЫЙ ВЫДЕЛЕННЫЙ КОНТРОЛ -->
+        <local:FriendsListViewControl
+            Grid.Column="0" Margin="0,0,5,0"
+            />
 
-            <!-- 🔥 ПЕРЕНАПРАВИЛИ БИНДИНГИ: Теперь ListBox заходит внутрь ContactsListVM -->
-            <ListBox ItemsSource="{Binding ContactsListVM.Friends}" 
-                     SelectedItem="{Binding ContactsListVM.SelectedFriend, Mode=TwoWay}"
-                     ItemContainerStyle="{StaticResource CyberpunkContactItemStyle}"
-                     DisplayMemberPath="FirstName" 
-                     Background="Transparent" 
-                     BorderThickness="0"
-                     Margin="5"/>
-        </ContentControl>
+        <StackPanel Orientation="Horizontal" >
+
+            <!-- 🍔 Наш чистый квадратный бургер -->
+            <local:AccountMenuControl VerticalContentAlignment="Top"/>
+
+            <!-- 📝 Надпись пишем прямо тут, по месту требования -->
+            <TextBlock Text="ДРУЗЬЯ"
+                   Foreground="#8A95A5" 
+                   FontWeight="Bold"
+                   VerticalAlignment="Top" 
+                   Margin="10" 
+                   FontSize="12" />
+        </StackPanel>
+
 
         <!-- 💬 ПРАВАЯ ПАНЕЛЬ: ЧАТ С УМНОЙ АНИМАЦИЕЙ ПОЛЕТА СВЕРХУ -->
-        <ContentControl Grid.Column="1">
-            <!-- 🔥 ПОПРАВИЛИ: Чистая прямая привязка к ChatVm текущего контекста дашборда -->
+        <ContentControl Grid.Column="1" >
             <local:ChatViewControl DataContext="{Binding ChatVm}" />
         </ContentControl>
     </Grid>

@@ -53,35 +53,46 @@ namespace HomeNetServices.Services.Identity
         {
             var results = new List<ValidationResult>();
 
+            // ➡️ ШАГ 1: Валидируем Имя пользователя
             var nameRes = ValidateUserName(input.FirstName);
-            var passRes = ValidatePassword(input.Password);
-            var confirmRes = ValidateConfirmedPassword(input.Password, input.ConfirmPassword);
+            results.Add(nameRes);
 
-            results.AddRange(new[] { nameRes, passRes, confirmRes });
-
+            // ➡️ ШАГ 2: Самостоятельная валидация Email (больше не зависит от Имени!)
             var emailRes = new ValidationResult { Field = TypeField.EmailType };
 
             if (string.IsNullOrWhiteSpace(input.Email))
             {
                 emailRes = SetResult(emailRes, ValidationState.Error, "Email не может быть пустым");
             }
-            // 🔥 Вызов через статический инструмент-алгоритм
             else if (!ValidationFormat.IsValidEmail(input.Email))
             {
                 emailRes = SetResult(emailRes, ValidationState.Error, "Некорректный формат email");
             }
             else
             {
-                emailRes = results.Any(r => r.State == ValidationState.Error) switch
-                {
-                    true => SetResult(emailRes, ValidationState.Success, "Формат email корректен (ожидание отправки)"),
-                    false => await ValidateEmailAsync(input.Email)
-                };
+                // 🎯 ТЕПЕРЬ ЗАПРОС В СУБД ИДЕТ ВСЕГДА! Плевать, что там с именем.
+                emailRes = await ValidateEmailAsync(input.Email);
+            }
+            results.Add(emailRes);
+
+            // 🎯 ШАГ 3: Защитный барьер для паролей
+            // Если Имя или Email содержат ошибки — пароли не трогаем, держим в режиме Info (бирюзовый неон)
+            if (nameRes.State == ValidationState.Error || emailRes.State == ValidationState.Error)
+            {
+                results.Add(new ValidationResult { Field = TypeField.PasswordType, State = ValidationState.Info, Message = "Пароль должен содержать минимум 8 символов, буквы и цифры" });
+                results.Add(new ValidationResult { Field = TypeField.ConfirmedPasswordType, State = ValidationState.Info, Message = "Пароли должны совпадать" });
+
+                return results; // Выходим раньше времени, скрывая ошибки паролей
             }
 
-            results.Add(emailRes);
+            // ➡️ ШАГ 4: Сюда дойдем, только когда Имя и Email без косяков
+            var passRes = ValidatePassword(input.Password);
+            var confirmRes = ValidateConfirmedPassword(input.Password, input.ConfirmPassword);
+
+            results.AddRange(new[] { passRes, confirmRes });
             return results;
         }
+
 
         private ValidationResult ValidateUserName(string? userName)
         {

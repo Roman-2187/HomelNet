@@ -1,9 +1,26 @@
-﻿<UserControl x:Class="WpfHomeNet.Controls.FriendsListViewControl"
+﻿<UserControl x:Class="SiberNet.UI.Controls.FriendsListViewControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:WpfHomeNet.Controls"
              mc:Ignorable="d" >
-   
+
+
+    <!-- Перенесли контейнер со стилем и ListBox внутрь отдельного контрола -->
+    <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}" Margin="0,0,0,0">
+
+        <ContentControl.Tag>
+            <CornerRadius>6</CornerRadius>
+        </ContentControl.Tag>
+        <!-- Так как этот контрол будет лежать внутри дашборда, DataContext унаследуется автоматически -->
+        <ListBox ItemsSource="{Binding ContactsListVM.Friends}" 
+                 SelectedItem="{Binding ContactsListVM.SelectedFriend, Mode=TwoWay}"
+                 ItemContainerStyle="{StaticResource CyberpunkContactItemStyle}"
+                 DisplayMemberPath="FirstName" 
+                 Background="Transparent" 
+                 BorderThickness="0"
+                />
+    </ContentControl>
+
 </UserControl>

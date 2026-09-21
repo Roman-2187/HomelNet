@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:SiberNet.UI.Controls"
              mc:Ignorable="d" 
-             d:DesignHeight="50" d:DesignWidth="800">
+             d:DesignHeight="60" d:DesignWidth="900">
 
     <!-- Твоя фирменная подложка и цвета -->
     <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}"  >
@@ -15,7 +15,7 @@
         <StatusBar Background="#00A3C091">
             <StatusBarItem>
                 <TextBlock Text="{Binding StatusText, FallbackValue='Загрузка системы...'}"
-                           Margin="2"
+                           Margin="0"
                            FontWeight="Bold"
                            Foreground="#FFB300"/>
             </StatusBarItem>

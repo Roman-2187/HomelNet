@@ -27,7 +27,7 @@ namespace SiberNet.UI.Infrastructure.Animators
                 var exitAnimation = new DoubleAnimation
                 {
                     To = screenHeight + 150, //
-                    Duration = TimeSpan.FromMilliseconds(500), //
+                    Duration = TimeSpan.FromMilliseconds(800), //
                     EasingFunction = easeIn //
                 };
 

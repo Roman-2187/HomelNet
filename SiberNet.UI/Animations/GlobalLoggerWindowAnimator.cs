@@ -24,10 +24,10 @@ namespace SiberNet.UI.Infrastructure.Animators
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
 
             // Слушаем триггер анимации оверлея логов
-            _eventBus.Subscribe<IAdminMenuViewModel.ToggleAnimation>(OnToggleGlobalLoggerRequested);
+            _eventBus.Subscribe<ITitleBarViewModel.ToggleAnimation>(OnToggleGlobalLoggerRequested);
         }
 
-        private void OnToggleGlobalLoggerRequested(IAdminMenuViewModel.ToggleAnimation msg)
+        private void OnToggleGlobalLoggerRequested(ITitleBarViewModel.ToggleAnimation msg)
         {
             ExecuteOnUi(window =>
             {
@@ -35,7 +35,7 @@ namespace SiberNet.UI.Infrastructure.Animators
                 var ease = new ExponentialEase { EasingMode = EasingMode.EaseOut, Exponent = 5 };
                 var stepDuration = TimeSpan.FromSeconds(0.7); // 🔥 Жестко 0.7 секунды на каждый этап
 
-                if (msg.MainViewModel.IsGlobalLoggerVisible)
+                if (msg.IsVisible)
                 {
                     // --- ⚡ СЦЕНАРИЙ А: РАСКРЫТИЕ ГЛОБАЛЬНОГО ЛОГГЕРА ---
 
@@ -81,7 +81,7 @@ namespace SiberNet.UI.Infrastructure.Animators
 
         public override void Dispose()
         {
-            _eventBus.Unsubscribe<IAdminMenuViewModel.ToggleAnimation>(OnToggleGlobalLoggerRequested);
+            _eventBus.Unsubscribe<ITitleBarViewModel.ToggleAnimation>(OnToggleGlobalLoggerRequested);
         }
     }
 }

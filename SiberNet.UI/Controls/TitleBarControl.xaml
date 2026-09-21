@@ -2,125 +2,145 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:vm="clr-namespace:HomeNetPresentation.ViewModels;assembly=HomeNetPresentation" 
+             xmlns:enums="clr-namespace:HomeNetCore.Enums.Navigation;assembly=HomeNetCore"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:SiberNet.UI.Controls"
-             xmlns:enums="clr-namespace:HomeNetCore.Enums.Navigation;assembly=HomeNetCore"
-             mc:Ignorable="d" 
-             d:DesignHeight="50" d:DesignWidth="800"
+             xmlns:views="clr-namespace:SiberNet.UI"                                               
+             DataContext="{Binding TitleBarViewModel, Source={StaticResource ComponentHub}}" 
+             mc:Ignorable="d"   d:DesignHeight="600" d:DesignWidth="800">
 
-  DataContext="{Binding TitleBarViewModel, Source={StaticResource ComponentHub}}">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="50"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-    <!-- ВНУТРЕННИЙ ГРИД ШАПКИ -->
-    <Grid Background="Transparent">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <!-- Лево: Название -->
-            <ColumnDefinition Width="*"/>
-            <!-- Центр: Зазор -->
-            <ColumnDefinition Width="Auto"/>
-            <!-- Право: Весь пульт управления -->
-        </Grid.ColumnDefinitions>
+        <!-- ================================================================= -->
+        <!-- 👑 ВЕРХНЯЯ ПАНЕЛЬ ШАПКИ (ЧИСТАЯ И РАЗГРУЖЕННАЯ)                    -->
+        <!-- ================================================================= -->
+        <Grid Grid.Row="0" Background="Transparent">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
-        <!-- 🌌 НАЗВАНИЕ ПРИЛОЖЕНИЯ -->
-        <TextBlock Grid.Column="0" 
-                   Text="SIBERNET v1.0"
-                   Foreground="#FFB300"
-                   VerticalAlignment="Center" 
-                   Margin="15,0,0,0" 
-                   FontWeight="Bold"/>
+            <!-- 🌌 НАЗВАНИЕ ПРИЛОЖЕНИЯ -->
+            <TextBlock Grid.Column="0" Text="SIBERNET v1.0"
+                       Foreground="#FFB300"
+                       VerticalAlignment="Center" Margin="15,0,0,0" FontWeight="Bold"/>
 
-        <!-- 🌌 ЕДИНЫЙ ПУЛЬТ УПРАВЛЕНИЯ СПРАВА -->
-        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,15,0">
+            <!-- 🌌 ЕДИНЫЙ ПУЛЬТ УПРАВЛЕНИЯ СПРАВА -->
+            <StackPanel 
+                Grid.Column="2" Orientation="Horizontal"
+                VerticalAlignment="Center" Margin="0,0,15,0">
 
-            <!-- ================================================================= -->
-            <!-- 🔑 СЕКЦИЯ А: СТАРТОВЫЙ ПУЛЬТ (Админка / Вход / Регистрация)       -->
-            <!-- ================================================================= -->
-            <StackPanel Orientation="Horizontal" Margin="0,0,10,0">
-                <StackPanel.Style>
-                    <Style TargetType="StackPanel">
-                        <Setter Property="Visibility" Value="Visible"/>
-                        <Style.Triggers>
-                            <!-- 🔥 ПОПРАВИЛИ: Чётко бьем по свойству локальной TitleBarViewModel -->
-                            <DataTrigger Binding="{Binding CurrentMainTab}" Value="ClientZone">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding CurrentMainTab}" Value="AdminZone">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </StackPanel.Style>
+                <!-- СЕКЦИЯ А: СТАРТОВЫЙ ПУЛЬТ (Админка, Вход, Регистрация) -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,0">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <!-- Скрываем пачку кнопок целиком, если открыт любой экран (зона не 0) -->
+                                <DataTrigger Binding="{Binding CurrentMainTab}" Value="ClientZone">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding CurrentMainTab}" Value="AdminZone">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding CurrentClientTab}" Value="Authentication">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding CurrentClientTab}" Value="Registration">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
 
-                <!-- 🛠️ КНОПКА АДМИНКИ -->
-                <Button x:Name="Adminka" Content="🛠️ Админка" Width="110" Margin="0,0,20,0"
-                        Command="{Binding ToggleAdminZoneCommand}"
-                        Style="{StaticResource OrangeDefaultButtonStyle}"
-                        WindowChrome.IsHitTestVisibleInChrome="True"/>
+                    <Button Content="🛠️ Админка" Width="110"
+                            Margin="0,0,20,0"
+                            Command="{Binding ToggleAdminZoneCommand}" 
+                            Style="{StaticResource OrangeDefaultButtonStyle}" 
+                            WindowChrome.IsHitTestVisibleInChrome="True"/>
+                    <Button Content="🔑 Вход" Command="{Binding SwitchClientTabCommand}"
+                            CommandParameter="{x:Static enums:ClientSubTab.Authentication}" 
+                            Style="{StaticResource OrangeDefaultButtonStyle}" Width="110" 
+                            Margin="0,0,10,0" WindowChrome.IsHitTestVisibleInChrome="True"/>
+                    <Button Content="📝 Регистрация" Command="{Binding SwitchClientTabCommand}"
+                            CommandParameter="{x:Static enums:ClientSubTab.Registration}"
+                            Style="{StaticResource OrangeDefaultButtonStyle}" 
+                            Width="110" WindowChrome.IsHitTestVisibleInChrome="True"/>
+                </StackPanel>
 
-                <!-- Кнопка Входа -->
-                <Button Content="🔑 Вход"
-                        Command="{Binding SwitchClientTabCommand}"
-                        CommandParameter="{x:Static enums:ClientSubTab.Authentication}"
-                        Style="{StaticResource OrangeDefaultButtonStyle}" Width="110" Margin="0,0,10,0"
-                        WindowChrome.IsHitTestVisibleInChrome="True"/>
+                <!-- 🎯 СЕКЦИЮ Б (КНОПКУ ВЫХОД) ПОЛНОСТЬЮ ВЫРЕЗАЛИ ОТСЮДА! -->
 
-                <!-- Кнопка Регистрации -->
-                <Button Content="📝 Регистрация"
-                        Command="{Binding SwitchClientTabCommand}"
-                        CommandParameter="{x:Static enums:ClientSubTab.Registration}"
-                        Style="{StaticResource OrangeDefaultButtonStyle}" Width="110"
-                        WindowChrome.IsHitTestVisibleInChrome="True"/>
-            </StackPanel>
-
-            <!-- ================================================================= -->
-            <!-- 🛠️ СЕКЦИЯ Б: КНОПКА ГЛОБАЛЬНОГО ВЫХОДА / ОТМЕНЫ                   -->
-            <!-- ================================================================= -->
-            <Button Content="↩ Выход" 
-                    Command="{Binding LogoutCommand}"
-                    Width="65"
-                    Margin="0,0,20,0">
-                <Button.Style>
-                    <Style TargetType="Button" BasedOn="{StaticResource CyberpunkCloseButtonStyle}">
-                        <Setter Property="Visibility" Value="Collapsed"/>
-                        <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
-                        <Style.Triggers>
-                            <!-- 🔥 ПОПРАВИЛИ: Привязка триггера выхода к верному свойству -->
-                            <DataTrigger Binding="{Binding CurrentMainTab}" Value="ClientZone">
-                                <Setter Property="Visibility" Value="Visible"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding CurrentMainTab}" Value="AdminZone">
-                                <Setter Property="Visibility" Value="Visible"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
-
-            <!-- ================================================================= -->
-            <!-- 👑 СЕКЦИЯ В: ГЛОБАЛЬНЫЕ СИСТЕМНЫЕ КНОПКИ (Всегда прибиты вправо) -->
-            <!-- ================================================================= -->
-            <StackPanel Orientation="Horizontal">
-                <!-- ⚡ Дебаг -->
-                <Button Content="⚡ Дебаг" 
+                <!-- СЕКЦИЯ В: СИСТЕМНЫЕ КНОПКИ -->
+                <StackPanel Orientation="Horizontal">
+                    <Button
+                        Content="⚡ Дебаг"
                         Command="{Binding ToggleGlobalLoggerCommand}"
-                        Style="{StaticResource CyberpunkCloseButtonStyle}"
-                        Width="80"
-                        Margin="0,0,10,0"
-                        WindowChrome.IsHitTestVisibleInChrome="True"/>
-
-                <!-- 🔳 Вырастание -->
-                <Button Content="🔳" 
+                        Style="{StaticResource OrangeDefaultButtonStyle}"
+                        Width="80" Margin="0,0,10,0" WindowChrome.IsHitTestVisibleInChrome="True"/>
+                    <Button 
+                        Content="🔳"
                         Command="{Binding ToggleGrowWindowCommand}"
-                        Style="{StaticResource CyberpunkCloseButtonStyle}"
-                        Margin="0,0,5,0"
-                        WindowChrome.IsHitTestVisibleInChrome="True"/>
-
-                <!-- ✕ Крестик -->
-                <Button Content="✕" 
-                        Command="{Binding RequestCloseApplicationCommand}"
-                        Style="{StaticResource CyberpunkCloseButtonStyle}"
-                        WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        Style="{StaticResource OrangeDefaultButtonStyle}"
+                        Margin="0,0,5,0" WindowChrome.IsHitTestVisibleInChrome="True"/>
+                    <Button
+                        Content="✕" Command="{Binding RequestCloseApplicationCommand}" 
+                        Style="{StaticResource OrangeDefaultButtonStyle}"
+                        WindowChrome.IsHitTestVisibleInChrome="True"
+                        Width="30"/>
+                </StackPanel>
             </StackPanel>
-        </StackPanel>
+        </Grid>
+
+        <!-- ================================================================= -->
+        <!-- 🌌 ВЛАСТЬ НАД ЦЕНТРАЛЬНЫМ ХОЛСТОМ                                 -->
+        <!-- ================================================================= -->
+        <ContentControl Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,0,0,5">
+            <ContentControl.Resources>
+                <DataTemplate DataType="{x:Type vm:AuthenticationViewModel}">
+                    <local:AuthenticationViewControl
+                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type vm:RegistrationViewModel}">
+                    <local:RegistrationViewControl HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type vm:AdminMenuViewModel}">
+                    <local:AdminMenuViewControl HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type vm:UserDashboardViewModel}">
+                    <local:UserDashboardControl
+                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                </DataTemplate>
+            </ContentControl.Resources>
+
+            <ContentControl.Style>
+                <Style TargetType="ContentControl">
+                    <Setter Property="Content" Value="{x:Null}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding CurrentClientTab}" Value="Authentication">
+                            <Setter Property="Content" Value="{Binding AuthenticationViewModel,
+                                Source={StaticResource ComponentHub}}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding CurrentMainTab}" Value="AdminZone">
+                            <Setter Property="Content" Value="{Binding AdminMenuViewModel, 
+                                Source={StaticResource ComponentHub}}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding CurrentClientTab}" Value="Registration">
+                            <Setter Property="Content" Value="{Binding RegistrationViewModel,
+                                Source={StaticResource ComponentHub}}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding CurrentMainTab}" Value="ClientZone">
+                            <Setter Property="Content" Value="{Binding UserDashboardViewModel,
+                                Source={StaticResource ComponentHub}}"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ContentControl.Style>
+        </ContentControl>
     </Grid>
 </UserControl>

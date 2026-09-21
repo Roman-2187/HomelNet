@@ -17,26 +17,20 @@ namespace HomeNetPresentation.ViewModels
     {
         private readonly IRegistrationService _registerService;
         private readonly ILogger _logger;
-        // 🧠 Сохраняем прямую ссылку на наш манипулятор состояний
-      
-
         [ObservableProperty] private UserEntity _userData = new();
 
-        public RegistrationViewModel(IRegistrationService registerService, IEventBus eventBus, ILogger logger, NavigationStateManager navigation) : base(eventBus, navigation)
+        public RegistrationViewModel(IRegistrationService registerService,
+            IEventBus eventBus,
+            ILogger logger,
+            NavigationStateManager navigation) : base(eventBus, navigation)
         {
             _registerService = registerService ?? throw new ArgumentNullException(nameof(registerService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            
 
             InitializeInitialHints();
 
-            // Слушаем таблицу пользователей: при успешном создании тихо затираем за собой поля
-            EventBus.Subscribe<IUsersTableViewModel.Added>(async msg =>
-            {
-                await Task.Delay(500);
-                ResetForm();
-                InitializeInitialHints();
-            });
+            // 🎯 МЫ ПОЛНОСТЬЮ УДАЛИЛИ ОТСЮДА EventBus.Subscribe<IUsersTableViewModel.Added>!
+            // Локальная зачистка полей формы теперь происходит напрямую в методе RegisterAsync.
         }
 
         private void InitializeInitialHints()
@@ -65,12 +59,21 @@ namespace HomeNetPresentation.ViewModels
         private async Task RegisterAsync()
         {
             StatusMessage = string.Empty;
-            ValidationResults = new Dictionary<TypeField, ValidationResult>();
 
             try
             {
+                // 1. Спрашиваем бэкенд
                 IRegistrationService.Verdict verdict = await _registerService.RegisterUserAsync(UserData);
+
+                // 2. 🎯 ХАРД-РЕЗЕТ ГРАФИКИ: Сначала полностью очищаем словарь и UI от старых бирюзовых "true"-хинтов!
+                ValidationResults = new Dictionary<TypeField, ValidationResult>();
+                UpdateValidation(new List<ValidationResult>());
+
+                // 3. Заливаем в словарь чистый результат бэкенда
                 ValidationResults = verdict.Results.ToDictionary(r => r.Field, r => r);
+
+                // 4. Проталкиваем результаты бэкенда в UI. Теперь старых хинтов нет, и UI обязан нарисовать новые!
+                UpdateValidation(verdict.Results);
 
                 if (verdict.IsValid)
                 {
@@ -80,11 +83,12 @@ namespace HomeNetPresentation.ViewModels
 
                     var finalUser = verdict.VerifiedUser ?? UserData;
 
-                    // 🎯 ОДИН СИНХРОННЫЙ ВЫЗОВ: Манипулятор мгновенно переключает все энумы, отправляя нового юзера в мессенджер!
                     Navigation.SetClientZone(finalUser);
-
-                    // Публикуем добавление в автобус для обновления списков и локальной зачистки полей
                     EventBus.Publish(this, new IUsersTableViewModel.Added(finalUser));
+
+                    await Task.Delay(500);
+                    ResetForm();
+                    InitializeInitialHints();
                 }
                 else
                 {
@@ -101,21 +105,14 @@ namespace HomeNetPresentation.ViewModels
 
 
 
-
         [RelayCommand]
         private void Cancel()
         {
             ResetForm();
             InitializeInitialHints();
-
-            // 1. Сбрасываем глобальный автомат состояний
-            Navigation.SetStartZone();
-
-            // 2. 📢 Пуляем точечный сигнал в автобус! Шапка его поймает и сбросит свои кнопки
-            EventBus.Publish(this, new IMainViewModel.ZoneChanged(MainTab.None));
+            // Публикуем приказ для Навигатора уйти в ноль (Шапка перехватит ответ и закроет экран)
+            EventBus.Publish(this, new ITitleBarViewModel.MacroNavigation(MainTab.None));
         }
-
-
 
         #endregion
     }

@@ -88,7 +88,7 @@
                                                 <Border.Background>
                                                     <ImageBrush ImageSource="pack://application:,,,/SiberNet.UI;component/Resourses/68fadad90ca053b59b3e0178c4983607.png" 
                                                         Stretch="UniformToFill" 
-                                                        Opacity="0.3"/>
+                                                        Opacity="0.2"/>
                                                 </Border.Background>
                                             </Border>
 
@@ -142,7 +142,7 @@
                                                     <!-- 🔥 Сменили проект на SiberNet.UI и сделали правильный регистр папки Resourses! -->
                                                     <ImageBrush ImageSource="pack://application:,,,/SiberNet.UI;component/Resourses/68fadad90ca053b59b3e0178c4983607.png" 
                                                    Stretch="UniformToFill" 
-                                                    Opacity="0.3"/>
+                                                    Opacity="0.1"/>
 
 
                                                 </Border.Background>
@@ -175,7 +175,7 @@
                      Value="{x:Static enums:MainTab.AdminZone}">
                     <Setter Property="Content">
                         <Setter.Value>
-                            <controls:AdminMenu DataContext="{Binding AdminMenuViewModel, Source={StaticResource ComponentHub}}"
+                            <controls:AdminMenuViewControl DataContext="{Binding AdminMenuViewModel, Source={StaticResource ComponentHub}}"
                                         HorizontalAlignment="Stretch" 
                                         VerticalAlignment="Stretch"/>
                         </Setter.Value>

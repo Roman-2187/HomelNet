@@ -23,5 +23,7 @@ namespace SiberNet.UI.Infrastructure
         public UserDashboardViewModel UserDashboardViewModel => AppBootstrapper.GetViewModel<UserDashboardViewModel>();
 
         public TitleBarViewModel TitleBarViewModel => AppBootstrapper.GetViewModel<TitleBarViewModel>();
+
+        public AccountMenuViewModel AccountMenuViewModel => AppBootstrapper.GetViewModel<AccountMenuViewModel>();
     }
 }

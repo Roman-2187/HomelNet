@@ -49,15 +49,12 @@ namespace HomeNet.DI
                 // Настраиваем тройной снайперский шлюз вывода! 🎯
                 provider.GetRequiredService<ILogger>().SetOutput((msg, level, ns) =>
                 {
-                    // 1. Сквозная жесткая запись на диск в .log
+                    // 1. Сквозная жесткая запись на диск в .txt
                     crashLogger.WriteImmediately(msg, level);
 
                     // 2. Пуш в UI админки для посимвольной анимации на экране
                     uiManager.WriteLog(msg, level, ns);
-
-                    // 3. 🔥 ВЫСТРЕЛ ПРЯМО В ЖИВУЮ КОНСОЛЬ WINDOWS!
-                    // И так как в строке уже лежат ANSI-коды, консоль сама раскрасит её в сочные цвета!
-                    Console.WriteLine(msg);
+               
                 });
 
                 return uiManager;
@@ -94,6 +91,13 @@ namespace HomeNet.DI
 
             // Изолированная левая панель контактов
             services.AddSingleton<ContactsListViewModel>();
+
+            // 🍔 Кастомное меню аккаунта (выпадашка "Профиль / Выход")
+            // Делаем Transient, чтобы для админки и дашборда создавались свои независимые экземпляры плашки
+            // Было: services.AddTransient<AccountMenuViewModel>();
+            // Стало: Теперь это железобетонный синглтон!
+            services.AddSingleton<AccountMenuViewModel>();
+
 
             // Контейнер дашборда автоматически подтянет ContactsListViewModel и ChatViewModel
             services.AddSingleton<UserDashboardViewModel>();

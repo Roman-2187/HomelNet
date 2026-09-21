@@ -3,9 +3,9 @@
 
 namespace SiberNet.UI.Controls
 {
-    public partial class AdminMenu : UserControl
+    public partial class AdminMenuViewControl : UserControl
     {
-        public AdminMenu()
+        public AdminMenuViewControl()
         {
             InitializeComponent();
            

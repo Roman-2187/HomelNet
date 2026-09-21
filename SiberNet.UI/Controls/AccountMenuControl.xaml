@@ -1,0 +1,65 @@
+﻿<UserControl x:Class="SiberNet.UI.Controls.AccountMenuControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:SiberNet.UI.Controls"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <!-- 🍔 ВЕРХНЯЯ ПАНЕЛЬ С КНОПКОЙ МЕНЮ -->
+    <Grid Grid.Row="0" Background="#1A1F29" Margin="5,5,5,0"  >
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="40"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Кнопка-триггер для меню -->
+        <ToggleButton x:Name="MenuButton" 
+                   Grid.Column="0"
+                   Content="☰" 
+                    
+                   Height="30" Width="30"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+        <!-- Текст рядом (можно воткнуть "Контакты" или имя юзера) -->
+       
+
+        <!-- 🔽 ВЫПАДАЮЩАЯ КИБЕРПАНК-ШТОРКА (POPUP) -->
+        <Popup IsOpen="{Binding IsChecked, ElementName=MenuButton, Mode=TwoWay}"
+            PlacementTarget="{Binding ElementName=MenuButton}"
+            Placement="Bottom"
+            StaysOpen="False"
+            AllowsTransparency="True">
+
+            <!-- Контейнер меню с твоей фирменной рамкой -->
+            <Border Background="#121620" 
+                 BorderBrush="#FF5500" 
+                 BorderThickness="1" 
+                 CornerRadius="2"
+                 Width="160" 
+                 Margin="0,5,0,0">
+                <StackPanel Margin="5">
+
+                    <!-- Кнопка Профиля -->
+                    <Button Content="👤 Профиль" 
+                         Style="{StaticResource OrangeDefaultButtonStyle}"
+                         Height="30" Margin="0,0,0,5"
+                         HorizontalContentAlignment="Left" Padding="10,0,0,0"/>
+
+                    <!-- Декоративный разделитель -->
+                    <Rectangle Height="1" Fill="#2A3242" Margin="5,2,5,5"/>
+
+                    <!-- Кнопка Выхода, которая дергает твою команду из TitleBarViewModel -->
+                    <!-- (Если DataContext унаследован, используем LogoutCommand) -->
+                    <Button Content="↩ Выйти" 
+        Command="{Binding AccountMenuViewModel.LogoutCommand, Source={StaticResource ComponentHub}}"
+        Style="{StaticResource OrangeDefaultButtonStyle}"
+        Height="30"
+        HorizontalContentAlignment="Left" Padding="10,0,0,0"/>
+
+                    <!-- Закрыть меню при клике -->
+                </StackPanel>
+            </Border>
+        </Popup>
+    </Grid>
+</UserControl>

@@ -7,7 +7,7 @@
              mc:Ignorable="d"  Background="Transparent"
              d:DesignHeight="600" d:DesignWidth="500">
 
-    <ContentControl Margin="5,0,0,0" >
+    <ContentControl    Style="{StaticResource CyberpunkImageChaildStyle}" >
         <ContentControl.Tag>
             <CornerRadius>6</CornerRadius>
         </ContentControl.Tag>

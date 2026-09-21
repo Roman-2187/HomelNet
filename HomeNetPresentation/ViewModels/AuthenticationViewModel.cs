@@ -22,7 +22,10 @@ namespace HomeNetPresentation.ViewModels
 
         [ObservableProperty] private UserEntity _userData = new();
 
-        public AuthenticationViewModel(IAuthenticateService loginService, IEventBus eventBus, ILogger logger, NavigationStateManager navigation) : base(eventBus, navigation)
+        public AuthenticationViewModel(IAuthenticateService loginService,
+            IEventBus eventBus, 
+            ILogger logger, 
+            NavigationStateManager navigation) : base(eventBus, navigation)
         {
             _loginService = loginService ?? throw new ArgumentNullException(nameof(loginService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -79,11 +82,14 @@ namespace HomeNetPresentation.ViewModels
 
                     var finalUser = verdict.User ?? UserData;
 
-                    // 🎯 ОДИН СИНХРОННЫЙ ВЫЗОВ: Манипулятор мгновенно переключает все энумы в мессенджер!
-                    _navigationStateManager.SetClientZone(finalUser);
+                    // 🎯 ШАГ 1: Даем команду Навигатору отправить пользователя в зону чата
+                    Navigation.SetClientZone(finalUser);
 
-                    // Оставляем выстрел в автобус ТОЛЬКО для того, чтобы сработал локальный сброс полей (ResetForm)
-                    EventBus.Publish(this, new IAuthenticationViewModel.UserLogged(finalUser));
+                    // 🎯 ШАГ 2: Прямо здесь локально сбрасываем поля формы логина, 
+                    // чтобы при выходе из аккаунта там не оставался старый пароль!
+                    await Task.Delay(500); // Небольшая задержка для плавности киберпанк-анимации
+                    ResetForm();
+                    InitializeInitialHints();
                 }
                 else
                 {
@@ -98,18 +104,19 @@ namespace HomeNetPresentation.ViewModels
             }
         }
 
+
         [RelayCommand]
         private void Cancel()
         {
             ResetForm();
             InitializeInitialHints();
 
-            // 1. Сбрасываем глобальный автомат состояний
-            Navigation.SetStartZone();
-
-            // 2. 📢 Пуляем точечный сигнал в автобус! Шапка его поймает и сбросит свои кнопки
-            EventBus.Publish(this, new IMainViewModel.ZoneChanged(MainTab.None));
+            // Швыряем приказ в автобус через новый интерфейс шапки! 
+            // Инспектор автобуса это мгновенно запишет.
+            EventBus.Publish(this, new ITitleBarViewModel.MacroNavigation(MainTab.None));
         }
+
+
 
 
         #endregion
