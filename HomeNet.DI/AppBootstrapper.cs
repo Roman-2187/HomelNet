@@ -37,28 +37,27 @@ namespace HomeNet.DI
             services.AddSingleton<IEventBus, EventBus>();
 
             // Логгер-неубивашка для моментального бэкапа
-            services.AddSingleton<AppCrashLogger>(provider => new AppCrashLogger("crash_debug.txt"));
+            IServiceCollection serviceCollection = services.AddSingleton<AppFileogger>(provider => new AppFileogger("App_debug.txt"));
 
-            // Логгер-менеджер для админки
-            // Внутри AppBootstrapper.cs переписываем блок фабрики ILogQueueManager:
             services.AddSingleton<ILogQueueManager>(provider =>
             {
-                var uiManager = new LogQueueManager(0);
-                var crashLogger = provider.GetRequiredService<AppCrashLogger>();
+                var eventBus = provider.GetRequiredService<IEventBus>();
 
-                // Настраиваем тройной снайперский шлюз вывода! 🎯
+                // Передаем шину событий и задержку в 20 миллисекунд
+                var uiManager = new HomeNetServices.Diagnostics.LogQueueManager(eventBus, 5);
+
+                var crashLogger = provider.GetRequiredService<AppFileogger>();
+
                 provider.GetRequiredService<ILogger>().SetOutput((msg, level, ns) =>
                 {
-                    // 1. Сквозная жесткая запись на диск в .txt
                     crashLogger.WriteImmediately(msg, level);
-
-                    // 2. Пуш в UI админки для посимвольной анимации на экране
                     uiManager.WriteLog(msg, level, ns);
-               
                 });
 
                 return uiManager;
             });
+
+
 
 
             // Контекст БД принимает строки подключения извне
@@ -78,6 +77,7 @@ namespace HomeNet.DI
             services.AddSingleton<IFriendService, FriendService>();
 
             // 3. Регистрация Вьюмоделей слоя Презентации
+             
             services.AddSingleton<StatusBarViewModel>();
             services.AddSingleton<UsersTableViewModel>();
             services.AddSingleton<RegistrationViewModel>();
@@ -86,8 +86,12 @@ namespace HomeNet.DI
             services.AddSingleton<DeleteUsersViewModel>();
             services.AddSingleton<ChatViewModel>();
             services.AddSingleton<TitleBarViewModel>();
+            
+           
+
             // Регистрируем навигатор как Singleton, чтобы он жил в одном экземпляре на всё приложение
             services.AddSingleton<NavigationStateManager>();
+            
 
             // Изолированная левая панель контактов
             services.AddSingleton<ContactsListViewModel>();

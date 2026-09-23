@@ -1,21 +1,19 @@
-﻿using HomeNetCore.Enums;
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 
-namespace WpfHomeNet.Controls
+namespace SiberNet.UI.Controls
 {
-    /// <summary>
-    /// Interaction logic for LogRenderControl.xaml
-    /// </summary>
     public partial class LogRenderControl : UserControl
     {
-        
+
+
         public LogRenderControl()
         {
             InitializeComponent();
 
-         
         }
 
-      
+
+
     }
 }
+

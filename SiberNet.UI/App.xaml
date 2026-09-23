@@ -162,31 +162,7 @@
 
 
 
-        <!-- Не забудь проверить, чтобы вверху App.xaml были эти xmlns: -->
-
-        <!-- 🎛️ ГЛОБАЛЬНЫЙ КИБЕР-РОУТЕР НА ЭНУМАХ (ФИНАЛ) -->
-        <Style x:Key="CyberpunkRouterStyle" TargetType="ContentControl">
-            <!-- 🔑 Экран по умолчанию (AuthZone) — рожаем Вход на старте приложения -->
-            
-
-            <Style.Triggers>
-                <!-- 🛠️ ТРИГГЕР А: Переключились в AdminZone — рожаем Админку напрямую -->
-                <DataTrigger Binding="{Binding MainViewModel.CurrentMainTab, Source={StaticResource ComponentHub}}" 
-                     Value="{x:Static enums:MainTab.AdminZone}">
-                    <Setter Property="Content">
-                        <Setter.Value>
-                            <controls:AdminMenuViewControl DataContext="{Binding AdminMenuViewModel, Source={StaticResource ComponentHub}}"
-                                        HorizontalAlignment="Stretch" 
-                                        VerticalAlignment="Stretch"/>
-                        </Setter.Value>
-                    </Setter>
-                </DataTrigger>
-
-                
-
-            
-            </Style.Triggers>
-        </Style>
+       
 
 
 
@@ -249,10 +225,11 @@
     <!-- 🔥 БЕСПРОВОДНОЙ ПЕРЕТАСКИВАТЕЛЬ -->
     <Setter Property="WindowChrome.WindowChrome">
         <Setter.Value>
-            <WindowChrome CaptionHeight="40" 
-                          ResizeBorderThickness="5" 
-                          GlassFrameThickness="0" 
-                          CornerRadius="0"/>
+            <WindowChrome
+                CaptionHeight="50" 
+                ResizeBorderThickness="5" 
+                GlassFrameThickness="0" 
+                CornerRadius="0"/>
         </Setter.Value>
     </Setter>
 
@@ -261,10 +238,11 @@
         <EventTrigger RoutedEvent="Window.Loaded">
             <BeginStoryboard>
                 <Storyboard>
-                    <DoubleAnimation Storyboard.TargetProperty="Top"
-                                     From="1200" To="200" 
-                                     Duration="0:0:0.75"
-                                     DecelerationRatio="0.85"/>
+                    <DoubleAnimation 
+                        Storyboard.TargetProperty="Top"
+                        From="1200" To="200" 
+                        Duration="0:0:0.5"
+                        DecelerationRatio="0.85"/>
                 </Storyboard>
             </BeginStoryboard>
         </EventTrigger>

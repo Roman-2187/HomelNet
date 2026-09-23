@@ -1,6 +1,7 @@
 ﻿using HomeNet.DI;
 using HomeNetPresentation.ViewModels;
 
+
 namespace SiberNet.UI.Infrastructure
 {
     public class ComponentHub
@@ -24,5 +25,7 @@ namespace SiberNet.UI.Infrastructure
         public TitleBarViewModel TitleBarViewModel => AppBootstrapper.GetViewModel<TitleBarViewModel>();
 
         public AccountMenuViewModel AccountMenuViewModel => AppBootstrapper.GetViewModel<AccountMenuViewModel>();
+
+       
     }
 }

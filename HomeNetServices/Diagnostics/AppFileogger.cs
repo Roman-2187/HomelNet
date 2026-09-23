@@ -3,7 +3,7 @@ using HomeNetCore.Enums;
 
 namespace HomeNetServices.Diagnostics
 {
-    public class AppCrashLogger
+    public class AppFileogger
     {
         private readonly string _filePath;
         private readonly object _fileLock = new();
@@ -15,7 +15,7 @@ namespace HomeNetServices.Diagnostics
         private const string Magenta = "\u001b[35m";   // Critical
         private const string Gray = "\u001b[90m";      // Info
 
-        public AppCrashLogger(string filePath = "crash_debug.txt")
+        public AppFileogger(string filePath = "crash_debug.txt")
         {
             _filePath = filePath;
 

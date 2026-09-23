@@ -1,25 +1,22 @@
 ﻿using System.Threading.Channels;
 using HomeNetCore.Enums;
+using HomeNetCore.Interfaces.Events; // Подключаем твою шину событий
 using HomeNetCore.Interfaces.OutputLogging;
 
 namespace HomeNetServices.Diagnostics
 {
     public class LogQueueManager : IDisposable, ILogQueueManager
     {
-        // 🔥 Событие теперь возвращает еще и имя неймспейса
-        public event Func<string, LogLevel, string, bool, Task>? OnLogReceived;
-
-        // Канал гоняет кортеж из трех элементов
         private readonly Channel<(LogLevel level, string message, string ns)> _channel;
         private readonly CancellationTokenSource _cts = new();
         private readonly int _typingDelayMs;
-        private readonly SynchronizationContext? _syncContext;
+        private readonly IEventBus _eventBus; // 🔥 Шина событий вместо эвентов
         private bool _isReady;
 
-        public LogQueueManager(int typingDelayMs = 0)
+        public LogQueueManager(IEventBus eventBus, int typingDelayMs = 0)
         {
+            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             _typingDelayMs = typingDelayMs >= 0 ? typingDelayMs : throw new ArgumentOutOfRangeException(nameof(typingDelayMs));
-            _syncContext = SynchronizationContext.Current;
 
             _channel = Channel.CreateUnbounded<(LogLevel, string, string)>(new UnboundedChannelOptions
             {
@@ -35,7 +32,6 @@ namespace HomeNetServices.Diagnostics
             Task.Run(() => ProcessLogQueueAsync(_cts.Token));
         }
 
-        // 🔥 Принимает неймспейс из логгера
         public void WriteLog(string message, LogLevel level, string namespaceName)
         {
             _channel.Writer.TryWrite((level, message, namespaceName));
@@ -49,32 +45,28 @@ namespace HomeNetServices.Diagnostics
                 {
                     while (_channel.Reader.TryRead(out var logEntry))
                     {
+                        // Убираем \r и \n с концов прилетевшего сообщения
+                        string cleanMessage = logEntry.message.TrimEnd('\r', '\n');
+
+                        if (string.IsNullOrEmpty(cleanMessage)) continue;
+
                         string currentText = "";
-                        foreach (char c in logEntry.message)
+                        foreach (char c in cleanMessage)
                         {
                             token.ThrowIfCancellationRequested();
                             currentText += c;
 
-                            await InvokeOnUiCtxAsync(async () =>
-                            {
-                                if (OnLogReceived != null)
-                                {
-                                    // Передаем неймспейс во View
-                                    await OnLogReceived.Invoke(currentText, logEntry.level, logEntry.ns, true);
-                                }
-                            });
+                            // 🔥 ОРЁТ В АВТОБУС НА КАЖДУЮ БУКВУ:
+                            // Передаем подросший кусок текста, энум уровня, имя неймспейса и флаг анимации (true = идет печать)
+                            _eventBus.Publish(this, new ILogQueueManager.LogMessageReceived(currentText, logEntry.level, logEntry.ns, true));
 
                             if (_typingDelayMs > 0)
                                 await Task.Delay(_typingDelayMs, token);
                         }
 
-                        await InvokeOnUiCtxAsync(async () =>
-                        {
-                            if (OnLogReceived != null)
-                            {
-                                await OnLogReceived.Invoke(Environment.NewLine, logEntry.level, logEntry.ns, false);
-                            }
-                        });
+                        // 🔥 ОРЁТ В АВТОБУС ФИНАЛОМ СТРОКИ:
+                        // Посылаем сигнал закрытия строки (false = закрыть параграф)
+                        _eventBus.Publish(this, new ILogQueueManager.LogMessageReceived(Environment.NewLine, logEntry.level, logEntry.ns, false));
                     }
                 }
             }
@@ -83,18 +75,6 @@ namespace HomeNetServices.Diagnostics
             {
                 System.Diagnostics.Debug.WriteLine($"Ошибка в лог-канале: {ex.Message}");
             }
-        }
-
-        private Task InvokeOnUiCtxAsync(Func<Task> action)
-        {
-            if (_syncContext == null) return action();
-            var tcs = new TaskCompletionSource();
-            _syncContext.Post(async _ =>
-            {
-                try { await action(); tcs.SetResult(); }
-                catch (Exception ex) { tcs.SetException(ex); }
-            }, null);
-            return tcs.Task;
         }
 
         public void Dispose()

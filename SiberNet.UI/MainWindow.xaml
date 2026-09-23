@@ -7,12 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:converter="clr-namespace:SiberNet.UI.Converters"
     xmlns:controls="clr-namespace:SiberNet.UI.Controls" 
-    mc:Ignorable="d"                                    
-    AllowsTransparency="True"
-    FontFamily="Calibri"
-    FontSize="14"                             
-   
-            
+    mc:Ignorable="d"                                           
     WindowStartupLocation="CenterScreen"         
     Style="{StaticResource CyberpunkWindowLaunchStyle}">
 
@@ -24,7 +19,7 @@
         </Style>
     </Window.Resources>
 
-    <!-- Киберпанк-контейнер -->
+   
     <ContentControl Style="{StaticResource CyberpunkImageStyle}"
                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
         <ContentControl.Tag>

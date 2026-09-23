@@ -62,7 +62,7 @@
                     
                     DisplayMemberPath="DisplayInfo" Background="#66ABC8AB"
                    
-                    ItemsSource="{Binding UsersTable.Users, Source={StaticResource VmLocator}}"
+                    
 
                     SelectedItem="{Binding SelectedUser}"
                     SelectedValuePath="Id"  

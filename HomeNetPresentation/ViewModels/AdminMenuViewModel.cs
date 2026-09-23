@@ -15,8 +15,12 @@ namespace HomeNetPresentation.ViewModels
     {
         // 🔒 ИЗОЛИРОВАННЫЕ ПРИВАТНЫЕ ПОЛЯ
         private readonly IUserService _adminUserService;
-        private readonly ILogQueueManager _adminLogQueueManager;
-        
+       
+
+        // Открыли прямое окно доступа к менеджеру из XAML
+        public ILogQueueManager LogManager => _adminLogQueueManager;
+
+
 
         // 🎛️ РУБИЛЬНИК 1: Локальная копия для реактивного изменения текста кнопок
         [ObservableProperty]
@@ -32,6 +36,7 @@ namespace HomeNetPresentation.ViewModels
         // Тексты кнопок-тумблеров
         [ObservableProperty] private string _toggleButtonText = "Показать лог";
         [ObservableProperty] private string _tableButtonText = "Показать users";
+        private ILogQueueManager _adminLogQueueManager;
 
         // Конструктор — принимает чистый IEventBus из Ядра
         // Больше не нужно объявлять приватное поле _navigationStateManager! 
@@ -61,8 +66,6 @@ namespace HomeNetPresentation.ViewModels
             }
         }
 
-
-        // 📢 Кнопка: Показать/Скрыть панель логов
         [RelayCommand]
         private void ShowLogPanel()
         {
@@ -75,8 +78,11 @@ namespace HomeNetPresentation.ViewModels
             }
         }
 
-        // 📢 Кнопка: Показать/Скрыть форму удаления
-        [RelayCommand]
+
+
+
+            // 📢 Кнопка: Показать/Скрыть форму удаления
+            [RelayCommand]
         private void ShowDeleteForm()
         {
             Navigation.ToggleAdminSubTab(AdminSubTab.DeleteUserForm);

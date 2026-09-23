@@ -27,7 +27,6 @@ namespace SiberNet.UI
 
             try
             {
-
                 
                 BackendMode currentMode = BackendMode.Real;
 

@@ -1,8 +1,8 @@
 ﻿using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNetCore.Enums.Navigation;
-using HomeNetCore.Interfaces.Events; // 🎯 Импорт нашего автобуса
-using HomeNetCore.Interfaces.ViewModels; // 🎯 Импорт интерфейса ITitleBarViewModel с рекордами
+using HomeNetCore.Interfaces.Events; 
+using HomeNetCore.Interfaces.ViewModels; 
 using HomeNetCore.Models;
 
 namespace HomeNetPresentation.Services

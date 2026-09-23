@@ -9,7 +9,9 @@ namespace HomeNetCore.Enums.Navigation
     { 
         None,
         Profile,
-        Messenger
-       
+        Messenger,
+            Authentication,
+            Registration
+
     }
 }
