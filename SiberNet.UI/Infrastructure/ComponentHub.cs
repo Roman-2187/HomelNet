@@ -26,6 +26,8 @@ namespace SiberNet.UI.Infrastructure
 
         public AccountMenuViewModel AccountMenuViewModel => AppBootstrapper.GetViewModel<AccountMenuViewModel>();
 
-       
+        public TerminalViewModel TerminalViewModel => AppBootstrapper.GetViewModel<TerminalViewModel>();
+
+
     }
 }

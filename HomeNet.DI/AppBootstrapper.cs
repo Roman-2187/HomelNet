@@ -44,7 +44,7 @@ namespace HomeNet.DI
                 var eventBus = provider.GetRequiredService<IEventBus>();
 
                 // Передаем шину событий и задержку в 20 миллисекунд
-                var uiManager = new HomeNetServices.Diagnostics.LogQueueManager(eventBus, 5);
+                var uiManager = new HomeNetServices.Diagnostics.LogQueueManager(eventBus, 15);
 
                 var crashLogger = provider.GetRequiredService<AppFileogger>();
 
@@ -82,6 +82,7 @@ namespace HomeNet.DI
             services.AddSingleton<UsersTableViewModel>();
             services.AddSingleton<RegistrationViewModel>();
             services.AddSingleton<AuthenticationViewModel>();
+            services.AddSingleton<TerminalViewModel>(); // 🔥 ДОБАВИЛИ НАШУ КРОССПЛАТФОРМЕННУЮ ВЬЮМОДЕЛЬ
             services.AddSingleton<AdminMenuViewModel>();
             services.AddSingleton<DeleteUsersViewModel>();
             services.AddSingleton<ChatViewModel>();

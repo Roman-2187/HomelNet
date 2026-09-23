@@ -4,41 +4,81 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:WpfHomeNet.Controls"
-             mc:Ignorable="d"   
-             xmlns:infra="clr-namespace:SiberNet.UI.Animations"
+             mc:Ignorable="d"              
              d:DesignHeight="450" d:DesignWidth="800"
-              
-             DataContext="{Binding AdminMenuViewModel, Source={StaticResource ComponentHub}}">
-    <Grid>
-    <!-- 🔥 ЗАРЯДИЛИ РЕНДЕРЕР ЧЕРЕЗ ПРИКРЕПЛЯЕМОЕ СВОЙСТВО НА АВТОБУС СОБЫТИЙ -->
-    <RichTextBox x:Name="LogTextBox"
-                     infra:LogUiAnimation.RegisterBridge="True"
-                     VerticalScrollBarVisibility="Hidden"
-                     IsReadOnly="True" 
-                     FontSize="14" 
-                     FontWeight="Bold"
-                     Foreground="White" 
-                     SelectionBrush="#FF297AB8">
-        <RichTextBox.Style>
-            <Style TargetType="RichTextBox" >
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="RichTextBox">
-                            <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}">
-                                <ContentControl.Tag>
-                                    <CornerRadius>6</CornerRadius>
-                                </ContentControl.Tag>
-                                <!-- Системное имя PART_ContentHost сохраняет работу мыши и скролла на ура! -->
-                                <ScrollViewer x:Name="PART_ContentHost" 
-                                                  Margin="5"   
-                                                  HorizontalScrollBarVisibility="Disabled"
-                                                  VerticalScrollBarVisibility="Hidden"/>
-                            </ContentControl>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-        </RichTextBox.Style>
-    </RichTextBox>
+             xmlns:enums="clr-namespace:HomeNetCore.Enums;assembly=HomeNetCore"
+             xmlns:behaviors="clr-namespace:SiberNet.UI.Infrastructure.Behaviors" 
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+             DataContext="{Binding TerminalViewModel, Source={StaticResource ComponentHub}}">
+
+
+   <Grid >
+        <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}">
+            <ContentControl.Tag>
+                <CornerRadius>6</CornerRadius>
+            </ContentControl.Tag>
+
+            <ScrollViewer Margin="5" 
+              HorizontalScrollBarVisibility="Disabled" 
+              VerticalScrollBarVisibility="Hidden">
+
+                <!-- 🔥 ПОДКЛЮЧАЕМ НАШ ХИТРЫЙ АВТОСКРОЛЛ: -->
+                <i:Interaction.Behaviors>
+                    <behaviors:AutoScrollBehavior />
+                </i:Interaction.Behaviors>
+
+                <StackPanel TextBlock.FontFamily="Consolas" TextBlock.FontSize="14" TextBlock.FontWeight="Bold">
+
+                    <!-- 🔥 ГЛАВНЫЙ ВЕРТИКАЛЬНЫЙ СПИСОК СТРОК (Logs) -->
+                    <ItemsControl ItemsSource="{Binding Logs}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+
+                                <!-- 🔥 ВНУТРЕННИЙ ГОРИЗОНТАЛЬНЫЙ РЯД БУКВ (Для каждой строки) -->
+                                <ItemsControl ItemsSource="{Binding}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <!-- Заставляем буквы текущей строки идти слева направо и переноситься -->
+                                            <WrapPanel Margin="0,1"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <!-- Биндимся к свойству Value нашего рекорда LogChar -->
+                                            <TextBlock Text="{Binding Value}">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="LightGreen"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Level}" Value="{x:Static enums:LogLevel.Critical}">
+                                                                <Setter Property="Foreground" Value="Red"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Level}" Value="{x:Static enums:LogLevel.Error}">
+                                                                <Setter Property="Foreground" Value="OrangeRed"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Level}" Value="{x:Static enums:LogLevel.Warning}">
+                                                                <Setter Property="Foreground" Value="Orange"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Level}" Value="{x:Static enums:LogLevel.Debug}">
+                                                                <Setter Property="Foreground" Value="Tan"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                </StackPanel>
+            </ScrollViewer>
+
+        </ContentControl>
     </Grid>
+
 </UserControl>

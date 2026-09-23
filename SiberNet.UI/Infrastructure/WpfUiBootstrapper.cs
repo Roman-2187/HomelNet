@@ -1,10 +1,11 @@
 ﻿
-        using System;
 using HomeNet.DI;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.OutputLogging;
+using HomeNetPresentation.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using SiberNet.UI.Infrastructure.Animators;
+        using System;
 
 namespace SiberNet.UI.Infrastructure
     {
@@ -40,8 +41,12 @@ namespace SiberNet.UI.Infrastructure
 
             provider.GetRequiredService<ILogQueueManager>();
 
-            // ✂️ ШАГ 3 С КИКСТАРТОМ WpfLogAnimator ТОЖЕ ПОЛНОСТЬЮ УДАЛИЛИ!
-            // Твой LogUiAnimation сам подцепится к шине событий при открытии вкладки логов.
+           
+
+            // 🔥 ХИТРЫЙ ПЕРЕХВАТ ДЛЯ WPF:
+            // Вытаскиваем чистую вьюмодель и говорим движку WPF автоматически синхронизировать её потоки!
+            var terminalVm = provider.GetRequiredService<TerminalViewModel>();
+            System.Windows.Data.BindingOperations.EnableCollectionSynchronization(terminalVm.Logs, new object());
 
             // 4. 🔥 АКТИВИРУЕМ АНИМАТОРЫ ОКНА
             if (mode == BackendMode.Real || mode == BackendMode.Local)

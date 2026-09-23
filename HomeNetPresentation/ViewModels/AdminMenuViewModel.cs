@@ -38,9 +38,6 @@ namespace HomeNetPresentation.ViewModels
         [ObservableProperty] private string _tableButtonText = "Показать users";
         private ILogQueueManager _adminLogQueueManager;
 
-        // Конструктор — принимает чистый IEventBus из Ядра
-        // Больше не нужно объявлять приватное поле _navigationStateManager! 
-        // Конструктор просто пробрасывает навигатор в base:
         public AdminMenuViewModel(IUserService userService, ILogQueueManager logQueueManager, IEventBus eventBus, NavigationStateManager navigation)
             : base(eventBus, navigation)
         {
