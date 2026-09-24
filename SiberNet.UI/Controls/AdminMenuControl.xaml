@@ -119,6 +119,22 @@
             </Border>
 
 
+            <!-- Блок Г: Инспектор шины событий -->
+            <Border x:Name="InspectorFormContainer" Background="Transparent">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <!-- 🎯 Возвращаем триггер: Ловим значение EventInspector из энума навигатора -->
+                            <DataTrigger Binding="{Binding Navigation.CurrentAdminTab}" Value="EventInspector">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <!-- Подключаем наш автономный киберпанк-контрол отчета -->
+                <controls:InspectorViewControl/>
+            </Border>
 
 
 
