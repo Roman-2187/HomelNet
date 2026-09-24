@@ -9,6 +9,7 @@ using HomeNetOrm.Builders;
 using HomeNetOrm.Repositories;
 using HomeNetPresentation.Services;
 using HomeNetPresentation.ViewModels;
+using HomeNetPresentation.ViewModels.AdminViews;
 using HomeNetServices.Diagnostics;
 using HomeNetServices.Identity;
 using HomeNetServices.Routing;
@@ -35,6 +36,15 @@ namespace HomeNet.DI
             // 1. Системная инфраструктура (Singleton)
             services.AddSingleton<ILogger, Logger>();
             services.AddSingleton<IEventBus, EventBus>();
+
+            services.AddSingleton<IEventInspectorSource, EventBusInspector>();
+
+            services.AddSingleton<IEventInspectorSource>(provider =>
+            {
+                var eventBus = (EventBus)provider.GetRequiredService<IEventBus>();
+                return eventBus.Inspector;
+            });
+
 
             // Логгер-неубивашка для моментального бэкапа
             IServiceCollection serviceCollection = services.AddSingleton<AppFileogger>(provider => new AppFileogger("App_debug.txt"));
@@ -79,16 +89,20 @@ namespace HomeNet.DI
             // 3. Регистрация Вьюмоделей слоя Презентации
              
             services.AddSingleton<StatusBarViewModel>();
-            services.AddSingleton<UsersTableViewModel>();
+            services.AddSingleton<TableUsersViewModel>();
             services.AddSingleton<RegistrationViewModel>();
             services.AddSingleton<AuthenticationViewModel>();
-            services.AddSingleton<TerminalViewModel>(); // 🔥 ДОБАВИЛИ НАШУ КРОССПЛАТФОРМЕННУЮ ВЬЮМОДЕЛЬ
+            services.AddSingleton<TerminalLogsViewModel>(); // 🔥 ДОБАВИЛИ НАШУ КРОССПЛАТФОРМЕННУЮ ВЬЮМОДЕЛЬ
+                                                            // Вьюмодель инспектора для вывода отчета на экран
+            services.AddSingleton<InspectorViewModel>();
+
             services.AddSingleton<AdminMenuViewModel>();
             services.AddSingleton<DeleteUsersViewModel>();
             services.AddSingleton<ChatViewModel>();
             services.AddSingleton<TitleBarViewModel>();
-            
-           
+            services.AddSingleton<SeedUsersViewModel>();
+
+
 
             // Регистрируем навигатор как Singleton, чтобы он жил в одном экземпляре на всё приложение
             services.AddSingleton<NavigationStateManager>();

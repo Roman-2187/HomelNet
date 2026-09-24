@@ -1,5 +1,6 @@
 ﻿using HomeNet.DI;
 using HomeNetPresentation.ViewModels;
+using HomeNetPresentation.ViewModels.AdminViews;
 
 
 namespace SiberNet.UI.Infrastructure
@@ -26,7 +27,17 @@ namespace SiberNet.UI.Infrastructure
 
         public AccountMenuViewModel AccountMenuViewModel => AppBootstrapper.GetViewModel<AccountMenuViewModel>();
 
-        public TerminalViewModel TerminalViewModel => AppBootstrapper.GetViewModel<TerminalViewModel>();
+        public TerminalLogsViewModel TerminalViewModel => AppBootstrapper.GetViewModel<TerminalLogsViewModel>();
+
+       
+        public TableUsersViewModel TableUsersViewModel => AppBootstrapper.GetViewModel<TableUsersViewModel>();
+
+        public InspectorViewModel InspectorViewModel => AppBootstrapper.GetViewModel<InspectorViewModel>();
+
+        public SeedUsersViewModel SeedUsersViewModel => AppBootstrapper.GetViewModel<SeedUsersViewModel>();
+
+        // ⚔️ Модуль хирургического удаления пользователей
+        public DeleteUsersViewModel DeleteUsersViewModel => AppBootstrapper.GetViewModel<DeleteUsersViewModel>();
 
 
     }

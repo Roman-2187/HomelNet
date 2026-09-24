@@ -43,6 +43,8 @@ namespace HomeNetPresentation.Services
         }
 
         // Включаем режим: Стартовая страница (Абсолютный ноль)
+
+
         public void SetStartZone()
         {
             CurrentMainZone = MainTab.None;
@@ -103,13 +105,6 @@ namespace HomeNetPresentation.Services
         {
             CurrentUser = null;
             SetStartZone(); // Внутри автоматически сработает Publish
-        }
-
-        // Умный геттер для видимости кнопки возврата (остается без изменений)
-        public bool IsAdminReturnButtonVisible =>
-            CurrentUser != null &&
-            CurrentMainZone == MainTab.ClientZone &&
-            CurrentClientTab == ClientSubTab.Messenger &&
-            (CurrentUser.Email?.Contains("admin", StringComparison.OrdinalIgnoreCase) ?? false);
+        }     
     }
 }

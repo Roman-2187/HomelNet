@@ -36,9 +36,6 @@ namespace HomeNetPresentation.ViewModels
         private void Logout()
         {
             IsMenuOpen = false; // Схлопываем шторку
-
-            // 🚀 СТРЕЛЯЕМ СРАЗУ В ЦЕЛЬ! 
-            // Напрямую публикуем макро-навигацию, которую твой Навигатор/Шапка уже умеют обрабатывать.
             _eventBus.Publish(this, new ITitleBarViewModel.MacroNavigation(MainTab.None));
         }
 

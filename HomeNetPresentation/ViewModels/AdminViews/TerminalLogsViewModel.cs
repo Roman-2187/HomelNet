@@ -6,12 +6,12 @@ using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.OutputLogging;
 
-namespace HomeNetPresentation.ViewModels
+namespace HomeNetPresentation.ViewModels.AdminViews
 {
     // 🔥 Наша чистая модель символа: хранит букву и её уровень лога для XAML-триггера
     public record LogChar(char Value, LogLevel Level);
 
-    public partial class TerminalViewModel : ObservableObject, IDisposable
+    public partial class TerminalLogsViewModel : ObservableObject, IDisposable
     {
         private readonly IEventBus _eventBus;
         private List<LogChar>? _currentLine;
@@ -19,7 +19,7 @@ namespace HomeNetPresentation.ViewModels
         // Главная коллекция строк. Каждая строка — это простой список чаров.
         public ObservableCollection<List<LogChar>> Logs { get; } = new();
 
-        public TerminalViewModel(IEventBus eventBus)
+        public TerminalLogsViewModel(IEventBus eventBus)
         {
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             _eventBus.Subscribe<ILogQueueManager.LogMessageReceived>(OnLogReceived);

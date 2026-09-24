@@ -13,7 +13,8 @@ namespace HomeNetCore.Enums.Navigation
         UserTable,        // Таблица пользователей
         DeleteUserForm,   // Форма удаления
         LogPanel,         // Панель логов (Родитель для фильтров!)
-        EventInspector    // Инспектор событий бэкенда
+        EventInspector,    // Инспектор событий бэкенда
+        SeedUsersForm
     }
 }
 

@@ -1,107 +1,95 @@
 ﻿<UserControl
-    x:Class="WpfHomeNet.Controls.DeleteUsers"
+    x:Class="SiberNet.UI.Controls.DeleteUsersControl"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-    xmlns:local="clr-namespace:WpfHomeNet.Controls"
     mc:Ignorable="d" 
-    d:DesignHeight="400" d:DesignWidth="800" >
-
-   
-
-        <Grid  >
-            <!-- Добавили четвертую строку специально для нижних кнопок -->
-            <Grid.RowDefinitions>
-                <RowDefinition Height="25"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-
-            <!-- Заголовок -->
-            <TextBlock
-                Text="{Binding StatusMessage}"
-                 FontWeight="Bold" 
-                Margin="20,0,20,0" VerticalAlignment="Center"/>
+    d:DesignHeight="400" d:DesignWidth="800" 
+    DataContext="{Binding DeleteUsersViewModel, Source={StaticResource ComponentHub}}">
 
 
-            <!-- Панель поиска -->
-            <StackPanel
-                Grid.Row="1" Margin="5,10,5,5"
-                Orientation="Horizontal" >
-                <!-- Биндинг ID пользователя на лету -->
-                <TextBox BorderBrush="#FF211E19"
-                         BorderThickness="0.5"
-                    Width="400" Height="35"
-                    VerticalContentAlignment="Center"
-                    Text="{Binding TargetUserId,
-                    UpdateSourceTrigger=PropertyChanged}"
-                   
-                    Foreground="DarkSlateGray"
-                    Padding="5,0,0,0" Background="#66B3CCB3"/>
 
-                <!-- Биндинг команды поиска -->
-                <Button
-                    Content="Найти" Margin="70,0,0,0"
-                    Width="90" Height="35"
-                    Command="{Binding SearchCommand}"
-                    Background="Transparent" />
-                
-            </StackPanel>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="25"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
-            <!-- Список найденных пользователей -->
+        <!-- Заголовок статуса -->
+        <TextBlock
+            Text="{Binding StatusMessage}"
+            FontWeight="Bold" 
+            Margin="20,0,20,0" VerticalAlignment="Center"/>
+
+        <!-- Панель поиска -->
+        <StackPanel
+            Grid.Row="1" Margin="5,10,5,5"
+            Orientation="Horizontal">
+
+            <TextBox BorderBrush="#FF211E19"
+                     BorderThickness="0.5"
+                     Width="400" Height="35"
+                     VerticalContentAlignment="Center"
+                     Text="{Binding TargetUserId, UpdateSourceTrigger=PropertyChanged}"
+                     Foreground="DarkSlateGray"
+                     Padding="5,0,0,0" Background="#66B3CCB3"/>
+
+            <Button
+                Content="Найти" Margin="70,0,0,0"
+                Width="90" Height="35"
+                Command="{Binding SearchCommand}"
+                Background="Transparent" />
+        </StackPanel>
+
+        <!-- Список найденных пользователей -->
         <Border Background="Transparent"
                 Grid.Row="2"               
                 BorderThickness="0.3"
                 BorderBrush="#FFF23E5C"
                 CornerRadius="6"
-                
-                Margin="10" >
-                <ListBox
-                    
-                    DisplayMemberPath="DisplayInfo" Background="#66ABC8AB"
-                   
-                    
+                Margin="10">
 
-                    SelectedItem="{Binding SelectedUser}"
-                    SelectedValuePath="Id"  
-                    Margin="10"  
-                    RenderTransformOrigin="0.507,0.617" >
-                   
+            <!-- 🎯 НАВЕЛИ ДИСЦИПЛИНУ: Добавили ItemsSource на нашу новую коллекцию -->
+            <ListBox
+                ItemsSource="{Binding FoundUsers}"
+                DisplayMemberPath="DisplayInfo" 
+                Background="#66ABC8AB"
+                SelectedItem="{Binding SelectedUser}"
+                SelectedValuePath="Id"  
+                Margin="10"  
+                RenderTransformOrigin="0.507,0.617" />
+        </Border>
 
-                </ListBox>
-            </Border>
+        <!-- Панель управления -->
+        <StackPanel 
+            Grid.Row="3" 
+            Orientation="Horizontal"
+            HorizontalAlignment="Right" 
+            Margin="5,10,5,5">
 
-            <!-- Панель управления  -->
-            <StackPanel 
-                Grid.Row="3" 
-                Orientation="Horizontal"
-                HorizontalAlignment="Right" 
-                Margin="5,10,5,5">
+            <!-- 🎯 НАВЕЛИ ДИСЦИПЛИНУ: Поменяли команду на ExecuteDeleteCommand -->
+            <Button 
+               Width="80" 
+               Content="Удалить" 
+               Height="35"
+               Margin="0,0,10,0"
+               Command="{Binding ExecuteDeleteCommand}"
+               IsEnabled="{Binding CanDelete}"
+               Background="Transparent" />
 
-                <!-- Биндинг команды удаления и флага доступности -->
-                <Button 
-                   Width="80" 
+            <Button 
+               Content="Отмена"
+               Width="80"
+               Height="35"
+               Command="{Binding CancelCommand}"
+               Background="Transparent" />
+        </StackPanel>
+    </Grid>
 
-                   Content="Удалить" 
-                   Height="35"
-                   Margin="0,0,10,0"
-                   Command="{Binding DeleteCommand}"
-                   IsEnabled="{Binding CanDelete}"
-                   Background="Transparent" />
 
-                <!-- Биндинг команды отмены (схлопывания формы) -->
-                <Button 
-                   Content="Отмена"
-                   Width="80"
-                   Height="35"
-                   Command="{Binding CancelCommand}"
-                   Background="Transparent" />
-            </StackPanel>
-        </Grid> 
-    
-    
-    
+
 </UserControl>
 

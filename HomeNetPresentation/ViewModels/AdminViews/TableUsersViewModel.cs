@@ -1,43 +1,38 @@
-﻿using HomeNetCore.Interfaces;             
+﻿using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Events;
-using HomeNetCore.Interfaces.ViewModels; 
+using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
 using HomeNetPresentation.Services;
 using System.Collections.ObjectModel;
 
-namespace HomeNetPresentation.ViewModels
+namespace HomeNetPresentation.ViewModels.AdminViews
 {
-    public partial class UsersTableViewModel : FormViewModelBase
+    public partial class TableUsersViewModel : FormViewModelBase
     {
         private readonly IUserService _userService;
 
-        // ObservableCollection Тулкит сам обернёт в свойство, если нужно, но мы оставляем её открытой для биндинга
         public ObservableCollection<UserEntity> Users { get; private set; } = new();
 
-        // Конструктор принимает чистый IEventBus из Ядра и прокидывает в базу через base(eventBus)
-        public UsersTableViewModel(IEventBus eventBus, IUserService userService, NavigationStateManager navigation) : base(eventBus, navigation)
+        public TableUsersViewModel(IEventBus eventBus, IUserService userService, NavigationStateManager navigation) : base(eventBus, navigation)
         {
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
 
             InitializeBusSubscriptions();
 
-            // Запускаем асинхронную подгрузку без жёстких Task.Run внутри конструктора
+            // Запускаем первичную подгрузку один раз при старте
             _ = InitializeDataAsync();
         }
 
         private async Task InitializeDataAsync()
         {
-            // 🔥 ПОПРАВИЛИ: Короткий рекорд строки состояния
             EventBus.Publish(this, new IStatusBarViewModel.TextChanged("Синхронизация с базой данных HomeNet..."));
 
             try
             {
-                // 1. Честно читаем базу данных напрямую через асинхронный метод сервиса
                 var list = await _userService.GetAllAsync();
 
-                await Task.Delay(1000); // Наша кинематографичная пауза 🎬
+                await Task.Delay(1000); // Кинематографичная пауза 🎬
 
-                // 2. Очищаем и заполняем. SynchronizationContext шины сам вернет этот поток в UI (WPF/Avalonia)
                 Users.Clear();
                 if (list != null)
                 {
@@ -47,7 +42,6 @@ namespace HomeNetPresentation.ViewModels
                     }
                 }
 
-                // 🔥 ПОПРАВИЛИ: Кормим статус-бар финальными циферками через короткие рекорды
                 EventBus.Publish(this, new IUsersTableViewModel.Refreshed(Users.ToList()));
                 EventBus.Publish(this, new IStatusBarViewModel.TextChanged("База данных успешно синхронизирована."));
             }
@@ -55,21 +49,17 @@ namespace HomeNetPresentation.ViewModels
             {
                 EventBus.Publish(this, new IStatusBarViewModel.TextChanged($"Ошибка синхронизации данных: {ex.Message}"));
             }
-
-
-
-
-            // 🎯 ЛОВИМ ТОТ ЖЕ ПИНОК АДМИНА: Перезапускаем честную выгрузку из БД!
-            EventBus.Subscribe<IAdminMenuViewModel.UserTableRequested>(async msg =>
-            {
-                // Вызываем твой метод, который очищает коллекцию и закидывает свежие данные
-                await InitializeDataAsync();
-            });
         }
 
         private void InitializeBusSubscriptions()
         {
-            // 1. 🔥 ПОПРАВИЛИ: Ловим короткое сообщение об удалении пользователя
+            // 🎯 ПЕРЕНЕСЛИ СЮДА: Ловим пинок админа на обновление (строго одна подписка)
+            EventBus.Subscribe<IAdminMenuViewModel.UserTableRequested>(async msg =>
+            {
+                await InitializeDataAsync();
+            });
+
+            // 1. Ловим удаление пользователя
             EventBus.Subscribe<IDeleteUserViewModel.Deleted>(msg =>
             {
                 var userToRemove = Users.FirstOrDefault(u => u.Id == msg.UserId);
@@ -78,10 +68,8 @@ namespace HomeNetPresentation.ViewModels
                     string deletedName = $"{userToRemove.FirstName} {userToRemove.LastName}";
                     Users.Remove(userToRemove);
 
-                    // 🔥 ПОПРАВИЛИ: Стреляем точной укороченной коллекцией сразу после удаления!
                     EventBus.Publish(this, new IUsersTableViewModel.Refreshed(Users.ToList()));
 
-                    // Асинхронный статус без блокировки потоков
                     _ = Task.Run(async () =>
                     {
                         await Task.Delay(1000);
@@ -90,7 +78,7 @@ namespace HomeNetPresentation.ViewModels
                 }
             });
 
-            // 2. 🔥 ПОПРАВИЛИ: Ловим короткое добавление нового пользователя
+            // 2. Ловим добавление нового пользователя
             EventBus.Subscribe<IUsersTableViewModel.Added>(msg =>
             {
                 if (msg.User == null) return;
@@ -99,7 +87,7 @@ namespace HomeNetPresentation.ViewModels
                 EventBus.Publish(this, new IUsersTableViewModel.Refreshed(Users.ToList()));
             });
 
-            // 3. 🔥 ПОПРАВИЛИ: ОТВЕТ НА ЗАПРОС: Строка состояния попросила обновить экран (короткий рекорд)
+            // 3. Ответ на запрос синхронизации состояния экрана
             EventBus.Subscribe<IUsersTableViewModel.RefreshRequest>(msg =>
             {
                 EventBus.Publish(this, new IUsersTableViewModel.Refreshed(Users.ToList()));

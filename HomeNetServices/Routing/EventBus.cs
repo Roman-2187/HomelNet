@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using HomeNetCore.Interfaces.Events;
+﻿using HomeNetCore.Interfaces.Events;
 using HomeNetServices.Diagnostics;
 
 namespace HomeNetServices.Routing

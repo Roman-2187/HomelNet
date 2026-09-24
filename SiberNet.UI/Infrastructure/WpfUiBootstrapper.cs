@@ -2,10 +2,10 @@
 using HomeNet.DI;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.OutputLogging;
-using HomeNetPresentation.ViewModels;
+using HomeNetPresentation.ViewModels.AdminViews;
 using Microsoft.Extensions.DependencyInjection;
 using SiberNet.UI.Infrastructure.Animators;
-        using System;
+using System;
 
 namespace SiberNet.UI.Infrastructure
     {
@@ -45,7 +45,7 @@ namespace SiberNet.UI.Infrastructure
 
             // 🔥 ХИТРЫЙ ПЕРЕХВАТ ДЛЯ WPF:
             // Вытаскиваем чистую вьюмодель и говорим движку WPF автоматически синхронизировать её потоки!
-            var terminalVm = provider.GetRequiredService<TerminalViewModel>();
+            var terminalVm = provider.GetRequiredService<TerminalLogsViewModel>();
             System.Windows.Data.BindingOperations.EnableCollectionSynchronization(terminalVm.Logs, new object());
 
             // 4. 🔥 АКТИВИРУЕМ АНИМАТОРЫ ОКНА

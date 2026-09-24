@@ -44,16 +44,25 @@
                      Margin="0,3"/>
 
                 <!-- 📢 Кнопка: Удалить юзера -->
-                <Button Content="Удалить юзера"
-                     Command="{Binding ShowDeleteFormCommand}"
-                     Style="{StaticResource OrangeDefaultButtonStyle}"
-                     Margin="0,3"/>
+                <Button Content="{Binding DeleteButtonText, FallbackValue='Удалить юзера'}"
+        Command="{Binding ShowDeleteFormCommand}"
+        Style="{StaticResource OrangeDefaultButtonStyle}"
+        Margin="0,3"/>
 
                 <!-- 📢 Кнопка: Тестовый Сидинг данных -->
-                <Button Content="Сидинг Users" 
-                     Command="{Binding SeedDataCommand}"
-                     Style="{StaticResource OrangeDefaultButtonStyle}"
-                     Margin="0,3"/>
+                <Button Content="{Binding SeedButtonText, FallbackValue='Сидинг Users'}" 
+        Command="{Binding ShowSeedFormCommand}"
+        Style="{StaticResource OrangeDefaultButtonStyle}"
+        Margin="0,3"/>
+
+                <!-- 📢 Кнопка: Инспектор шины -->
+                <Button Content="{Binding InspectorButtonText, FallbackValue='Инспектор шины'}" 
+        Command="{Binding ShowInspectorCommand}"
+        Style="{StaticResource OrangeDefaultButtonStyle}"
+        Margin="0,3"/>
+
+
+
             </StackPanel>
         </ContentControl>
 
@@ -104,12 +113,32 @@
                         </Style.Triggers>
                     </Style>
                 </Border.Style>
-                <TextBlock 
-                    Text="[ФОРМА ХИРУРГИЧЕСКОГО УДАЛЕНИЯ ЮЗЕРА]" 
-                    Foreground="#FFF23E5C"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"/>
+
+                <!-- 🎯 МЕНЯЕМ НА НАШ РЕАЛЬНЫЙ КОНТРОЛ ИЗ СТУДИИ! -->
+                <controls:DeleteUsersControl/>
             </Border>
+
+
+
+
+
+
+            <!-- Блок Д: Модуль генерации тестовых пользователей -->
+            <Border x:Name="SeedFormContainer" Background="Transparent">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Navigation.CurrentAdminTab}" Value="SeedUsersForm">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <controls:SeedUsersViewControl/>
+            </Border>
+
+
 
         </Grid>
     </Grid>

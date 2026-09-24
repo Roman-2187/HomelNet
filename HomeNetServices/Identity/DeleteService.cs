@@ -1,4 +1,5 @@
 ﻿using HomeNetCore.Extensions;
+using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Models;
@@ -8,9 +9,9 @@ namespace HomeNetServices.Services.Identity
 
     public class DeleteService : IDeleteService
     {
-        private readonly UserService _userService;
+        private readonly IUserService _userService;
         ILogger _logger;
-        public DeleteService(ILogger iloger, UserService userService)
+        public DeleteService(ILogger iloger, IUserService userService)
         {
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             _logger = iloger ?? throw new ArgumentNullException();

@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:WpfHomeNet.Controls"
+           
              mc:Ignorable="d"              
              d:DesignHeight="450" d:DesignWidth="800"
              xmlns:enums="clr-namespace:HomeNetCore.Enums;assembly=HomeNetCore"
@@ -18,7 +18,10 @@
                 <CornerRadius>6</CornerRadius>
             </ContentControl.Tag>
 
-            <ScrollViewer Margin="5" 
+
+            <Border BorderThickness="1" BorderBrush="#33FFB300" CornerRadius="4" Background="#FF111318" Padding="5">
+
+            <ScrollViewer Margin="0" 
               HorizontalScrollBarVisibility="Disabled" 
               VerticalScrollBarVisibility="Hidden">
 
@@ -27,7 +30,9 @@
                     <behaviors:AutoScrollBehavior />
                 </i:Interaction.Behaviors>
 
-                <StackPanel TextBlock.FontFamily="Consolas" TextBlock.FontSize="14" TextBlock.FontWeight="Bold">
+               
+
+                    <StackPanel TextBlock.FontFamily="Consolas" TextBlock.FontSize="14" TextBlock.FontWeight="Bold"  >
 
                     <!-- 🔥 ГЛАВНЫЙ ВЕРТИКАЛЬНЫЙ СПИСОК СТРОК (Logs) -->
                     <ItemsControl ItemsSource="{Binding Logs}">
@@ -75,9 +80,11 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                </StackPanel>
-            </ScrollViewer>
+                </StackPanel> 
 
+            </ScrollViewer></Border>
+
+          
         </ContentControl>
     </Grid>
 

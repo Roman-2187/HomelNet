@@ -3,7 +3,7 @@ using HomeNet.DI;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.OutputLogging;
-using HomeNetPresentation.ViewModels;
+using HomeNetPresentation.ViewModels.AdminViews;
 using Microsoft.Extensions.DependencyInjection;
 using SiberNet.ConsoleTest; // Твой неймспейс с ConsoleTerminalRenderer
 
@@ -16,14 +16,14 @@ namespace SiberNet.ConsoleApp
             Console.Title = "SiberNet v1.0 - Core Console Terminal";
 
             // 1. 🔥 ШАГ 1: Собираем чистый бэкенд через твой универсальный Build метод
-            // Он автоматически зарегистрирует IEventBus, LogQueueManager и TerminalViewModel
+            // Он автоматически зарегистрирует IEventBus, LogQueueManager и TerminalLogsViewModel
             string postgresConn = "Host=localhost;Database=SiberNet;Username=postgres;Password=root";
             string sqliteConn = "Data Source=SiberNetFallback.db";
 
             IServiceProvider provider = AppBootstrapper.Build(BackendMode.Local, postgresConn, sqliteConn);
 
-            // 2. 🔥 ШАГ 2: Вытаскиваем готовую универсальную TerminalViewModel из контейнера
-            var terminalVm = provider.GetRequiredService<TerminalViewModel>();
+            // 2. 🔥 ШАГ 2: Вытаскиваем готовую универсальную TerminalLogsViewModel из контейнера
+            var terminalVm = provider.GetRequiredService<TerminalLogsViewModel>();
 
             // 3. 🔥 ШАГ 3: МАГИЯ АВТО-ОБНОВЛЕНИЯ КОНСОЛИ
             // Подписываемся на изменение коллекции Logs. 

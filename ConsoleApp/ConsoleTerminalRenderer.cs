@@ -1,6 +1,6 @@
 ﻿using System;
 using HomeNetCore.Enums;
-using HomeNetPresentation.ViewModels;
+using HomeNetPresentation.ViewModels.AdminViews;
 
 namespace SiberNet.ConsoleTest
 {
@@ -9,7 +9,7 @@ namespace SiberNet.ConsoleTest
         /// <summary>
         /// 🔥 РЕНДЕРЕР МАТРИЦЫ В СИСТЕМНУЮ КОНСОЛЬ
         /// </summary>
-        public static void PrintToConsole(TerminalViewModel viewModel)
+        public static void PrintToConsole(TerminalLogsViewModel viewModel)
         {
             // Блокируем экран, чтобы не было мерцания при обновлении
             Console.Clear();

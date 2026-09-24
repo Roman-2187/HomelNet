@@ -19,7 +19,7 @@
     //        IEventBus testEventBus = new EventBus();
 
     //        // 2. АКТ: Создаем ВьюМодель! Она тут же запустит InitializeDataAsync() 🚀
-    //        var viewModel = new UsersTableViewModel(testEventBus, testUserService);
+    //        var viewModel = new TableUsersViewModel(testEventBus, testUserService);
 
     //        // 📢 ВАЖНО: Так как в коде вьюмодели зашита кинематографичная пауза Task.Delay(1000),
     //        // наш тест обязан подождать чуть больше (например, 1200 мс), чтобы асинхронный поток успел заполнить коллекцию!
@@ -47,7 +47,7 @@
     //        IEventBus testEventBus = new EventBus();
 
     //        // Создаем ВьюМодель. Она загрузит двух юзеров и выдержит паузу в 1000мс
-    //        var viewModel = new UsersTableViewModel(testEventBus, fakeService);
+    //        var viewModel = new TableUsersViewModel(testEventBus, fakeService);
 
     //        // Ждем, пока InitializeDataAsync() отработает кинематографичную паузу и наполнит таблицу
     //        await Task.Delay(1200);
