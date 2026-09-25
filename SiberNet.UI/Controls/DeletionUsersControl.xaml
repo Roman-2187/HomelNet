@@ -6,90 +6,145 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
     mc:Ignorable="d" 
     d:DesignHeight="400" d:DesignWidth="800" 
-    DataContext="{Binding DeleteUsersViewModel, Source={StaticResource ComponentHub}}">
+    DataContext="{Binding DeleteUsersViewModel,
+    Source={StaticResource ComponentHub}}">
 
 
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="25"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
 
-        <!-- Заголовок статуса -->
-        <TextBlock
-            Text="{Binding StatusMessage}"
+
+    <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}" Tag="6">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <!-- Уменьшили под шапку поиска -->
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Верхний статичный заголовок панели без прыгающих статусов -->
+            <TextBlock
+            Text=" Удаление учетных записей"
+            Foreground="#FFB300"
             FontWeight="Bold" 
-            Margin="20,0,20,0" VerticalAlignment="Center"/>
+            Margin="10,10,10,0"
+            VerticalAlignment="Center"/>
 
-        <!-- Панель поиска -->
-        <StackPanel
-            Grid.Row="1" Margin="5,10,5,5"
-            Orientation="Horizontal">
+            <!-- Панель поиска -->
+            <StackPanel Grid.Row="1" Margin="5,10,5,5" Orientation="Horizontal">
+                <TextBox
+                Text="{Binding TargetUserId, UpdateSourceTrigger=PropertyChanged}"
+                BorderBrush="#FF211E19"
+                BorderThickness="0.5"
+                Width="400" Height="35"
+                VerticalContentAlignment="Center"
+                Foreground="#FFB300"
+                Padding="5,0,0,0"
+                Background="#66B3CCB3"/>
 
-            <TextBox BorderBrush="#FF211E19"
-                     BorderThickness="0.5"
-                     Width="400" Height="35"
-                     VerticalContentAlignment="Center"
-                     Text="{Binding TargetUserId, UpdateSourceTrigger=PropertyChanged}"
-                     Foreground="DarkSlateGray"
-                     Padding="5,0,0,0" Background="#66B3CCB3"/>
-
-            <Button
+                <Button
                 Content="Найти" Margin="70,0,0,0"
                 Width="90" Height="35"
                 Command="{Binding SearchCommand}"
                 Background="Transparent" />
-        </StackPanel>
+            </StackPanel>
 
-        <!-- Список найденных пользователей -->
-        <Border Background="Transparent"
-                Grid.Row="2"               
-                BorderThickness="0.3"
-                BorderBrush="#FFF23E5C"
-                CornerRadius="6"
-                Margin="10">
+            <!-- 🎯 РАСПИЛИЛИ ПОПОЛАМ: Живой список слева и Журнал аудита справа -->
+            <Grid Grid.Row="2" Margin="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <!-- Левая половина -->
+                    <ColumnDefinition Width="*"/>
+                    <!-- Правая половина -->
+                </Grid.ColumnDefinitions>
 
-            <!-- 🎯 НАВЕЛИ ДИСЦИПЛИНУ: Добавили ItemsSource на нашу новую коллекцию -->
-            <ListBox
-                ItemsSource="{Binding FoundUsers}"
-                DisplayMemberPath="DisplayInfo" 
-                Background="#66ABC8AB"
-                SelectedItem="{Binding SelectedUser}"
-                SelectedValuePath="Id"  
-                Margin="10"  
-                RenderTransformOrigin="0.507,0.617" />
-        </Border>
+                <!-- Левая колонка: Список найденных пользователей -->
+                <Border Background="Transparent"
+                    Grid.Column="0"               
+                    BorderThickness="0.3"
+                    BorderBrush="#FFF23E5C"
+                    CornerRadius="6"
+                    Margin="0,0,5,0">
 
-        <!-- Панель управления -->
-        <StackPanel 
-            Grid.Row="3" 
-            Orientation="Horizontal"
-            HorizontalAlignment="Right" 
-            Margin="5,10,5,5">
+                    <ListBox
+                    ItemsSource="{Binding FoundUsers}"
+                    SelectedItem="{Binding SelectedUser}"
+                    DisplayMemberPath="DisplayInfo" 
+                    Background="#66ABC8AB"
+                    SelectedValuePath="Id"  
+                    Margin="10" Foreground="#FFB300"/>
+                </Border>
 
-            <!-- 🎯 НАВЕЛИ ДИСЦИПЛИНУ: Поменяли команду на ExecuteDeleteCommand -->
-            <Button 
-               Width="80" 
-               Content="Удалить" 
-               Height="35"
-               Margin="0,0,10,0"
-               Command="{Binding ExecuteDeleteCommand}"
-               IsEnabled="{Binding CanDelete}"
-               Background="Transparent" />
+                <!-- Правая колонка: Накопительный журнал истории удаления -->
+                <Border Background="Transparent"
+                    Grid.Column="1"               
+                    BorderThickness="0.3"
+                    BorderBrush="#FF00FFFF"
+                    CornerRadius="6"
+                    Margin="5,0,0,0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
 
-            <Button 
-               Content="Отмена"
-               Width="80"
-               Height="35"
-               Command="{Binding CancelCommand}"
-               Background="Transparent" />
-        </StackPanel>
-    </Grid>
+                        <TextBlock 
+                        Text="Журнал истории удаления (Текущая сессия)"
+                        Foreground="#FF00FFFF"
+                        FontSize="11"
+                        FontWeight="Bold"
+                        Margin="10,10,10,0"/>
 
+                        <ListBox
+                        Grid.Row="1"
+                        ItemsSource="{Binding DeletedUsersHistory}"
+                        Background="#66002B2B"
+                        Margin="10" 
+                        Foreground="#FF00FFFF"/>
+                    </Grid>
+                </Border>
+            </Grid>
 
+            <!-- 🔥 Нижняя панель: Локальный статус рядом с кнопками управления -->
+            <Grid Grid.Row="3" Margin="10,5,10,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <!-- Свободное место под статус -->
+                    <ColumnDefinition Width="Auto"/>
+                    <!-- Под кнопки -->
+                </Grid.ColumnDefinitions>
+
+                <!-- 🎯 НАШ ЛОКАЛЬНЫЙ СТАТУС-ЛАБЕЛ: Выводит вердикты бэкенда прямо у кнопок -->
+                <TextBlock
+                Text="{Binding StatusMessage}"
+                Foreground="#FFB300"
+                FontWeight="SemiBold"
+                TextTrimming="CharacterEllipsis"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Left"
+                Margin="0,0,20,0"/>
+
+                <!-- Блок кнопок управления справа -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button 
+                   Width="80" 
+                   Content="Удалить" 
+                   Height="35"
+                   Margin="0,0,10,0"
+                   Command="{Binding ExecuteDeleteCommand}"
+                   Background="Transparent" />
+
+                    <Button 
+                   Content="Отмена"
+                   Width="80"
+                   Height="35"
+                   Command="{Binding CancelCommand}"
+                   Background="Transparent" />
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </ContentControl>
 
 </UserControl>
 

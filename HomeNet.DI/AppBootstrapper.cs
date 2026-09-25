@@ -35,15 +35,23 @@ namespace HomeNet.DI
 
             // 1. Системная инфраструктура (Singleton)
             services.AddSingleton<ILogger, Logger>();
+
+
+            // 1. Регистрируем сам чистый класс инспектора, чтобы EventBus смог его сожрать через конструктор!
+            services.AddSingleton<EventBusInspector>();
+
+            // 2. Регистрируем шину (DI-контейнер сам закинет туда инспектор, созданный строкой выше)
             services.AddSingleton<IEventBus, EventBus>();
 
-            services.AddSingleton<IEventInspectorSource, EventBusInspector>();
-
+            // 3. Перенаправляем интерфейс IEventInspectorSource на ТОТ ЖЕ САМЫЙ экземпляр инспектора
             services.AddSingleton<IEventInspectorSource>(provider =>
-            {
-                var eventBus = (EventBus)provider.GetRequiredService<IEventBus>();
-                return eventBus.Inspector;
-            });
+                provider.GetRequiredService<EventBusInspector>());
+
+
+
+
+
+
 
 
             // Логгер-неубивашка для моментального бэкапа
@@ -54,7 +62,7 @@ namespace HomeNet.DI
                 var eventBus = provider.GetRequiredService<IEventBus>();
 
                 // Передаем шину событий и задержку в 20 миллисекунд
-                var uiManager = new HomeNetServices.Diagnostics.LogQueueManager(eventBus, 15);
+                var uiManager = new LogQueueManager(eventBus, 15);
 
                 var crashLogger = provider.GetRequiredService<AppFileogger>();
 

@@ -1,10 +1,12 @@
-﻿using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Models.Diagnostics;
-
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetCore.Models.Diagnostics; // Убедись, что этот namespace верный
 
 namespace HomeNetServices.Diagnostics
 {
-
     public class EventBusInspector : IEventInspectorSource
     {
         // Индекс всех компонентов системы: Имя класса -> Объект узла. Сложность O(1)
@@ -14,14 +16,29 @@ namespace HomeNetServices.Diagnostics
         private readonly List<ComponentNode.SignalEvent> _signalTimeline = new();
 
         /// <summary>
-        /// Фиксация публикации: O(1) сложность, никаких переборов.
+        /// 🦾 ЖЕЛЕЗОБЕТОННАЯ ФИКСАЦИЯ ПУБЛИКАЦИИ
         /// </summary>
         public void RecordPublish(object sender, Type messageType)
         {
-            // Наш бронежилет: если прилетит null, подставим безопасный маркер
-            string componentName = sender?.GetType()?.Name ?? "UnknownSource";
+            string componentName = "UnknownSource";
 
-            // Быстрое получение или создание узла за O(1)
+            if (sender != null)
+            {
+                var senderType = sender.GetType();
+
+                // 🧠 ЛАЙФХАК: Если отправителем случайно указали саму шину EventBus,
+                // то мы попробуем вытащить имя реального класса из контекста, 
+                // но если там чистый вызов — берем имя типа отправителя.
+                componentName = senderType.Name;
+
+                // Если имя получилось слишком общим (например, "Object"), подстрахуемся
+                if (componentName == "Object" && sender is string strName)
+                {
+                    componentName = strName;
+                }
+            }
+
+            // Быстрое получение или создание узла за O(1) — теперь сервисы ТОЧНО получат свой узел! 🧼
             var node = GetOrCreateNode(componentName);
 
             // HashSet защитит от дубликатов типов сообщений внутри карточки
@@ -60,24 +77,30 @@ namespace HomeNetServices.Diagnostics
         }
 
         /// <summary>
-        /// Генерация текстового отчета: обходим готовое дерево объектов.
-        /// Идеально для вывода в нашу новую текстовую панель админки!
+        /// Генерация текстового отчета с разделением по ролям для максимальной читаемости
         /// </summary>
         public string GenerateReport()
         {
-            var sb = new System.Text.StringBuilder();
+            var sb = new StringBuilder();
             sb.AppendLine("======= 🧠 ОБЪЕКТНЫЙ ГРАФ СИСТЕМЫ EVENTBUS =======");
 
+            // Сортируем компоненты по алфавиту для идеального порядка на экране
             foreach (var node in _nodes.Values.OrderBy(n => n.Name))
             {
+                // Пропускаем вывод пустых или технических узлов, если они случайно проскочили
+                if (node.PublishedMessages.Count == 0 && node.Subscriptions.Count == 0)
+                    continue;
+
                 sb.AppendLine($"\n[ КОМПОНЕНТ: {node.Name} ]");
 
+                // Выводим то, что компонент генерирует в систему
                 if (node.PublishedMessages.Count > 0)
                 {
                     foreach (var msgType in node.PublishedMessages)
                         sb.AppendLine($"   📢 ПУБЛИКУЕТ  --> [{msgType.Name}]");
                 }
 
+                // Выводим то, на что компонент подписан
                 if (node.Subscriptions.Count > 0)
                 {
                     foreach (var sub in node.Subscriptions)
@@ -98,5 +121,3 @@ namespace HomeNetServices.Diagnostics
         }
     }
 }
-
-

@@ -1,174 +1,176 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using System;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
 using HomeNetPresentation.Services;
-using System.Collections.ObjectModel;
 
 namespace HomeNetPresentation.ViewModels
 {
-    public partial class DeleteUsersViewModel : FormViewModelBase
+    // 🔥 Реализуем IDisposable для полной зачистки памяти от подписок
+    public partial class DeleteUsersViewModel : FormViewModelBase, IDisposable
     {
-        #region Поля и свойства 🦾
-        private readonly IUserService _userService; // 🔥 Добавили сервис пользователей для выгрузки всего списка
         private readonly IDeleteService _deleteService;
         private readonly ILogger _logger;
 
-        public ObservableCollection<UserEntity> FoundUsers { get; private set; } = new();
+        [ObservableProperty] private ObservableCollection<UserEntity> _foundUsers = new();
+        public ObservableCollection<string> DeletedUsersHistory { get; } = new();
 
         [ObservableProperty] private UserEntity? _selectedUser;
         [ObservableProperty] private string _targetUserId = string.Empty;
-        [ObservableProperty] private bool _canDelete;
-        #endregion
 
-        #region Конструктор
-        public DeleteUsersViewModel(IDeleteService deleteService, IUserService userService, IEventBus eventBus, ILogger logger, NavigationStateManager navigation)
+        public DeleteUsersViewModel(IDeleteService deleteService,
+            IEventBus eventBus, ILogger logger, NavigationStateManager navigation)
             : base(eventBus, navigation)
         {
             _deleteService = deleteService ?? throw new ArgumentNullException(nameof(deleteService));
-            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             SubmitButtonText = "Удалить";
 
-            // 🎧 Ловим пинок из командного пункта админки
-            EventBus.Subscribe<IAdminMenuViewModel.DeleteFormRequested>(async msg =>
-            {
-                ResetForm();
-                await LoadAllUsersAsync(); // 🔥 При каждом открытии формы сразу выгружаем всех из SQLite!
-            });
+            // 🔥 ЧИСТОТА: Передаем именованные методы вместо анонимных лямбд! 🧼
+            EventBus.Subscribe<IAdminMenuViewModel.DeleteFormRequested>(OnDeleteFormRequested);
+            EventBus.Subscribe<IDeleteUserViewModel.Deleted>(OnUserDeleted);
 
             ResetForm();
-            _ = LoadAllUsersAsync(); // Первичная выгрузка при инициализации
+            _ = SyncUsersAsync();
         }
+
+        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Для идеального графа в Инспекторе) 🧼
+
+        private async void OnDeleteFormRequested(IAdminMenuViewModel.DeleteFormRequested msg)
+        {
+            ResetForm();
+            await SyncUsersAsync();
+        }
+
+        private void OnUserDeleted(IDeleteUserViewModel.Deleted msg)
+        {
+            var userToRemove = FoundUsers.FirstOrDefault(u => u.Id == msg.Id);
+            if (userToRemove != null)
+            {
+                FoundUsers.Remove(userToRemove);
+            }
+        }
+
         #endregion
 
-        #region Вспомогательная асинхронная выгрузка
-        private async Task LoadAllUsersAsync()
+        private async Task SyncUsersAsync()
         {
-            StatusMessage = "Загрузка списка пользователей из базы данных HomeNet...";
+            StatusMessage = "Загрузка списка пользователей...";
             try
             {
-                var allUsers = await _userService.GetAllAsync();
-                FoundUsers.Clear();
+                var users = await _deleteService.GetAllUsersAsync();
 
-                if (allUsers != null)
-                {
-                    foreach (var user in allUsers)
-                    {
-                        FoundUsers.Add(user);
-                    }
-                    StatusMessage = $"Всего пользователей в базе: {FoundUsers.Count}. Выберите юзера для удаления.";
-                }
+                FoundUsers = new ObservableCollection<UserEntity>(users ?? Enumerable.Empty<UserEntity>());
+
+                StatusMessage = FoundUsers.Count > 0
+                    ? $"Всего пользователей в базе: {FoundUsers.Count}. Выберите юзера для удаления."
+                    : "В базе данных HomeNet пока нет пользователей.";
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Ошибка загрузки пользователей: {ex.Message}";
+                StatusMessage = $"Ошибка загрузки: {ex.Message}";
             }
         }
-        #endregion
 
-        #region Хитрые хуки ⚙️
+        public void ResetForm()
+        {
+            TargetUserId = string.Empty;
+            SelectedUser = null;
+            StatusMessage = "Введите ID или выберите пользователя ниже";
+            FoundUsers.Clear();
+        }
+
+        #region 🎯 ХУК СВЯЗИ
         partial void OnSelectedUserChanged(UserEntity? value)
         {
             if (value != null)
             {
                 TargetUserId = value.Id.ToString();
-                CanDelete = true;
             }
         }
-
-        partial void OnTargetUserIdChanged(string value)
-        {
-            SearchCommand.NotifyCanExecuteChanged();
-            CanDelete = int.TryParse(value, out int parsedId) && parsedId > 0 || (!string.IsNullOrWhiteSpace(value) && CanDelete);
-        }
-
-        partial void OnCanDeleteChanged(bool value) => ExecuteDeleteCommand.NotifyCanExecuteChanged();
         #endregion
 
-        #region Нано-команды 🧼
+        #region 🦾 НАНО-КОМАНДЫ ДЛЯ БЭКЕНДА
 
-        private bool CanExecuteSearch() => !string.IsNullOrWhiteSpace(TargetUserId);
-
-        [RelayCommand(CanExecute = nameof(CanExecuteSearch))]
+        [RelayCommand]
         private async Task SearchAsync()
         {
+            if (string.IsNullOrWhiteSpace(TargetUserId)) return;
+
             StatusMessage = "Поиск пользователя...";
-            CanDelete = false;
             FoundUsers.Clear();
 
-            var (isSuccess, message, foundUser) = await _deleteService.SearchUserAsync(TargetUserId);
-            StatusMessage = message;
-            CanDelete = isSuccess;
+            var verdict = await _deleteService.SearchUserAsync(TargetUserId);
+            StatusMessage = verdict.Results.FirstOrDefault()?.Message ?? string.Empty;
 
-            if (isSuccess && foundUser != null)
+            if (verdict.IsValid && verdict.FoundUser != null)
             {
-                FoundUsers.Add(foundUser);
-                SelectedUser = foundUser;
-            }
-
-            _logger.LogInformation($"Выполнен точечный поиск пользователя. Результат: {message}");
-        }
-
-        private bool CanExecuteDelete() => CanDelete;
-
-        [RelayCommand(CanExecute = nameof(CanExecuteDelete))]
-        private async Task ExecuteDelete()
-        {
-            int id = SelectedUser?.Id ?? (int.TryParse(TargetUserId, out int parsedId) ? parsedId : -1);
-            if (id == -1) return;
-
-            StatusMessage = $"Удаление пользователя с ID {id}...";
-            var (isSuccess, message) = await _deleteService.DeleteUserAsync(id);
-            StatusMessage = message;
-
-            if (isSuccess)
-            {
-                EventBus.Publish(this, new IDeleteUserViewModel.Deleted(id));
-                _logger.LogInformation($"Пользователь с ID {id} успешно удален.");
-
-                // Перезагружаем список, чтобы удаленный юзер сразу исчез с экрана
-                await LoadAllUsersAsync();
-                TargetUserId = string.Empty;
-                CanDelete = false;
-                SelectedUser = null;
-            }
-            else
-            {
-                _logger.LogWarning($"Не удалось удалить пользователя с ID {id} : {message}");
+                FoundUsers.Add(verdict.FoundUser);
+                SelectedUser = verdict.FoundUser;
             }
         }
 
         [RelayCommand]
-        private async Task Cancel()
+        private async Task ExecuteDeleteAsync()
+        {
+            StatusMessage = string.Empty;
+            try
+            {
+                var verdict = await _deleteService.DeleteUserAsync(TargetUserId, SelectedUser);
+                UpdateValidation(verdict.Results);
+                StatusMessage = verdict.Results.FirstOrDefault()?.Message ?? string.Empty;
+
+                if (verdict.IsValid)
+                {
+                    _logger.LogInformation($"[DeleteVM] Пользователь с ID {verdict.ParsedId} успешно стёрт.");
+                    EventBus.Publish(this, new IDeleteUserViewModel.Deleted(verdict.ParsedId ?? -1));
+
+                    string userInfo = SelectedUser != null
+                        ? $"ID {verdict.ParsedId}: {SelectedUser.FirstName} {SelectedUser.LastName}"
+                        : $"ID {verdict.ParsedId} (Точечное удаление)";
+                    string timestamp = DateTime.Now.ToString("HH:mm:ss");
+                    DeletedUsersHistory.Add($"[{timestamp}] ❌ Удален {userInfo}");
+
+                    await Task.Delay(500);
+                    ResetForm();
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"При удалении произошла ошибка: {ex.Message}";
+                _logger.LogError($"[DeleteVM] Критический сбой удаления: {ex.Message}");
+            }
+        }
+
+        [RelayCommand]
+        private async Task CancelAsync()
         {
             ResetForm();
-            await LoadAllUsersAsync();
-
-            // 🔥 КРИЧИМ В АВТОБУС: Командный пункт, гаси этот экран!
+            await SyncUsersAsync();
             EventBus.Publish(this, new IAdminMenuViewModel.DeleteFormCloseRequested());
         }
-
-
-       
-
         #endregion
 
-        #region Вспомогательная логика
-        private void ResetForm()
+        #region 🛡️ ЖЕЛЕЗОБЕТОННЫЙ СТЕРИЛИЗАТОР ПАМЯТИ
+
+        /// <summary>
+        /// Полностью отписывает методы от шины событий при уничтожении вью-модели.
+        /// </summary>
+        public void Dispose()
         {
-            TargetUserId = string.Empty;
-            StatusMessage = "Введите ID или выберите пользователя ниже ";
-            CanDelete = false;
-            SelectedUser = null;
-            FoundUsers.Clear();
+            EventBus.Unsubscribe<IAdminMenuViewModel.DeleteFormRequested>(OnDeleteFormRequested);
+            EventBus.Unsubscribe<IDeleteUserViewModel.Deleted>(OnUserDeleted);
         }
+
         #endregion
     }
 }

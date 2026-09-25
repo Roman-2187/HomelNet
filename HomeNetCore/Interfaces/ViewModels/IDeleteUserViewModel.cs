@@ -2,6 +2,6 @@
 {
     public interface IDeleteUserViewModel
     {
-        public record Deleted(int UserId);
+        public record Deleted(int Id);
     }
 }

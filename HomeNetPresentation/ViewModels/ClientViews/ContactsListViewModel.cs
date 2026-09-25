@@ -1,8 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Events;
-using HomeNetCore.Interfaces.ViewModels; // Наш интерфейс из Ядра
+using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
+using HomeNetServices.Routing;
 using System.Collections.ObjectModel;
 
 namespace HomeNetPresentation.ViewModels
@@ -20,19 +21,30 @@ namespace HomeNetPresentation.ViewModels
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
 
-            // Ловим сигналы входа, чтобы загрузить контакты (прямо как раньше в дашборде)
             _eventBus.Subscribe<IAuthenticationViewModel.UserLogged>(async msg => await LoadContactsAsync(msg.User));
-            _eventBus.Subscribe<IUsersTableViewModel.Added>(async msg => await LoadContactsAsync(msg.User));
+
+            _eventBus.Subscribe<IUsersTableViewModel.Added>(msg =>
+            {
+                if (msg.User == null) return;
+                if (msg.User.FirstName == null) msg.User.FirstName = "Пользователь без имени";
+                Friends.Add(msg.User);
+            });
+
+            _eventBus.Subscribe<IDeleteUserViewModel.Deleted>(msg =>
+            {
+                // 🔥 СОСТЫКОВКА: Поменяли msg.UserId на правильный msg.Id
+                var friendToRemove = Friends.FirstOrDefault(f => f.Id == msg.Id);
+                if (friendToRemove != null)
+                {
+                    Friends.Remove(friendToRemove);
+                }
+            });
         }
 
-        /// <summary>
-        /// Реактивный хук тулкита: кликнули по другу в списке
-        /// </summary>
         partial void OnSelectedFriendChanged(UserEntity? value)
         {
             if (value != null)
             {
-                // 🔥 Публикуем короткий ивент из Ядра! ChatViewModel его мгновенно поймает
                 _eventBus.Publish(this, new IContactsListViewModel.FriendSelected(value));
             }
         }
@@ -40,30 +52,24 @@ namespace HomeNetPresentation.ViewModels
         private async Task LoadContactsAsync(UserEntity? currentUser)
         {
             if (currentUser == null) return;
-
-            // Даем форме логина 1 секунду красиво улететь
             await Task.Delay(1000);
 
             try
             {
                 var allUsers = await _userService.GetAllAsync();
-                Friends.Clear();
 
-                if (allUsers != null)
-                {
-                    foreach (var u in allUsers)
-                    {
-                        if (u.Id != currentUser.Id)
-                        {
+                // 🔥 ЧИСТЫЙ LINQ: Отсекаем текущего юзера и мапим пустые имена за один проход пачкой!
+                Friends = new ObservableCollection<UserEntity>(
+                    allUsers
+                        .Where(u => u.Id != currentUser.Id)
+                        .Select(u => {
                             if (u.FirstName == null) u.FirstName = "Пользователь без имени";
-                            Friends.Add(u);
-                        }
-                    }
-                }
+                            return u;
+                        })
+                );
             }
             catch (Exception ex)
             {
-                // Если база упала, сообщаем в статус-бар
                 _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"[Контакты СБОЙ]: {ex.Message}"));
             }
         }

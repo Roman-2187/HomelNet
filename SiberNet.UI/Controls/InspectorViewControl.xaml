@@ -6,27 +6,32 @@
              xmlns:local="clr-namespace:SiberNet.UI.Controls"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800"
-            DataContext="{Binding InspectorViewModel, Source={StaticResource ComponentHub}}" >
-    <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}" Padding="6" Background="#FF111318">
+            DataContext="{Binding InspectorViewModel,
+            Source={StaticResource ComponentHub}}" >
+    <ContentControl  
+        Style="{StaticResource CyberpunkImageChaildStyle}"                   
+        Padding="6" Background="#FF111318">
         <ContentControl.Tag>
             <CornerRadius>6</CornerRadius>
         </ContentControl.Tag>
 
         <Grid>
-            <Border BorderThickness="1" BorderBrush="#33FFB300" CornerRadius="4">
+            <Border
+                BorderThickness="1" BorderBrush="#33FFB300" CornerRadius="4">
                 <!-- Просто биндимся на свойство текста отчёта -->
-                <TextBox Text="{Binding ReportText, Mode=OneWay}"
-                         FontFamily="Consolas"
-                         FontSize="13"
-                         Background="#FF111318"
-                         Foreground="#00FFCC"
-                         BorderThickness="0"
-                         IsReadOnly="True"
-                         AcceptsReturn="True"
-                         TextWrapping="NoWrap"
-                         HorizontalScrollBarVisibility="Auto"
-                         VerticalScrollBarVisibility="Auto"
-                         Padding="10"/>
+                <TextBox
+                    Text="{Binding ReportText, Mode=OneWay}"
+                    FontFamily="Consolas"
+                    FontSize="13"
+                    Background="#FF111318"
+                    Foreground="#00FFCC"
+                    BorderThickness="0"
+                    IsReadOnly="True"
+                    AcceptsReturn="True"
+                    TextWrapping="NoWrap"
+                    HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Hidden"
+                    Padding="10"/>
             </Border>
         </Grid>
     </ContentControl>

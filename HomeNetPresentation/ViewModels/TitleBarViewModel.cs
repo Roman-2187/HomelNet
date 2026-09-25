@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Enums.Navigation;
@@ -8,27 +9,30 @@ using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels
 {
-    public partial class TitleBarViewModel : FormViewModelBase
+    // 🔥 Реализуем IDisposable для полной зачистки шины событий при уничтожении компонента
+    public partial class TitleBarViewModel : FormViewModelBase, IDisposable
     {
-        // 🎛️ Рубильники для триггеров видимости внутри TitleBarControl.xaml
         [ObservableProperty] private MainTab _currentMainTab = MainTab.None;
         [ObservableProperty] private ClientSubTab _currentClientTab = ClientSubTab.None;
         [ObservableProperty] private bool _isGlobalLoggerVisible = false;
 
-        public TitleBarViewModel(IEventBus eventBus, NavigationStateManager navigationStateManager): base(eventBus, navigationStateManager)
-      
+        public TitleBarViewModel(IEventBus eventBus, NavigationStateManager navigationStateManager)
+            : base(eventBus, navigationStateManager)
         {
-            // 🎯 Слушаем автобус через твой новый интерфейс!
-            _eventBus.Subscribe<ITitleBarViewModel.ZoneChanged>(msg =>
-            {
-                // Синхронизируем локальные свойства шапки для триггеров XAML
-                CurrentMainTab = msg.TargetTab;
-                CurrentClientTab = msg.ClientTab;
-            });
-            
+            // 🔥 ЧИСТОТА: Заменили стрелочную анонимную лямбду на ссылку на именованный метод! 🧼
+            _eventBus.Subscribe<ITitleBarViewModel.ZoneChanged>(OnZoneChanged);
         }
 
-    
+        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Для идеального графа в Инспекторе) 🧼
+
+        private void OnZoneChanged(ITitleBarViewModel.ZoneChanged msg)
+        {
+            // Синхронизируем локальные свойства шапки для триггеров XAML
+            CurrentMainTab = msg.TargetTab;
+            CurrentClientTab = msg.ClientTab;
+        }
+
+        #endregion
 
         // 🛠️ КНОПКА: Админка
         [RelayCommand]
@@ -47,7 +51,7 @@ namespace HomeNetPresentation.ViewModels
             Navigation.SetAuthZone(targetTab);
         }
 
-        // ↩️ КНОПКА: Выход
+        // 🔑 КНОПКА: Выход
         [RelayCommand]
         private void Logout()
         {
@@ -62,22 +66,15 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Publish(this, new IMainViewModel.CloseRequest());
         }
 
-       
-
+        // 🪵 КНОПКА: Глобальный логгер
         [RelayCommand]
         private void ToggleGlobalLogger()
         {
-            // 1. Инвертируем локальный бул
             IsGlobalLoggerVisible = !IsGlobalLoggerVisible;
 
-            // 2. Пишем в статус-бар как раньше
             _eventBus.Publish(this, new IStatusBarViewModel.TextChanged("Переключение глобального оверлея логов..."));
-
-            // 3. Стреляем новым чистым сообщением и передаем ТЕКУЩЕЕ состояние булла
             _eventBus.Publish(this, new ITitleBarViewModel.ToggleAnimation(IsGlobalLoggerVisible));
         }
-
-
 
         // 🔳 КНОПКА: Развернуть окно
         [RelayCommand]
@@ -85,5 +82,17 @@ namespace HomeNetPresentation.ViewModels
         {
             _eventBus.Publish(this, new IMainViewModel.ToggleSize());
         }
+
+        #region 🛡️ ЖЕЛЕЗОБЕТОННЫЙ СТЕРИЛИЗАТОР ПАМЯТИ
+
+        /// <summary>
+        /// Полностью снимает подписку шапки с шины событий.
+        /// </summary>
+        public void Dispose()
+        {
+            _eventBus.Unsubscribe<ITitleBarViewModel.ZoneChanged>(OnZoneChanged);
+        }
+
+        #endregion
     }
 }

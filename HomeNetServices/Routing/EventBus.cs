@@ -1,19 +1,23 @@
 ﻿using HomeNetCore.Interfaces.Events;
 using HomeNetServices.Diagnostics;
+using System;
+using System.Collections.Generic;
 
 namespace HomeNetServices.Routing
 {
     public class EventBus : IEventBus
     {
-        // Основная collection подписчиков шины
         private readonly Dictionary<Type, List<object>> _subscribers = new();
 
-        // Наш автономный робот-картограф (Инспектор событий)
-        public EventBusInspector Inspector { get; } = new();
+        // 🔥 ТЕПЕРЬ ЭТО ПРОСТО ССЫЛКА НА ИНЖЕКТИРОВАННЫЙ СИНГЛТОН
+        public EventBusInspector Inspector { get; }
 
-        /// <summary>
-        /// Подписка компонента на определенный тип сигнала.
-        /// </summary>
+        // 🔥 Конструктор явно требует инспектор из DI контейнера
+        public EventBus(EventBusInspector inspector)
+        {
+            Inspector = inspector ?? throw new ArgumentNullException(nameof(inspector));
+        }
+
         public void Subscribe<TMessage>(Action<TMessage> action)
         {
             if (action == null) throw new ArgumentNullException(nameof(action));
@@ -29,13 +33,12 @@ namespace HomeNetServices.Routing
                 _subscribers[type].Add(action);
             }
 
-            // 🧠 АВТО-РЕФЛЕКСИЯ: Вытаскиваем КТО и КАКИМ МЕТОДОМ подписался, чтобы занести в граф
             try
             {
                 string controlName = action.Target?.GetType().Name ?? "UnknownSource";
                 string methodName = action.Method.Name;
 
-                // Передаем данные в объектный граф инспектора
+                // Заносим в единственный, общий граф синглтона 🧼
                 Inspector.RecordSubscribe(controlName, type, methodName);
             }
             catch (Exception ex)
@@ -44,21 +47,23 @@ namespace HomeNetServices.Routing
             }
         }
 
-        /// <summary>
-        /// Публикация сигнала в воздух.
-        /// </summary>
+       
+
+
+
+
+
         public void Publish<TMessage>(object sender, TMessage message)
         {
             if (message == null) return;
 
-            // 🔥 УЛУЧШЕНИЕ: Берем РЕАЛЬНЫЙ тип объекта рантайма вместо compile-time TMessage.
-            // Это гарантирует, что инспектор увидит точное имя вложенного рекорда!
+            // Получаем точный тип сообщения в рантайме
             var type = message.GetType();
 
-            // 🛡️ БРОНЕЖИЛЕТ ДЛЯ ИНСПЕКТОРА
+            // 🛡️ Фиксируем публикацию в инспекторе
             try
             {
-                // Инспектор за O(1) перехватывает "паспорта" типов и строит чертеж
+                // Теперь инспектор ЖЕЛЕЗНО увидит твой UserService! 🧼
                 Inspector.RecordPublish(sender, type);
             }
             catch (Exception ex)
@@ -66,21 +71,29 @@ namespace HomeNetServices.Routing
                 System.Diagnostics.Debug.WriteLine($"[Profiler Error] Не удалось залогировать публикацию: {ex.Message}");
             }
 
-            // 🚀 КРИТИЧЕСКИЙ ПУТЬ: Доставка сигналов до подписчиков (выполняется железно)
-            // Ищем подписчиков по точному типу сообщения
+            // 🚀 ДИНАМИЧЕСКАЯ ДОСТАВКА СИГНАЛОВ
             if (_subscribers.TryGetValue(type, out var actions))
             {
                 var actionsCopy = new List<object>(actions);
                 foreach (var action in actionsCopy)
                 {
-                    ((Action<TMessage>)action)(message);
+                    try
+                    {
+                        // Используем DynamicInvoke вместо жесткого каста (Action<TMessage>)
+                        // Это спасет от коллизий интерфейсов и конкретных типов рекордов!
+                        if (action is Delegate del)
+                        {
+                            del.DynamicInvoke(message);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[EventBus Error] Сбой доставки сигнала: {ex.Message}");
+                    }
                 }
             }
         }
 
-        /// <summary>
-        /// Отписка компонента от определенного типа сигнала.
-        /// </summary>
         public void Unsubscribe<TMessage>(Action<TMessage> action)
         {
             if (action == null) return;
