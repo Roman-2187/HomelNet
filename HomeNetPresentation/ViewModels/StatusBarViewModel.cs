@@ -1,45 +1,74 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using System;
+using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels
 {
-    public partial class StatusBarViewModel : FormViewModelBase
+    // 🔥 Реализуем IDisposable, чтобы синглтон-статусбар не копил мертвые подписки
+    public partial class StatusBarViewModel : FormViewModelBase, IDisposable
     {
         [ObservableProperty]
-        private string _statusText = "Инициализация приложения...";
+        private string _statusText = "Готов к работе";
 
-        // Конструктор принимает чистый интерфейс IEventBus из Ядра и прокидывает в базу через base
-        public StatusBarViewModel(IEventBus eventBus, NavigationStateManager navigation) : base(eventBus, navigation)
+        public StatusBarViewModel(IEventBus eventBus, NavigationStateManager navigation)
+            : base(eventBus, navigation)
         {
             InitializeBusSubscriptions();
         }
 
         private void InitializeBusSubscriptions()
         {
-            // 1. 🔥 Слушаем новые короткие текстовые статусы строки состояния
-            EventBus.Subscribe<IStatusBarViewModel.TextChanged>(async msg =>
-                await UpdateStatusAsync(msg.NewStatus));
-
-            // 2. 🔥 Принимаем короткий рекорд обновления таблицы пользователей
-            EventBus.Subscribe<IUsersTableViewModel.Refreshed>(msg =>
-            {
-                StatusText = msg.Users != null
-                    ? $"Загружено {msg.Users.Count} пользователей"
-                    : "Список пользователей пуст";
-            });
+            // 🔥 ЧИСТОТА: Никаких лямбд, только ссылки на именованные методы! 🧼
+            EventBus.Subscribe<IStatusBarViewModel.TextChanged>(OnTextChanged);
+            EventBus.Subscribe<IUsersTableViewModel.Refreshed>(OnUsersTableRefreshed);
         }
 
-        private async Task UpdateStatusAsync(string text)
+        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Для идеального графа в Инспекторе) 🧼
+
+        private async void OnTextChanged(IStatusBarViewModel.TextChanged msg)
         {
-            StatusText = "Загрузка пользователей...";
-            await Task.Delay(1200);
-            StatusText = text;
-            await Task.Delay(2000);
+            if (msg == null) return;
 
-            // Публикуем короткий запрос на обновление статуса/счетчика обратно в таблицу
-            EventBus.Publish(this, new IUsersTableViewModel.RefreshRequest());
+            // Просто и плавно обновляем текст на тот, который реально прилетел в посылке
+            await UpdateStatusTextAsync(msg.NewStatus);
         }
+
+        private void OnUsersTableRefreshed(IUsersTableViewModel.Refreshed msg)
+        {
+            if (msg == null) return;
+
+            // Статус-бар реагирует на обновление таблицы и выводит красивый итог
+            StatusText = msg.Users != null && msg.Users.Count > 0
+                ? $"База данных синхронизирована. Загружено пользователей: {msg.Users.Count}"
+                : "Синхронизация завершена. Список пользователей пуст.";
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Плавно выставляет текст статуса без побочных эффектов и холостого спама в шину
+        /// </summary>
+        private async Task UpdateStatusTextAsync(string newText)
+        {
+            StatusText = newText;
+
+            // Если захочешь сделать эффект "мигания" или временного статуса, 
+            // можно подержать текст на экране и вернуть дефолтный "Готов к работе"
+            // await Task.Delay(3000);
+            // StatusText = "Готов к работе";
+        }
+
+        #region 🛡️ ЖЕЛЕЗОБЕТОННЫЙ СТЕРИЛИЗАТОР ПАМЯТИ
+
+        public void Dispose()
+        {
+            EventBus.Unsubscribe<IStatusBarViewModel.TextChanged>(OnTextChanged);
+            EventBus.Unsubscribe<IUsersTableViewModel.Refreshed>(OnUsersTableRefreshed);
+        }
+
+        #endregion
     }
 }

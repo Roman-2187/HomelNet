@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Models.Diagnostics; // Убедись, что этот namespace верный
+using HomeNetCore.Models.Diagnostics;
 
 namespace HomeNetServices.Diagnostics
 {
@@ -15,8 +15,16 @@ namespace HomeNetServices.Diagnostics
         // Хронология сигналов (история) в виде объектов метаданных
         private readonly List<ComponentNode.SignalEvent> _signalTimeline = new();
 
+        // 📋 НАШ ПЕРСОНАЛЬНЫЙ ЧЕРНЫЙ СПИСОК (АЛЯ .GITIGNORE)
+        // Защищает ленту от циклического и технического спама
+        private readonly HashSet<string> _ignoredMessageTypes = new()
+        {
+            "LogMessageReceived", // Шум от посимвольной/построчной печати логгера
+            "TextChanged"         // Шум от программной смены текста на кнопках и контролах
+        };
+
         /// <summary>
-        /// 🦾 ЖЕЛЕЗОБЕТОННАЯ ФИКСАЦИЯ ПУБЛИКАЦИИ
+        /// 🦾 ЖЕЛЕЗОБЕТОННАЯ ФИКСАЦИЯ ПУБЛИКАЦИИ С ФИЛЬТРАЦИЕЙ СПАМА
         /// </summary>
         public void RecordPublish(object sender, Type messageType)
         {
@@ -25,29 +33,32 @@ namespace HomeNetServices.Diagnostics
             if (sender != null)
             {
                 var senderType = sender.GetType();
-
-                // 🧠 ЛАЙФХАК: Если отправителем случайно указали саму шину EventBus,
-                // то мы попробуем вытащить имя реального класса из контекста, 
-                // но если там чистый вызов — берем имя типа отправителя.
                 componentName = senderType.Name;
 
-                // Если имя получилось слишком общим (например, "Object"), подстрахуемся
                 if (componentName == "Object" && sender is string strName)
                 {
                     componentName = strName;
                 }
             }
 
-            // Быстрое получение или создание узла за O(1) — теперь сервисы ТОЧНО получат свой узел! 🧼
+            // Быстрое получение или создание узла за O(1) — граф компонентов строится ВСЕГДА
             var node = GetOrCreateNode(componentName);
 
-            // HashSet защитит от дубликатов типов сообщений внутри карточки
+            // HashSet внутри карточки компонента защитит от дубликатов
             if (!node.PublishedMessages.Contains(messageType))
             {
                 node.PublishedMessages.Add(messageType);
             }
 
-            // Пишем структурированное событие в ленту таймлайна
+            // 🔥 ЧИСТЫЙ ФИЛЬТР СОБЫТИЙ:
+            // Если тип сообщения находится в нашем "гит-игноре", 
+            // мы обновляем только граф связей выше, но НЕ пишем это событие в живую ленту.
+            if (_ignoredMessageTypes.Contains(messageType.Name))
+            {
+                return;
+            }
+
+            // Пишем в ленту таймлайна только важные архитектурные и бизнес-события
             _signalTimeline.Add(new ComponentNode.SignalEvent(DateTime.Now, componentName, messageType));
         }
 
@@ -87,20 +98,17 @@ namespace HomeNetServices.Diagnostics
             // Сортируем компоненты по алфавиту для идеального порядка на экране
             foreach (var node in _nodes.Values.OrderBy(n => n.Name))
             {
-                // Пропускаем вывод пустых или технических узлов, если они случайно проскочили
                 if (node.PublishedMessages.Count == 0 && node.Subscriptions.Count == 0)
                     continue;
 
                 sb.AppendLine($"\n[ КОМПОНЕНТ: {node.Name} ]");
 
-                // Выводим то, что компонент генерирует в систему
                 if (node.PublishedMessages.Count > 0)
                 {
                     foreach (var msgType in node.PublishedMessages)
                         sb.AppendLine($"   📢 ПУБЛИКУЕТ  --> [{msgType.Name}]");
                 }
 
-                // Выводим то, на что компонент подписан
                 if (node.Subscriptions.Count > 0)
                 {
                     foreach (var sub in node.Subscriptions)

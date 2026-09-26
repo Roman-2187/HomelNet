@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
@@ -11,44 +7,40 @@ using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
 using HomeNetPresentation.Services;
+using System.Collections.ObjectModel;
 
 namespace HomeNetPresentation.ViewModels
 {
-    // 🔥 Реализуем IDisposable для полной зачистки памяти от подписок
     public partial class DeleteUsersViewModel : FormViewModelBase, IDisposable
     {
-        private readonly IDeleteService _deleteService;
-        private readonly ILogger _logger;
+        private readonly IDeleteService _srv;
+        private readonly ILogger _log;
 
         [ObservableProperty] private ObservableCollection<UserEntity> _foundUsers = new();
-        public ObservableCollection<string> DeletedUsersHistory { get; } = new();
-
         [ObservableProperty] private UserEntity? _selectedUser;
         [ObservableProperty] private string _targetUserId = string.Empty;
 
-        public DeleteUsersViewModel(IDeleteService deleteService,
-            IEventBus eventBus, ILogger logger, NavigationStateManager navigation)
-            : base(eventBus, navigation)
-        {
-            _deleteService = deleteService ?? throw new ArgumentNullException(nameof(deleteService));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        public ObservableCollection<string> DeletedUsersHistory { get; } = new();
 
+        public DeleteUsersViewModel(IDeleteService srv, IEventBus bus, ILogger log, NavigationStateManager nav)
+            : base(bus, nav)
+        {
+            _srv = srv ?? throw new ArgumentNullException(nameof(srv));
+            _log = log ?? throw new ArgumentNullException(nameof(log));
             SubmitButtonText = "Удалить";
 
-            // 🔥 ЧИСТОТА: Передаем именованные методы вместо анонимных лямбд! 🧼
+            // 🔥 КРАСОТА ДЛЯ ИНСПЕКТОРА: Передаём строго именованные методы! 🧼
             EventBus.Subscribe<IAdminMenuViewModel.DeleteFormRequested>(OnDeleteFormRequested);
             EventBus.Subscribe<IDeleteUserViewModel.Deleted>(OnUserDeleted);
 
-            ResetForm();
-            _ = SyncUsersAsync();
+            ResetForm(sync: true);
         }
 
         #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Для идеального графа в Инспекторе) 🧼
 
-        private async void OnDeleteFormRequested(IAdminMenuViewModel.DeleteFormRequested msg)
+        private void OnDeleteFormRequested(IAdminMenuViewModel.DeleteFormRequested msg)
         {
-            ResetForm();
-            await SyncUsersAsync();
+            ResetForm(sync: true);
         }
 
         private void OnUserDeleted(IDeleteUserViewModel.Deleted msg)
@@ -65,51 +57,64 @@ namespace HomeNetPresentation.ViewModels
         private async Task SyncUsersAsync()
         {
             StatusMessage = "Загрузка списка пользователей...";
-            try
-            {
-                var users = await _deleteService.GetAllUsersAsync();
+            var users = await _srv.GetAllUsersAsync();
+            FoundUsers = new ObservableCollection<UserEntity>(users ?? Enumerable.Empty<UserEntity>());
+            StatusMessage = FoundUsers.Any() ?
+                $"Всего в базе: {FoundUsers.Count}. Выберите юзера." : "В базе пока нет пользователей.";
 
-                FoundUsers = new ObservableCollection<UserEntity>(users ?? Enumerable.Empty<UserEntity>());
-
-                StatusMessage = FoundUsers.Count > 0
-                    ? $"Всего пользователей в базе: {FoundUsers.Count}. Выберите юзера для удаления."
-                    : "В базе данных HomeNet пока нет пользователей.";
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = $"Ошибка загрузки: {ex.Message}";
-            }
+            SearchCommand.NotifyCanExecuteChanged();
         }
 
-        public void ResetForm()
+        private void ResetForm(bool sync = false)
         {
             TargetUserId = string.Empty;
             SelectedUser = null;
-            StatusMessage = "Введите ID или выберите пользователя ниже";
-            FoundUsers.Clear();
+            StatusMessage = "Введите ID или выберите пользователя";
+            if (sync) _ = SyncUsersAsync();
+
+            SearchCommand.NotifyCanExecuteChanged();
         }
 
-        #region 🎯 ХУК СВЯЗИ
         partial void OnSelectedUserChanged(UserEntity? value)
         {
-            if (value != null)
-            {
+            if (value != null && TargetUserId != value.Id.ToString())
                 TargetUserId = value.Id.ToString();
-            }
+
+            StatusMessage = value != null
+                ? $"Выбран: ID {value.Id} — {value.FirstName} {value.LastName}"
+                : $"Всего в базе: {FoundUsers.Count}. Выберите юзера.";
+
+            SearchCommand.NotifyCanExecuteChanged();
         }
-        #endregion
 
-        #region 🦾 НАНО-КОМАНДЫ ДЛЯ БЭКЕНДА
 
-        [RelayCommand]
+        partial void OnTargetUserIdChanged(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                SelectedUser = null;
+                SearchCommand.NotifyCanExecuteChanged();
+                return;
+            }
+
+            var match = FoundUsers.FirstOrDefault(u => u.Id.ToString() == value.Trim());
+            SelectedUser = match;
+
+            if (match == null)
+                StatusMessage = $"Введён сторонний ID: {value}. Нажмите 'Поиск'.";
+
+            SearchCommand.NotifyCanExecuteChanged();
+        }
+
+
+
+
+
+        [RelayCommand(CanExecute = nameof(CanSearch))]
         private async Task SearchAsync()
         {
-            if (string.IsNullOrWhiteSpace(TargetUserId)) return;
-
-            StatusMessage = "Поиск пользователя...";
-            FoundUsers.Clear();
-
-            var verdict = await _deleteService.SearchUserAsync(TargetUserId);
+            StatusMessage = "Поиск...";
+            var verdict = await _srv.SearchUserAsync(TargetUserId);
             StatusMessage = verdict.Results.FirstOrDefault()?.Message ?? string.Empty;
 
             if (verdict.IsValid && verdict.FoundUser != null)
@@ -119,58 +124,68 @@ namespace HomeNetPresentation.ViewModels
             }
         }
 
+        private bool CanSearch()
+        {
+            if (FoundUsers.Count == 0 && string.IsNullOrWhiteSpace(TargetUserId))
+                return false;
+
+            if (SelectedUser == null)
+                return true;
+
+            return SelectedUser.Id.ToString() != TargetUserId.Trim();
+        }
+
+
         [RelayCommand]
         private async Task ExecuteDeleteAsync()
         {
-            StatusMessage = string.Empty;
             try
             {
-                var verdict = await _deleteService.DeleteUserAsync(TargetUserId, SelectedUser);
+                // 🔥 ЗАПОМИНАЕМ ИМЯ НА ВХОДЕ: Пока бэкенд не начал удаление и кэш не сбросился!
+                string? userNameForHistory = SelectedUser != null
+                    ? $"{SelectedUser.FirstName} {SelectedUser.LastName}"
+                    : null;
+
+                var verdict = await _srv.DeleteUserAsync(TargetUserId, SelectedUser);
                 UpdateValidation(verdict.Results);
                 StatusMessage = verdict.Results.FirstOrDefault()?.Message ?? string.Empty;
 
                 if (verdict.IsValid)
                 {
-                    _logger.LogInformation($"[DeleteVM] Пользователь с ID {verdict.ParsedId} успешно стёрт.");
+                    _log.LogInformation($"[DeleteVM] Юзер {verdict.ParsedId} стёрт.");
+
                     EventBus.Publish(this, new IDeleteUserViewModel.Deleted(verdict.ParsedId ?? -1));
 
-                    string userInfo = SelectedUser != null
-                        ? $"ID {verdict.ParsedId}: {SelectedUser.FirstName} {SelectedUser.LastName}"
-                        : $"ID {verdict.ParsedId} (Точечное удаление)";
-                    string timestamp = DateTime.Now.ToString("HH:mm:ss");
-                    DeletedUsersHistory.Add($"[{timestamp}] ❌ Удален {userInfo}");
+                    // 🔥 ФОРМИРУЕМ СТРОКУ: Если мы запомнили имя, пишем его, иначе — точечно
+                    string userInfo = userNameForHistory != null
+                        ? $"{userNameForHistory} (ID {verdict.ParsedId})"
+                        : $"ID {verdict.ParsedId} (Точечно)";
+
+                    DeletedUsersHistory.Add($"[{DateTime.Now:HH:mm:ss}] ❌ Удален: {userInfo}");
 
                     await Task.Delay(500);
-                    ResetForm();
+                    ResetForm(sync: true);
                 }
             }
             catch (Exception ex)
             {
-                StatusMessage = $"При удалении произошла ошибка: {ex.Message}";
-                _logger.LogError($"[DeleteVM] Критический сбой удаления: {ex.Message}");
+                StatusMessage = $"Ошибка: {ex.Message}";
             }
         }
+
 
         [RelayCommand]
         private async Task CancelAsync()
         {
-            ResetForm();
-            await SyncUsersAsync();
+            ResetForm(sync: true);
             EventBus.Publish(this, new IAdminMenuViewModel.DeleteFormCloseRequested());
         }
-        #endregion
 
-        #region 🛡️ ЖЕЛЕЗОБЕТОННЫЙ СТЕРИЛИЗАТОР ПАМЯТИ
-
-        /// <summary>
-        /// Полностью отписывает методы от шины событий при уничтожении вью-модели.
-        /// </summary>
         public void Dispose()
         {
+            // 🔥 ЧИСТАЯ ОТПИСКА ПО ИМЕНАМ МЕТОДОВ
             EventBus.Unsubscribe<IAdminMenuViewModel.DeleteFormRequested>(OnDeleteFormRequested);
             EventBus.Unsubscribe<IDeleteUserViewModel.Deleted>(OnUserDeleted);
         }
-
-        #endregion
     }
 }

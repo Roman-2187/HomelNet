@@ -16,12 +16,19 @@ namespace HomeNetCore.Models.Validation
             IsInitialHint = isInitialHint;
         }
 
-        public ValidationResult()
+        public ValidationResult() { }
+
+
+        public ValidationResult Update(ValidationState state, string message)
         {
-            
+            State = state;
+            Message = message;
+            return this; // Возвращаем сам объект, чтобы можно было писать цепочки кода
         }
     }
 
-
-
 }
+
+
+
+

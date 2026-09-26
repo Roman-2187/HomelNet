@@ -7,7 +7,6 @@ using System;
 
 namespace HomeNetPresentation.ViewModels.AdminViews
 {
-    // 🔥 Добавили реализацию IDisposable для безопасного снятия подписок
     public partial class InspectorViewModel : FormViewModelBase, IDisposable
     {
         private readonly IEventInspectorSource _inspector;
@@ -20,10 +19,10 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         {
             _inspector = inspector ?? throw new ArgumentNullException(nameof(inspector));
 
-            // 🔥 ЧИСТОТА: Передаем имя метода класса вместо анонимной лямбды! 🧼
+            // 🔥 ИДЕАЛЬНО ОДИНАКОВО: Сидим на шине событий и ждем команду на апдейт
             EventBus.Subscribe<IAdminMenuViewModel.ReportGenerationRequested>(OnReportGenerationRequested);
 
-            // Первичный сбор при создании
+            // Первичный сбор при старте приложения
             UpdateReport();
         }
 
@@ -38,15 +37,12 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 
         public void UpdateReport()
         {
-            // Прямой return от сервиса бэкенда! Сложность O(1)
+            // Бьем напрямую в синглтон-сервис за свежим графом
             ReportText = _inspector.GenerateReport();
         }
 
         #region 🛡️ ЖЕЛЕЗОБЕТОННЫЙ СТЕРИЛИЗАТОР ПАМЯТИ
 
-        /// <summary>
-        /// Полностью выписывает инспектор из шины событий при скрытии или закрытии вкладки.
-        /// </summary>
         public void Dispose()
         {
             EventBus.Unsubscribe<IAdminMenuViewModel.ReportGenerationRequested>(OnReportGenerationRequested);

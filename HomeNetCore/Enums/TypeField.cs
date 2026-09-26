@@ -6,6 +6,7 @@
         PhoneType,
         EmailType,
         PasswordType,
-        ConfirmedPasswordType
+        ConfirmedPasswordType,
+        IdType
     }
 }

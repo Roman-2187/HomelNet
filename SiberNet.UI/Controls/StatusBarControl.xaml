@@ -5,19 +5,20 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:SiberNet.UI.Controls"
              mc:Ignorable="d" 
-             d:DesignHeight="60" d:DesignWidth="900">
+             d:DesignHeight="60" d:DesignWidth="900"
+             
+              DataContext="{Binding StatusBarViewModel, Source={StaticResource ComponentHub}}">
 
     <!-- Твоя фирменная подложка и цвета -->
-    <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}"  >
-        <ContentControl.Tag>
-            <CornerRadius>6</CornerRadius>
-        </ContentControl.Tag>
+    <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}" Tag="6" >
+       
         <StatusBar Background="#00A3C091">
             <StatusBarItem>
-                <TextBlock Text="{Binding StatusText, FallbackValue='Загрузка системы...'}"
-                           Margin="0"
-                           FontWeight="Bold"
-                           Foreground="#FFB300"/>
+                <TextBlock
+                    Text="{Binding StatusText, FallbackValue='Загрузка системы...'}"
+                    Margin="0" Padding="10,0,0,0"
+                    FontWeight="Bold"
+                    Foreground="#FFB300"/>
             </StatusBarItem>
         </StatusBar>
         </ContentControl>

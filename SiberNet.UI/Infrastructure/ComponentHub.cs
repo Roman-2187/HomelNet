@@ -40,5 +40,10 @@ namespace SiberNet.UI.Infrastructure
         public DeleteUsersViewModel DeleteUsersViewModel => AppBootstrapper.GetViewModel<DeleteUsersViewModel>();
 
 
+        // 📊 Нижняя строка состояния всего приложения SiberNet
+        public StatusBarViewModel StatusBarViewModel => AppBootstrapper.GetViewModel<StatusBarViewModel>();
+
+
+
     }
 }

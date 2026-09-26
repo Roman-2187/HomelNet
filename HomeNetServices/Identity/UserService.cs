@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using HomeNetCore.Exeptions;
+﻿using HomeNetCore.Exeptions;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Events; // 🔥 Подключаем автобус событий
+using HomeNetCore.Interfaces.Events; 
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
 
@@ -16,7 +12,7 @@ namespace HomeNetServices.Services.Identity
     {
         private readonly IUserRepository _repo;
         private readonly ILogger _logger;
-        private readonly IEventBus _eventBus; // 🔥 Теперь сервис сам может оповещать систему
+        private readonly IEventBus _eventBus; 
 
         // 🧠 Наш локальный кэш пользователей в оперативной памяти
         private List<UserEntity>? _cachedUsers;

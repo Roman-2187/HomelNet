@@ -1,27 +1,35 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using HomeNetCore.Enums;
 using HomeNetCore.Models;
-using HomeNetCore.Models.Validation; // Юзаем твои готовые модели валидации!
+using HomeNetCore.Models.Validation;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace HomeNetCore.Interfaces.Services
 {
     public interface IDeleteService
     {
-        // 🎯 Полноценные комплексные вердикты в стиле регистрации
-        public record SearchVerdict(bool IsValid, List<ValidationResult> Results, UserEntity? FoundUser);
-        
+        // 🔥 ОТКРЫВАЕМ ТЕЛО РЕКОРДА: Переносим метод WithResult СТРОГО внутрь самого SearchVerdict!
+        public record SearchVerdict(bool IsValid, List<ValidationResult> Results, UserEntity? FoundUser)
+        {
+            public SearchVerdict WithResult(ValidationResult res, ValidationState state, string message)
+            {
+                res.Update(state, message); // Используем наш новый встроенный метод!
+                return this; // Теперь 'this' — это именно SearchVerdict! Всё чётко! 👍
+            }
+        }
 
         Task<IEnumerable<UserEntity>> GetAllUsersAsync();
+
         Task<SearchVerdict> SearchUserAsync(string targetUserId);
+
         Task<DeleteVerdict> DeleteUserAsync(string targetUserId, UserEntity? selectedUser);
 
-        // В файле IDeleteService.cs
+        // В файле IDeleteUserViewModel.cs у нас лежит Deleted рекорд, а тут DeleteVerdict
         public record DeleteVerdict(
             bool IsValid,
             List<ValidationResult> Results,
             int? ParsedId,
-            IEnumerable<UserEntity>? UpdatedUsers = null 
+            IEnumerable<UserEntity>? UpdatedUsers = null
         );
-
     }
 }
