@@ -10,37 +10,52 @@ using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
 using HomeNetCore.Models.Validation;
 using HomeNetPresentation.Services;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace HomeNetPresentation.ViewModels
 {
-    public partial class AuthenticationViewModel : FormViewModelBase
+    /// <summary>
+    /// Стерильная форма авторизации мессенджера SiberNet.
+    /// Наследуется от дженерик-базы с указанием конкретного менеджера пользователя.
+    /// </summary>
+    public partial class AuthenticationViewModel : FormViewModelBase<UserNavigationManager>, IDisposable
     {
         private readonly IAuthenticateService _loginService;
         private readonly ILogger _logger;
-        // 🧠 Сохраняем прямую ссылку на наш манипулятор состояний
-        private readonly NavigationStateManager _navigationStateManager;
 
         [ObservableProperty] private UserEntity _userData = new();
 
-        public AuthenticationViewModel(IAuthenticateService loginService,
-            IEventBus eventBus, 
-            ILogger logger, 
-            NavigationStateManager navigation) : base(eventBus, navigation)
+        public AuthenticationViewModel(
+            IAuthenticateService loginService,
+            IEventBus eventBus,
+            ILogger logger,
+            UserNavigationManager navigation) : base(eventBus, navigation) // Передали строго типизированный навигатор в generic-базу
         {
             _loginService = loginService ?? throw new ArgumentNullException(nameof(loginService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _navigationStateManager = navigation ?? throw new ArgumentNullException(nameof(navigation));
 
             InitializeInitialHints();
 
-            // Локальная зачистка полей после успешного входа (автобус теперь дергаем только для этого!)
-            EventBus.Subscribe<IAuthenticationViewModel.UserLogged>(async msg =>
-            {
-                await Task.Delay(500); // Небольшая задержка для плавности анимации
-                ResetForm();
-                InitializeInitialHints();
-            });
+            // 🔥 ЖЕСТКАЯ ДИСЦИПЛИНА: Никаких анонимных лямбд! Подписываем строго именованный метод для Инспектора.
+            _eventBus.Subscribe<IUserVm.UserAuthenticated>(OnUserAuthenticated);
         }
+
+        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Для идеального графа в Инспекторе) 🧼
+
+        /// <summary>
+        /// Локальный сброс полей формы после подтверждения успешного входа
+        /// </summary>
+        private async void OnUserAuthenticated(IUserVm.UserAuthenticated msg)
+        {
+            await Task.Delay(500); // Небольшая задержка для плавности киберпанк-анимации
+            ResetForm();
+            InitializeInitialHints();
+        }
+
+        #endregion
 
         private void InitializeInitialHints()
         {
@@ -82,14 +97,10 @@ namespace HomeNetPresentation.ViewModels
 
                     var finalUser = verdict.User ?? UserData;
 
-                    // 🎯 ШАГ 1: Даем команду Навигатору отправить пользователя в зону чата
-                    Navigation.SetClientZone(finalUser);
-
-                    // 🎯 ШАГ 2: Прямо здесь локально сбрасываем поля формы логина, 
-                    // чтобы при выходе из аккаунта там не оставался старый пароль!
-                    await Task.Delay(500); // Небольшая задержка для плавности киберпанк-анимации
-                    ResetForm();
-                    InitializeInitialHints();
+                    // 🔥 ТОТАЛЬНЫЙ ДЕКУПЛИНГ: Больше никакой ручной отправки зон в навигатор!
+                    // Пуляем в автобус наш чистенький рекорд с сущностью залогиненного юзера.
+                    // UserNavigationManager сам поймает этот сигнал, подгрузит ID и переключит UI в мессенджер.
+                    _eventBus.Publish(this, new IUserVm.UserAuthenticated(finalUser));
                 }
                 else
                 {
@@ -104,20 +115,26 @@ namespace HomeNetPresentation.ViewModels
             }
         }
 
-
         [RelayCommand]
         private void Cancel()
         {
             ResetForm();
             InitializeInitialHints();
 
-            // Швыряем приказ в автобус через новый интерфейс шапки! 
-            // Инспектор автобуса это мгновенно запишет.
-            EventBus.Publish(this, new ITitleBarViewModel.MacroNavigation(MainTab.None));
+            // 🔥 ЧИСТОТА: Отправляем реактивный рекорд отмены в шину событий. 
+            // Навигатор поймает его и мгновенно сбросит стейт в абсолютный 0 гостевой зоны.
+            _eventBus.Publish(this, new IUserVm.BackToStart());
         }
 
+        #endregion
 
+        #region 🛡️ ЖЕЛЕЗОБЕТОННЫЙ СТЕРИЛИЗАТОР ПАМЯТИ
 
+        public override void Dispose()
+        {
+            base.Dispose(); // Чистим базовые ресурсы
+            _eventBus.Unsubscribe<IUserVm.UserAuthenticated>(OnUserAuthenticated);
+        }
 
         #endregion
     }

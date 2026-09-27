@@ -1,5 +1,4 @@
 ﻿using System;
-using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Enums.Navigation;
@@ -9,88 +8,104 @@ using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels
 {
-    // 🔥 Реализуем IDisposable для полной зачистки шины событий при уничтожении компонента
-    public partial class TitleBarViewModel : FormViewModelBase, IDisposable
+    /// <summary>
+    /// Стерильная верхняя панель управления окном мессенджера SiberNet.
+    /// Полная изоляция: класс общается с навигацией ИСКЛЮЧИТЕЛЬНО через рацию автобуса,
+    /// принимая дуэт макро-параметров обратно для триггеров XAML.
+    /// </summary>
+    public partial class TitleBarViewModel : FormViewModelBase<NavigationStateManager>, IDisposable
     {
-        [ObservableProperty] private MainTab _currentMainTab = MainTab.None;
+        // 🔥 ИСПРАВИЛИ: Никакого хардкода AdminZone на старте! Начинаем строго с чистого нуля.
+        [ObservableProperty] private MainTab _currentMainZone = MainTab.StartZone;
         [ObservableProperty] private ClientSubTab _currentClientTab = ClientSubTab.None;
         [ObservableProperty] private bool _isGlobalLoggerVisible = false;
 
         public TitleBarViewModel(IEventBus eventBus, NavigationStateManager navigationStateManager)
             : base(eventBus, navigationStateManager)
         {
-            // 🔥 ЧИСТОТА: Заменили стрелочную анонимную лямбду на ссылку на именованный метод! 🧼
-            _eventBus.Subscribe<ITitleBarViewModel.ZoneChanged>(OnZoneChanged);
+            // 🔥 СИНХРОНИЗАЦИЯ: Подписываемся строго на наш новый сквозной макро-рекорд
+            _eventBus.Subscribe<ITitleBarVm.MacroZoneChanged>(OnMacroZoneChanged);
         }
 
-        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Для идеального графа в Инспекторе) 🧼
+        #region 🎧 МЕТОД ПРИЁМА ОБРАТНОГО СИГНАЛА БЭКЕНДА (Для идеального графа в Инспекторе) 🧼
 
-        private void OnZoneChanged(ITitleBarViewModel.ZoneChanged msg)
+        private void OnMacroZoneChanged(ITitleBarVm.MacroZoneChanged msg)
         {
-            // Синхронизируем локальные свойства шапки для триггеров XAML
-            CurrentMainTab = msg.TargetTab;
-            CurrentClientTab = msg.ClientTab;
+            if (msg == null) return;
+
+            // 🔥 ПИНГ-ПОНГ: Раскладываем прилетевший обратно дуэт энумов по UI-свойствам
+            CurrentMainZone = msg.ActiveZone;
+            CurrentClientTab = msg.ActiveClientTab;
         }
 
         #endregion
 
-        // 🛠️ КНОПКА: Админка
+        // 🛠️ КНОПКА: Админка (Чистый, безотказный тумблер на основе локального засинхроненного стейта)
         [RelayCommand]
-        private void ToggleAdminZone()
+        public void ToggleAdminZone()
         {
-            if (Navigation.CurrentMainZone == MainTab.AdminZone)
-                Navigation.SetStartZone();
+            if (CurrentMainZone == MainTab.AdminZone)
+            {
+                _eventBus.Publish(this, new IAdminVm.LogoutAdmin());
+            }
             else
-                Navigation.SetAdminZone();
+            {
+                _eventBus.Publish(this, new IAdminVm.RequestAdminZone());
+            }
         }
 
-        // 🔑 КНОПКИ: Вход и Регистрация
+        // 🔑 КНОПКА: Вход (Изолированная нано-команда PUBLIC без ломающих параметров)
         [RelayCommand]
-        private void SwitchClientTab(ClientSubTab targetTab)
+        public void OpenAuthZone()
         {
-            Navigation.SetAuthZone(targetTab);
+            _eventBus.Publish(this, new IUserVm.OpenAuth());
         }
 
-        // 🔑 КНОПКА: Выход
+        // 📝 КНОПКА: Регистрация (Изолированная нано-команда PUBLIC без ломающих параметров)
         [RelayCommand]
-        private void Logout()
+        public void OpenRegisterZone()
         {
-            Navigation.ClearToGuest();
+            _eventBus.Publish(this, new IUserVm.OpenRegistration());
+        }
+
+        // 🔑 КНОПКА: Выход из профиля клиента
+        [RelayCommand]
+        public void Logout()
+        {
+            _eventBus.Publish(this, new IUserVm.LogoutClient());
             _eventBus.Publish(this, new IStatusBarViewModel.TextChanged("Выход из аккаунта выполнен успешно"));
         }
 
         // ✕ КНОПКА: Закрыть приложение
         [RelayCommand]
-        private void RequestCloseApplication()
+        public void RequestCloseApplication()
         {
             _eventBus.Publish(this, new IMainViewModel.CloseRequest());
         }
 
         // 🪵 КНОПКА: Глобальный логгер
         [RelayCommand]
-        private void ToggleGlobalLogger()
+        public void ToggleGlobalLogger()
         {
             IsGlobalLoggerVisible = !IsGlobalLoggerVisible;
 
             _eventBus.Publish(this, new IStatusBarViewModel.TextChanged("Переключение глобального оверлея логов..."));
-            _eventBus.Publish(this, new ITitleBarViewModel.ToggleAnimation(IsGlobalLoggerVisible));
+            _eventBus.Publish(this, new ITitleBarVm.ToggleAnimation(IsGlobalLoggerVisible));
         }
 
         // 🔳 КНОПКА: Развернуть окно
         [RelayCommand]
-        private void ToggleGrowWindow()
+        public void ToggleGrowWindow()
         {
             _eventBus.Publish(this, new IMainViewModel.ToggleSize());
         }
 
         #region 🛡️ ЖЕЛЕЗОБЕТОННЫЙ СТЕРИЛИЗАТОР ПАМЯТИ
 
-        /// <summary>
-        /// Полностью снимает подписку шапки с шины событий.
-        /// </summary>
-        public void Dispose()
+        public override void Dispose()
         {
-            _eventBus.Unsubscribe<ITitleBarViewModel.ZoneChanged>(OnZoneChanged);
+            base.Dispose();
+            _eventBus.Unsubscribe<ITitleBarVm.MacroZoneChanged>(OnMacroZoneChanged);
         }
 
         #endregion

@@ -1,23 +1,19 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using HomeNetCore.Enums.Navigation;
-using HomeNetCore.Extensions;
+﻿using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
-using HomeNetCore.Interfaces.ViewModels;
-using HomeNetCore.Models;
 using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels
 {
-    public partial class MainViewModel : FormViewModelBase, IMainViewModel
+    public partial class MainViewModel 
     {
         private readonly ILogger _logger;
 
-        [ObservableProperty] private string _statusText = "Система готова...";
+        
         
    
 
-        public MainViewModel(ILogger logger, IEventBus eventBus ,NavigationStateManager navigation) : base(eventBus, navigation)
+        public MainViewModel(ILogger logger, IEventBus eventBus ,NavigationStateManager navigation)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
            

@@ -24,10 +24,10 @@ namespace SiberNet.UI.Infrastructure.Animators
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
 
             // Слушаем триггер анимации оверлея логов
-            _eventBus.Subscribe<ITitleBarViewModel.ToggleAnimation>(OnToggleGlobalLoggerRequested);
+            _eventBus.Subscribe<ITitleBarVm.ToggleAnimation>(OnToggleGlobalLoggerRequested);
         }
 
-        private void OnToggleGlobalLoggerRequested(ITitleBarViewModel.ToggleAnimation msg)
+        private void OnToggleGlobalLoggerRequested(ITitleBarVm.ToggleAnimation msg)
         {
             ExecuteOnUi(window =>
             {
@@ -81,7 +81,7 @@ namespace SiberNet.UI.Infrastructure.Animators
 
         public override void Dispose()
         {
-            _eventBus.Unsubscribe<ITitleBarViewModel.ToggleAnimation>(OnToggleGlobalLoggerRequested);
+            _eventBus.Unsubscribe<ITitleBarVm.ToggleAnimation>(OnToggleGlobalLoggerRequested);
         }
     }
 }

@@ -95,7 +95,7 @@ namespace HomeNet.DI
             services.AddSingleton<IFriendService, FriendService>();
 
             // 3. Регистрация Вьюмоделей слоя Презентации
-             
+
             services.AddSingleton<StatusBarViewModel>();
             services.AddSingleton<TableUsersViewModel>();
             services.AddSingleton<RegistrationViewModel>();
@@ -104,7 +104,7 @@ namespace HomeNet.DI
                                                             // Вьюмодель инспектора для вывода отчета на экран
             services.AddSingleton<InspectorViewModel>();
 
-            services.AddSingleton<AdminMenuViewModel>();
+            services.AddSingleton<AdminProfileViewModel>();
             services.AddSingleton<DeleteUsersViewModel>();
             services.AddSingleton<ChatViewModel>();
             services.AddSingleton<TitleBarViewModel>();
@@ -112,9 +112,18 @@ namespace HomeNet.DI
 
 
 
-            // Регистрируем навигатор как Singleton, чтобы он жил в одном экземпляре на всё приложение
-            services.AddSingleton<NavigationStateManager>();
-            
+
+
+
+
+            // 🔥 СТАЛО: Регистрируем конкретных наследников-автоматов
+            services.AddSingleton<AdminNavigationManager>();
+            services.AddSingleton<UserNavigationManager>();
+
+            // Кастомный мост для обратной совместимости, если где-то захардкожена базовая ссылка
+            services.AddSingleton<NavigationStateManager>(provider =>
+                provider.GetRequiredService<UserNavigationManager>());
+
 
             // Изолированная левая панель контактов
             services.AddSingleton<ContactsListViewModel>();
@@ -126,8 +135,8 @@ namespace HomeNet.DI
             services.AddSingleton<AccountMenuViewModel>();
 
 
-            // Контейнер дашборда автоматически подтянет ContactsListViewModel и ChatViewModel
-            services.AddSingleton<UserDashboardViewModel>();
+
+            services.AddSingleton<UserProfileViewModel>();
 
             services.AddTransient<MainViewModel>();
 
@@ -156,5 +165,11 @@ namespace HomeNet.DI
             _serviceProvider = provider ?? throw new ArgumentNullException(nameof(provider));
         }
 
+
+
+
     }
+
+
+
 }

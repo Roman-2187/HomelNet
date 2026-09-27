@@ -24,7 +24,7 @@ namespace HomeNetCore.Interfaces.Services
 
         Task<DeleteVerdict> DeleteUserAsync(string targetUserId, UserEntity? selectedUser);
 
-        // В файле IDeleteUserViewModel.cs у нас лежит Deleted рекорд, а тут DeleteVerdict
+        // В файле IDeleteUserVm.cs у нас лежит Deleted рекорд, а тут DeleteVerdict
         public record DeleteVerdict(
             bool IsValid,
             List<ValidationResult> Results,

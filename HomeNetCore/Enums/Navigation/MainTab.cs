@@ -3,9 +3,11 @@
     // Макро-зона всего приложения
     public enum MainTab
     {
-        None,   
+        StartZone,   
         ClientZone,
         AdminZone 
+
+        
     }
 
    

@@ -7,7 +7,6 @@
         Profile,
         Messenger,
        Authentication,
-
        Registration
 
     }

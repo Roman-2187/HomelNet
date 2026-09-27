@@ -87,7 +87,8 @@
                     <!-- 🔥 ДИНАМИКА: Кнопка "Отправить" привязана к команде SendMessageCommand -->
                     <Button Grid.Column="2" Command="{Binding SendMessageCommand}" 
                             Content="🚀" FontSize="18" Background="#1AADD8E6" 
-                            Foreground="White" BorderThickness="0.5" Width="50" BorderBrush="#00F0FF" Height="40" Cursor="Hand"/>
+                            Foreground="White" BorderThickness="0.5"
+                            Width="50" BorderBrush="#00F0FF" Height="40" Cursor="Hand"/>
                 </Grid>
             </Border>
         </Grid>

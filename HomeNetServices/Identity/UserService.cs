@@ -79,7 +79,7 @@ namespace HomeNetServices.Services.Identity
                 }
 
                 // 3. Пинаем автобус, чтобы все открытые UI-окна тут же добавили его на экраны!
-                _eventBus.Publish(this, new IUsersTableViewModel.Added(user));
+                _eventBus.Publish(this, new IUsersTableVm.Added(user));
             }
             catch (Exception ex)
             {
@@ -111,7 +111,7 @@ namespace HomeNetServices.Services.Identity
 
                 // 3. Пинаем автобус: "Народ, этого юзера больше нет!" 📢
                 // Все вьюшки (таблица, контакты, удаление) сами выкинут его из UI без единого запроса к базе!
-                _eventBus.Publish(this, new IDeleteUserViewModel.Deleted(userId));
+                _eventBus.Publish(this, new IDeleteUserVm.Deleted(userId));
             }
             catch (NotFoundException ex)
             {

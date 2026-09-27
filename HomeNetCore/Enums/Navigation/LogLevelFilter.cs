@@ -5,7 +5,7 @@ using System.Text;
 namespace HomeNetCore.Enums.Navigation
 {
     /// <summary>
-    /// Микро-рубильник для фильтрации логов внутри LogPanel.
+    /// Микро-рубильник для фильтрации логов внутри Logger.
     /// </summary>
     public enum LogLevelFilter
     {

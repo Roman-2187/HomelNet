@@ -3,24 +3,55 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-            
+             xmlns:local="clr-namespace:SiberNet.UI.Controls"
              mc:Ignorable="d" >
 
 
-    <!-- Перенесли контейнер со стилем и ListBox внутрь отдельного контрола -->
-    <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}" Margin="0,0,0,0">
-
-        <ContentControl.Tag>
+    <!-- 🦾 ЕДИНЫЙ КИБЕРПАНК-КОНТЕЙНЕР НА ВСЮ ЛЕВУЮ ПАНЕЛЬ -->
+    <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}"   >
+        <ContentControl.Tag> 
+            <!-- Наш тег со значением скругления 6 пикселей для обрезки углов -->
             <CornerRadius>6</CornerRadius>
         </ContentControl.Tag>
-        <!-- Так как этот контрол будет лежать внутри дашборда, DataContext унаследуется автоматически -->
-        <ListBox ItemsSource="{Binding ContactsListVM.Friends}" 
-                 SelectedItem="{Binding ContactsListVM.SelectedFriend, Mode=TwoWay}"
-                 ItemContainerStyle="{StaticResource CyberpunkContactItemStyle}"
-                 DisplayMemberPath="FirstName" 
-                 Background="Transparent" 
-                 BorderThickness="0"
-                />
+
+        <!-- Разрезаем внутренности рамки на 2 яруса -->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <!-- Ярус 0: Шапка (Меню + Текст) -->
+                <RowDefinition Height="*"/>
+                <!-- Ярус 1: Список контактов -->
+            </Grid.RowDefinitions>
+
+            <!-- 🍔 ШАПКА: Сидит на верхнем ярусе внутри рамки -->
+            <StackPanel Grid.Row="0" Orientation="Horizontal" >
+
+                <!-- Наш кругленький бургер-меню (задали компактные 30х30 для левой панели) -->
+                <local:AccountMenuControl Width="50" Height="30" 
+                                          HorizontalAlignment="Left"
+                                          VerticalAlignment="Center"/>
+
+                <!-- 📝 Надпись "Контакты" строго напротив кнопки меню -->
+                <TextBlock Text="Контакты"
+                           Foreground="#FFB300" Margin="10,0,0,0"
+                           FontWeight="Bold"
+                          
+                           VerticalAlignment="Center" 
+                           FontSize="12" />
+            </StackPanel>
+
+            <!-- 📇 ВТОРОЙ ЯРУС: Твой список друзей со стилем, прижатый к полу -->
+            <!-- Добавили ClipToBounds="True", чтобы крайние элементы списка не резали закругления Border -->
+            <Border Grid.Row="1" ClipToBounds="True" Background="Transparent" >
+                <ListBox ItemsSource="{Binding ContactsListVM.Friends}"  Margin="0,60,0,0"
+                         SelectedItem="{Binding ContactsListVM.SelectedFriend, Mode=TwoWay}"
+                         ItemContainerStyle="{StaticResource CyberpunkContactItemStyle}"
+                         DisplayMemberPath="FirstName" 
+                         Background="Transparent" 
+                         BorderThickness="0"
+                        />
+            </Border>
+        </Grid>
     </ContentControl>
 
 </UserControl>

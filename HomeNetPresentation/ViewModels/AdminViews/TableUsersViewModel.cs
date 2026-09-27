@@ -1,6 +1,7 @@
 ﻿using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
+using HomeNetCore.Enums.Navigation; // Подтягиваем наши энумы вкладок админки
 using HomeNetCore.Models;
 using HomeNetPresentation.Services;
 using System.Collections.ObjectModel;
@@ -8,67 +9,74 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace HomeNetPresentation.ViewModels.AdminViews
 {
-    public partial class TableUsersViewModel : FormViewModelBase, IDisposable
+    /// <summary>
+    /// Живая таблица пользователей SiberNet.
+    /// Наследуется от дженерик-базы с указанием конкретного менеджера навигации админки.
+    /// </summary>
+    public partial class TableUsersViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
     {
         private readonly IUserService _userService;
         private bool _isLoaded = false; // 🔥 Флаг-предохранитель, чтобы не спамить базу при каждом повторном клике
 
         [ObservableProperty] private ObservableCollection<UserEntity> _users = new();
 
-        public TableUsersViewModel(IEventBus eventBus, IUserService userService, NavigationStateManager navigation)
-            : base(eventBus, navigation)
+        public TableUsersViewModel(IEventBus eventBus, IUserService userService, AdminNavigationManager navigation)
+            : base(eventBus, navigation) // Передали строго типизированный навигатор в generic-базу
         {
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             InitializeBusSubscriptions();
-
-            // 🧼 ТУТ ТЕПЕРЬ СТЕРЕЛЬНАЯ ЧИСТОТА: Никаких вызовов InitializeDataAsync() на старте!
         }
 
         private async Task InitializeDataAsync()
-        {     
-
+        {
             try
             {
                 var list = await _userService.GetAllAsync();
-               
 
                 Users = new ObservableCollection<UserEntity>(list ?? Enumerable.Empty<UserEntity>());
                 _isLoaded = true; // Фиксируем, что данные успешно подтянулись
 
-                EventBus.Publish(this, new IUsersTableViewModel.Refreshed(Users.ToList()));
-                EventBus.Publish(this, new IStatusBarViewModel.TextChanged($"База данных успешно синхронизирована загружено {Users.Count} пользователей"));
+                _eventBus.Publish(this, new IUsersTableVm.Refreshed(Users.ToList()));
+                _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"База данных успешно синхронизирована загружено {Users.Count} пользователей"));
             }
             catch (Exception ex)
             {
-                EventBus.Publish(this, new IStatusBarViewModel.TextChanged($"Ошибка синхронизации данных: {ex.Message}"));
+                _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"Ошибка синхронизации данных: {ex.Message}"));
             }
         }
 
         private void InitializeBusSubscriptions()
         {
-            EventBus.Subscribe<IAdminMenuViewModel.UserTableRequested>(OnUserTableRequested);
-            EventBus.Subscribe<IDeleteUserViewModel.Deleted>(OnUserDeleted);
-            EventBus.Subscribe<IUsersTableViewModel.Added>(OnUserAdded);
-            EventBus.Subscribe<IUsersTableViewModel.RefreshRequest>(OnRefreshRequest);
+            // 🔥 ЧИСТОТА ДЛЯ ИНСПЕКТОРА: Никаких лямбд, только именованные обработчики! 🧼
+            _eventBus.Subscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
+            _eventBus.Subscribe<IDeleteUserVm.Deleted>(OnUserDeleted);
+            _eventBus.Subscribe<IUsersTableVm.Added>(OnUserAdded);
+            _eventBus.Subscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
         }
 
-        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК 🧼
+        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Для идеального графа в Инспекторе) 🧼
 
-        private async void OnUserTableRequested(IAdminMenuViewModel.UserTableRequested msg)
+        private async void OnAdminTabChanged(IAdminVm.AdminTabChanged msg)
         {
-            // 🔥 ЛЕНИВАЯ ЗАГРУЗКА: Идём в базу ТОЛЬКО если таблица открыта ВПЕРВЫЕ
-            if (!_isLoaded)
+            if (msg == null) return;
+
+            // 🔥 ЕСЛИ НАВИГАТОР ПОДТВЕРДИЛ: Открыта вкладка таблицы пользователей!
+            if (msg.ActiveTab == AdminSubTab.UserTable)
             {
-                await InitializeDataAsync();
-            }
-            else
-            {
-                // Если данные уже есть в памяти синглтона — просто пушим их в интерфейс мгновенно
-                EventBus.Publish(this, new IUsersTableViewModel.Refreshed(Users.ToList()));
+                // 🔥 ЛЕНИВАЯ ЗАГРУЗКА: Идём в базу ТОЛЬКО если таблица открыта ВПЕРВЫЕ
+                if (!_isLoaded)
+                {
+                    await InitializeDataAsync();
+                }
+                else
+                {
+                    // Если данные уже есть в памяти синглтона — просто пушим их в интерфейс мгновенно
+                    _eventBus.Publish(this, new IUsersTableVm.Refreshed(Users.ToList()));
+                }
             }
         }
 
-        private void OnUserDeleted(IDeleteUserViewModel.Deleted msg)
+        private void OnUserDeleted(IDeleteUserVm.Deleted msg)
         {
             var userToRemove = Users.FirstOrDefault(u => u.Id == msg.Id);
             if (userToRemove != null)
@@ -76,24 +84,23 @@ namespace HomeNetPresentation.ViewModels.AdminViews
                 string deletedName = $"{userToRemove.FirstName} {userToRemove.LastName}";
                 Users.Remove(userToRemove);
 
-                EventBus.Publish(this, new IUsersTableViewModel.Refreshed(Users.ToList()));
+                _eventBus.Publish(this, new IUsersTableVm.Refreshed(Users.ToList()));
 
-                _ = Task.Run(async () =>
+                _ = Task.Run(() =>
                 {
-                    
-                    EventBus.Publish(this, new IStatusBarViewModel.TextChanged($"Пользователь {deletedName} успешно удалён"));
+                    _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"Пользователь {deletedName} успешно удалён"));
                 });
             }
         }
 
-        private void OnUserAdded(IUsersTableViewModel.Added msg)
+        private void OnUserAdded(IUsersTableVm.Added msg)
         {
             if (msg.User == null) return;
             Users.Add(msg.User);
-            EventBus.Publish(this, new IUsersTableViewModel.Refreshed(Users.ToList()));
+            _eventBus.Publish(this, new IUsersTableVm.Refreshed(Users.ToList()));
         }
 
-        private async void OnRefreshRequest(IUsersTableViewModel.RefreshRequest msg)
+        private async void OnRefreshRequest(IUsersTableVm.RefreshRequest msg)
         {
             // При принудительном рефреше (кнопкой) — плевать на флаг, жестко перечитываем базу
             await InitializeDataAsync();
@@ -101,12 +108,17 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 
         #endregion
 
-        public void Dispose()
+        #region 🛡️ ЖЕЛЕЗОБЕТОННЫЙ СТЕРИЛИЗАТОР ПАМЯТИ
+
+        public override void Dispose()
         {
-            EventBus.Unsubscribe<IAdminMenuViewModel.UserTableRequested>(OnUserTableRequested);
-            EventBus.Unsubscribe<IDeleteUserViewModel.Deleted>(OnUserDeleted);
-            EventBus.Unsubscribe<IUsersTableViewModel.Added>(OnUserAdded);
-            EventBus.Unsubscribe<IUsersTableViewModel.RefreshRequest>(OnRefreshRequest);
+            base.Dispose(); // Чистим базовые ресурсы дженерик-базы
+            _eventBus.Unsubscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
+            _eventBus.Unsubscribe<IDeleteUserVm.Deleted>(OnUserDeleted);
+            _eventBus.Unsubscribe<IUsersTableVm.Added>(OnUserAdded);
+            _eventBus.Unsubscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
         }
+
+        #endregion
     }
 }

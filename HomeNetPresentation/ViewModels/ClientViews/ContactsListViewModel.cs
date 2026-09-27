@@ -3,12 +3,11 @@ using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
-using HomeNetServices.Routing;
 using System.Collections.ObjectModel;
 
 namespace HomeNetPresentation.ViewModels
 {
-    public partial class ContactsListViewModel : ObservableObject, IContactsListViewModel
+    public partial class ContactsListViewModel : ObservableObject, IContactsListViewModel, IDisposable
     {
         private readonly IEventBus _eventBus;
         private readonly IUserService _userService;
@@ -21,25 +20,44 @@ namespace HomeNetPresentation.ViewModels
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
 
-            _eventBus.Subscribe<IAuthenticationViewModel.UserLogged>(async msg => await LoadContactsAsync(msg.User));
-
-            _eventBus.Subscribe<IUsersTableViewModel.Added>(msg =>
-            {
-                if (msg.User == null) return;
-                if (msg.User.FirstName == null) msg.User.FirstName = "Пользователь без имени";
-                Friends.Add(msg.User);
-            });
-
-            _eventBus.Subscribe<IDeleteUserViewModel.Deleted>(msg =>
-            {
-                // 🔥 СОСТЫКОВКА: Поменяли msg.UserId на правильный msg.Id
-                var friendToRemove = Friends.FirstOrDefault(f => f.Id == msg.Id);
-                if (friendToRemove != null)
-                {
-                    Friends.Remove(friendToRemove);
-                }
-            });
+            InitializeBusSubscriptions();
         }
+
+        private void InitializeBusSubscriptions()
+        {
+            // 🔥 ЧИСТОТА: Никаких лямбд, шпион в Инспекторе теперь видит всё! 🧼
+           
+            _eventBus.Subscribe<IUsersTableVm.Added>(OnUserAdded);
+            _eventBus.Subscribe<IDeleteUserVm.Deleted>(OnUserDeleted);
+        }
+
+        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Для идеального графа в Инспекторе) 🧼
+
+       
+
+        private void OnUserAdded(IUsersTableVm.Added msg)
+        {
+            if (msg?.User == null) return;
+
+            if (msg.User.FirstName == null)
+                msg.User.FirstName = "Пользователь без имени";
+
+            Friends.Add(msg.User);
+        }
+
+        private void OnUserDeleted(IDeleteUserVm.Deleted msg)
+        {
+            if (msg == null) return;
+
+            // Находим и выкидываем удалённого юзера из нашего списка контактов
+            var friendToRemove = Friends.FirstOrDefault(f => f.Id == msg.Id);
+            if (friendToRemove != null)
+            {
+                Friends.Remove(friendToRemove);
+            }
+        }
+
+        #endregion
 
         partial void OnSelectedFriendChanged(UserEntity? value)
         {
@@ -52,13 +70,13 @@ namespace HomeNetPresentation.ViewModels
         private async Task LoadContactsAsync(UserEntity? currentUser)
         {
             if (currentUser == null) return;
-            await Task.Delay(1000);
+            await Task.Delay(1000); // Твоя фирменная пауза 🎬
 
             try
             {
                 var allUsers = await _userService.GetAllAsync();
 
-                // 🔥 ЧИСТЫЙ LINQ: Отсекаем текущего юзера и мапим пустые имена за один проход пачкой!
+                // 🔥 Твой крутой проход пачкой: отсекаем себя и мапим пустые имена
                 Friends = new ObservableCollection<UserEntity>(
                     allUsers
                         .Where(u => u.Id != currentUser.Id)
@@ -73,5 +91,16 @@ namespace HomeNetPresentation.ViewModels
                 _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"[Контакты СБОЙ]: {ex.Message}"));
             }
         }
+
+        #region 🛡️ ЖЕЛЕЗОБЕТОННЫЙ СТЕРИЛИЗАТОР ПАМЯТИ
+
+        public void Dispose()
+        {
+            
+            _eventBus.Unsubscribe<IUsersTableVm.Added>(OnUserAdded);
+            _eventBus.Unsubscribe<IDeleteUserVm.Deleted>(OnUserDeleted);
+        }
+
+        #endregion
     }
 }

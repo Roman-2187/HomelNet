@@ -1,24 +1,26 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.Events;
+using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models.Validation;
-using HomeNetPresentation.Services; // 🔥 Подключили пространство навигатора
+using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels
 {
     /// <summary>
-    /// Стерильный базовый фундамент для всех интерактивных форм проекта SiberNet.
-    /// Автоматически предоставляет доступ к шине и глобальному командиру навигации.
+    /// Стерильный generic-фундамент для всех интерактивных форм проекта SiberNet.
+    /// Строго типизирует навигатор для каждого конкретного экрана.
     /// </summary>
-    public abstract partial class FormViewModelBase : ObservableObject
+    public abstract partial class FormViewModelBase<TNavigation> : ObservableObject, IDisposable, IFormViewModel
+        where TNavigation : NavigationStateManager
     {
         protected readonly IEventBus _eventBus;
-        protected readonly NavigationStateManager _navigation; // 🔥 Спрятали командира в фундамент базы!
+        protected readonly TNavigation _navigation; // 🔥 Строгий тип навигатора!
 
         public IEventBus EventBus => _eventBus;
 
-        // 🔥 ПУБЛИЧНЫЙ МОСТ: Теперь ЛЮБАЯ дочерняя вьюмодель может читать энумы и текущего юзера!
-        public NavigationStateManager Navigation => _navigation;
+        // 🔥 ИДЕАЛЬНЫЙ МОСТ: Наследник видит свойства СВОЕГО конкретного навигатора без кастов!
+        public TNavigation Navigation => _navigation;
 
         [ObservableProperty] private string _statusMessage = string.Empty;
         [ObservableProperty] private string _submitButtonText = "Выполнить";
@@ -27,8 +29,7 @@ namespace HomeNetPresentation.ViewModels
         private IReadOnlyDictionary<TypeField, ValidationResult> _validationResults
             = new Dictionary<TypeField, ValidationResult>();
 
-        // 🔥 Конструктор теперь принимает ДВА главных силовых кабеля системы
-        public FormViewModelBase(IEventBus eventBus, NavigationStateManager navigationManager)
+        public FormViewModelBase(IEventBus eventBus, TNavigation navigationManager)
         {
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             _navigation = navigationManager ?? throw new ArgumentNullException(nameof(navigationManager));
@@ -37,6 +38,14 @@ namespace HomeNetPresentation.ViewModels
         public void UpdateValidation(IEnumerable<ValidationResult> results)
         {
             ValidationResults = results.ToDictionary(r => r.Field, r => r);
+        }
+
+        /// <summary>
+        /// Глобальный виртуальный стерилизатор для безопасной зачистки подписок в наследниках
+        /// </summary>
+        public virtual void Dispose()
+        {
+            // Базовая зачистка, если потребуется
         }
     }
 }

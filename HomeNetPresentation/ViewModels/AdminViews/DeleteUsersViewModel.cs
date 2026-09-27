@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HomeNetCore.Enums.Navigation; // Тянем энумы под новые условия
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
@@ -7,11 +8,18 @@ using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
 using HomeNetPresentation.Services;
+using System;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace HomeNetPresentation.ViewModels
 {
-    public partial class DeleteUsersViewModel : FormViewModelBase, IDisposable
+    /// <summary>
+    /// Полностью автономная форма удаления пользователей SiberNet.
+    /// Синхронизируется исключительно по фактам изменения вкладок из автобуса.
+    /// </summary>
+    public partial class DeleteUsersViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
     {
         private readonly IDeleteService _srv;
         private readonly ILogger _log;
@@ -22,28 +30,34 @@ namespace HomeNetPresentation.ViewModels
 
         public ObservableCollection<string> DeletedUsersHistory { get; } = new();
 
-        public DeleteUsersViewModel(IDeleteService srv, IEventBus bus, ILogger log, NavigationStateManager nav)
+        public DeleteUsersViewModel(IDeleteService srv, IEventBus bus, ILogger log, AdminNavigationManager nav)
             : base(bus, nav)
         {
             _srv = srv ?? throw new ArgumentNullException(nameof(srv));
             _log = log ?? throw new ArgumentNullException(nameof(log));
             SubmitButtonText = "Удалить";
 
-            // 🔥 КРАСОТА ДЛЯ ИНСПЕКТОРА: Передаём строго именованные методы! 🧼
-            EventBus.Subscribe<IAdminMenuViewModel.DeleteFormRequested>(OnDeleteFormRequested);
-            EventBus.Subscribe<IDeleteUserViewModel.Deleted>(OnUserDeleted);
+            // 🔥 ПОДПИСКИ ПО ФАКТАМ: Ловим изменение вкладок и факт успешного стирания из бэка
+            _eventBus.Subscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
+            _eventBus.Subscribe<IDeleteUserVm.Deleted>(OnUserDeleted);
 
-            ResetForm(sync: true);
+            ResetForm(sync: false); // При старте не греем базу заранее
         }
 
         #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Для идеального графа в Инспекторе) 🧼
 
-        private void OnDeleteFormRequested(IAdminMenuViewModel.DeleteFormRequested msg)
+        private void OnAdminTabChanged(IAdminVm.AdminTabChanged msg)
         {
-            ResetForm(sync: true);
+            if (msg == null) return;
+
+            // 🔥 ЕСЛИ НАВИГАТОР ПОДТВЕРДИЛ: Открыта вкладка удаления — только тогда шуршим в базу за списком!
+            if (msg.ActiveTab == AdminSubTab.DeleteUsers)
+            {
+                ResetForm(sync: true);
+            }
         }
 
-        private void OnUserDeleted(IDeleteUserViewModel.Deleted msg)
+        private void OnUserDeleted(IDeleteUserVm.Deleted msg)
         {
             var userToRemove = FoundUsers.FirstOrDefault(u => u.Id == msg.Id);
             if (userToRemove != null)
@@ -87,7 +101,6 @@ namespace HomeNetPresentation.ViewModels
             SearchCommand.NotifyCanExecuteChanged();
         }
 
-
         partial void OnTargetUserIdChanged(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -105,10 +118,6 @@ namespace HomeNetPresentation.ViewModels
 
             SearchCommand.NotifyCanExecuteChanged();
         }
-
-
-
-
 
         [RelayCommand(CanExecute = nameof(CanSearch))]
         private async Task SearchAsync()
@@ -135,13 +144,11 @@ namespace HomeNetPresentation.ViewModels
             return SelectedUser.Id.ToString() != TargetUserId.Trim();
         }
 
-
         [RelayCommand]
         private async Task ExecuteDeleteAsync()
         {
             try
             {
-                // 🔥 ЗАПОМИНАЕМ ИМЯ НА ВХОДЕ: Пока бэкенд не начал удаление и кэш не сбросился!
                 string? userNameForHistory = SelectedUser != null
                     ? $"{SelectedUser.FirstName} {SelectedUser.LastName}"
                     : null;
@@ -154,9 +161,8 @@ namespace HomeNetPresentation.ViewModels
                 {
                     _log.LogInformation($"[DeleteVM] Юзер {verdict.ParsedId} стёрт.");
 
-                    EventBus.Publish(this, new IDeleteUserViewModel.Deleted(verdict.ParsedId ?? -1));
+                    _eventBus.Publish(this, new IDeleteUserVm.Deleted(verdict.ParsedId ?? -1));
 
-                    // 🔥 ФОРМИРУЕМ СТРОКУ: Если мы запомнили имя, пишем его, иначе — точечно
                     string userInfo = userNameForHistory != null
                         ? $"{userNameForHistory} (ID {verdict.ParsedId})"
                         : $"ID {verdict.ParsedId} (Точечно)";
@@ -173,19 +179,19 @@ namespace HomeNetPresentation.ViewModels
             }
         }
 
-
         [RelayCommand]
         private async Task CancelAsync()
         {
-            ResetForm(sync: true);
-            EventBus.Publish(this, new IAdminMenuViewModel.DeleteFormCloseRequested());
+            ResetForm(sync: false);
+            // 🔥 ЧИСТОТА: Просто шлём OpenDelete повторно, навигатор-тумблер сам закроет эту панель в None!
+            _eventBus.Publish(this, new IAdminVm.OpenDelete());
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
-            // 🔥 ЧИСТАЯ ОТПИСКА ПО ИМЕНАМ МЕТОДОВ
-            EventBus.Unsubscribe<IAdminMenuViewModel.DeleteFormRequested>(OnDeleteFormRequested);
-            EventBus.Unsubscribe<IDeleteUserViewModel.Deleted>(OnUserDeleted);
+            base.Dispose();
+            _eventBus.Unsubscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
+            _eventBus.Unsubscribe<IDeleteUserVm.Deleted>(OnUserDeleted);
         }
     }
 }

@@ -14,37 +14,21 @@
             
              >
 
-
-    <Grid Background="Transparent">
+    <Grid>
         <Grid.ColumnDefinitions>
-            <!-- Левая панель под список контактов -->
-            <ColumnDefinition Width="200"/>
+            <!-- Левая панель под список контактов (фиксированные 160 пикселей) -->
+            <ColumnDefinition Width="165"/>
             <!-- Правая панель под область переписки -->
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- 👤 ЛЕВАЯ ПАНЕЛЬ: ТЕПЕРЬ ТУТ КРАСИВЫЙ ВЫДЕЛЕННЫЙ КОНТРОЛ -->
-        <local:FriendsListViewControl
-            Grid.Column="0" Margin="0,0,5,0"
-            />
+        <!-- 👤 ЛЕВАЯ ПАНЕЛЬ: Теперь контрол сам внутри себя содержит и шапку, и рамку! -->
+        <local:FriendsListViewControl Grid.Column="0" 
+                                      Margin="0,0,5,0"
+                                      />
 
-        <StackPanel Orientation="Horizontal" >
-
-            <!-- 🍔 Наш чистый квадратный бургер -->
-            <local:AccountMenuControl VerticalContentAlignment="Top"/>
-
-            <!-- 📝 Надпись пишем прямо тут, по месту требования -->
-            <TextBlock Text="ДРУЗЬЯ"
-                   Foreground="#8A95A5" 
-                   FontWeight="Bold"
-                   VerticalAlignment="Top" 
-                   Margin="10" 
-                   FontSize="12" />
-        </StackPanel>
-
-
-        <!-- 💬 ПРАВАЯ ПАНЕЛЬ: ЧАТ С УМНОЙ АНИМАЦИЕЙ ПОЛЕТА СВЕРХУ -->
-        <ContentControl Grid.Column="1" >
+        <!-- 💬 ПРАВАЯ ПАНЕЛЬ: ЧАТ С УМНОЙ АНИМАЦИЕЙ -->
+        <ContentControl Grid.Column="1">
             <local:ChatViewControl DataContext="{Binding ChatVm}" />
         </ContentControl>
     </Grid>

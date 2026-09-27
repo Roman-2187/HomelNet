@@ -72,7 +72,7 @@
                              VerticalContentAlignment="Center"
                              Foreground="#FFB300"
                              Padding="5,0,0,0"
-                             Background="#66B3CCB3"/>
+                             Background="#1AADD8E6"/>
 
                         <Button Content="Найти" 
                             Grid.Column="1"
@@ -84,8 +84,8 @@
 
                     <!-- Живой список пользователей с закруглёнными углами -->
                     <Border Grid.Row="2"
-                        Background="#66ABC8AB" 
-                        BorderThickness="0.3"
+                         Background="#1AADD8E6"
+                        
                         BorderBrush="#FFF23E5C"
                         CornerRadius="6"
                         ClipToBounds="True">
@@ -132,7 +132,7 @@
                                Margin="10,15,10,5"/>
 
                         <Border Grid.Row="1"        
-                            Background="#66ABC8AB" 
+                             Background="#1AADD8E6"
                             Margin="5,25,0,0"
                             BorderThickness="0"
                             BorderBrush="#FFF23E5C"

@@ -162,7 +162,65 @@
 
 
 
-       
+        <Style x:Key="OrangeDefaultToggleButtonStyle" TargetType="ToggleButton">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="#FFB300"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Margin" Value="0.5"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <!-- Оранжево-золотые буквы по умолчанию -->
+            <Setter Property="Foreground" Value="#FFB300"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="border"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="6"
+                            Padding="{TemplateBinding Padding}">
+                            <ContentPresenter x:Name="contentPresenter"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      TextElement.FontWeight="{TemplateBinding FontWeight}"
+                                      TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <!-- 1. Наведение мыши (Hover) -->
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFF23E5C"/>
+                                <Setter TargetName="contentPresenter" Property="TextElement.Foreground" Value="#00F0FF"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#00F0FF"/>
+                            </Trigger>
+
+                            <!-- 2. Состояние нажатия (Клик в процессе) -->
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FF131926"/>
+                                <Setter TargetName="contentPresenter" Property="TextElement.Foreground" Value="White"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#FF0D111A"/>
+                            </Trigger>
+
+                            <!-- 3. 🔥 СОСТОЯНИЕ АКТИВАЦИИ (Когда шторка меню ОТКРЫТА) -->
+                            <!-- Чтобы кнопка оставалась подсвеченной неоном, пока открыт Popup -->
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#1AADD8E6"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#00F0FF"/>
+                                <Setter TargetName="contentPresenter" Property="TextElement.Foreground" Value="#FFB300"/>
+                                <Setter TargetName="border" Property="BorderThickness" Value="0.1"/>
+                            </Trigger>
+
+                            <!-- 4. Выключенная кнопка -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="Transparent"/>
+                                <Setter TargetName="contentPresenter" Property="TextElement.Foreground" Value="#FF615959"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
 
 
 

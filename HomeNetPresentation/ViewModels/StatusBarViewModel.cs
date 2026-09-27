@@ -1,4 +1,5 @@
 ﻿using System;
+using System;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNetCore.Interfaces.Events;
@@ -7,23 +8,26 @@ using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels
 {
-    // 🔥 Реализуем IDisposable, чтобы синглтон-статусбар не копил мертвые подписки
-    public partial class StatusBarViewModel : FormViewModelBase, IDisposable
+    /// <summary>
+    /// Глобальная строка состояния приложения SiberNet.
+    /// Наследуется от дженерик-базы с указанием базового менеджера навигации верхнего уровня.
+    /// </summary>
+    public partial class StatusBarViewModel : FormViewModelBase<NavigationStateManager>, IDisposable
     {
         [ObservableProperty]
         private string _statusText = "Готов к работе";
 
         public StatusBarViewModel(IEventBus eventBus, NavigationStateManager navigation)
-            : base(eventBus, navigation)
+            : base(eventBus, navigation) // Передали базовый навигатор верхнего уровня
         {
             InitializeBusSubscriptions();
         }
 
         private void InitializeBusSubscriptions()
         {
-            // 🔥 ЧИСТОТА: Никаких лямбд, только ссылки на именованные методы! 🧼
-            EventBus.Subscribe<IStatusBarViewModel.TextChanged>(OnTextChanged);
-            EventBus.Subscribe<IUsersTableViewModel.Refreshed>(OnUsersTableRefreshed);
+            // 🔥 ЧИСТОТА ДЛЯ ИНСПЕКТОРА: Никаких лямбд, только ссылки на именованные методы! 🧼
+            _eventBus.Subscribe<IStatusBarViewModel.TextChanged>(OnTextChanged);
+            _eventBus.Subscribe<IUsersTableVm.Refreshed>(OnUsersTableRefreshed);
         }
 
         #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Для идеального графа в Инспекторе) 🧼
@@ -36,7 +40,7 @@ namespace HomeNetPresentation.ViewModels
             await UpdateStatusTextAsync(msg.NewStatus);
         }
 
-        private void OnUsersTableRefreshed(IUsersTableViewModel.Refreshed msg)
+        private void OnUsersTableRefreshed(IUsersTableVm.Refreshed msg)
         {
             if (msg == null) return;
 
@@ -51,22 +55,19 @@ namespace HomeNetPresentation.ViewModels
         /// <summary>
         /// Плавно выставляет текст статуса без побочных эффектов и холостого спама в шину
         /// </summary>
-        private async Task UpdateStatusTextAsync(string newText)
+        private Task UpdateStatusTextAsync(string newText)
         {
             StatusText = newText;
-
-            // Если захочешь сделать эффект "мигания" или временного статуса, 
-            // можно подержать текст на экране и вернуть дефолтный "Готов к работе"
-            // await Task.Delay(3000);
-            // StatusText = "Готов к работе";
+            return Task.CompletedTask;
         }
 
         #region 🛡️ ЖЕЛЕЗОБЕТОННЫЙ СТЕРИЛИЗАТОР ПАМЯТИ
 
-        public void Dispose()
+        public override void Dispose()
         {
-            EventBus.Unsubscribe<IStatusBarViewModel.TextChanged>(OnTextChanged);
-            EventBus.Unsubscribe<IUsersTableViewModel.Refreshed>(OnUsersTableRefreshed);
+            base.Dispose(); // Чистим базовые ресурсы дженерик-базы
+            _eventBus.Unsubscribe<IStatusBarViewModel.TextChanged>(OnTextChanged);
+            _eventBus.Unsubscribe<IUsersTableVm.Refreshed>(OnUsersTableRefreshed);
         }
 
         #endregion

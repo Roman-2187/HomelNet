@@ -1,7 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Enums;
-using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
@@ -13,24 +12,26 @@ using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels
 {
-    public partial class RegistrationViewModel : FormViewModelBase
+    /// <summary>
+    /// Чистая форма регистрации мессенджера SiberNet.
+    /// Наследуется от дженерик-базы с указанием конкретного менеджера пользователя.
+    /// </summary>
+    public partial class RegistrationViewModel : FormViewModelBase<UserNavigationManager>
     {
         private readonly IRegistrationService _registerService;
         private readonly ILogger _logger;
         [ObservableProperty] private UserEntity _userData = new();
 
-        public RegistrationViewModel(IRegistrationService registerService,
+        public RegistrationViewModel(
+            IRegistrationService registerService,
             IEventBus eventBus,
             ILogger logger,
-            NavigationStateManager navigation) : base(eventBus, navigation)
+            UserNavigationManager navigation) : base(eventBus, navigation) // Передали строго типизированный навигатор в базу
         {
             _registerService = registerService ?? throw new ArgumentNullException(nameof(registerService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             InitializeInitialHints();
-
-            // 🎯 МЫ ПОЛНОСТЬЮ УДАЛИЛИ ОТСЮДА EventBus.Subscribe<IUsersTableViewModel.Added>!
-            // Локальная зачистка полей формы теперь происходит напрямую в методе RegisterAsync.
         }
 
         private void InitializeInitialHints()
@@ -65,14 +66,14 @@ namespace HomeNetPresentation.ViewModels
                 // 1. Спрашиваем бэкенд
                 IRegistrationService.Verdict verdict = await _registerService.RegisterUserAsync(UserData);
 
-                // 2. 🎯 ХАРД-РЕЗЕТ ГРАФИКИ: Сначала полностью очищаем словарь и UI от старых бирюзовых "true"-хинтов!
+                // 2. ХАРД-РЕЗЕТ ГРАФИКИ: Сначала полностью очищаем словарь и UI от старых хинтов
                 ValidationResults = new Dictionary<TypeField, ValidationResult>();
                 UpdateValidation(new List<ValidationResult>());
 
                 // 3. Заливаем в словарь чистый результат бэкенда
                 ValidationResults = verdict.Results.ToDictionary(r => r.Field, r => r);
 
-                // 4. Проталкиваем результаты бэкенда в UI. Теперь старых хинтов нет, и UI обязан нарисовать новые!
+                // 4. Проталкиваем результаты бэкенда в UI
                 UpdateValidation(verdict.Results);
 
                 if (verdict.IsValid)
@@ -83,8 +84,10 @@ namespace HomeNetPresentation.ViewModels
 
                     var finalUser = verdict.VerifiedUser ?? UserData;
 
-                    Navigation.SetClientZone(finalUser);
-                    EventBus.Publish(this, new IUsersTableViewModel.Added(finalUser));
+                    // 🔥 ИДЕАЛЬНАЯ ДИСЦИПЛИНА: ViewModel больше не трогает навигатор руками!
+                    // Мы пуляем один рекорд UserAuthenticated с сущностью нового юзера.
+                    // UserNavigationManager поймает его, сохранит в CurrentUser и переключит макро-зону в ClientZone!
+                    _eventBus.Publish(this, new IUserVm.UserAuthenticated(finalUser));
 
                     await Task.Delay(500);
                     ResetForm();
@@ -103,15 +106,14 @@ namespace HomeNetPresentation.ViewModels
             }
         }
 
-
-
         [RelayCommand]
         private void Cancel()
         {
             ResetForm();
             InitializeInitialHints();
-            // Публикуем приказ для Навигатора уйти в ноль (Шапка перехватит ответ и закроет экран)
-            EventBus.Publish(this, new ITitleBarViewModel.MacroNavigation(MainTab.None));
+
+            // 🔥 ЧИСТОТА: Отправляем реактивный рекорд отмены. Навигатор сам вернет нас в абсолютный ноль гостя
+            _eventBus.Publish(this, new IUserVm.BackToStart());
         }
 
         #endregion

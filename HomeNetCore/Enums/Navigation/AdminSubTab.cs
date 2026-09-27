@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace HomeNetCore.Enums.Navigation
+﻿namespace HomeNetCore.Enums.Navigation
 {
     /// <summary>
     /// Макро-рубильник для переключения ГЛАВНЫХ панелей внутри админки.
@@ -10,11 +6,11 @@ namespace HomeNetCore.Enums.Navigation
     public enum AdminSubTab
     {
         None,
-        UserTable,        // Таблица пользователей
-        DeleteUserForm,   // Форма удаления
-        LogPanel,         // Панель логов (Родитель для фильтров!)
-        EventInspector,    // Инспектор событий бэкенда
-        SeedUsersForm
+        UserTable,      
+        DeleteUsers,   
+        Logger,        
+        EventInspector,   
+        SeedUsers
     }
 }
 

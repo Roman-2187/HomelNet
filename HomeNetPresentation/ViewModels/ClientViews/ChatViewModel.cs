@@ -3,13 +3,13 @@ using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
-using HomeNetCore.Interfaces.ViewModels; 
+using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
 using System.Collections.ObjectModel;
 
 namespace HomeNetPresentation.ViewModels
 {
-    public partial class ChatViewModel : ObservableObject
+    public partial class ChatViewModel : ObservableObject, IDisposable
     {
         private readonly IEventBus _eventBus;
         private readonly ILogger _logger;
@@ -34,17 +34,28 @@ namespace HomeNetPresentation.ViewModels
 
             _logger.LogInformation($"[ChatVM] Конструктор запущен. Хэш-код экземпляра: {this.GetHashCode()}");
 
-            // 🔥 Магия синхронизации через автобус данных! Слушаем левую панель контактов 🧼⚡
-            _eventBus.Subscribe<IContactsListViewModel.FriendSelected>(msg =>
-            {
-                if (msg.Friend == null) return;
-
-                _logger.LogDebug($"[ChatVM] Шина EventBus доставила FriendSelected! Прилетел: {msg.Friend.FirstName} (ID: {msg.Friend.Id})");
-
-                // Записываем друга в свойство, и тулкит сам вызовет OnSelectedFriendChanged. 
-                SelectedFriend = msg.Friend;
-            });
+            InitializeBusSubscriptions();
         }
+
+        private void InitializeBusSubscriptions()
+        {
+            // 🔥 ЧИСТОТА: Никаких лямбд, шпион в Инспекторе теперь видит всё! 🧼⚡
+            _eventBus.Subscribe<IContactsListViewModel.FriendSelected>(OnFriendSelected);
+        }
+
+        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Для идеального графа в Инспекторе) 🧼
+
+        private void OnFriendSelected(IContactsListViewModel.FriendSelected msg)
+        {
+            if (msg?.Friend == null) return;
+
+            _logger.LogDebug($"[ChatVM] Шина EventBus доставила FriendSelected! Прилетел: {msg.Friend.FirstName} (ID: {msg.Friend.Id})");
+
+            // Записываем друга в свойство, и тулкит сам вызовет OnSelectedFriendChanged. 
+            SelectedFriend = msg.Friend;
+        }
+
+        #endregion
 
         // Автоматически вызывается при ЛЮБОМ изменении свойства SelectedFriend
         partial void OnSelectedFriendChanged(UserEntity? value)
@@ -63,7 +74,7 @@ namespace HomeNetPresentation.ViewModels
 
             _logger.LogInformation($"[ChatVM] Отправка сообщения. Кому ID: {SelectedFriend.Id}, Текст: {textToSend}");
 
-            // 🔥 ПОПРАВИЛИ: Публикуем чистый, укороченный по хозяину рекорд-сообщение в воздух
+            // 🔥 Публикуем чистый, укороченный по хозяину рекорд-сообщение в воздух
             _eventBus.Publish(this, new IChatViewModel.NewSent(textToSend, SelectedFriend.Id));
 
             await Task.CompletedTask;
@@ -74,5 +85,14 @@ namespace HomeNetPresentation.ViewModels
         {
             _logger.LogDebug("[ChatVM] Нажата кнопка прикрепления файла (скрепка).");
         }
+
+        #region 🛡️ ЖЕЛЕЗОБЕТОННЫЙ СТЕРИЛИЗАТОР ПАМЯТИ
+
+        public void Dispose()
+        {
+            _eventBus.Unsubscribe<IContactsListViewModel.FriendSelected>(OnFriendSelected);
+        }
+
+        #endregion
     }
 }

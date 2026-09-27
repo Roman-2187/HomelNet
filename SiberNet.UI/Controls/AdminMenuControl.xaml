@@ -13,76 +13,53 @@
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="160"/>
-            <!-- Лево: Пульт кнопок -->
             <ColumnDefinition Width="*"/>
-            <!--+ Право: Рабочая зона -->
         </Grid.ColumnDefinitions>
 
-        <!-- ЛЕВАЯ ЧАСТЬ: Киберпанк боковая панель кнопок -->
-        <ContentControl
-            Style="{StaticResource CyberpunkImageChaildStyle}"
-            Tag="6" Margin="0,0,5,0">
-            <StackPanel
-               Background="Transparent">
+        <!-- ЛЕВАЯ ЧАСТЬ: Боковая панель -->
+        <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}" Tag="6">
+            <StackPanel Background="Transparent">
+                <Label Content="АДМИН ПАНЕЛЬ" FontWeight="Bold"
+                       Foreground="#FFB300" HorizontalAlignment="Center" Margin="5"/>
 
-                <Label Content="АДМИН ПАНЕЛЬ" 
-                    FontWeight="Bold" 
-                    Foreground="#FFB300"
-                    HorizontalAlignment="Center" 
-                    Margin="5"/>
-
-                <!-- 📢 Кнопка: Показать Users -->
                 <Button Content="{Binding TableButtonText, FallbackValue='Показать users'}" 
-                     Command="{Binding ShowUserTableCommand}"
-                     Style="{StaticResource OrangeDefaultButtonStyle}"
-                     Margin="0,3"/>
-
-                <!-- 📢 Кнопка: Показать Логи -->
-                <Button Content="{Binding ToggleButtonText, FallbackValue='Показать log'}"
-                     Command="{Binding ShowLogPanelCommand}" 
-                     Style="{StaticResource OrangeDefaultButtonStyle}"
-                     Margin="0,3"/>
-
-                <!-- 📢 Кнопка: Удалить юзера -->
+                        Command="{Binding ShowUserTableCommand}"
+                        Style="{StaticResource OrangeDefaultButtonStyle}"
+                        Margin="0,3"/>
+                <Button Content="{Binding ToggleButtonText, FallbackValue='Показать log'}" 
+                        Command="{Binding ShowLogPanelCommand}" 
+                        Style="{StaticResource OrangeDefaultButtonStyle}" Margin="0,3"/>
                 <Button Content="{Binding DeleteButtonText, FallbackValue='Удалить юзера'}"
-        Command="{Binding ShowDeleteFormCommand}"
-        Style="{StaticResource OrangeDefaultButtonStyle}"
-        Margin="0,3"/>
-
-                <!-- 📢 Кнопка: Тестовый Сидинг данных -->
+                        Command="{Binding ShowDeleteFormCommand}"
+                        Style="{StaticResource OrangeDefaultButtonStyle}" 
+                        Margin="0,3"/>
                 <Button Content="{Binding SeedButtonText, FallbackValue='Сидинг Users'}" 
-        Command="{Binding ShowSeedFormCommand}"
-        Style="{StaticResource OrangeDefaultButtonStyle}"
-        Margin="0,3"/>
-
-                <!-- 📢 Кнопка: Инспектор шины -->
+                        Command="{Binding ShowSeedFormCommand}" 
+                        Style="{StaticResource OrangeDefaultButtonStyle}" Margin="0,3"/>
                 <Button Content="{Binding InspectorButtonText, FallbackValue='Инспектор шины'}" 
-        Command="{Binding ShowInspectorCommand}"
-        Style="{StaticResource OrangeDefaultButtonStyle}"
-        Margin="0,3"/>
+                        Command="{Binding ShowInspectorCommand}" 
+                        Style="{StaticResource OrangeDefaultButtonStyle}" Margin="0,3"/>
 
-
-
+                <controls:AccountMenuControl HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"/>
             </StackPanel>
         </ContentControl>
 
-        <!-- ПРАВАЯ ЧАСТЬ: Динамическая рабочая зона -->
-        <Grid Grid.Column="1" Margin="0,0,0,0">
+        <!-- ПРАВАЯ ЧАСТЬ: Выровненная рабочая зона -->
+        <Grid Grid.Column="1">
 
-            <!-- Блок А: Настоящая таблица пользователей -->
+            <!-- Блок А: Таблица пользователей -->
             <Border x:Name="UserTableContainer" Background="Transparent">
                 <Border.Style>
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
-                            <!-- 🎯 НАСТРОИЛИ ТРИГГЕР: Следим за энумом через NavigationStateManager -->
-                            <DataTrigger Binding="{Binding Navigation.CurrentAdminTab}" Value="UserTable">
+                            <!-- 🎯 Вяжемся к ActiveTab и сверяем со строгим энумом ядра -->
+                            <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static enums:AdminSubTab.UserTable}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </Border.Style>
-
                 <controls:UsersTableViewControl/>
             </Border>
 
@@ -92,7 +69,8 @@
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding Navigation.CurrentAdminTab}" Value="LogPanel">
+                            <!-- 🎯 Заменили значение на Logger строго по энуму -->
+                            <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static enums:AdminSubTab.Logger}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
@@ -107,17 +85,15 @@
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding Navigation.CurrentAdminTab}" Value="DeleteUserForm">
+                            <!-- 🎯 Заменили значение на DeleteUsers строго по энуму -->
+                            <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static enums:AdminSubTab.DeleteUsers}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </Border.Style>
-
-                <!-- 🎯 МЕНЯЕМ НА НАШ РЕАЛЬНЫЙ КОНТРОЛ ИЗ СТУДИИ! -->
                 <controls:DeleteUsersControl/>
             </Border>
-
 
             <!-- Блок Г: Инспектор шины событий -->
             <Border x:Name="InspectorFormContainer" Background="Transparent">
@@ -125,19 +101,14 @@
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
-                            <!-- 🎯 Возвращаем триггер: Ловим значение EventInspector из энума навигатора -->
-                            <DataTrigger Binding="{Binding Navigation.CurrentAdminTab}" Value="EventInspector">
+                            <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static enums:AdminSubTab.EventInspector}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </Border.Style>
-                <!-- Подключаем наш автономный киберпанк-контрол отчета -->
                 <controls:InspectorViewControl/>
             </Border>
-
-
-
 
             <!-- Блок Д: Модуль генерации тестовых пользователей -->
             <Border x:Name="SeedFormContainer" Background="Transparent">
@@ -145,7 +116,8 @@
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding Navigation.CurrentAdminTab}" Value="SeedUsersForm">
+                            <!-- 🎯 Заменили значение на SeedUsers строго по энуму -->
+                            <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static enums:AdminSubTab.SeedUsers}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
@@ -153,8 +125,6 @@
                 </Border.Style>
                 <controls:SeedUsersViewControl/>
             </Border>
-
-
 
         </Grid>
     </Grid>
