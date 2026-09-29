@@ -1,16 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using HomeNetCore.Interfaces.Diagnostics;
+﻿using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Models.Diagnostics;
 
 namespace HomeNetServices.Diagnostics
 {
-    public class EventBusInspector : IEventInspectorSource
+    public class EventBusInspector : IEventInspector
     {
         private readonly Dictionary<string, ComponentNode> _nodes = new();
         private readonly List<ComponentNode.SignalEvent> _signalTimeline = new();
+
+        // 🔥 СВЕРХБЫСТРЫЙ РЕГИСТР: Хранит типы ивентов и их битовые маски в оперативной памяти
+        private readonly Dictionary<Type, MessageState> _registry = new();
 
         private readonly HashSet<string> _ignoredMessageTypes = new()
         {
@@ -40,6 +39,10 @@ namespace HomeNetServices.Diagnostics
                 node.PublishedMessages.Add(messageType);
             }
 
+            // 🎯 ЩЁЛКАЕМ ТУМБЛЕРОМ: Врубаем бит публикации (1)
+            if (!_registry.ContainsKey(messageType)) _registry[messageType] = MessageState.None;
+            _registry[messageType] |= MessageState.Published;
+
             if (_ignoredMessageTypes.Contains(messageType.Name))
             {
                 return;
@@ -48,15 +51,11 @@ namespace HomeNetServices.Diagnostics
             _signalTimeline.Add(new ComponentNode.SignalEvent(DateTime.Now, componentName, messageType));
         }
 
-        /// <summary>
-        /// 🔥 ОБНОВЛЕНО: Теперь фиксируем не только метод, но и КЛАСС-подписчик!
-        /// </summary>
         public void RecordSubscribe(string componentName, Type messageType, string methodName, Type subscriberType)
         {
             var node = GetOrCreateNode(componentName);
             string targetClassName = subscriberType?.Name ?? "UnknownClass";
 
-            // Проверяем дубликаты с учетом целевого класса
             bool alreadyExists = node.Subscriptions.Any(s =>
                 s.MessageType == messageType &&
                 s.MethodName == methodName &&
@@ -64,8 +63,20 @@ namespace HomeNetServices.Diagnostics
 
             if (!alreadyExists)
             {
-                // Передаем имя класса-слушателя в структуру связи
                 node.Subscriptions.Add(new ComponentNode.SubscriptionLink(messageType, methodName, targetClassName));
+            }
+
+            // 🎯 📑 ЩЁЛКАЕМ ТУМБЛЕРОМ: Врубаем бит подписки (2)
+            if (!_registry.ContainsKey(messageType)) _registry[messageType] = MessageState.None;
+            _registry[messageType] |= MessageState.Subscribed;
+        }
+
+        public void RecordUnsubscribe(Type messageType)
+        {
+            if (_registry.ContainsKey(messageType))
+            {
+                // Побитово выключаем флаг подписки при деструктуризации окон (~Бит)
+                _registry[messageType] &= ~MessageState.Subscribed;
             }
         }
 
@@ -79,43 +90,71 @@ namespace HomeNetServices.Diagnostics
             return node;
         }
 
-        public string GenerateReport()
+        // 🔥 НАШ ГЛАВНЫЙ СНАЙПЕР: Собирает зрячий список объектов вместо сырого StringBuilder
+        public List<IEventInspector.Line> GenerateObjectGraph()
         {
-            var sb = new StringBuilder();
-            sb.AppendLine("======= 🧠 ОБЪЕКТНЫЙ ГРАФ СИСТЕМЫ EVENTBUS =======");
+            var lines = new List<IEventInspector.Line>();
+
+            lines.Add(new IEventInspector.Line("======= 🧠 ОБЪЕКТНЫЙ ГРАФ СИСТЕМЫ EVENTBUS =======", MessageState.None));
 
             foreach (var node in _nodes.Values.OrderBy(n => n.Name))
             {
                 if (node.PublishedMessages.Count == 0 && node.Subscriptions.Count == 0)
                     continue;
 
-                sb.AppendLine($"\n[ КОМПОНЕНТ: {node.Name} ]");
+                lines.Add(new IEventInspector.Line($"\n[ КОМПОНЕНТ: {node.Name} ]", MessageState.None));
 
                 if (node.PublishedMessages.Count > 0)
                 {
                     foreach (var msgType in node.PublishedMessages)
-                        sb.AppendLine($" 📢 ПУБЛИКУЕТ --> [{msgType.Name}]");
+                    {
+                        var state = _registry.TryGetValue(msgType, out var s) ? s : MessageState.None;
+
+                        if (state == MessageState.Published)
+                        {
+                            // Опубликовано, но никто не слушает -> Аварийный КРАСНЫЙ
+                            lines.Add(new IEventInspector.Line($" 📢 ПУБЛИКУЕТ --> 🚨 [ПУСТОТА!] [{msgType.Name}] <-- 🛑 НЕТ ПОДПИСЧИКОВ!", MessageState.Published));
+                        }
+                        else
+                        {
+                            // Бит публикации + Бит подписки сработали вместе -> НЕОНОВО-ЗЕЛЕНЫЙ
+                            lines.Add(new IEventInspector.Line($" 📢 ПУБЛИКУЕТ --> [АКТИВЕН]  [{msgType.Name}]", MessageState.Live));
+                        }
+                    }
                 }
 
                 if (node.Subscriptions.Count > 0)
                 {
                     foreach (var sub in node.Subscriptions)
                     {
-                        // 🔥 КРАСИВЫЙ ВЫВОД: Теперь пишем "СЛУШАЕТ <-- [Ивент] в классе НазваниеКласса -> Метод()"
-                        sb.AppendLine($" 🎧 СЛУШАЕТ <-- [{sub.MessageType.Name}] = _{sub.TargetClassName.ToLower()}.{sub.MethodName}()");
+                        var state = _registry.TryGetValue(sub.MessageType, out var s) ? s : MessageState.None;
+
+                        if (state == MessageState.Subscribed)
+                        {
+                            // Слушатель сидит, но никто не пуляет сигнал -> Предупреждающий ОРАНЖЕВЫЙ
+                            lines.Add(new IEventInspector.Line($" " +
+                                $"🎧 СЛУШАЕТ  <-- ⏳ [ОЖИДАНИЕ] [{sub.MessageType.Name}] = _{sub.TargetClassName.ToLower()}.{sub.MethodName}() <-- 🛑 НЕТ ОТПРАВИТЕЛЕЙ!", MessageState.Subscribed));
+                        }
+                        else
+                        {
+                            // Живой рабочий канал -> НЕОНОВО-ЗЕЛЕНЫЙ
+                            lines.Add(new IEventInspector.Line($" 🎧 СЛУШАЕТ  <-- [АКТИВЕН]  [{sub.MessageType.Name}] = _{sub.TargetClassName.ToLower()}.{sub.MethodName}()", MessageState.Live));
+                        }
                     }
                 }
             }
 
-            sb.AppendLine("\n======= ⏱️ ПОСЛЕДНИЕ СИГНАЛЫ (ЛЕНТА СОБЫТИЙ) =======");
+            lines.Add(new IEventInspector.Line("\n======= ⏱️ ПОСЛЕДНИЕ СИГНАЛЫ (ЛЕНТА СОБЫТИЙ) =======", MessageState.None));
 
             var recentSignals = _signalTimeline.AsEnumerable().Reverse().Take(20);
             foreach (var signal in recentSignals)
             {
-                sb.AppendLine($"[{signal.Time:HH:mm:ss.fff}] {signal.Source} пустил {signal.MessageType.Name}");
+                lines.Add(new IEventInspector.  Line($"[{signal.Time:HH:mm:ss.fff}] {signal.Source} пустил {signal.MessageType.Name}", MessageState.None));
             }
 
-            return sb.ToString();
+            return lines;
         }
+
+        public string GenerateReport() => string.Join("\n", GenerateObjectGraph().Select(l => l.Text));
     }
 }

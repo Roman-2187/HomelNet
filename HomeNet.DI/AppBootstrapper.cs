@@ -43,8 +43,8 @@ namespace HomeNet.DI
             // 2. Регистрируем шину (DI-контейнер сам закинет туда инспектор, созданный строкой выше)
             services.AddSingleton<IEventBus, EventBus>();
 
-            // 3. Перенаправляем интерфейс IEventInspectorSource на ТОТ ЖЕ САМЫЙ экземпляр инспектора
-            services.AddSingleton<IEventInspectorSource>(provider =>
+            // 3. Перенаправляем интерфейс IEventInspector на ТОТ ЖЕ САМЫЙ экземпляр инспектора
+            services.AddSingleton<IEventInspector>(provider =>
                 provider.GetRequiredService<EventBusInspector>());
 
 

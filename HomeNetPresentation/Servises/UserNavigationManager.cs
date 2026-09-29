@@ -105,7 +105,7 @@ namespace HomeNetPresentation.Services
             EventBus.Unsubscribe<IUserVm.OpenRegistration>(OnOpenRegistrationRequested);
             EventBus.Unsubscribe<IUserVm.BackToStart>(OnBackToStartRequested);
             EventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserAuthenticatedRequested);
-            EventBus.Unsubscribe<IUserVm.UserSignedUp>(OnUserSignedUpRequested); // Чистим память! 🛡️
+            EventBus.Unsubscribe<IUserVm.UserSignedUp>(OnUserSignedUpRequested); 
             EventBus.Unsubscribe<IUserVm.LogoutClient>(OnLogoutClientRequested);
         }
     }

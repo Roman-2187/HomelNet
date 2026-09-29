@@ -1,7 +1,5 @@
 ﻿using HomeNetCore.Interfaces.Events;
 using HomeNetServices.Diagnostics;
-using System;
-using System.Collections.Generic;
 
 namespace HomeNetServices.Routing
 {
@@ -98,6 +96,8 @@ namespace HomeNetServices.Routing
             }
         }
 
+        // Внутри твоего EventBus.cs [14]
+
         public void Unsubscribe<TMessage>(Action<TMessage> action)
         {
             if (action == null) return;
@@ -114,8 +114,13 @@ namespace HomeNetServices.Routing
                 if (actions.Count == 0)
                 {
                     _subscribers.Remove(type);
+
+                    // 🔥 ВЫКЛЮЧАЕМ ТУМБЛЕР: Подписчиков нет, гасим бит подписки в автомате!
+                    Inspector.RecordUnsubscribe(type);
                 }
             }
         }
+
+
     }
 }

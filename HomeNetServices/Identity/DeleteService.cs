@@ -59,9 +59,7 @@ namespace HomeNetServices.Services.Identity
         /// <summary>
         /// 🎯 Конвейер удаления пользователя
         /// </summary>
-        /// <summary>
-        /// 🎯 Конвейер удаления пользователя
-        /// </summary>
+        
         public async Task<IDeleteService.DeleteVerdict> DeleteUserAsync(string targetUserId, UserEntity? selectedUser)
         {
             int id = selectedUser?.Id ?? (int.TryParse(targetUserId, out int parsedId) ? parsedId : -1);

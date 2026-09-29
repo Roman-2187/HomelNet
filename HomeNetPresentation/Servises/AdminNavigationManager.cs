@@ -2,6 +2,7 @@
 using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
+using HomeNetServices.Routing;
 
 namespace HomeNetPresentation.Services
 {
@@ -70,9 +71,12 @@ namespace HomeNetPresentation.Services
                 EventBus.Publish(this, new ITitleBarVm.MacroZoneChanged(CurrentMainZone, ClientSubTab.None));
             }
 
+            // 1. Навигатор честно переключает стейт
             CurrentAdminTab = CurrentAdminTab == targetTab ? AdminSubTab.None : targetTab;
             EventBus.Publish(this, new IAdminVm.AdminTabChanged(CurrentAdminTab));
+
         }
+
 
         public override void Dispose()
         {

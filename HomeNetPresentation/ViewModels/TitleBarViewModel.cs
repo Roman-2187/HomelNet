@@ -82,16 +82,7 @@ namespace HomeNetPresentation.ViewModels
         {
             _eventBus.Publish(this, new IMainViewModel.CloseRequest());
         }
-
-        // 🪵 КНОПКА: Глобальный логгер
-        [RelayCommand]
-        public void ToggleGlobalLogger()
-        {
-            IsGlobalLoggerVisible = !IsGlobalLoggerVisible;
-
-            _eventBus.Publish(this, new IStatusBarViewModel.TextChanged("Переключение глобального оверлея логов..."));
-            _eventBus.Publish(this, new ITitleBarVm.ToggleAnimation(IsGlobalLoggerVisible));
-        }
+   
 
         // 🔳 КНОПКА: Развернуть окно
         [RelayCommand]

@@ -2,6 +2,7 @@
 using HomeNet.DI;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.OutputLogging;
+using HomeNetCore.Interfaces.ViewModels;
 using HomeNetPresentation.Services; // Добавили пространство имен для менеджеров навигации
 using HomeNetPresentation.ViewModels.AdminViews;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,7 +27,8 @@ namespace SiberNet.UI.Infrastructure
             {
                 fullCollection.AddSingleton<CloseWindowAnimator>();
                 fullCollection.AddSingleton<ResizeWindowAnimator>();
-                fullCollection.AddSingleton<GlobalLoggerWindowAnimator>();
+                // 🔥 СТАЛО: Связываем стерильный интерфейс ядра с тяжелым WPF-аниматором окна!
+                fullCollection.AddSingleton<IWidescreenService, WidescreenAnimator>();
             }
 
             // 3. Собираем ОДИН монолитный контейнер на всё приложение
@@ -53,8 +55,11 @@ namespace SiberNet.UI.Infrastructure
             {
                 provider.GetRequiredService<CloseWindowAnimator>();
                 provider.GetRequiredService<ResizeWindowAnimator>();
-                provider.GetRequiredService<GlobalLoggerWindowAnimator>();
+
+                // 🔥 СТАЛО: Достаем синглтон через интерфейс ядра, чтобы он сел на шину ДО кликов админа!
+                provider.GetRequiredService<IWidescreenService>();
             }
+
 
             return provider;
         }

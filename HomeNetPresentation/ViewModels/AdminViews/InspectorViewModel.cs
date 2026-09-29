@@ -4,61 +4,48 @@ using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetPresentation.Services;
+using HomeNetServices.Diagnostics;
 
 namespace HomeNetPresentation.ViewModels.AdminViews
 {
-    /// <summary>
-    /// Вьюмодель инспектора шины событий SiberNet.
-    /// Автоматически генерирует интерактивный граф подписок по факту открытия вкладки.
-    /// </summary>
     public partial class InspectorViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
     {
-        private readonly IEventInspectorSource _inspector;
+        private readonly EventBusInspector _inspector;
 
-        [ObservableProperty]
-        private string _reportText = "🧠 Граф системы пуст или не инициализирован...";
+        // 🔥 Наш зрячий реактивный список строк для ItemsControl
+        [ObservableProperty] private List<IEventInspector.Line> _graphLines = new();
 
-        public InspectorViewModel(IEventBus eventBus, IEventInspectorSource inspector, AdminNavigationManager navigation)
-            : base(eventBus, navigation) // Передали строго типизированный навигатор в generic-базу
+        public InspectorViewModel(IEventBus eventBus, IEventInspector inspector, AdminNavigationManager navigation)
+            : base(eventBus, navigation)
         {
-            _inspector = inspector ?? throw new ArgumentNullException(nameof(inspector));
+            // Кастуем интерфейс к нашему реальному профайлеру
+            _inspector = inspector as EventBusInspector ?? throw new ArgumentNullException(nameof(inspector));
 
-            // 🔥 ПОДПИСКА ПО ФАКТАМ: Сидим на шине событий и ждем изменения вкладок навигатора
             _eventBus.Subscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
 
-            // Первичный сбор при инициализации
             UpdateReport();
         }
-
-        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Для идеального графа в Инспекторе) 🧼
 
         private void OnAdminTabChanged(IAdminVm.AdminTabChanged msg)
         {
             if (msg == null) return;
 
-            // 🔥 ЕСЛИ НАВИГАТОР ПОДТВЕРДИЛ: Открыта вкладка инспектора — моментально перестраиваем граф!
+            // Как только админ открыл вкладку инспектора — мгновенно перестраиваем граф из оперативки!
             if (msg.ActiveTab == AdminSubTab.EventInspector)
             {
                 UpdateReport();
             }
         }
 
-        #endregion
-
         public void UpdateReport()
         {
-            // Бьем напрямую в синглтон-сервис за свежим графом именованных методов
-            ReportText = _inspector.GenerateReport();
+            GraphLines = _inspector.GenerateObjectGraph();
         }
-
-        #region 🛡️ ЖЕЛЕЗОБЕТОННЫЙ СТЕРИЛИЗАТОР ПАМЯТИ
 
         public override void Dispose()
         {
-            base.Dispose(); // Чистим базовый слой
+            base.Dispose();
             _eventBus.Unsubscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
         }
-
-        #endregion
     }
 }

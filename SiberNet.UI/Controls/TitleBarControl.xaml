@@ -44,8 +44,10 @@
                                 <!-- 🔥 ЖЕСТКИЙ КОНТРОЛЬ СВЕТА: Кнопки горят, только если на шапке два стартовых нуля! -->
                                 <MultiDataTrigger>
                                     <MultiDataTrigger.Conditions>
-                                        <Condition Binding="{Binding CurrentMainZone}" Value="{x:Static enums:MainTab.StartZone}"/>
-                                        <Condition Binding="{Binding CurrentClientTab}" Value="{x:Static enums:ClientSubTab.None}"/>
+                                        <Condition Binding="{Binding CurrentMainZone}"
+                                                   Value="{x:Static enums:MainTab.StartZone}"/>
+                                        <Condition Binding="{Binding CurrentClientTab}"
+                                                   Value="{x:Static enums:ClientSubTab.None}"/>
                                     </MultiDataTrigger.Conditions>
                                     <Setter Property="Visibility" Value="Visible"/>
                                 </MultiDataTrigger>
@@ -71,9 +73,7 @@
 
                 <!-- СЕКЦИЯ В: СИСТЕМНЫЕ КНОПКИ -->
                 <StackPanel Orientation="Horizontal">
-                    <Button Content="⚡ Дебаг" Command="{Binding ToggleGlobalLoggerCommand}"
-                    Style="{StaticResource OrangeDefaultButtonStyle}" Width="80" Margin="0,0,10,0" 
-                    WindowChrome.IsHitTestVisibleInChrome="True"/>
+                    
 
                     <Button Content="🔳" Command="{Binding ToggleGrowWindowCommand}"
                     Style="{StaticResource OrangeDefaultButtonStyle}" Margin="0,0,5,0" 
@@ -97,14 +97,16 @@
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding CurrentClientTab}" Value="{x:Static enums:ClientSubTab.Authentication}">
+                            <DataTrigger Binding="{Binding CurrentClientTab}"
+                                         Value="{x:Static enums:ClientSubTab.Authentication}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </Border.Style>
                 <local:AuthenticationViewControl 
-                    DataContext="{Binding AuthenticationViewModel, Source={StaticResource ComponentHub}}"
+                    DataContext="{Binding AuthenticationViewModel,
+                    Source={StaticResource ComponentHub}}"
                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
 
@@ -114,14 +116,16 @@
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding CurrentMainZone}" Value="{x:Static enums:MainTab.AdminZone}">
+                            <DataTrigger Binding="{Binding CurrentMainZone}"
+                                         Value="{x:Static enums:MainTab.AdminZone}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </Border.Style>
                 <local:AdminMenuViewControl 
-                    DataContext="{Binding AdminMenuViewModel, Source={StaticResource ComponentHub}}"
+                    DataContext="{Binding AdminMenuViewModel,
+                    Source={StaticResource ComponentHub}}"
                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
             </Border>
 
@@ -131,14 +135,16 @@
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding CurrentClientTab}" Value="{x:Static enums:ClientSubTab.Registration}">
+                            <DataTrigger Binding="{Binding CurrentClientTab}"
+                                         Value="{x:Static enums:ClientSubTab.Registration}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </Border.Style>
                 <local:RegistrationViewControl 
-                    DataContext="{Binding RegistrationViewModel, Source={StaticResource ComponentHub}}"
+                    DataContext="{Binding RegistrationViewModel,
+                    Source={StaticResource ComponentHub}}"
                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
 
@@ -148,14 +154,16 @@
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding CurrentMainZone}" Value="{x:Static enums:MainTab.ClientZone}">
+                            <DataTrigger Binding="{Binding CurrentMainZone}"
+                                         Value="{x:Static enums:MainTab.ClientZone}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </Border.Style>
                 <local:UserProfileControl 
-                    DataContext="{Binding UserProfileViewModel, Source={StaticResource ComponentHub}}"
+                    DataContext="{Binding UserProfileViewModel, 
+                    Source={StaticResource ComponentHub}}"
                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
             </Border>
 

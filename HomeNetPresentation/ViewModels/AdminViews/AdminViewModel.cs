@@ -55,6 +55,13 @@ namespace HomeNetPresentation.ViewModels
                 _adminLogQueueManager.SetReady();
             }
 
+
+            bool shouldBeWide = (msg.ActiveTab == AdminSubTab.EventInspector ||
+                                msg.ActiveTab == AdminSubTab.Logger);
+
+            // Лениво пуляем приказ нашему сервису трансформации окна
+            _eventBus.Publish(this, new IWidescreenService.ToggleWidescreen(shouldBeWide));
+
             NotifyAllButtonsChanged();
         }
 
@@ -71,17 +78,29 @@ namespace HomeNetPresentation.ViewModels
 
         #region 🚀 МАРШРУТИЗАЦИЯ НАМЕРЕНИЙ (Публикация в автобус) 🧼
 
-        [RelayCommand] public void ShowUserTable() => _eventBus.Publish(this, new IAdminVm.OpenTableUsers());
-        [RelayCommand] private void ShowLogPanel() => _eventBus.Publish(this, new IAdminVm.OpenLogger());
-        [RelayCommand] private void ShowInspector() => _eventBus.Publish(this, new IAdminVm.OpenEventInspector());
-        [RelayCommand] private void ShowDeleteForm() => _eventBus.Publish(this, new IAdminVm.OpenDelete());
-        [RelayCommand] private void ShowSeedForm() => _eventBus.Publish(this, new IAdminVm.OpenSeedUsers());
+
+
+        [RelayCommand]
+        private void ShowInspector() =>_eventBus.Publish(this, new IAdminVm.OpenEventInspector());
+       
+        [RelayCommand]
+        private void ShowUserTable() => _eventBus.Publish(this, new IAdminVm.OpenTableUsers());
+
+        [RelayCommand]
+        private void ShowLogPanel() => _eventBus.Publish(this, new IAdminVm.OpenLogger());
+
+        [RelayCommand]
+        private void ShowDeleteForm() => _eventBus.Publish(this, new IAdminVm.OpenDelete());
+
+        [RelayCommand]
+        private void ShowSeedForm() => _eventBus.Publish(this, new IAdminVm.OpenSeedUsers());
+
 
 
         [RelayCommand]
         private void Logout()
         {
-            IsMenuOpen = false; // 🔥 Перед уходом тушим локальную шторку админки!
+            IsMenuOpen = false; 
             _eventBus.Publish(this, new IAdminVm.LogoutAdmin());
         }
 

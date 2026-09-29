@@ -62,7 +62,8 @@
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <!-- 🎯 Вяжемся к ActiveTab и сверяем со строгим энумом ядра -->
-                            <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static enums:AdminSubTab.UserTable}">
+                            <DataTrigger Binding="{Binding ActiveTab}"
+                                         Value="{x:Static enums:AdminSubTab.UserTable}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
@@ -78,7 +79,8 @@
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <!-- 🎯 Заменили значение на Logger строго по энуму -->
-                            <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static enums:AdminSubTab.Logger}">
+                            <DataTrigger Binding="{Binding ActiveTab}"
+                                         Value="{x:Static enums:AdminSubTab.Logger}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
@@ -94,7 +96,8 @@
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <!-- 🎯 Заменили значение на DeleteUsers строго по энуму -->
-                            <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static enums:AdminSubTab.DeleteUsers}">
+                            <DataTrigger Binding="{Binding ActiveTab}"
+                                         Value="{x:Static enums:AdminSubTab.DeleteUsers}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
@@ -109,7 +112,8 @@
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static enums:AdminSubTab.EventInspector}">
+                            <DataTrigger Binding="{Binding ActiveTab}"
+                                         Value="{x:Static enums:AdminSubTab.EventInspector}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
@@ -125,7 +129,8 @@
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <!-- 🎯 Заменили значение на SeedUsers строго по энуму -->
-                            <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static enums:AdminSubTab.SeedUsers}">
+                            <DataTrigger Binding="{Binding ActiveTab}"
+                                         Value="{x:Static enums:AdminSubTab.SeedUsers}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>

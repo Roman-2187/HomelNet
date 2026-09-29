@@ -10,7 +10,7 @@ namespace HomeNetCore.Extensions
         public static string GenerateInspectorReport(this IEventBus eventBus)
         {
             
-            if (eventBus is IEventInspectorSource inspectorSource)
+            if (eventBus is IEventInspector inspectorSource)
             {
                 return inspectorSource.GenerateReport();
             }

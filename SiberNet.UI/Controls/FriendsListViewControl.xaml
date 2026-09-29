@@ -27,7 +27,7 @@
             <StackPanel Grid.Row="0" Orientation="Horizontal" >
 
                 <!-- 🔥 ПЕРЕСАДИЛИ НА ЛОКАЛЬНЫЙ КОНТЕКСТ КОНТАКТОВ -->
-                <!-- Теперь шторка в мессенджере рулит свойством ContactsListVM.IsMenuOpen и никак не связана с админкой! -->
+               
                 <local:AccountMenuControl DataContext="{Binding ContactsListVM}"
                                           Width="50" Height="30" 
                                           HorizontalAlignment="Left"
