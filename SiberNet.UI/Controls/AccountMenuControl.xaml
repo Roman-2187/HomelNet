@@ -5,54 +5,40 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:SiberNet.UI.Controls"
              mc:Ignorable="d" 
-           Width="Auto" >
-    <!-- 🍔 ВЕРХНЯЯ ПАНЕЛЬ С КНОПКОЙ МЕНЮ -->
+           Width="Auto"  >
+
+
     <Grid Background="Transparent" HorizontalAlignment="Stretch">
 
-        <!-- 🔥 ВОТ ОНА, ПОБЕДА: Убрали жесткий Width="30"! Поставили Stretch! -->
+        <!-- 🍔 КНОПКА-БУРГЕР: привязывается к локальному контексту экрана -->
         <ToggleButton x:Name="MenuButton" 
                       Content="☰"  
                       Style="{StaticResource OrangeDefaultToggleButtonStyle}"
-                    
+                      IsChecked="{Binding IsMenuOpen, Mode=TwoWay, FallbackValue=False}"
                       HorizontalAlignment="Stretch"          
-            HorizontalContentAlignment="Center"
-           
-            VerticalAlignment="Center"/>
+                      HorizontalContentAlignment="Center"
+                      VerticalAlignment="Center"/>
 
-            <!-- 🔽 ВЫПАДАЮЩАЯ КИБЕРПАНК-ШТОРКА (POPUP) -->
-            <Popup IsOpen="{Binding IsChecked, ElementName=MenuButton, Mode=TwoWay}"
+        <!-- 🔽 ВЫПАДАЮЩАЯ КИБЕРПАНК-ШТОРКА (POPUP) -->
+        <Popup IsOpen="{Binding IsMenuOpen, Mode=TwoWay, FallbackValue=False}"
                PlacementTarget="{Binding ElementName=MenuButton}"
                Placement="Bottom"
                StaysOpen="False" 
                AllowsTransparency="True">
 
-                <!-- Контейнер меню с CornerRadius="6" и ClipToBounds -->
-            <Border Background="#1AADD8E6"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                    BorderBrush="#00F0FF" 
-                    BorderThickness="0.1" 
-                    CornerRadius="6"
-                    
-                   
-                    ClipToBounds="True">
-                    <StackPanel Margin="5" >
-                        <Button Content="👤 Профиль" 
-                            Style="{StaticResource OrangeDefaultButtonStyle}"
-                            
-                             />
+            <!-- Внутренний контейнер меню -->
+            <Border Background="#1AADD8E6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                    BorderBrush="#00F0FF" BorderThickness="0.1" CornerRadius="6" ClipToBounds="True">
+                <StackPanel Margin="5">
+                    <Button Content="👤 Профиль" Style="{StaticResource OrangeDefaultButtonStyle}"/>
 
-                       
-
-                      
-
-                        <Button Content="↩ Выйти из системы" 
-                            Command="{Binding AccountMenuViewModel.LogoutCommand, 
-                            Source={StaticResource ComponentHub}}"
-                            Style="{StaticResource OrangeDefaultButtonStyle}"
-                           
-                            />
-                    </StackPanel>
-                </Border>
-            </Popup>
+                    <!-- 🔥 КНОПКА ВЫХОДА: вызывает команду LogoutCommand того экрана, где лежит шторка -->
+                    <Button Content="↩ Выйти из системы" 
+                            Command="{Binding LogoutCommand}"
+                            Style="{StaticResource OrangeDefaultButtonStyle}"/>
+                </StackPanel>
+            </Border>
+        </Popup>
     </Grid>
 </UserControl>
 

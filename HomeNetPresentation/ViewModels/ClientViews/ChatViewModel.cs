@@ -1,98 +1,117 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
+using System;
 using System.Collections.ObjectModel;
 
 namespace HomeNetPresentation.ViewModels
 {
+    /// <summary>
+    /// Тонкая витрина визуального окна чата SiberNet.
+    /// Не знает про существование БД, просто швыряет намерения ввода в автобус.
+    /// </summary>
     public partial class ChatViewModel : ObservableObject, IDisposable
     {
         private readonly IEventBus _eventBus;
-        private readonly ILogger _logger;
 
-        // Текущий собеседник, чат с которым открыт
-        [ObservableProperty] private UserEntity? _selectedFriend;
+        [ObservableProperty] private string _currentUserName = string.Empty; // 🔥 Свойство для XAML
 
-        // Коллекция реальных объектов сообщений из базы данных
+        // 🔥 КЭШ UI: Храним ID текущего авторизованного пользователя
+        private int _currentUserId;
+
+        [ObservableProperty] private bool _isChatOpen = false;
+        [ObservableProperty] private string _inputText = string.Empty;
+        [ObservableProperty] private int? _selectedFriendId;
+
+        // 🔥 РЕАКТИВНОСТЬ: Сюда макро-панель (UserViewModel) будет напрямую докидывать сообщения из базы
         [ObservableProperty] private ObservableCollection<MessageEntity> _messages = new();
 
-        // Поле ввода сообщения, привязанное к TextBox в XAML
-        [ObservableProperty] private string _messageText = string.Empty;
-
-        // Свойство для управления анимацией чата
-        [ObservableProperty] private bool _isChatOpen = false;
-
-        // 🔥 КЛАССИЧЕСКИЙ КОНСТРУКТОР: один, чистый и понятный DI-контейнеру
-        public ChatViewModel(IEventBus eventBus, ILogger logger)
+        public ChatViewModel(IEventBus eventBus)
         {
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            _logger.LogInformation($"[ChatVM] Конструктор запущен. Хэш-код экземпляра: {this.GetHashCode()}");
-
-            InitializeBusSubscriptions();
+            // Ловим системные веб-ивенты, чтобы чат знал, КТО сейчас сидит за компом
+            _eventBus.Subscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
+            _eventBus.Subscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
+            _eventBus.Subscribe<IContactsVm.FriendSelected>(OnFriendSelected);
         }
 
-        private void InitializeBusSubscriptions()
+        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Локальный UI-кэш для ID) 🧼
+
+      
+
+
+        private void OnUserSignedIn(IUserVm.UserSignedIn msg)
         {
-            // 🔥 ЧИСТОТА: Никаких лямбд, шпион в Инспекторе теперь видит всё! 🧼⚡
-            _eventBus.Subscribe<IContactsListViewModel.FriendSelected>(OnFriendSelected);
+            if (msg?.User == null) return;
+
+            _currentUserId = msg.User.Id;
+
+            // 🔥 ЗАПОМИНАЕМ ИМЯ: Берем имя или Email залогинившегося юзера
+            CurrentUserName = msg.User.FirstName ?? msg.User.Email;
         }
 
-        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Для идеального графа в Инспекторе) 🧼
+        private void OnUserSignedUp(IUserVm.UserSignedUp msg)
+        {
+            if (msg?.User == null) return;
 
-        private void OnFriendSelected(IContactsListViewModel.FriendSelected msg)
+            _currentUserId = msg.User.Id;
+
+            // Запоминаем при регистрации нового аккаунта
+            CurrentUserName = msg.User.FirstName ?? msg.User.Email;
+        }
+
+        private void OnFriendSelected(IContactsVm.FriendSelected msg)
         {
             if (msg?.Friend == null) return;
 
-            _logger.LogDebug($"[ChatVM] Шина EventBus доставила FriendSelected! Прилетел: {msg.Friend.FirstName} (ID: {msg.Friend.Id})");
-
-            // Записываем друга в свойство, и тулкит сам вызовет OnSelectedFriendChanged. 
-            SelectedFriend = msg.Friend;
+            SelectedFriendId = msg.Friend.Id;
+            Messages.Clear(); // Чистим экран перед загрузкой истории нового друга
+            IsChatOpen = true;
         }
 
         #endregion
 
-        // Автоматически вызывается при ЛЮБОМ изменении свойства SelectedFriend
-        partial void OnSelectedFriendChanged(UserEntity? value)
+        #region 🚀 НАНО-КОМАНДЫ UI (Чистый выстрел намерения) 🧼
+
+        [RelayCommand(CanExecute = nameof(CanSendMessage))]
+        private void SendMessage()
         {
-            _logger.LogInformation($"[ChatVM] Свойство SelectedFriend ИЗМЕНЕНО! Собеседник: {value?.FirstName ?? "NULL"} (ID: {value?.Id ?? 0}). Хэш-код: {this.GetHashCode()}");
+            if (string.IsNullOrWhiteSpace(InputText) || SelectedFriendId == null) return;
+
+            // 🔥 ТОТАЛЬНАЯ ЧИСТОТА: Просто швыряем структуру-приказ в автобус!
+            // Никаких дат, никаких MessageEntity. Сервис сам всё поймает и запишет.
+            _eventBus.Publish(this, new IChatViewModel.Send(
+                SenderId: _currentUserId,
+                Text: InputText.Trim(),
+                ChatType: "Private",
+                TargetId: SelectedFriendId
+            ));
+
+            // Локальный UI-триггер (если макро-панели нужно подмигнуть анимацией до ответа базы)
+            _eventBus.Publish(this, new IChatViewModel.NewSent(InputText.Trim(), SelectedFriendId.Value));
+
+            InputText = string.Empty; // Моментально очищаем поле ввода в киберпанк-стиле
         }
 
-        // Команда отправки эсэмэски
-        [RelayCommand]
-        private async Task SendMessageAsync()
+        private bool CanSendMessage()
         {
-            if (string.IsNullOrWhiteSpace(MessageText) || SelectedFriend == null) return;
-
-            string textToSend = MessageText.Trim();
-            MessageText = string.Empty;
-
-            _logger.LogInformation($"[ChatVM] Отправка сообщения. Кому ID: {SelectedFriend.Id}, Текст: {textToSend}");
-
-            // 🔥 Публикуем чистый, укороченный по хозяину рекорд-сообщение в воздух
-            _eventBus.Publish(this, new IChatViewModel.NewSent(textToSend, SelectedFriend.Id));
-
-            await Task.CompletedTask;
+            return !string.IsNullOrWhiteSpace(InputText) && SelectedFriendId != null;
         }
 
-        [RelayCommand]
-        private void AttachFile()
-        {
-            _logger.LogDebug("[ChatVM] Нажата кнопка прикрепления файла (скрепка).");
-        }
+        // Автоматически пересчитываем доступность кнопки отправки при вводе букв
+        partial void OnInputTextChanged(string value) => SendMessageCommand.NotifyCanExecuteChanged();
+        partial void OnSelectedFriendIdChanged(int? value) => SendMessageCommand.NotifyCanExecuteChanged();
 
-        #region 🛡️ ЖЕЛЕЗОБЕТОННЫЙ СТЕРИЛИЗАТОР ПАМЯТИ
+        #endregion
 
         public void Dispose()
         {
-            _eventBus.Unsubscribe<IContactsListViewModel.FriendSelected>(OnFriendSelected);
+            _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
+            _eventBus.Unsubscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
+            _eventBus.Unsubscribe<IContactsVm.FriendSelected>(OnFriendSelected);
         }
-
-        #endregion
     }
 }

@@ -22,12 +22,17 @@
             </Grid.RowDefinitions>
 
             <!-- ==================== ROW 0: ВЕРХНЯЯ ПЛАШКА ==================== -->
-            
-            
-            <Border Grid.Row="0" Background="Transparent" BorderBrush="Transparent" BorderThickness="0,0,0,1">
+
+            <!-- ==================== ROW 0: ВЕРХНЯЯ ПЛАШКА ==================== -->
+            <Border Grid.Row="0" Background="Transparent" BorderBrush="#1A00F0FF" BorderThickness="0,0,0,1">
                 <Grid Margin="15,0">
-                    <StackPanel VerticalAlignment="Center">
-                        <!-- 🔥 ДИНАМИКА: Имя собеседника из выбранного друга -->
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Левая сторона: Информация о собеседнике -->
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
                         <TextBlock Text="{Binding SelectedFriend.FirstName, FallbackValue='Выберите собеседника'}" 
                                    FontWeight="Bold" FontSize="16" Foreground="#FFB300"/>
 
@@ -37,8 +42,18 @@
                             <TextBlock Text="в сети" FontSize="12" Foreground="#757575"/>
                         </StackPanel>
                     </StackPanel>
+
+                    <!-- 🔥 ПРАВАЯ СТОРОНА: Выводим, КТО залетел в мессенджер -->
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right">
+                        <TextBlock Text="Авторизован как:" FontSize="10" Foreground="#757575" HorizontalAlignment="Right"/>
+                        <TextBlock Text="{Binding CurrentUserName, FallbackValue='Гость'}" 
+                                   FontWeight="SemiBold" FontSize="14" Foreground="#00F0FF" 
+                                   Margin="0,2,0,0" HorizontalAlignment="Right"/>
+                    </StackPanel>
+
                 </Grid>
             </Border>
+
 
             <!-- ==================== ROW 1: ЛЕНТА СООБЩЕНИЙ ==================== -->
             <!-- Выводим сообщения через ListBox, привязанный к коллекции Messages -->

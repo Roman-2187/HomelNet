@@ -1,72 +1,67 @@
-﻿using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces.Diagnostics;
+﻿using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Interfaces.Services;
+using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
+using System;
 
 namespace HomeNetServices.Services.Identity
 {
-    public class MessageService : IMessageService
+    /// <summary>
+    /// Автономный диспетчер сообщений SiberNet.
+    /// Зависит только от интерфейсов ядра, никаких ссылок на презентацию UI!
+    /// </summary>
+    public class MessageService : IDisposable,IMessageService
     {
-        private readonly IMessageRepository _messageRepository;
-        private readonly ILogger _logger;
+        private readonly IEventBus _eventBus;
+        private readonly IMessageRepository _messageRepo;
 
-        public MessageService(IMessageRepository messageRepository, ILogger logger)
+        public MessageService(IEventBus eventBus, IMessageRepository messageRepo)
         {
-            _messageRepository = messageRepository ?? throw new ArgumentNullException(nameof(messageRepository));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+            _messageRepo = messageRepo ?? throw new ArgumentNullException(nameof(messageRepo));
+
+            // Ловим намерение отправить
+            _eventBus.Subscribe<IChatViewModel.Send>(OnSendMessageRequested);
         }
 
-        // 💬 Отправить СМС или файл родственнику
-        public async Task<bool> SendMessageAsync(MessageEntity message)
+        private async void OnSendMessageRequested(IChatViewModel.Send msg)
         {
+            if (msg == null) return;
+
+            // 🔥 ЧИСТОТА: ID отправителя прилетает прямо в рекорде из UI!
+            var entity = new MessageEntity
+            {
+                SenderId = msg.SenderId,
+                ReceiverId = msg.TargetId ?? 0,
+                Text = msg.Text,
+                MediaType = msg.FilePath != null ? "File" : "Text",
+                FilePath = msg.FilePath,
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            };
+
             try
             {
-                if (message == null) return false;
+                await _messageRepo.SaveMessageAsync(entity);
 
-                bool success = await _messageRepository.SaveMessageAsync(message);
-                if (success)
-                {
-                    _logger.LogInformation($"[Чат] Сообщение от ID {message.SenderId} отправлено пользователю ID {message.ReceiverId}.");
-                }
-                return success;
+                _eventBus.Publish(this, new IChatViewModel.Received(
+                    MessageId: entity.Id,
+                    SenderId: entity.SenderId,
+                    Text: entity.Text,
+                    ChatType: msg.ChatType,
+                    FilePath: msg.FilePath
+                ));
             }
             catch (Exception ex)
             {
-                _logger.LogError($"[Ошибка Чата] Не удалось сохранить сообщение: {ex.Message}");
-                return false;
+                _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"[Сбой базы чата]: {ex.Message}"));
             }
         }
 
-        // 🔍 Загрузить историю переписки диалога
-        public async Task<IEnumerable<MessageEntity>> GetChatHistoryAsync(int senderId, int receiverId)
+        public void Dispose()
         {
-            try
-            {
-                var history = await _messageRepository.GetChatHistoryAsync(senderId, receiverId);
-                _logger.LogInformation($"[Чат] Успешно загружена история диалога между ID {senderId} и ID {receiverId}.");
-                return history;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"[Ошибка Чата] Не удалось загрузить историю переписки: {ex.Message}");
-                return new List<MessageEntity>();
-            }
-        }
-
-        // 🧼 Прочитать сообщения
-        public async Task<bool> ReadChatMessagesAsync(int senderId, int receiverId)
-        {
-            try
-            {
-                return await _messageRepository.MarkAsReadAsync(senderId, receiverId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"[Ошибка Чата] Ошибка смены статуса прочтения: {ex.Message}");
-                return false;
-            }
+            _eventBus.Unsubscribe<IChatViewModel.Send>(OnSendMessageRequested);
         }
     }
 }
-

@@ -59,12 +59,15 @@ namespace HomeNetServices.Services.Identity
         /// <summary>
         /// 🎯 Конвейер удаления пользователя
         /// </summary>
+        /// <summary>
+        /// 🎯 Конвейер удаления пользователя
+        /// </summary>
         public async Task<IDeleteService.DeleteVerdict> DeleteUserAsync(string targetUserId, UserEntity? selectedUser)
         {
             int id = selectedUser?.Id ?? (int.TryParse(targetUserId, out int parsedId) ? parsedId : -1);
 
             var validationResults = new List<ValidationResult>();
-            var idRes = new ValidationResult { Field = TypeField.IdType, State = ValidationState.Success }; // Добавили тип поля для UI
+            var idRes = new ValidationResult { Field = TypeField.IdType, State = ValidationState.Success };
             validationResults.Add(idRes);
 
             if (id <= 0)
@@ -75,13 +78,28 @@ namespace HomeNetServices.Services.Identity
 
             try
             {
+                // 🔥 СПИХНУЛИ СЮДА: Вычисляем имя и формат ДО удаления из базы, пока объект выбран
+                string userInfo = selectedUser != null
+                    ? $"{selectedUser.FirstName} {selectedUser.LastName} (ID {id})"
+                    : $"ID {id} (Точечно)";
+
                 await _userService.DeleteByIdAsync(id);
 
                 var allUsers = await _userService.GetAllAsync() ?? Enumerable.Empty<UserEntity>();
                 _logger.LogDebug($"В системе {allUsers.Count()} пользователей");
 
                 idRes.Update(ValidationState.Success, $"Пользователь с ID {id} успешно удален.");
-                return new IDeleteService.DeleteVerdict(true, validationResults, id, allUsers);
+
+                // 🔥 СПИХНУЛИ СЮДА: Сервис сам штампует время и красивый UI-текст лога
+                string readyHistoryLine = $"[{DateTime.Now:HH:mm:ss}] ❌ Удален: {userInfo}";
+
+                // Собираем вердикт и отдаем его наверх
+                var verdict = new IDeleteService.DeleteVerdict(true, validationResults, id, allUsers)
+                {
+                    HistoryMessage = readyHistoryLine // Завертываем строку в посылку
+                };
+
+                return verdict;
             }
             catch (Exception ex)
             {
@@ -89,6 +107,7 @@ namespace HomeNetServices.Services.Identity
                 return new IDeleteService.DeleteVerdict(false, validationResults, id, null);
             }
         }
+
 
         private List<ValidationResult> ValidateIdInput(string targetUserId)
         {

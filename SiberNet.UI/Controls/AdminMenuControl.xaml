@@ -39,8 +39,16 @@
                 <Button Content="{Binding InspectorButtonText, FallbackValue='Инспектор шины'}" 
                         Command="{Binding ShowInspectorCommand}" 
                         Style="{StaticResource OrangeDefaultButtonStyle}" Margin="0,3"/>
+                <!-- 🔥 ЖЕЛЕЗОБЕТОННЫЙ ПЕРЕХВАТ: Шторка рулится макро-зоной из TitleBarViewModel -->
+                <!-- 🔥 ЖЕСТКОЕ ГАСИЛОВО ПОД ГЛОБАЛЬНЫМ МАКРО-КОНТРОЛЕМ -->
+                <!-- Шторка живет и отображается ТОЛЬКО пока мы физически находимся в AdminZone! -->
 
-                <controls:AccountMenuControl HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"/>
+                <!-- 🔥 ЧИСТОЕ РЕШЕНИЕ: Управляем видимостью самого контрола напрямую! -->
+                <controls:AccountMenuControl HorizontalAlignment="Stretch" 
+                                             HorizontalContentAlignment="Stretch"/>
+
+
+
             </StackPanel>
         </ContentControl>
 

@@ -38,7 +38,7 @@
     <Compile Update="Controls\StatusBarControl.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Controls\UserDashboardControl.xaml.cs">
+    <Compile Update="Controls\UserProfileControl.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

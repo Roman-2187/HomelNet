@@ -14,6 +14,8 @@ namespace HomeNetCore.Interfaces.ViewModels
         public record OpenDelete;
         public record OpenLogger;
         public record OpenEventInspector;
+        // 🔥 СНАРЯД 1: Приказ шторке — "Закройся нахрен прямо сейчас"
+        public record CloseAccountMenu;
         public record AdminTabChanged(AdminSubTab ActiveTab);
     }
 }

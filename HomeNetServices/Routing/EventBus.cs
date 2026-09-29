@@ -35,11 +35,14 @@ namespace HomeNetServices.Routing
 
             try
             {
-                string controlName = action.Target?.GetType().Name ?? "UnknownSource";
+                // 🔥 Находим тип самого класса-подписчика (например, DeleteUsersViewModel)
+                Type subscriberType = action.Target?.GetType() ?? action.Method.DeclaringType ?? typeof(object);
+
+                string controlName = subscriberType.Name;
                 string methodName = action.Method.Name;
 
-                // Заносим в единственный, общий граф синглтона 🧼
-                Inspector.RecordSubscribe(controlName, type, methodName);
+                // 🔥 Передаем тип подписчика четвертым аргументом в зрячий инспектор!
+                Inspector.RecordSubscribe(controlName, type, methodName, subscriberType);
             }
             catch (Exception ex)
             {
@@ -47,7 +50,8 @@ namespace HomeNetServices.Routing
             }
         }
 
-       
+
+
 
 
 

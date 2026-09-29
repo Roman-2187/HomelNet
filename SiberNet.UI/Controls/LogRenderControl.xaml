@@ -54,7 +54,7 @@
                                             <TextBlock Text="{Binding Value}">
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
-                                                        <Setter Property="Foreground" Value="LightGreen"/>
+                                                            <Setter Property="Foreground" Value="#00FF66"/>
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding Level}" Value="{x:Static enums:LogLevel.Critical}">
                                                                 <Setter Property="Foreground" Value="Red"/>
@@ -63,10 +63,10 @@
                                                                 <Setter Property="Foreground" Value="OrangeRed"/>
                                                             </DataTrigger>
                                                             <DataTrigger Binding="{Binding Level}" Value="{x:Static enums:LogLevel.Warning}">
-                                                                <Setter Property="Foreground" Value="Orange"/>
+                                                                    <Setter Property="Foreground" Value="#FFB300"/>
                                                             </DataTrigger>
                                                             <DataTrigger Binding="{Binding Level}" Value="{x:Static enums:LogLevel.Debug}">
-                                                                <Setter Property="Foreground" Value="Tan"/>
+                                                                    <Setter Property="Foreground" Value="#00F0FF"/>
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>

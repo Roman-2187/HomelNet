@@ -154,7 +154,7 @@
                         </Style.Triggers>
                     </Style>
                 </Border.Style>
-                <local:UserDashboardControl 
+                <local:UserProfileControl 
                     DataContext="{Binding UserProfileViewModel, Source={StaticResource ComponentHub}}"
                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
             </Border>

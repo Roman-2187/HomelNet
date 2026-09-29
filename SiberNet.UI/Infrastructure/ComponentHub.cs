@@ -10,10 +10,10 @@ namespace SiberNet.UI.Infrastructure
         public RegistrationViewModel RegistrationViewModel => AppBootstrapper.GetViewModel<RegistrationViewModel>();
         public AuthenticationViewModel AuthenticationViewModel => AppBootstrapper.GetViewModel<AuthenticationViewModel>();
         public ChatViewModel ChatViewModel => AppBootstrapper.GetViewModel<ChatViewModel>();
-        public AdminProfileViewModel AdminMenuViewModel => AppBootstrapper.GetViewModel<AdminProfileViewModel>();
-        public UserProfileViewModel UserProfileViewModel => AppBootstrapper.GetViewModel<UserProfileViewModel>();
+        public AdminViewModel AdminMenuViewModel => AppBootstrapper.GetViewModel<AdminViewModel>();
+        public UserViewModel UserProfileViewModel => AppBootstrapper.GetViewModel<UserViewModel>();
         public TitleBarViewModel TitleBarViewModel => AppBootstrapper.GetViewModel<TitleBarViewModel>();
-        public AccountMenuViewModel AccountMenuViewModel => AppBootstrapper.GetViewModel<AccountMenuViewModel>();
+       
         public TerminalLogsViewModel TerminalViewModel => AppBootstrapper.GetViewModel<TerminalLogsViewModel>();
         public TableUsersViewModel TableUsersViewModel => AppBootstrapper.GetViewModel<TableUsersViewModel>();
         public InspectorViewModel InspectorViewModel => AppBootstrapper.GetViewModel<InspectorViewModel>();

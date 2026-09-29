@@ -11,22 +11,25 @@ namespace HomeNetPresentation.ViewModels
     /// <summary>
     /// Тотально изолированная и чистая панель пользователя SiberNet.
     /// Наследуется от дженерик-базы с указанием конкретного менеджера навигации.
+    /// Управляется новыми браузерными веб-ивентами авторизации и регистрации.
     /// </summary>
-    public partial class UserProfileViewModel : FormViewModelBase<UserNavigationManager>, IDisposable
+    public partial class UserViewModel : FormViewModelBase<UserNavigationManager>, IDisposable
     {
         private readonly IMessageRepository _messageRepo;
 
         // 🔥 НАШИ ДВА АВТОНОМНЫХ БЛОКА
-        public ContactsListViewModel ContactsListVM { get; }
+        public ContactsViewModel ContactsListVM { get; }
         public ChatViewModel ChatVm { get; }
+
+        private int _currentUserId; // 🔥 Наш локальный UI-кэш для ID текущего юзера
 
         // Локальный стейт вкладки, скопированный из реактивного факта навигатора для XAML
         [ObservableProperty] private ClientSubTab _activeClientTab = ClientSubTab.None;
 
-        public UserProfileViewModel(
+        public UserViewModel(
             IEventBus eventBus,
             IMessageRepository messageRepo,
-            ContactsListViewModel contactsListViewModel,
+            ContactsViewModel contactsListViewModel,
             ChatViewModel chatVm,
             UserNavigationManager navigation) : base(eventBus, navigation) // Передали навигатор в generic-базу
         {
@@ -34,16 +37,17 @@ namespace HomeNetPresentation.ViewModels
             ContactsListVM = contactsListViewModel ?? throw new ArgumentNullException(nameof(contactsListViewModel));
             ChatVm = chatVm ?? throw new ArgumentNullException(nameof(chatVm));
 
-            // 🔥 Дублирование поля _eventBus удалено! Используем защищенное поле _eventBus базового класса.
             InitializeBusSubscriptions();
         }
 
         private void InitializeBusSubscriptions()
         {
-            // 🔥 ЧИСТОТА ДЛЯ ИНСПЕКТОРА: Только жесткие ссылки на именованные методы! 🧼
-            _eventBus.Subscribe<IUserVm.UserAuthenticated>(OnUserAuthenticated);
+            // 🔥 ВЕБ-СТАНДАРТ: Слушаем раздельные каналы входа и регистрации для Инспектора! 🧼
+            _eventBus.Subscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
+            _eventBus.Subscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
+
             _eventBus.Subscribe<IChatViewModel.NewSent>(OnNewMessageSent);
-            _eventBus.Subscribe<IContactsListViewModel.FriendSelected>(OnFriendSelected);
+            _eventBus.Subscribe<IContactsVm.FriendSelected>(OnFriendSelected);
 
             // Наш новый навигатор при изменении под-зон будет пулять этот факт в шину
             _eventBus.Subscribe<IUserVm.ClientTabChanged>(OnClientTabChanged);
@@ -51,11 +55,22 @@ namespace HomeNetPresentation.ViewModels
 
         #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Для идеального графа в Инспекторе) 🧼
 
-        private void OnUserAuthenticated(IUserVm.UserAuthenticated msg)
+        private void OnUserSignedIn(IUserVm.UserSignedIn msg)
         {
-            // Нам больше не нужно самим сохранять юзера, навигатор уже держит его в Navigation.CurrentUser!
-            // Команда успешного входа автоматом переключит интерфейс в Messenger.
+            if (msg?.User == null) return;
+
+            _currentUserId = msg.User.Id; // 🔥 Запомнили, кто сидит за рулем мессенджера!
             ChatVm.IsChatOpen = false;
+            ContactsListVM.SetCurrentUser(msg.User);
+        }
+
+        private void OnUserSignedUp(IUserVm.UserSignedUp msg)
+        {
+            if (msg?.User == null) return;
+
+            _currentUserId = msg.User.Id; // Запомнили при регистрации
+            ChatVm.IsChatOpen = false;
+            ContactsListVM.SetCurrentUser(msg.User);
         }
 
         private void OnClientTabChanged(IUserVm.ClientTabChanged msg)
@@ -101,7 +116,7 @@ namespace HomeNetPresentation.ViewModels
             }
         }
 
-        private void OnFriendSelected(IContactsListViewModel.FriendSelected msg)
+        private void OnFriendSelected(IContactsVm.FriendSelected msg)
         {
             ChatVm.IsChatOpen = true;
         }
@@ -112,10 +127,14 @@ namespace HomeNetPresentation.ViewModels
 
         public override void Dispose()
         {
-            base.Dispose(); // Не забываем дернуть базовый деструктор ресурсы
-            _eventBus.Unsubscribe<IUserVm.UserAuthenticated>(OnUserAuthenticated);
+            base.Dispose(); // Чистим базовые ресурсы
+
+            // 🔥 Обновили отписки на новые рекорды, чтобы не было утечек памяти!
+            _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
+            _eventBus.Unsubscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
+
             _eventBus.Unsubscribe<IChatViewModel.NewSent>(OnNewMessageSent);
-            _eventBus.Unsubscribe<IContactsListViewModel.FriendSelected>(OnFriendSelected);
+            _eventBus.Unsubscribe<IContactsVm.FriendSelected>(OnFriendSelected);
             _eventBus.Unsubscribe<IUserVm.ClientTabChanged>(OnClientTabChanged);
         }
 

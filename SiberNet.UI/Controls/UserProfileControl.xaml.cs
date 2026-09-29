@@ -5,9 +5,9 @@ namespace SiberNet.UI.Controls
     /// <summary>
     /// Interaction logic for UserDashboardControl.xaml
     /// </summary>
-    public partial class UserDashboardControl : UserControl
+    public partial class UserProfileControl : UserControl
     {
-        public UserDashboardControl()
+        public UserProfileControl()
         {
             InitializeComponent();
 

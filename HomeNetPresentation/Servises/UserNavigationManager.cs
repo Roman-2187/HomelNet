@@ -18,7 +18,11 @@ namespace HomeNetPresentation.Services
             EventBus.Subscribe<IUserVm.OpenAuth>(OnOpenAuthRequested);
             EventBus.Subscribe<IUserVm.OpenRegistration>(OnOpenRegistrationRequested);
             EventBus.Subscribe<IUserVm.BackToStart>(OnBackToStartRequested);
-            EventBus.Subscribe<IUserVm.UserAuthenticated>(OnUserAuthenticatedRequested);
+
+            // 🔥 ПОДПИСЫВАЕМСЯ НА ОБА БРАУЗЕРНЫХ ВЕБ-ИВЕНТА С КНОПОК
+            EventBus.Subscribe<IUserVm.UserSignedIn>(OnUserAuthenticatedRequested);
+            EventBus.Subscribe<IUserVm.UserSignedUp>(OnUserSignedUpRequested); // Ловим успех регистрации!
+
             EventBus.Subscribe<IUserVm.LogoutClient>(OnLogoutClientRequested);
         }
 
@@ -54,15 +58,29 @@ namespace HomeNetPresentation.Services
             EventBus.Publish(this, new IUserVm.ClientTabChanged(CurrentClientTab));
         }
 
-        private void OnUserAuthenticatedRequested(IUserVm.UserAuthenticated msg)
+        private void OnUserAuthenticatedRequested(IUserVm.UserSignedIn msg)
         {
             if (msg?.User == null) return;
 
             CurrentUser = msg.User;
             CurrentMainZone = MainTab.ClientZone; // Переключили рубильник вертикали на Клиента!
-            CurrentClientTab = ClientSubTab.Messenger;
+            CurrentClientTab = ClientSubTab.Messenger; // Переключили внутренний стейт на мессенджер
 
             // 🔥 ПИНГ-ПОНГ: Отправляем стейты успешного входа! В XAML откроется мессенджер.
+            EventBus.Publish(this, new ITitleBarVm.MacroZoneChanged(CurrentMainZone, CurrentClientTab));
+            EventBus.Publish(this, new IUserVm.ClientTabChanged(CurrentClientTab));
+        }
+
+        // 🔥 ДОБАВЛЕННЫЙ МЕТОД: Обработка успешного SignUp (Регистрация)
+        private void OnUserSignedUpRequested(IUserVm.UserSignedUp msg)
+        {
+            if (msg?.User == null) return;
+
+            CurrentUser = msg.User; // Запоминаем только что созданную сущность в сессию
+            CurrentMainZone = MainTab.ClientZone; // Жестко переключаем макро-рубильник холста на Клиента!
+            CurrentClientTab = ClientSubTab.Messenger; // Схлопываем форму регистрации в мессенджер
+
+            // 🔥 ПИНГ-ПОНГ НАЗАД: Выстреливаем дуэтом стейтов, чтобы сработал DataTrigger в TitleBarControl.xaml!
             EventBus.Publish(this, new ITitleBarVm.MacroZoneChanged(CurrentMainZone, CurrentClientTab));
             EventBus.Publish(this, new IUserVm.ClientTabChanged(CurrentClientTab));
         }
@@ -86,7 +104,8 @@ namespace HomeNetPresentation.Services
             EventBus.Unsubscribe<IUserVm.OpenAuth>(OnOpenAuthRequested);
             EventBus.Unsubscribe<IUserVm.OpenRegistration>(OnOpenRegistrationRequested);
             EventBus.Unsubscribe<IUserVm.BackToStart>(OnBackToStartRequested);
-            EventBus.Unsubscribe<IUserVm.UserAuthenticated>(OnUserAuthenticatedRequested);
+            EventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserAuthenticatedRequested);
+            EventBus.Unsubscribe<IUserVm.UserSignedUp>(OnUserSignedUpRequested); // Чистим память! 🛡️
             EventBus.Unsubscribe<IUserVm.LogoutClient>(OnLogoutClientRequested);
         }
     }

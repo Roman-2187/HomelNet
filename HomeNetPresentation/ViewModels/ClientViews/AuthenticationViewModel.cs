@@ -1,7 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Enums;
-using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Diagnostics;
@@ -10,10 +9,6 @@ using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
 using HomeNetCore.Models.Validation;
 using HomeNetPresentation.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace HomeNetPresentation.ViewModels
 {
@@ -39,8 +34,10 @@ namespace HomeNetPresentation.ViewModels
 
             InitializeInitialHints();
 
-            // 🔥 ЖЕСТКАЯ ДИСЦИПЛИНА: Никаких анонимных лямбд! Подписываем строго именованный метод для Инспектора.
-            _eventBus.Subscribe<IUserVm.UserAuthenticated>(OnUserAuthenticated);
+            // В конструкторе меняем подписку, чтобы форма сбрасывалась при успешном входе:
+            _eventBus.Subscribe<IUserVm.UserSignedIn>(OnUserAuthenticated);
+
+           
         }
 
         #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Для идеального графа в Инспекторе) 🧼
@@ -48,9 +45,10 @@ namespace HomeNetPresentation.ViewModels
         /// <summary>
         /// Локальный сброс полей формы после подтверждения успешного входа
         /// </summary>
-        private async void OnUserAuthenticated(IUserVm.UserAuthenticated msg)
+
+        private async void OnUserAuthenticated(IUserVm.UserSignedIn msg)
         {
-            await Task.Delay(500); // Небольшая задержка для плавности киберпанк-анимации
+            await Task.Delay(500);
             ResetForm();
             InitializeInitialHints();
         }
@@ -97,10 +95,7 @@ namespace HomeNetPresentation.ViewModels
 
                     var finalUser = verdict.User ?? UserData;
 
-                    // 🔥 ТОТАЛЬНЫЙ ДЕКУПЛИНГ: Больше никакой ручной отправки зон в навигатор!
-                    // Пуляем в автобус наш чистенький рекорд с сущностью залогиненного юзера.
-                    // UserNavigationManager сам поймает этот сигнал, подгрузит ID и переключит UI в мессенджер.
-                    _eventBus.Publish(this, new IUserVm.UserAuthenticated(finalUser));
+                    _eventBus.Publish(this, new IUserVm.UserSignedIn(finalUser));
                 }
                 else
                 {
@@ -133,7 +128,7 @@ namespace HomeNetPresentation.ViewModels
         public override void Dispose()
         {
             base.Dispose(); // Чистим базовые ресурсы
-            _eventBus.Unsubscribe<IUserVm.UserAuthenticated>(OnUserAuthenticated);
+            _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserAuthenticated);
         }
 
         #endregion

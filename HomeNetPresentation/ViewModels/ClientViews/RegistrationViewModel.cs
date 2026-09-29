@@ -84,15 +84,20 @@ namespace HomeNetPresentation.ViewModels
 
                     var finalUser = verdict.VerifiedUser ?? UserData;
 
-                    // 🔥 ИДЕАЛЬНАЯ ДИСЦИПЛИНА: ViewModel больше не трогает навигатор руками!
-                    // Мы пуляем один рекорд UserAuthenticated с сущностью нового юзера.
-                    // UserNavigationManager поймает его, сохранит в CurrentUser и переключит макро-зону в ClientZone!
-                    _eventBus.Publish(this, new IUserVm.UserAuthenticated(finalUser));
+                   
+
+                    // 🔥 Публикуем факт успешного SignUp (Регистрация)
+                    _eventBus.Publish(this, new IUserVm.UserSignedUp(finalUser));
 
                     await Task.Delay(500);
                     ResetForm();
                     InitializeInitialHints();
                 }
+
+
+
+              
+
                 else
                 {
                     StatusMessage = "Есть ошибки в полях";

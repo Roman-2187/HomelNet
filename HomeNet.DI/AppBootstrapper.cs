@@ -104,7 +104,7 @@ namespace HomeNet.DI
                                                             // Вьюмодель инспектора для вывода отчета на экран
             services.AddSingleton<InspectorViewModel>();
 
-            services.AddSingleton<AdminProfileViewModel>();
+            services.AddSingleton<AdminViewModel>();
             services.AddSingleton<DeleteUsersViewModel>();
             services.AddSingleton<ChatViewModel>();
             services.AddSingleton<TitleBarViewModel>();
@@ -126,17 +126,17 @@ namespace HomeNet.DI
 
 
             // Изолированная левая панель контактов
-            services.AddSingleton<ContactsListViewModel>();
+            services.AddSingleton<ContactsViewModel>();
 
             // 🍔 Кастомное меню аккаунта (выпадашка "Профиль / Выход")
             // Делаем Transient, чтобы для админки и дашборда создавались свои независимые экземпляры плашки
             // Было: services.AddTransient<AccountMenuViewModel>();
             // Стало: Теперь это железобетонный синглтон!
-            services.AddSingleton<AccountMenuViewModel>();
+           
 
 
 
-            services.AddSingleton<UserProfileViewModel>();
+            services.AddSingleton<UserViewModel>();
 
             services.AddTransient<MainViewModel>();
 

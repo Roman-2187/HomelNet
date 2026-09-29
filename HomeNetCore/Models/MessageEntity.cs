@@ -1,17 +1,48 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace HomeNetCore.Models
 {
-    public class MessageEntity
+    /// <summary>
+    /// 🔥 РЕАКТИВНАЯ СУЩНОСТЬ СООБЩЕНИЯ SiberNet
+    /// Идеально мапится в Entity Framework (Postgres/SQLite) и автоматически обновляет UI WPF!
+    /// </summary>
+    public partial class MessageEntity : ObservableObject
     {
-        public int Id { get; set; }
-        public int SenderId { get; set; }
-        public int ReceiverId { get; set; }
-        public string? Text { get; set; }
-        public string? MediaType { get; set; } = "Text";
-        public string? CloudUrl { get; set; }
-        public string? LocalPath { get; set; }
-        public bool IsRead { get; set; } = false;
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        [Key] // Главный ключ для EF Core
+        [ObservableProperty]
+        private int _id;
+
+        [ObservableProperty]
+        private int _senderId;
+
+        [ObservableProperty]
+        private int _receiverId;
+
+        [ObservableProperty]
+        private string _text = string.Empty;
+
+        [ObservableProperty]
+        private string _mediaType = "Text"; // "Text", "File", "Image"
+
+        [ObservableProperty]
+        private string? _filePath;
+
+        // 🔥 КРИТИЧНО ДЛЯ ГАЛОЧЕК ЧАТА: Изменение этого поля UI увидит мгновенно!
+        [ObservableProperty]
+        private bool _isRead;
+
+        [ObservableProperty]
+        private DateTime _createdAt = DateTime.UtcNow;
+
+        // --- Хитрые свойства для UI (Вычисляемые на лету) ---
+
+        [NotMapped] // База данных (Postgres/SQLite) проигнорирует эти свойства
+        public bool IsOutgoing => true; // Тут потом сделаешь проверку (SenderId == CurrentUserId)
+
+        [NotMapped]
+        public string FormattedTime => CreatedAt.ToLocalTime().ToString("HH:mm");
     }
 }

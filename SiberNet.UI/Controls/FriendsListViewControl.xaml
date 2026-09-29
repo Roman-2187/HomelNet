@@ -26,8 +26,10 @@
             <!-- 🍔 ШАПКА: Сидит на верхнем ярусе внутри рамки -->
             <StackPanel Grid.Row="0" Orientation="Horizontal" >
 
-                <!-- Наш кругленький бургер-меню (задали компактные 30х30 для левой панели) -->
-                <local:AccountMenuControl Width="50" Height="30" 
+                <!-- 🔥 ПЕРЕСАДИЛИ НА ЛОКАЛЬНЫЙ КОНТЕКСТ КОНТАКТОВ -->
+                <!-- Теперь шторка в мессенджере рулит свойством ContactsListVM.IsMenuOpen и никак не связана с админкой! -->
+                <local:AccountMenuControl DataContext="{Binding ContactsListVM}"
+                                          Width="50" Height="30" 
                                           HorizontalAlignment="Left"
                                           VerticalAlignment="Center"/>
 

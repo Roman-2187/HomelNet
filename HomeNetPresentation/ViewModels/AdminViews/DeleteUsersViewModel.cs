@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using HomeNetCore.Enums.Navigation; // Тянем энумы под новые условия
+using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
@@ -8,25 +8,30 @@ using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
 using HomeNetPresentation.Services;
-using System;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace HomeNetPresentation.ViewModels
 {
     /// <summary>
-    /// Полностью автономная форма удаления пользователей SiberNet.
-    /// Синхронизируется исключительно по фактам изменения вкладок из автобуса.
+    /// Тонкая, автономная форма удаления пользователей SiberNet.
+    /// Работает полностью на подсосе данных от центральной таблицы пользователей.
     /// </summary>
     public partial class DeleteUsersViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
     {
         private readonly IDeleteService _srv;
         private readonly ILogger _log;
 
-        [ObservableProperty] private ObservableCollection<UserEntity> _foundUsers = new();
-        [ObservableProperty] private UserEntity? _selectedUser;
-        [ObservableProperty] private string _targetUserId = string.Empty;
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(SearchCommand))]
+        private ObservableCollection<UserEntity> _foundUsers = new();
+
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(SearchCommand))]
+        private UserEntity? _selectedUser;
+
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(SearchCommand))]
+        private string _targetUserId = string.Empty;
 
         public ObservableCollection<string> DeletedUsersHistory { get; } = new();
 
@@ -37,24 +42,30 @@ namespace HomeNetPresentation.ViewModels
             _log = log ?? throw new ArgumentNullException(nameof(log));
             SubmitButtonText = "Удалить";
 
-            // 🔥 ПОДПИСКИ ПО ФАКТАМ: Ловим изменение вкладок и факт успешного стирания из бэка
             _eventBus.Subscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
+            _eventBus.Subscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed); // 🔥 ПОДСОС: Ловим общий список
             _eventBus.Subscribe<IDeleteUserVm.Deleted>(OnUserDeleted);
 
-            ResetForm(sync: false); // При старте не греем базу заранее
+            ResetForm();
         }
 
-        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Для идеального графа в Инспекторе) 🧼
+        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Реакция на шину) 🧼
 
         private void OnAdminTabChanged(IAdminVm.AdminTabChanged msg)
         {
-            if (msg == null) return;
-
-            // 🔥 ЕСЛИ НАВИГАТОР ПОДТВЕРДИЛ: Открыта вкладка удаления — только тогда шуршим в базу за списком!
-            if (msg.ActiveTab == AdminSubTab.DeleteUsers)
+            if (msg?.ActiveTab == AdminSubTab.DeleteUsers)
             {
-                ResetForm(sync: true);
+                ResetForm();
+                // 🔥 ПИНГ: Просим таблицу выплюнуть нам актуальный кэш
+                _eventBus.Publish(this, new IUsersTableVm.RefreshRequest());
             }
+        }
+
+        private void OnUsersRefreshed(IUsersTableVm.Refreshed msg)
+        {
+            if (msg == null) return;
+            // 🔥 ПОДСОС В ДЕЙСТВИИ: Просто забираем то, что прислала таблица
+            FoundUsers = new ObservableCollection<UserEntity>(msg.Users);
         }
 
         private void OnUserDeleted(IDeleteUserVm.Deleted msg)
@@ -68,56 +79,7 @@ namespace HomeNetPresentation.ViewModels
 
         #endregion
 
-        private async Task SyncUsersAsync()
-        {
-            StatusMessage = "Загрузка списка пользователей...";
-            var users = await _srv.GetAllUsersAsync();
-            FoundUsers = new ObservableCollection<UserEntity>(users ?? Enumerable.Empty<UserEntity>());
-            StatusMessage = FoundUsers.Any() ?
-                $"Всего в базе: {FoundUsers.Count}. Выберите юзера." : "В базе пока нет пользователей.";
-
-            SearchCommand.NotifyCanExecuteChanged();
-        }
-
-        private void ResetForm(bool sync = false)
-        {
-            TargetUserId = string.Empty;
-            SelectedUser = null;
-            StatusMessage = "Введите ID или выберите пользователя";
-            if (sync) _ = SyncUsersAsync();
-
-            SearchCommand.NotifyCanExecuteChanged();
-        }
-
-        partial void OnSelectedUserChanged(UserEntity? value)
-        {
-            if (value != null && TargetUserId != value.Id.ToString())
-                TargetUserId = value.Id.ToString();
-
-            StatusMessage = value != null
-                ? $"Выбран: ID {value.Id} — {value.FirstName} {value.LastName}"
-                : $"Всего в базе: {FoundUsers.Count}. Выберите юзера.";
-
-            SearchCommand.NotifyCanExecuteChanged();
-        }
-
-        partial void OnTargetUserIdChanged(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                SelectedUser = null;
-                SearchCommand.NotifyCanExecuteChanged();
-                return;
-            }
-
-            var match = FoundUsers.FirstOrDefault(u => u.Id.ToString() == value.Trim());
-            SelectedUser = match;
-
-            if (match == null)
-                StatusMessage = $"Введён сторонний ID: {value}. Нажмите 'Поиск'.";
-
-            SearchCommand.NotifyCanExecuteChanged();
-        }
+        #region 🚀 КОМАНДЫ UI 🧼
 
         [RelayCommand(CanExecute = nameof(CanSearch))]
         private async Task SearchAsync()
@@ -133,25 +95,12 @@ namespace HomeNetPresentation.ViewModels
             }
         }
 
-        private bool CanSearch()
-        {
-            if (FoundUsers.Count == 0 && string.IsNullOrWhiteSpace(TargetUserId))
-                return false;
-
-            if (SelectedUser == null)
-                return true;
-
-            return SelectedUser.Id.ToString() != TargetUserId.Trim();
-        }
-
         [RelayCommand]
         private async Task ExecuteDeleteAsync()
         {
             try
             {
-                string? userNameForHistory = SelectedUser != null
-                    ? $"{SelectedUser.FirstName} {SelectedUser.LastName}"
-                    : null;
+                StatusMessage = "Удаление...";
 
                 var verdict = await _srv.DeleteUserAsync(TargetUserId, SelectedUser);
                 UpdateValidation(verdict.Results);
@@ -163,14 +112,14 @@ namespace HomeNetPresentation.ViewModels
 
                     _eventBus.Publish(this, new IDeleteUserVm.Deleted(verdict.ParsedId ?? -1));
 
-                    string userInfo = userNameForHistory != null
-                        ? $"{userNameForHistory} (ID {verdict.ParsedId})"
-                        : $"ID {verdict.ParsedId} (Точечно)";
-
-                    DeletedUsersHistory.Add($"[{DateTime.Now:HH:mm:ss}] ❌ Удален: {userInfo}");
+                    if (!string.IsNullOrEmpty(verdict.HistoryMessage))
+                    {
+                        DeletedUsersHistory.Add(verdict.HistoryMessage);
+                    }
 
                     await Task.Delay(500);
-                    ResetForm(sync: true);
+                    ResetForm();
+                    _eventBus.Publish(this, new IUsersTableVm.RefreshRequest()); // Обновляем подсос
                 }
             }
             catch (Exception ex)
@@ -182,15 +131,67 @@ namespace HomeNetPresentation.ViewModels
         [RelayCommand]
         private async Task CancelAsync()
         {
-            ResetForm(sync: false);
-            // 🔥 ЧИСТОТА: Просто шлём OpenDelete повторно, навигатор-тумблер сам закроет эту панель в None!
+            ResetForm();
             _eventBus.Publish(this, new IAdminVm.OpenDelete());
         }
+
+        #endregion
+
+        #region 🛠 ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ 🧼
+
+        private void ResetForm()
+        {
+            TargetUserId = string.Empty;
+            SelectedUser = null;
+            OnPropertyChanged(nameof(TargetUserId));
+            OnPropertyChanged(nameof(SelectedUser));
+            StatusMessage = "Введите ID или выберите пользователя";
+        }
+
+        private bool CanSearch()
+        {
+            if (FoundUsers.Count == 0 && string.IsNullOrWhiteSpace(TargetUserId)) return false;
+            if (SelectedUser == null) return true;
+            return SelectedUser.Id.ToString() != TargetUserId.Trim();
+        }
+
+        partial void OnSelectedUserChanged(UserEntity? value)
+        {
+            if (value != null && TargetUserId != value.Id.ToString())
+            {
+                _targetUserId = value.Id.ToString();
+                OnPropertyChanged(nameof(TargetUserId));
+            }
+
+            StatusMessage = value != null
+                ? $"Выбран: ID {value.Id} — {value.FirstName} {value.LastName}"
+                : $"Всего в базе: {FoundUsers.Count}. Выберите юзера.";
+        }
+
+        partial void OnTargetUserIdChanged(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                _selectedUser = null;
+                OnPropertyChanged(nameof(SelectedUser));
+                return;
+            }
+
+            var match = FoundUsers.FirstOrDefault(u => u.Id.ToString() == value.Trim());
+            _selectedUser = match;
+            OnPropertyChanged(nameof(SelectedUser));
+
+            if (match == null)
+                StatusMessage = $"Введён сторонний ID: {value}. Нажмите 'Поиск'.";
+        }
+
+        #endregion
 
         public override void Dispose()
         {
             base.Dispose();
             _eventBus.Unsubscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
+            _eventBus.Unsubscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed);
             _eventBus.Unsubscribe<IDeleteUserVm.Deleted>(OnUserDeleted);
         }
     }

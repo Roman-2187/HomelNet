@@ -9,23 +9,15 @@ namespace HomeNetServices.Diagnostics
 {
     public class EventBusInspector : IEventInspectorSource
     {
-        // Индекс всех компонентов системы: Имя класса -> Объект узла. Сложность O(1)
         private readonly Dictionary<string, ComponentNode> _nodes = new();
-
-        // Хронология сигналов (история) в виде объектов метаданных
         private readonly List<ComponentNode.SignalEvent> _signalTimeline = new();
 
-        // 📋 НАШ ПЕРСОНАЛЬНЫЙ ЧЕРНЫЙ СПИСОК (АЛЯ .GITIGNORE)
-        // Защищает ленту от циклического и технического спама
         private readonly HashSet<string> _ignoredMessageTypes = new()
         {
-            "LogMessageReceived", // Шум от посимвольной/построчной печати логгера
-            "TextChanged"         // Шум от программной смены текста на кнопках и контролах
+            "LogMessageReceived",
+            "TextChanged"
         };
 
-        /// <summary>
-        /// 🦾 ЖЕЛЕЗОБЕТОННАЯ ФИКСАЦИЯ ПУБЛИКАЦИИ С ФИЛЬТРАЦИЕЙ СПАМА
-        /// </summary>
         public void RecordPublish(object sender, Type messageType)
         {
             string componentName = "UnknownSource";
@@ -41,39 +33,39 @@ namespace HomeNetServices.Diagnostics
                 }
             }
 
-            // Быстрое получение или создание узла за O(1) — граф компонентов строится ВСЕГДА
             var node = GetOrCreateNode(componentName);
 
-            // HashSet внутри карточки компонента защитит от дубликатов
             if (!node.PublishedMessages.Contains(messageType))
             {
                 node.PublishedMessages.Add(messageType);
             }
 
-            // 🔥 ЧИСТЫЙ ФИЛЬТР СОБЫТИЙ:
-            // Если тип сообщения находится в нашем "гит-игноре", 
-            // мы обновляем только граф связей выше, но НЕ пишем это событие в живую ленту.
             if (_ignoredMessageTypes.Contains(messageType.Name))
             {
                 return;
             }
 
-            // Пишем в ленту таймлайна только важные архитектурные и бизнес-события
             _signalTimeline.Add(new ComponentNode.SignalEvent(DateTime.Now, componentName, messageType));
         }
 
         /// <summary>
-        /// Фиксация подписки: вызывается строго при Subscribe в шине.
+        /// 🔥 ОБНОВЛЕНО: Теперь фиксируем не только метод, но и КЛАСС-подписчик!
         /// </summary>
-        public void RecordSubscribe(string componentName, Type messageType, string methodName)
+        public void RecordSubscribe(string componentName, Type messageType, string methodName, Type subscriberType)
         {
             var node = GetOrCreateNode(componentName);
+            string targetClassName = subscriberType?.Name ?? "UnknownClass";
 
-            // Проверяем, нет ли уже точно такой же подписки, чтобы не плодить дубликаты в карточке
-            bool alreadyExists = node.Subscriptions.Any(s => s.MessageType == messageType && s.MethodName == methodName);
+            // Проверяем дубликаты с учетом целевого класса
+            bool alreadyExists = node.Subscriptions.Any(s =>
+                s.MessageType == messageType &&
+                s.MethodName == methodName &&
+                s.TargetClassName == targetClassName);
+
             if (!alreadyExists)
             {
-                node.Subscriptions.Add(new ComponentNode.SubscriptionLink(messageType, methodName));
+                // Передаем имя класса-слушателя в структуру связи
+                node.Subscriptions.Add(new ComponentNode.SubscriptionLink(messageType, methodName, targetClassName));
             }
         }
 
@@ -87,15 +79,11 @@ namespace HomeNetServices.Diagnostics
             return node;
         }
 
-        /// <summary>
-        /// Генерация текстового отчета с разделением по ролям для максимальной читаемости
-        /// </summary>
         public string GenerateReport()
         {
             var sb = new StringBuilder();
             sb.AppendLine("======= 🧠 ОБЪЕКТНЫЙ ГРАФ СИСТЕМЫ EVENTBUS =======");
 
-            // Сортируем компоненты по алфавиту для идеального порядка на экране
             foreach (var node in _nodes.Values.OrderBy(n => n.Name))
             {
                 if (node.PublishedMessages.Count == 0 && node.Subscriptions.Count == 0)
@@ -106,19 +94,21 @@ namespace HomeNetServices.Diagnostics
                 if (node.PublishedMessages.Count > 0)
                 {
                     foreach (var msgType in node.PublishedMessages)
-                        sb.AppendLine($"   📢 ПУБЛИКУЕТ  --> [{msgType.Name}]");
+                        sb.AppendLine($" 📢 ПУБЛИКУЕТ --> [{msgType.Name}]");
                 }
 
                 if (node.Subscriptions.Count > 0)
                 {
                     foreach (var sub in node.Subscriptions)
-                        sb.AppendLine($"   🎧 СЛУШАЕТ   <-- [{sub.MessageType.Name}] привязан к {sub.MethodName}()");
+                    {
+                        // 🔥 КРАСИВЫЙ ВЫВОД: Теперь пишем "СЛУШАЕТ <-- [Ивент] в классе НазваниеКласса -> Метод()"
+                        sb.AppendLine($" 🎧 СЛУШАЕТ <-- [{sub.MessageType.Name}] = _{sub.TargetClassName.ToLower()}.{sub.MethodName}()");
+                    }
                 }
             }
 
             sb.AppendLine("\n======= ⏱️ ПОСЛЕДНИЕ СИГНАЛЫ (ЛЕНТА СОБЫТИЙ) =======");
 
-            // Берем последние 20 сигналов в обратном хронологическом порядке
             var recentSignals = _signalTimeline.AsEnumerable().Reverse().Take(20);
             foreach (var signal in recentSignals)
             {

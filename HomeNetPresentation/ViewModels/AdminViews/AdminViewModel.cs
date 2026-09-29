@@ -8,7 +8,7 @@ using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels
 {
-    public partial class AdminProfileViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
+    public partial class AdminViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
     {
         private readonly ILogQueueManager _adminLogQueueManager;
 
@@ -16,6 +16,8 @@ namespace HomeNetPresentation.ViewModels
         
 
         [ObservableProperty] private LogLevelFilter _currentLogFilter = LogLevelFilter.All;
+
+        [ObservableProperty] private bool _isMenuOpen; // Локальный бул для админской шторки
 
 
         [ObservableProperty] private AdminSubTab _activeTab = AdminSubTab.None;
@@ -28,7 +30,7 @@ namespace HomeNetPresentation.ViewModels
         public string SeedButtonText => ActiveTab == AdminSubTab.SeedUsers ? "Закрыть сидинг" : "Сидинг Users";
         public string InspectorButtonText => ActiveTab == AdminSubTab.EventInspector ? "Закрыть граф" : "Инспектор шины";
 
-        public AdminProfileViewModel(
+        public AdminViewModel(
             ILogQueueManager logQueueManager,
             IEventBus eventBus,
             AdminNavigationManager navigation) : base(eventBus, navigation)
@@ -74,7 +76,16 @@ namespace HomeNetPresentation.ViewModels
         [RelayCommand] private void ShowInspector() => _eventBus.Publish(this, new IAdminVm.OpenEventInspector());
         [RelayCommand] private void ShowDeleteForm() => _eventBus.Publish(this, new IAdminVm.OpenDelete());
         [RelayCommand] private void ShowSeedForm() => _eventBus.Publish(this, new IAdminVm.OpenSeedUsers());
-        [RelayCommand] private void Logout() => _eventBus.Publish(this, new IAdminVm.LogoutAdmin());
+
+
+        [RelayCommand]
+        private void Logout()
+        {
+            IsMenuOpen = false; // 🔥 Перед уходом тушим локальную шторку админки!
+            _eventBus.Publish(this, new IAdminVm.LogoutAdmin());
+        }
+
+
 
         [RelayCommand]
         private void SwitchLogFilter(LogLevelFilter targetFilter)
