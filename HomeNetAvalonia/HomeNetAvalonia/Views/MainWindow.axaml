@@ -1,0 +1,43 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:HomeNetAvalonia.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="using:HomeNetAvalonia.Views"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="700"
+        x:Class="HomeNetAvalonia.Views.MainWindow"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="SIBERNET v1.0"
+        
+        
+        WindowDecorations="None"
+        ExtendClientAreaToDecorationsHint="True"
+        TransparencyLevelHint="Transparent"
+        Background="{x:Null}"
+        
+        WindowStartupLocation="CenterScreen">
+        <Window.Styles>
+        <!-- В обычном состоянии окно на месте, но готово к плавному сдвигу по Y -->
+        <Style Selector="Window">
+            <Setter Property="RenderTransform" Value="translateY(0px)"/>
+            
+            <!-- 👑 ВОТ ТАК ЭТО ПИШЕТСЯ В АВАЛОНИИ: Через обычный Setter! -->
+            <Setter Property="Transitions">
+                <Transitions>
+                    <!-- Плавный сдвиг за 500мс с замедлением -->
+                    <TransformOperationsTransition Property="RenderTransform" 
+                                                   Duration="0:0:0.5" 
+                                                   Easing="QuadraticEaseIn"/>
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <!-- ТРИГГЕР: Когда наш C#-аниматор добавит класс exit-anim, окно улетит вниз -->
+        <Style Selector="Window.exit-anim">
+            <Setter Property="RenderTransform" Value="translateY(1200px)"/>
+        </Style>
+    </Window.Styles>
+
+
+    <views:MainView />
+</Window>

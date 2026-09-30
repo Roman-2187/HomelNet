@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System;
+using System.IO;
+using System.Text;
 using HomeNetCore.Enums;
 
 namespace HomeNetServices.Diagnostics
@@ -7,13 +9,6 @@ namespace HomeNetServices.Diagnostics
     {
         private readonly string _filePath;
         private readonly object _fileLock = new();
-
-        // ANSI Escape-коды для раскраски текста (поддерживаются современными терминалами и плагинами VS Code)
-        private const string Reset = "\u001b[0m";
-        private const string Red = "\u001b[31m";       // Error
-        private const string Orange = "\u001b[33m";    // Warning
-        private const string Magenta = "\u001b[35m";   // Critical
-        private const string Gray = "\u001b[90m";      // Info
 
         public AppFileogger(string filePath = "crash_debug.txt")
         {
@@ -49,23 +44,16 @@ namespace HomeNetServices.Diagnostics
         {
             try
             {
-                // Подбираем цвет под строгость лога
-                string colorCode = level switch
-                {
-                    LogLevel.Error => Red,
-                    LogLevel.Warning => Orange,
-                    LogLevel.Critical => Magenta,
-                    _ => Gray
-                };
-
-                // Оборачиваем строку в ANSI-код и добавляем системный перенос строки
-                string logLine = $"{colorCode}{message}{Reset}{Environment.NewLine}";
+                // 🧼 ЧИСТЫЙ ТЕКСТ: Убрали ANSI Escape-коды. 
+                // Добавляем ДВА переноса строки в конце (Environment.NewLine + Environment.NewLine),
+                // чтобы между сообщениями была аккуратная пустая строка-разделитель.
+                string logLine = $"{message}{Environment.NewLine}{Environment.NewLine}";
                 byte[] bytes = Encoding.UTF8.GetBytes(logLine);
 
                 lock (_fileLock)
                 {
                     // FileOptions.WriteThrough приказывает ОС пушить данные на жесткий диск МГНОВЕННО
-                    // FileShare.ReadWrite позволяет открывать txt в Блокноте/VS Code параллельно с работой мессенджера
+                    // FileShare.ReadWrite позволяет открывать txt в Блокноте параллельно с работой мессенджера
                     using var stream = new FileStream(
                         _filePath,
                         FileMode.Append,

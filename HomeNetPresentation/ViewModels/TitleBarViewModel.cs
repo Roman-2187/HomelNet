@@ -27,7 +27,7 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Subscribe<ITitleBarVm.MacroZoneChanged>(OnMacroZoneChanged);
         }
 
-        #region 🎧 МЕТОД ПРИЁМА ОБРАТНОГО СИГНАЛА БЭКЕНДА (Для идеального графа в Инспекторе) 🧼
+        #region 🎧 МЕТОД ПРИЁМА ОБРАТНОГО СИГНАЛА БЭКЕНДА переключения главных экранов 🧼
 
         private void OnMacroZoneChanged(ITitleBarVm.MacroZoneChanged msg)
         {

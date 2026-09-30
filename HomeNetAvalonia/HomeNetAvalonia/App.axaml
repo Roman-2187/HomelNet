@@ -1,0 +1,15 @@
+﻿<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:infra="clr-namespace:HomeNetAvalonia.Infrastructure"
+             x:Class="HomeNetAvalonia.App"
+             RequestedThemeVariant="Dark">
+
+    <Application.Resources>
+        <!-- Твой хаб-локатор встает без ошибок -->
+        <infra:ComponentHub x:Key="ComponentHub"/>
+    </Application.Resources>
+    
+    <Application.Styles>
+        <FluentTheme />
+    </Application.Styles>
+</Application>

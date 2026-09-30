@@ -17,7 +17,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SiberNet.UI", "SiberNet.UI\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeNet.DI", "HomeNet.DI\HomeNet.DI.csproj", "{8BA3F82C-490C-4C8A-9051-CE92E2D0CD50}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp", "ConsoleApp\ConsoleApp.csproj", "{5241D4E5-AA8D-4C9A-BE23-10A4DA808672}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeNetAvalonia", "HomeNetAvalonia\HomeNetAvalonia\HomeNetAvalonia.csproj", "{4E7656C4-1A9E-4305-B7C8-A8FB88D4F00F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeNetAvalonia.Desktop", "HomeNetAvalonia\HomeNetAvalonia.Desktop\HomeNetAvalonia.Desktop.csproj", "{8672B5E3-A4AE-4B5A-9275-DAF690AD235C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeNetAvalonia.Android", "HomeNetAvalonia\HomeNetAvalonia.Android\HomeNetAvalonia.Android.csproj", "{1C55ED85-BBF8-4C05-A9AF-B9E9D40E5DC7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeNetAvalonia.Browser", "HomeNetAvalonia\HomeNetAvalonia.Browser\HomeNetAvalonia.Browser.csproj", "{B966371C-4772-4367-9341-9920F77466FD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -53,10 +59,24 @@ Global
 		{8BA3F82C-490C-4C8A-9051-CE92E2D0CD50}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8BA3F82C-490C-4C8A-9051-CE92E2D0CD50}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8BA3F82C-490C-4C8A-9051-CE92E2D0CD50}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5241D4E5-AA8D-4C9A-BE23-10A4DA808672}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5241D4E5-AA8D-4C9A-BE23-10A4DA808672}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5241D4E5-AA8D-4C9A-BE23-10A4DA808672}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5241D4E5-AA8D-4C9A-BE23-10A4DA808672}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4E7656C4-1A9E-4305-B7C8-A8FB88D4F00F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E7656C4-1A9E-4305-B7C8-A8FB88D4F00F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E7656C4-1A9E-4305-B7C8-A8FB88D4F00F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E7656C4-1A9E-4305-B7C8-A8FB88D4F00F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8672B5E3-A4AE-4B5A-9275-DAF690AD235C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8672B5E3-A4AE-4B5A-9275-DAF690AD235C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8672B5E3-A4AE-4B5A-9275-DAF690AD235C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8672B5E3-A4AE-4B5A-9275-DAF690AD235C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C55ED85-BBF8-4C05-A9AF-B9E9D40E5DC7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C55ED85-BBF8-4C05-A9AF-B9E9D40E5DC7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C55ED85-BBF8-4C05-A9AF-B9E9D40E5DC7}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{1C55ED85-BBF8-4C05-A9AF-B9E9D40E5DC7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C55ED85-BBF8-4C05-A9AF-B9E9D40E5DC7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C55ED85-BBF8-4C05-A9AF-B9E9D40E5DC7}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{B966371C-4772-4367-9341-9920F77466FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B966371C-4772-4367-9341-9920F77466FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B966371C-4772-4367-9341-9920F77466FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B966371C-4772-4367-9341-9920F77466FD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

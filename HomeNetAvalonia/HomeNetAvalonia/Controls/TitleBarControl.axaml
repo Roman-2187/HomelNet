@@ -1,0 +1,84 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:enums="using:HomeNetCore.Enums.Navigation"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:HomeNetPresentation.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+              xmlns:conv="using:HomeNetAvalonia.Converters"
+               
+             x:Class="HomeNetAvalonia.Controls.TitleBarControl"             
+             x:DataType="vm:TitleBarViewModel"    d:DataContext="{x:Type vm:TitleBarViewModel}">
+ 
+   <UserControl.Resources>
+        <conv:EqualityConverter x:Key="EqualityConverter"/>
+    </UserControl.Resources>
+
+    <Grid DataContext="{Binding TitleBarViewModel, Source={StaticResource ComponentHub}, x:CompileBindings=False}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="50"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- ================================================================= -->
+        <!-- 👑 ВЕРХНЯЯ ПАНЕЛЬ ШАПКИ                                           -->
+        <!-- ================================================================= -->
+        <Grid Grid.Row="0" Background="Transparent">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- НАЗВАНИЕ ПРИЛОЖЕНИЯ -->
+            <TextBlock Grid.Column="0" Text="SIBERNET v1.0"
+                       Foreground="#FFF5546F"
+                       VerticalAlignment="Center" Margin="15,0,0,0" FontWeight="Bold"/>
+
+            <!-- ЕДИНЫЙ ПУЛЬТ УПРАВЛЕНИЯ СПРАВА -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,15,0">
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,0">
+                    <Button Content="🛠️ Админка" Width="110" Margin="0,0,20,0" Command="{Binding ToggleAdminZoneCommand}"/>
+                    <Button Content="🔑 Вход" Width="110" Margin="0,0,10,0" Command="{Binding OpenAuthZoneCommand}"/>
+                    <Button Content="📝 Регистрация" Width="110" Command="{Binding OpenRegisterZoneCommand}"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="🔳" Command="{Binding ToggleGrowWindowCommand}" Margin="0,0,5,0"/>
+                    <Button Content="✕" Command="{Binding RequestCloseApplicationCommand}" Width="30"/>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+
+        <!-- ================================================================= -->
+        <!-- 🌌 ВЛАСТЬ НАД ЦЕНТРАЛЬНЫМ ХОЛСТОМ (БЕЗ ОШИБОК ФОРМАТА ЕНАМОВ)     -->
+        <!-- ================================================================= -->
+        <Grid Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,0,0,5">
+
+            <!-- Экран А: Форма Входа (Authentication) -->
+            <Border x:Name="AuthScreenContainer" Background="Transparent"
+                    IsVisible="{Binding CurrentClientTab, Converter={StaticResource EqualityConverter}, ConverterParameter={x:Static enums:ClientSubTab.Authentication}}">
+                <TextBlock Text="[ЭКРАН АВТОРИЗАЦИИ]" Foreground="#00F0FF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+
+            <!-- Экран Б: Панель Администратора -->
+            <Border x:Name="AdminScreenContainer" Background="Transparent"
+                    IsVisible="{Binding CurrentMainZone, Converter={StaticResource EqualityConverter}, ConverterParameter={x:Static enums:MainTab.AdminZone}}">
+                <TextBlock Text="[ПАНЕЛЬ АДМИНИСТРАТОРА]" Foreground="#00F0FF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+
+            <!-- Экран В: Форма Регистрации -->
+            <Border x:Name="RegisterScreenContainer" Background="Transparent"
+                    IsVisible="{Binding CurrentClientTab, Converter={StaticResource EqualityConverter}, ConverterParameter={x:Static enums:ClientSubTab.Registration}}">
+                <TextBlock Text="[ФОРМА РЕГИСТРАЦИИ]" Foreground="#00F0FF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+
+            <!-- Экран Г: Рабочая Зона Пользователя (Мессенджер SiberNet) -->
+            <Border x:Name="UserScreenContainer" Background="Transparent"
+                    IsVisible="{Binding CurrentMainZone, Converter={StaticResource EqualityConverter}, ConverterParameter={x:Static enums:MainTab.ClientZone}}">
+                <TextBlock Text="[РАБОЧАЯ ЗОНА МЕССЕНДЖЕРА SIBERNET]" Foreground="#00F0FF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+
+        </Grid>
+    </Grid>
+</UserControl>

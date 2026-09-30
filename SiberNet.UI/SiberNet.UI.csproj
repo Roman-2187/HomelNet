@@ -15,7 +15,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HomeNet.DI\HomeNet.DI.csproj" />
-    <ProjectReference Include="..\HomeNetPresentation\HomeNetPresentation.csproj" />
   </ItemGroup>
 
   <ItemGroup>
