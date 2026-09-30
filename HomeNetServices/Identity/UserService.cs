@@ -33,7 +33,7 @@ namespace HomeNetServices.Services.Identity
                 // Если кэш пуст — только тогда идем в физическую СУБД SQLite 🚀
                 if (_cachedUsers == null)
                 {
-                    _logger.LogInformation("Кэш пуст. Выполняется первичный запрос к СУБД...");
+                    _logger.LogInfo("Кэш пуст. Выполняется первичный запрос к СУБД...");
                     var users = await _repo.GetAllAsync()
                         ?? throw new InvalidOperationException("Репозиторий вернул null");
 
@@ -41,7 +41,7 @@ namespace HomeNetServices.Services.Identity
                     {
                         _cachedUsers = users;
                     }
-                    _logger.LogInformation($"Получено и закэшировано {_cachedUsers.Count} пользователей.");
+                    _logger.LogInfo($"Получено и закэшировано {_cachedUsers.Count} пользователей.");
                 }
                 else
                 {
@@ -94,7 +94,7 @@ namespace HomeNetServices.Services.Identity
             {
                 // 1. Сначала удаляем из физической СУБД
                 await _repo.DeleteByIdAsync(userId);
-                _logger.LogInformation($"Пользователь с ID {userId} удалён из БД.");
+                _logger.LogInfo($"Пользователь с ID {userId} удалён из БД.");
 
                 // 2. Моментально чистим кэш в памяти 🧠
                 if (_cachedUsers != null)

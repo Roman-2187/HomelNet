@@ -4,7 +4,7 @@
     {
         Trace,
         Debug,
-        Information,
+        Info,
         Warning,
         Error,
         Critical

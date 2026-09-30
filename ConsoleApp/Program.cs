@@ -40,7 +40,7 @@ namespace SiberNet.ConsoleApp
 
             // Чтобы проверить, можешь прямо здесь сгенерировать тестовый лог в шину
             var eventBus = provider.GetRequiredService<IEventBus>();
-             eventBus.Publish(null, new ILogQueueManager.LogMessageReceived("Проверка связи...", LogLevel.Information, "Core", true));
+             eventBus.Publish(null, new ILogQueueManager.LogMessageReceived("Проверка связи...", LogLevel.Info, "Core", true));
 
 
             eventBus.Publish(null, new ILogQueueManager.LogMessageReceived("Все плохо...", LogLevel.Error, "Core", true));

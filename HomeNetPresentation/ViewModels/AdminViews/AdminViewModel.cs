@@ -30,10 +30,10 @@ namespace HomeNetPresentation.ViewModels
         public string SeedButtonText => ActiveTab == AdminSubTab.SeedUsers ? "Закрыть сидинг" : "Сидинг Users";
         public string InspectorButtonText => ActiveTab == AdminSubTab.EventInspector ? "Закрыть граф" : "Инспектор шины";
 
-        public AdminViewModel(
-            ILogQueueManager logQueueManager,
-            IEventBus eventBus,
-            AdminNavigationManager navigation) : base(eventBus, navigation)
+        public AdminViewModel(ILogQueueManager logQueueManager,IEventBus eventBus,AdminNavigationManager navigation) : base(eventBus, navigation)
+            
+            
+            
         {
             _adminLogQueueManager = logQueueManager ?? throw new ArgumentNullException(nameof(logQueueManager));
 
@@ -57,7 +57,7 @@ namespace HomeNetPresentation.ViewModels
 
 
             bool shouldBeWide = (msg.ActiveTab == AdminSubTab.EventInspector ||
-                                msg.ActiveTab == AdminSubTab.Logger);
+                                msg.ActiveTab == AdminSubTab.Logger || msg.ActiveTab== AdminSubTab.UserTable);
 
             // Лениво пуляем приказ нашему сервису трансформации окна
             _eventBus.Publish(this, new IWidescreenService.ToggleWidescreen(shouldBeWide));
@@ -95,16 +95,12 @@ namespace HomeNetPresentation.ViewModels
         [RelayCommand]
         private void ShowSeedForm() => _eventBus.Publish(this, new IAdminVm.OpenSeedUsers());
 
-
-
         [RelayCommand]
         private void Logout()
         {
             IsMenuOpen = false; 
             _eventBus.Publish(this, new IAdminVm.LogoutAdmin());
         }
-
-
 
         [RelayCommand]
         private void SwitchLogFilter(LogLevelFilter targetFilter)

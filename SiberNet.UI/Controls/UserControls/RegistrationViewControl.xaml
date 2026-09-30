@@ -23,7 +23,7 @@
             <Style.Triggers>
                 <DataTrigger Binding="{Binding DataContext.State,
                     RelativeSource={RelativeSource Self}}" Value="Error">
-                    <Setter Property="Foreground" Value="#FF0055"/>
+                    <Setter Property="Foreground" Value="#FFF5546F"/>
                     <!-- Красный -->
                 </DataTrigger>
                 <DataTrigger Binding="{Binding DataContext.State,
@@ -42,7 +42,7 @@
                 <!-- 🚨 ТРИГГЕР НА ОШИБКУ: делаем рамку толще и красим в красный неон -->
                 <DataTrigger Binding="{Binding DataContext.State,
                     RelativeSource={RelativeSource AncestorType=StackPanel}}" Value="Error">
-                    <Setter Property="BorderBrush" Value="#FF0055"/>
+                    <Setter Property="BorderBrush" Value="#FFF5546F"/>
                     <Setter Property="BorderThickness" Value="1.5"/>
                 </DataTrigger>
                 <!-- 🍏 ТРИГГЕР НА УСПЕХ: подсвечиваем тонким зеленым неоном -->
@@ -54,10 +54,8 @@
             </Style.Triggers>
         </Style>
     </UserControl.Resources>
-    <ContentControl Padding="0" Style="{StaticResource CyberpunkImageChaildStyle}">
-        <ContentControl.Tag>
-            <CornerRadius>6</CornerRadius>
-        </ContentControl.Tag>
+    <ContentControl Padding="0" Style="{StaticResource CyberpunkImageChaildStyle}" Tag="6">
+       
 
         <Grid Margin="50,30,50,20" Background="Transparent">
             <Grid.RowDefinitions>
@@ -80,7 +78,7 @@
             <!-- 0️⃣ USER NAME -->
             <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,0,0,5"
                     DataContext="{Binding ValidationResults[NameType]}">
-                <Label Content="Имя пользователя:" VerticalAlignment="Center" Foreground="#FFB300"/>
+                <Label Content="Имя пользователя:" VerticalAlignment="Center" Foreground="#00F0FF"/>
 
                 <TextBox Style="{StaticResource ValidationTextBoxStyle}" 
                      Text="{Binding DataContext.UserData.FirstName,
@@ -94,7 +92,7 @@
             <!-- 1️⃣ EMAIL -->
             <StackPanel Grid.Row="1" Orientation="Vertical" Margin="0,0,0,5"
                     DataContext="{Binding ValidationResults[EmailType]}">
-                <Label Content="Email:" VerticalAlignment="Center" Foreground="#FFB300"/>
+                <Label Content="Email:" VerticalAlignment="Center" Foreground="#00F0FF"/>
 
                 <TextBox Background="#66ABC8AB" 
                      Style="{StaticResource ValidationTextBoxStyle}" 
@@ -108,7 +106,7 @@
             <!-- 2️⃣ PASSWORD -->
             <StackPanel Grid.Row="2" Orientation="Vertical" Margin="0,0,0,5"
                     DataContext="{Binding ValidationResults[PasswordType]}">
-                <Label Content="Пароль:" VerticalAlignment="Center" Foreground="#FFB300"/>
+                <Label Content="Пароль:" VerticalAlignment="Center" Foreground="#00F0FF"/>
 
                 <TextBox Background="#66ABC8AB" 
                      Style="{StaticResource ValidationTextBoxStyle}" 
@@ -122,7 +120,7 @@
             <!-- 3️⃣ CONFIRMED PASSWORD -->
             <StackPanel Grid.Row="3" Orientation="Vertical" Margin="0,0,0,5"
                     DataContext="{Binding ValidationResults[ConfirmedPasswordType]}">
-                <Label Content="Повторите пароль:" VerticalAlignment="Center" Foreground="#FFB300"/>
+                <Label Content="Повторите пароль:" VerticalAlignment="Center" Foreground="#00F0FF"/>
 
                 <TextBox Background="#66ABC8AB" 
                      Style="{StaticResource ValidationTextBoxStyle}" 
@@ -142,21 +140,21 @@
 
                 <!-- Статус бар выводится слева -->
                 <Label Grid.Column="0" Content="{Binding StatusMessage}"
-                       Foreground="#FFB300" 
+                       Foreground="#00F0FF" 
                    VerticalContentAlignment="Center" 
                        HorizontalContentAlignment="Left" FontSize="12"/>
 
                 <!-- Кнопки выводятся справа -->
                 <StackPanel Grid.Column="1" Height="45" Orientation="Horizontal"
                             HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <Button Content="Отмена" MinWidth="150" 
+                    <Button Content="Отмена" MinWidth="150" Foreground="#00F0FF"
                             Height="35" BorderBrush="#00F0FF"
                             BorderThickness="0.25"
                         Style="{StaticResource OrangeDefaultButtonStyle}" Margin="0,0,10,0"
                         Command="{Binding CancelCommand}" Width="120"/>
 
                     <Button Content="{Binding SubmitButtonText}" MinWidth="150" Height="35"
-                        Style="{StaticResource OrangeDefaultButtonStyle}"
+                        Style="{StaticResource OrangeDefaultButtonStyle}" Foreground="#00F0FF"
                             BorderBrush="#00F0FF" BorderThickness="0.25"
                         Command="{Binding RegisterCommand}" Width="120"/>
                 </StackPanel>

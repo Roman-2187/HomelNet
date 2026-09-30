@@ -34,7 +34,7 @@
 
             <Style.Triggers>
                 <DataTrigger Binding="{Binding DataContext.State, RelativeSource={RelativeSource Self}}" Value="Error">
-                    <Setter Property="Foreground" Value="#FF0055"/>
+                    <Setter Property="Foreground" Value="#FFF5546F"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding DataContext.State, RelativeSource={RelativeSource Self}}" Value="Success">
                     <Setter Property="Foreground" Value="#00FF66"/>
@@ -46,7 +46,7 @@
         <Style x:Key="ValidationTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource NeonTextBoxStyle}">
             <Style.Triggers>
                 <DataTrigger Binding="{Binding DataContext.State, RelativeSource={RelativeSource AncestorType=StackPanel}}" Value="Error">
-                    <Setter Property="BorderBrush" Value="#FF0055"/>
+                    <Setter Property="BorderBrush" Value="#FFF5546F"/>
                     <Setter Property="BorderThickness" Value="1.5"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding DataContext.State, RelativeSource={RelativeSource AncestorType=StackPanel}}" Value="Success">
@@ -79,7 +79,7 @@
             <!-- 0️⃣ EMAIL -->
             <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,0,0,12"
                         DataContext="{Binding ValidationResults[EmailType]}">
-                <Label Content="Email:" VerticalAlignment="Center" Foreground="#FFB300"/>
+                <Label Content="Email:" VerticalAlignment="Center" Foreground="#00F0FF"/>
 
                 <TextBox Background="#66ABC8AB"
                          Style="{StaticResource ValidationTextBoxStyle}"
@@ -92,7 +92,7 @@
             <!-- 1️⃣ PASSWORD -->
             <StackPanel Grid.Row="1" Orientation="Vertical" Margin="0,0,0,15"
                         DataContext="{Binding ValidationResults[PasswordType]}">
-                <Label Content="Пароль:" VerticalAlignment="Center" Foreground="#FFB300"/>
+                <Label Content="Пароль:" VerticalAlignment="Center" Foreground="#00F0FF"/>
 
                 <TextBox Background="#66ABC8AB"
                          Style="{StaticResource ValidationTextBoxStyle}"                   
@@ -108,21 +108,21 @@
               
 
                 <!-- Сообщение бэкенда слева -->
-                <Label Grid.Column="0" Content="{Binding StatusMessage}" Foreground="#FFB300" 
+                <Label Grid.Column="0" Content="{Binding StatusMessage,FallbackValue='text'}" Foreground="#00F0FF" 
            VerticalContentAlignment="Center" HorizontalContentAlignment="Left" FontSize="12"/>
 
                 <!-- Кнопки управления справа -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Height="40">
-                    <Button BorderBrush="#00F0FF" BorderThickness="0.2"
+                    <Button BorderBrush="#00F0FF" BorderThickness="0.2" Foreground="#00F0FF"
                 Content="Отмена" Margin="0,0,10,0"
                 Style="{StaticResource OrangeDefaultButtonStyle}"
                 Command="{Binding CancelCommand}"   
                 Width="Auto" MinWidth="120" Height="35"/>
 
-                    <Button BorderBrush="#00F0FF" BorderThickness="0.2"
+                    <Button BorderBrush="#00F0FF" BorderThickness="0.2" Foreground="#00F0FF"
                 Style="{StaticResource OrangeDefaultButtonStyle}"
                 Content="{Binding SubmitButtonText}"
-                Command="{Binding LoginCommand}"  
+                Command="{Binding LoginCommand}"   
                 Width="Auto" MinWidth="120" Height="35"/>
                 </StackPanel>
             </Grid>

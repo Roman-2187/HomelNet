@@ -67,7 +67,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
                 if (_currentLine != null && _currentLine.Count > 0)
                 {
                     // Пустая строка-разделитель (ей даем дефолтный уровень)
-                    var emptyLine = new List<LogChar> { new LogChar(' ', LogLevel.Information) };
+                    var emptyLine = new List<LogChar> { new LogChar(' ', LogLevel.Info) };
                     Logs.Add(emptyLine);
                 }
                 _currentLine = null;

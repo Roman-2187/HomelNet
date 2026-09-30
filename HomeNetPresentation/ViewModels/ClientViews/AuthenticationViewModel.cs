@@ -91,7 +91,7 @@ namespace HomeNetPresentation.ViewModels
                 {
                     StatusMessage = "Вход выполнен успешно";
                     SubmitButtonText = "Входим...";
-                    _logger.LogInformation($"[AuthVM] Пользователь {verdict.User?.Email ?? UserData.Email} успешно авторизован.");
+                    _logger.LogInfo($"[AuthVM] Пользователь {verdict.User?.Email ?? UserData.Email} успешно авторизован.");
 
                     var finalUser = verdict.User ?? UserData;
 

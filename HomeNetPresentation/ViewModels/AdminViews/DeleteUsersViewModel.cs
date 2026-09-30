@@ -108,7 +108,7 @@ namespace HomeNetPresentation.ViewModels
 
                 if (verdict.IsValid)
                 {
-                    _log.LogInformation($"[DeleteVM] Юзер {verdict.ParsedId} стёрт.");
+                    _log.LogInfo($"[DeleteVM] Юзер {verdict.ParsedId} стёрт.");
 
                     _eventBus.Publish(this, new IDeleteUserVm.Deleted(verdict.ParsedId ?? -1));
 

@@ -80,7 +80,7 @@ namespace HomeNetPresentation.ViewModels
                 {
                     StatusMessage = "Вы успешно зарегистрированы";
                     SubmitButtonText = "Готово!";
-                    _logger.LogInformation($"[RegisterVM] Пользователь {verdict.VerifiedUser?.Email ?? UserData.Email} успешно прошёл СУБД.");
+                    _logger.LogInfo($"[RegisterVM] Пользователь {verdict.VerifiedUser?.Email ?? UserData.Email} успешно прошёл СУБД.");
 
                     var finalUser = verdict.VerifiedUser ?? UserData;
 

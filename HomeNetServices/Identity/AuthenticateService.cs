@@ -3,17 +3,13 @@ using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Models;
 using HomeNetCore.Models.Validation;
-using HomeNetCore.Utils; 
-
-
+using HomeNetCore.Utils;
 
 namespace HomeNetServices.Identity
 {
     public class AuthenticateService : IAuthenticateService
     {
         private readonly IUserService _userService;
-
-        // 🔥 СТАТИКА: Больше не плодим _validateField = new() через DI или приватные поля!
 
         public AuthenticateService(IUserService userService)
         {
@@ -25,6 +21,16 @@ namespace HomeNetServices.Identity
         /// </summary>
         public async Task<IAuthenticateService.Verdict> CheckUserAsync(UserEntity userInput)
         {
+            if (userInput == null)
+                throw new ArgumentNullException(nameof(userInput));
+
+            // 🔥 ВЫЧИЩАЕМ ПРОБЕЛЫ НА ВХОДЕ В СЕРВИС:
+            // Если email передан с пробелами, полностью убираем их, чтобы база данных SQLite не спотыкалась
+            if (!string.IsNullOrWhiteSpace(userInput.Email))
+            {
+                userInput.Email = userInput.Email.Replace(" ", "");
+            }
+
             var validationResults = await ValidateInputAsync(userInput);
             var hasCriticalErrors = validationResults.Any(r => r.State == ValidationState.Error);
 
@@ -72,7 +78,7 @@ namespace HomeNetServices.Identity
                 if (string.IsNullOrWhiteSpace(email))
                     return SetResult(result, ValidationState.Error, "Email не может быть пустым");
 
-                // 🔥 Вызов через статический инструмент-алгоритм из Utils
+                // 🔥 Вызов через статический инструмент-алгоритм из Utils (работает уже по чистой строке)
                 if (!ValidationFormat.IsValidEmail(email))
                     return SetResult(result, ValidationState.Error, "Некорректный формат email");
 
@@ -119,4 +125,3 @@ namespace HomeNetServices.Identity
         }
     }
 }
-

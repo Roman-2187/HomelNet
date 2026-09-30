@@ -37,7 +37,7 @@ namespace HomeNetOrm.DbTableInitializer
 
         public async Task InitializeAsync()
         {
-            _logger.LogInformation("=== СТАРТ ИНИЦИАЛИЗАЦИИ БАЗЫ ДАННЫХ ===");
+            _logger.LogInfo("=== СТАРТ ИНИЦИАЛИЗАЦИИ БАЗЫ ДАННЫХ ===");
 
             var tableSchemas = SchemaRegistry.GetAllSchemas();
 
@@ -49,7 +49,7 @@ namespace HomeNetOrm.DbTableInitializer
 
                 try
                 {
-                    _logger.LogInformation($"[БД] Проверка таблицы: {dbTableName}...");
+                    _logger.LogInfo($"[БД] Проверка таблицы: {dbTableName}...");
 
                     // Ищем в БД именно физическое имя "users", а не C#-имя "Users"
                     if (!await TableExistsAsync(dbTableName))
@@ -70,7 +70,7 @@ namespace HomeNetOrm.DbTableInitializer
                 }
             }
 
-            _logger.LogInformation("=== ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ЗАВЕРШЕНА ===");
+            _logger.LogInfo("=== ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ЗАВЕРШЕНА ===");
         }
 
         private async Task<bool> TableExistsAsync(string tableName)
@@ -111,7 +111,7 @@ namespace HomeNetOrm.DbTableInitializer
 
             // Проверяем по РЕАЛЬНОМУ имени, которое улетело в базу данных
             if (await TableExistsAsync(targetName))
-                _logger.LogInformation($"✅ Таблица {targetName} успешно создана в БД.");
+                _logger.LogInfo($"✅ Таблица {targetName} успешно создана в БД.");
             else
             {
                 _logger.LogError($"❌ Ошибка создания! Таблица {targetName} отсутствует после выполнения скрипта.");
@@ -151,7 +151,7 @@ namespace HomeNetOrm.DbTableInitializer
 
             if (diff.IsIdentical)
             {
-                _logger.LogInformation($"  -> Структура таблицы {dbTableName} в порядке.");
+                _logger.LogInfo($"  -> Структура таблицы {dbTableName} в порядке.");
             }
             else
             {

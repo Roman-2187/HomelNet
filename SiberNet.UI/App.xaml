@@ -7,6 +7,8 @@
     xmlns:enums="clr-namespace:HomeNetCore.Enums.Navigation;assembly=HomeNetCore" 
     xmlns:controls="clr-namespace:SiberNet.UI.Controls" 
     xmlns:vm="clr-namespace:HomeNetPresentation.ViewModels;assembly=HomeNetPresentation" 
+    xmlns:conv="clr-namespace:SiberNet.UI.Converters"
+
     StartupUri="MainWindow.xaml">
     
 
@@ -15,7 +17,10 @@
         <cv:CornerRadiusConverter x:Key="RadiusCalc" />
         <infrastructure:ComponentHub x:Key="ComponentHub"/>
 
-<!-- 1. ВАШ СТИЛЬ (ПЕРЕИМЕНОВАННЫЙ В ИМЕННОЙ) -->
+        <conv:ChamferGeometryConverter x:Key="ChamferCalc"/>
+
+
+        <!-- 1. ВАШ СТИЛЬ (ПЕРЕИМЕНОВАННЫЙ В ИМЕННОЙ) -->
         <Style x:Key="OrangeDefaultButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
@@ -24,7 +29,7 @@
             <Setter Property="Margin" Value="1"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <!-- Оранжево-золотые буквы по умолчанию -->
-            <Setter Property="Foreground" Value="#FFB300"/>
+            <Setter Property="Foreground" Value="#FFF5546F"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -42,7 +47,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#FFF23E5C"/>
+                                <Setter TargetName="border" Property="Background" Value="#FFF5546F"/>
                                 <Setter TargetName="contentPresenter" Property="TextElement.Foreground" Value="#00F0FF"/>
                                 <Setter TargetName="border" Property="BorderBrush" Value="#00F0FF"/>
                             </Trigger>
@@ -106,6 +111,141 @@
         </Style>
 
 
+        <Style x:Key="CyberpunkChamferedPanelStyle" TargetType="ContentControl">
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContentControl">
+                        <Grid Name="GridContainer" Background="Transparent">
+
+                            <!-- 🔴 1-й СЛОЙ: ВНЕШНИЙ БОРДЕР (Толщина 1.5px) -->
+                            <Path Stroke="#FFF5546F" StrokeThickness="1.5" Fill="#FF1B222E" HorizontalAlignment="Left" VerticalAlignment="Top" Stretch="None">
+                                <Path.Data>
+                                    <MultiBinding Converter="{StaticResource ChamferCalc}" ConverterParameter="0.65">
+                                        <Binding ElementName="GridContainer" Path="ActualWidth"/>
+                                        <Binding ElementName="GridContainer" Path="ActualHeight"/>
+                                    </MultiBinding>
+                                </Path.Data>
+                            </Path>
+
+                            <!-- 🥈 2-й СЛОЙ: СРЕДНИЙ БОРДЕР (Толщина 2.5px) -->
+                            <Path Stroke="#40F23E5C" StrokeThickness="2.5" HorizontalAlignment="Left" VerticalAlignment="Top" Stretch="None">
+                                <Path.Data>
+                                    <MultiBinding Converter="{StaticResource ChamferCalc}" ConverterParameter="1.9">
+                                        <Binding ElementName="GridContainer" Path="ActualWidth"/>
+                                        <Binding ElementName="GridContainer" Path="ActualHeight"/>
+                                    </MultiBinding>
+                                </Path.Data>
+                            </Path>
+
+                            <!-- 🥉 3-й СЛОЙ: ВНУТРЕННИЙ ФОН (Темно-серый) -->
+                            <Path Fill="#FF1C2433" HorizontalAlignment="Left" VerticalAlignment="Top" Stretch="None">
+                                <Path.Data>
+                                    <MultiBinding Converter="{StaticResource ChamferCalc}" ConverterParameter="3.3">
+                                        <Binding ElementName="GridContainer" Path="ActualWidth"/>
+                                        <Binding ElementName="GridContainer" Path="ActualHeight"/>
+                                    </MultiBinding>
+                                </Path.Data>
+                            </Path>
+
+                            <!-- 🖼️ СЛОЙ С КАРТИНКОЙ (Обрезаем точно по внутреннему фону -> 3.3) -->
+                            <Grid HorizontalAlignment="Left" VerticalAlignment="Top">
+                                <Grid.Clip>
+                                    <MultiBinding Converter="{StaticResource ChamferCalc}" ConverterParameter="3.3">
+                                        <Binding ElementName="GridContainer" Path="ActualWidth"/>
+                                        <Binding ElementName="GridContainer" Path="ActualHeight"/>
+                                    </MultiBinding>
+                                </Grid.Clip>
+                                <Image Opacity="0.2" 
+                                Width="{Binding ElementName=GridContainer, Path=ActualWidth}"
+                                Height="{Binding ElementName=GridContainer, Path=ActualHeight}"
+                                Stretch="UniformToFill" 
+                                Source="pack://application:,,,/SiberNet.UI;component/Resourses/68fadad90ca053b59b3e0178c4983607.png"/>
+                            </Grid>
+
+                            <!-- 🔥 ЖЕЛЕЗНЫЙ МОСТ КОНТЕНТА -->
+                            <ContentPresenter Content="{TemplateBinding Content}" 
+                                       Margin="{TemplateBinding Padding}"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+
+
+
+        <Style x:Key="CyberpunkChamferedChildStyle" TargetType="ContentControl">
+            <!-- 🎯 Задаем фаску 4мм для дочерних элементов -->
+            <Setter Property="Tag" Value="4.0"/>
+            <Setter Property="Padding" Value="6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContentControl">
+                        <Grid Name="GridContainer" Background="Transparent">
+
+                            <!-- 💎 1-й СЛОЙ: ВНЕШНИЙ БОРДЕР (Циан, толщина 0.2px) -->
+                            <Path Stroke="#FF5C9EA6" StrokeThickness="0.2" Fill="#FF1B222E" HorizontalAlignment="Left" VerticalAlignment="Top" Stretch="None">
+                                <Path.Data>
+                                    <MultiBinding Converter="{StaticResource ChamferCalc}" ConverterParameter="0.1">
+                                        <Binding ElementName="GridContainer" Path="ActualWidth"/>
+                                        <Binding ElementName="GridContainer" Path="ActualHeight"/>
+                                        <!-- Передаем размер фаски из свойства Tag -->
+                                        <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Tag"/>
+                                    </MultiBinding>
+                                </Path.Data>
+                            </Path>
+
+                            <!-- 🥈 2-й СЛОЙ: СРЕДНИЙ БОРДЕР -->
+                            <Path Stroke="#40F23E5C" StrokeThickness="0.1" HorizontalAlignment="Left" VerticalAlignment="Top" Stretch="None">
+                                <Path.Data>
+                                    <MultiBinding Converter="{StaticResource ChamferCalc}" ConverterParameter="0.25">
+                                        <Binding ElementName="GridContainer" Path="ActualWidth"/>
+                                        <Binding ElementName="GridContainer" Path="ActualHeight"/>
+                                        <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Tag"/>
+                                    </MultiBinding>
+                                </Path.Data>
+                            </Path>
+
+                            <!-- 🥉 3-й СЛОЙ: ВНУТРЕННИЙ ФОН КАРТОЧКИ -->
+                            <Path Fill="#FF1C2433" HorizontalAlignment="Left" VerticalAlignment="Top" Stretch="None">
+                                <Path.Data>
+                                    <MultiBinding Converter="{StaticResource ChamferCalc}" ConverterParameter="0.4">
+                                        <Binding ElementName="GridContainer" Path="ActualWidth"/>
+                                        <Binding ElementName="GridContainer" Path="ActualHeight"/>
+                                        <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Tag"/>
+                                    </MultiBinding>
+                                </Path.Data>
+                            </Path>
+
+                            <!-- 🖼️ СЛОЙ С КАРТИНКОЙ -->
+                            <Grid HorizontalAlignment="Left" VerticalAlignment="Top">
+                                <Grid.Clip>
+                                    <MultiBinding Converter="{StaticResource ChamferCalc}" ConverterParameter="0.4">
+                                        <Binding ElementName="GridContainer" Path="ActualWidth"/>
+                                        <Binding ElementName="GridContainer" Path="ActualHeight"/>
+                                        <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Tag"/>
+                                    </MultiBinding>
+                                </Grid.Clip>
+                                <Image Opacity="0.1" 
+                                Width="{Binding ElementName=GridContainer, Path=ActualWidth}"
+                                Height="{Binding ElementName=GridContainer, Path=ActualHeight}"
+                                Stretch="UniformToFill" 
+                                Source="pack://application:,,,/SiberNet.UI;component/Resourses/68fadad90ca053b59b3e0178c4983607.png"/>
+                            </Grid>
+
+                            <!-- 🔥 ЖЕЛЕЗНЫЙ МОСТ КОНТЕНТА -->
+                            <ContentPresenter Content="{TemplateBinding Content}" 
+                                       Margin="{TemplateBinding Padding}"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+
 
         <Style x:Key="CyberpunkImageChaildStyle" TargetType="ContentControl">
             <Setter Property="Tag" Value="0"/>
@@ -117,7 +257,7 @@
                         <Grid>
                             <!-- 👑 ВНЕШНИЙ БОРДЕР: Рамка та же, но фон подкладки осветлен на 10% -->
                             <Border CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" 
-        BorderThickness="0.4" BorderBrush="#00F0FF" Background="#FF1B222E">
+        BorderThickness="0.2" BorderBrush="#FF5C9EA6" Background="#FF1B222E">
                                 <Grid>
                                     <!-- 🥈 СРЕДНИЙ БОРДЕР -->
                                     <Border BorderThickness="0.1" Margin="0" BorderBrush="#40F23E5C" 
@@ -164,13 +304,13 @@
 
         <Style x:Key="OrangeDefaultToggleButtonStyle" TargetType="ToggleButton">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="#FFB300"/>
+            <Setter Property="BorderBrush" Value="#FFF5546F"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="5"/>
             <Setter Property="Margin" Value="0.5"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <!-- Оранжево-золотые буквы по умолчанию -->
-            <Setter Property="Foreground" Value="#FFB300"/>
+            <Setter Property="Foreground" Value="#FFF5546F"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ToggleButton">
@@ -419,7 +559,7 @@
         <!-- 🚀 ИМЕНОВАННЫЙ НЕОНОВЫЙ СТИЛЬ ДЛЯ TEXTBOX (С РАДИУСАМИ И ОТСТУПАМИ) -->
         <Style x:Key="NeonTextBoxStyle" TargetType="TextBox">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="#00F0FF"/>
+            <Setter Property="BorderBrush" Value="#FF5C9EA6"/>
             <Setter Property="BorderThickness" Value="0.5"/>
 
             <!-- Возвращаем человеческие отступы и высоту, чтобы текст не прилипал к краям -->
@@ -663,7 +803,7 @@
                     BorderThickness="0.15" 
                             Margin="2.5, 5, 2.5, 5"
                            
-                            BorderBrush="#00F0FF"
+                            BorderBrush="#FF5C9EA6"
                     Padding="4"
                     CornerRadius="8" 
                     HorizontalAlignment="{TemplateBinding HorizontalAlignment}">
@@ -732,9 +872,9 @@
                     <ControlTemplate TargetType="ContentControl">
                         <Border                        
                          BorderThickness="0.3"
-                         BorderBrush="#00F0FF"
+                         BorderBrush="#FF5C9EA6"
                          CornerRadius="8"
-                         Background="#66ABC8AB">
+                         Background="#1AADD8E6">
                             <ContentPresenter Margin="{TemplateBinding Padding}"/>
                         </Border>
                     </ControlTemplate>

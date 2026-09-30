@@ -13,13 +13,11 @@
 
 
    <Grid >
-        <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}">
-            <ContentControl.Tag>
-                <CornerRadius>6</CornerRadius>
-            </ContentControl.Tag>
 
 
-            <Border BorderThickness="1" BorderBrush="#33FFB300" CornerRadius="4" Background="#FF111318" Padding="5">
+
+
+        <Border  BorderBrush="#FF5C9EA6" BorderThickness="0.4" CornerRadius="6" Padding="15" Background="#FF111318" >
 
             <ScrollViewer Margin="0" 
               HorizontalScrollBarVisibility="Disabled" 
@@ -85,7 +83,7 @@
             </ScrollViewer></Border>
 
           
-        </ContentControl>
+      
     </Grid>
 
 </UserControl>

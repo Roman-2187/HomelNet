@@ -8,19 +8,19 @@
     xmlns:controls="clr-namespace:SiberNet.UI.Controls" 
     xmlns:enums="clr-namespace:HomeNetCore.Enums.Navigation;assembly=HomeNetCore"
     mc:Ignorable="d" 
-    d:DesignHeight="500" d:DesignWidth="740">
+    d:DesignHeight="500" d:DesignWidth="740" >
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="160"/>
+            <ColumnDefinition Width="180"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
         <!-- ЛЕВАЯ ЧАСТЬ: Боковая панель -->
-        <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}" Tag="6">
+        <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}" Tag="6" Margin="0,0,5,0">
             <StackPanel Background="Transparent">
                 <Label Content="АДМИН ПАНЕЛЬ" FontWeight="Bold"
-                       Foreground="#FFB300" HorizontalAlignment="Center" Margin="5"/>
+                       Foreground="#FFF5546F" HorizontalAlignment="Center" Margin="5"/>
 
                 <Button Content="{Binding TableButtonText, FallbackValue='Показать users'}" 
                         Command="{Binding ShowUserTableCommand}"

@@ -23,22 +23,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="Controls\ChatViewControl.xaml.cs">
+    <Compile Update="Controls\UserControls\ChatViewControl.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Controls\DeletionUsersControl.xaml.cs">
+    <Compile Update="Controls\AdminControls\DeletionUsersControl.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Controls\FriendsListViewControl.xaml.cs">
+    <Compile Update="Controls\UserControls\FriendsListViewControl.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Controls\LogRenderControl.xaml.cs">
+    <Compile Update="Controls\AdminControls\LogRenderControl.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Controls\StatusBarControl.xaml.cs">
+    <Compile Update="Controls\MainControls\StatusBarControl.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Controls\UserProfileControl.xaml.cs">
+    <Compile Update="Controls\UserControls\UserProfileControl.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

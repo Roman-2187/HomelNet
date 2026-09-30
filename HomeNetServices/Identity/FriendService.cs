@@ -28,7 +28,7 @@ namespace HomeNetServices.Services.Identity
 
                 if (success)
                 {
-                    _logger.LogInformation($"[Контакты] Пользователь ID {userId} добавил в контакты ID {friendId}.");
+                    _logger.LogInfo($"[Контакты] Пользователь ID {userId} добавил в контакты ID {friendId}.");
                 }
                 return success;
             }
@@ -45,7 +45,7 @@ namespace HomeNetServices.Services.Identity
             try
             {
                 var friends = await _friendRepository.GetFriendsForUserAsync(userId);
-                _logger.LogInformation($"[Контакты] Список друзей для пользователя ID {userId} успешно извлечён.");
+                _logger.LogInfo($"[Контакты] Список друзей для пользователя ID {userId} успешно извлечён.");
                 return friends;
             }
             catch (Exception ex)

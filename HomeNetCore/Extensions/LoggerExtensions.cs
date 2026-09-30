@@ -12,11 +12,11 @@ namespace HomeNetCore.Extensions
             [CallerLineNumber] int lineNumber = 0, params object[] args)
             => logger.Log(LogLevel.Debug, message, memberName, filePath, lineNumber, args);
 
-        public static void LogInformation(this ILogger logger, string message,
+        public static void LogInfo(this ILogger logger, string message,
             [CallerMemberName] string memberName = "",
             [CallerFilePath] string filePath = "",
             [CallerLineNumber] int lineNumber = 0, params object[] args)
-            => logger.Log(LogLevel.Information, message, memberName, filePath, lineNumber, args);
+            => logger.Log(LogLevel.Info, message, memberName, filePath, lineNumber, args);
 
         public static void LogWarning(this ILogger logger, string message,
             [CallerMemberName] string memberName = "",

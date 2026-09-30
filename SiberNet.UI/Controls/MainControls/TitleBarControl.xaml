@@ -28,7 +28,7 @@
 
             <!-- 🌌 НАЗВАНИЕ ПРИЛОЖЕНИЯ -->
             <TextBlock Grid.Column="0" Text="SIBERNET v1.0"
-                   Foreground="#FFB300"
+                   Foreground="#FFF5546F"
                    VerticalAlignment="Center" Margin="15,0,0,0" FontWeight="Bold"/>
 
             <!-- 🌌 ЕДИНЫЙ ПУЛЬТ УПРАВЛЕНИЯ СПРАВА -->

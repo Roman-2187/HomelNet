@@ -16,11 +16,11 @@
         <Grid>
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Stretch">
                 <TextBlock Text="⚡ ЦЕНТРАЛЬНЫЙ МОДУЛЬ СИДИНГА ДАННЫХ" 
-                           Foreground="#FFB300" FontWeight="Bold" FontSize="16" 
+                           Foreground="#FFF5546F" FontWeight="Bold" FontSize="16" 
                            HorizontalAlignment="Center" Margin="0,0,0,15"/>
 
                 <Border BorderThickness="1" BorderBrush="#33FFB300" 
-                        Background="#FF111318" CornerRadius="4"
+                        Background="#1AADD8E6" CornerRadius="4"
                         Padding="15" Margin="0,0,0,20">
                     <TextBlock Text="{Binding SeedStatusText}" 
                                FontFamily="Consolas" FontSize="13" 

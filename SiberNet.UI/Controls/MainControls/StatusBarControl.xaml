@@ -18,7 +18,7 @@
                     Text="{Binding StatusText, FallbackValue='Загрузка системы...'}"
                     Margin="0" Padding="10,0,0,0"
                     FontWeight="Bold"
-                    Foreground="#FFB300"/>
+                    Foreground="#FFF5546F"/>
             </StatusBarItem>
         </StatusBar>
         </ContentControl>

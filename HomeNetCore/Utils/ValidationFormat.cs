@@ -23,8 +23,18 @@ namespace HomeNetCore.Utils
         private static readonly Regex StatusRegex = new(@"^[^\r\n]{0,100}$", RegexOptions.Compiled); // Статус до 100 символов, в одну строку
         private static readonly Regex UrlRegex = new(@"^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$", RegexOptions.Compiled);
 
-        public static bool IsValidEmail(string email) =>
-            !string.IsNullOrWhiteSpace(email) && EmailRegex.IsMatch(email.Trim());
+        public static bool IsValidEmail(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return false;
+
+            // Вычищаем вообще ВСЕ пробелы (и внутри, и по краям), заменяя их на пустую строку
+            string cleanedEmail = email.Replace(" ", "");
+
+            // Валидируем уже абсолютно чистую строку
+            return EmailRegex.IsMatch(cleanedEmail);
+        }
+
 
         public static bool IsValidPassword(string password) =>
             !string.IsNullOrEmpty(password) && PasswordRegex.IsMatch(password);

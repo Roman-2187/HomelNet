@@ -53,12 +53,12 @@ namespace HomeNetOrm.Builders
         // 🔥 МАГИЧЕСКИЙ ТУМБЛЕР ПЕРЕКЛЮЧЕНИЯ НА ЛЕТУ!
         public async Task SwitchDatabaseAsync(DatabaseType databaseType)
         {
-            _logger.LogInformation($"Переключение инфраструктуры СУБД на {databaseType}...");
+            _logger.LogInfo($"Переключение инфраструктуры СУБД на {databaseType}...");
 
             // 1. Утилизируем старое подключение, если оно было открыто
             if (Connection != null)
             {
-                _logger.LogInformation("Закрытие старого соединения базы данных...");
+                _logger.LogInfo("Закрытие старого соединения базы данных...");
                 await Connection.CloseAsync();
                 await Connection.DisposeAsync();
             }
@@ -91,7 +91,7 @@ namespace HomeNetOrm.Builders
             MessageSqlGen = builder.CreateSqlGenerator<MessageEntity>(databaseType, schemaAdapter);
             FriendSqlGen = builder.CreateSqlGenerator<FriendEntity>(databaseType, schemaAdapter);
 
-            _logger.LogInformation($"База данных {databaseType} успешно перестроена и готова к работе.");
+            _logger.LogInfo($"База данных {databaseType} успешно перестроена и готова к работе.");
         }
 
         public async ValueTask DisposeAsync()

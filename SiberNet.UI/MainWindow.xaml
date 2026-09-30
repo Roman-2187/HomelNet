@@ -11,7 +11,7 @@
     WindowStartupLocation="CenterScreen"         
     Style="{StaticResource CyberpunkWindowLaunchStyle}">
 
-   <Window.Resources>
+    <Window.Resources>
         <Style TargetType="Button"
                BasedOn="{StaticResource OrangeDefaultButtonStyle}">
             <Setter Property="Padding" Value="1.4"/>
@@ -19,34 +19,36 @@
         </Style>
     </Window.Resources>
 
-   
-    <ContentControl Style="{StaticResource CyberpunkImageStyle}"
-                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-        <ContentControl.Tag>
-            <CornerRadius>6</CornerRadius>
-        </ContentControl.Tag>
+
+    <ContentControl 
+        Style="{StaticResource CyberpunkImageStyle}"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch" Tag="8">
+
 
         <!-- Разметка Майна сократилась до двух элементов! 🏢 -->
         <Grid x:Name="MainGrid" Margin="0" 
               VerticalAlignment="Stretch"
               HorizontalAlignment="Stretch">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="881*"/>
+                <ColumnDefinition Width="9*"/>
+            </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>   
-                <!-- Строка 0: Занимает ВСЁ место (Тут живет Шапка + Контент) -->
-                <RowDefinition Height="Auto"/>  
+                <RowDefinition Height="*"/>
+
+                <RowDefinition Height="Auto"/>
                 <!-- Строка 1: Статус-бар внизу -->
             </Grid.RowDefinitions>
 
             <!-- 👑 ТАЙТЛ-БАР ЗАБРАЛ СЕБЕ СТРОКУ И УПРАВЛЯЕТ ВСЕМ ВНУТРИ -->
             <controls:TitleBarControl 
-                Grid.Row="0"
-                VerticalAlignment="Stretch" 
-                HorizontalAlignment="Stretch"/>
+                Grid.Row="0" Grid.ColumnSpan="2"/>
 
             <!-- 📡 СТАТУС-BAR ОСТАЛСЯ СНИЗУ -->
             <Border
                 Grid.Row="1"
-                Background="Transparent" Margin="0">
+                Background="Transparent" Grid.ColumnSpan="2">
                 <controls:StatusBarControl Height="40"/>
             </Border>
         </Grid>
