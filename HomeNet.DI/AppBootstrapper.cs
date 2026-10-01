@@ -48,12 +48,6 @@ namespace HomeNet.DI
                 provider.GetRequiredService<EventBusInspector>());
 
 
-
-
-
-
-
-
             // Логгер-неубивашка для моментального бэкапа
             IServiceCollection serviceCollection = services.AddSingleton<AppFileogger>(provider => new AppFileogger("App_debug.txt"));
 
@@ -110,12 +104,6 @@ namespace HomeNet.DI
             services.AddSingleton<TitleBarViewModel>();
             services.AddSingleton<SeedUsersViewModel>();
 
-
-
-
-
-
-
             // 🔥 СТАЛО: Регистрируем конкретных наследников-автоматов
             services.AddSingleton<AdminNavigationManager>();
             services.AddSingleton<UserNavigationManager>();
@@ -127,14 +115,6 @@ namespace HomeNet.DI
 
             // Изолированная левая панель контактов
             services.AddSingleton<ContactsViewModel>();
-
-            // 🍔 Кастомное меню аккаунта (выпадашка "Профиль / Выход")
-            // Делаем Transient, чтобы для админки и дашборда создавались свои независимые экземпляры плашки
-            // Было: services.AddTransient<AccountMenuViewModel>();
-            // Стало: Теперь это железобетонный синглтон!
-           
-
-
 
             services.AddSingleton<UserViewModel>();
 
@@ -165,11 +145,5 @@ namespace HomeNet.DI
             _serviceProvider = provider ?? throw new ArgumentNullException(nameof(provider));
         }
 
-
-
-
     }
-
-
-
 }

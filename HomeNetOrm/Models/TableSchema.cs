@@ -45,15 +45,19 @@
             }
 
             string idColumn = pkColumn.Name ?? "Null";
+
             IdColumnName = idColumn;
 
             columnNames = string.Join(", ", Columns.Select(c => $"{c.OriginalName}"));
-            AllFields = string.Join(", ", Columns.Select(c => $"\"{c.Name}\" AS {c.OriginalName}"));
-            AllParameters = string.Join(", ", Columns.Select(c => $"@{c.OriginalName}"));
 
-            // 🔥 ИСПРАВЛЕНИЕ: Заменили c.Name.Equals на string.Equals(c.Name, idColumn, ...)
+            AllFields = string.Join(", ", Columns.Select(c => $"\"{c.Name}\" AS {c.OriginalName}"));
+
+            AllParameters = string.Join(", ", Columns.Select(c => $"@{c.OriginalName}"));
+         
             InsertFields = string.Join(", ", Columns.Where(c => !string.Equals(c.Name, idColumn, StringComparison.OrdinalIgnoreCase)).Select(c => c.Name));
+
             InsertParameters = string.Join(", ", Columns.Where(c => !string.Equals(c.Name, idColumn, StringComparison.OrdinalIgnoreCase)).Select(c => $"@{c.OriginalName}"));
+
             SetClause = string.Join(", ", Columns.Where(c => !string.Equals(c.Name, idColumn, StringComparison.OrdinalIgnoreCase)).Select(c => $"{c.Name} = @{c.OriginalName}"));
 
             return true;
@@ -73,10 +77,9 @@
                 TableName = nameTransformer(this.TableName ?? string.Empty)!,
 
                 // 2. Добавляем проверку на null для коллекции Columns на всякий случай
-                Columns = this.Columns?
-        .Select(c => c.CloneWithTransform(nameTransformer))
-        .ToList() ?? new List<ColumnSchema>()
-            };
+                Columns = this.Columns?.Select(c => c.CloneWithTransform(nameTransformer)).ToList() ?? []};
+        
+            
 
             // Сразу запускаем пересчёт AllFields, InsertFields на новых именах
             transformedTable.Initialize();

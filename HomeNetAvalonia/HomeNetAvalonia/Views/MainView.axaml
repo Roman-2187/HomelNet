@@ -8,18 +8,13 @@
              x:DataType="vm:MainViewModel"
              xmlns:controls="clr-namespace:HomeNetAvalonia.Controls"
               Background="Transparent">
-  
-       
-        
-      
-       
-    <!-- 👑 ЖЕСТКИЙ КАРКАС: Задаем MinWidth и MinHeight, чтобы при IsVisible="False" окно не улетало в 0! -->
+
     <Border CornerRadius="8" 
             ClipToBounds="True" 
             Background="#FF1B222E"
             BorderBrush="#40F5546F" 
-            BorderThickness="1"
-            Margin="1"
+            BorderThickness="3"
+            Margin="0"
             MinWidth="900"
             MinHeight="600">
         
@@ -34,12 +29,16 @@
             </Grid.RowDefinitions>
 
             <!-- 👑 ШАПКА: Ей задаем Row="0" и растягиваем -->
-            <controls:TitleBarControl Grid.Row="0" Grid.ColumnSpan="2" 
-                                      HorizontalAlignment="Stretch" 
-                                      VerticalAlignment="Stretch"/>
+            <controls:TitleBarControl
+                Grid.Row="0" Grid.ColumnSpan="2" 
+                HorizontalAlignment="Stretch" 
+               VerticalAlignment="Stretch"/>
 
             <!-- 📡 СТАТУС-БАР: Строго снизу -->
-            <Border Grid.Row="1" Background="Transparent" Grid.ColumnSpan="2">
+            <Border
+                Grid.Row="1"
+                Background="Transparent" 
+                Grid.ColumnSpan="2">
                 <controls:StatusBarControl Height="40"/>
             </Border>
         </Grid>

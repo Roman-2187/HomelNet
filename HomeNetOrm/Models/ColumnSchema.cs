@@ -1,8 +1,9 @@
 ﻿using HomeNetOrm.Enums;
-
+using System;
 
 namespace HomeNetOrm.Models
 {
+   
 
     public class ColumnSchema
     {
@@ -22,29 +23,37 @@ namespace HomeNetOrm.Models
         public string? ReferencedTable { get; set; }
         public string? ReferencedColumn { get; set; }
 
-        /// <summary>
-        /// Переопределяем метод для вывода понятного типа колонки в логах
-        /// </summary>
+        public ColumnSchema() { }
+
+        // 🔥 ИДЕАЛЬНЫЙ КОНСТРУКТОР: принимает структуру метаданных целиком!
+        public ColumnSchema(RawColumnMetadata metadata, Func<string, ColumnType> typeParser)
+        {
+            Name = metadata.Name;
+            OriginalName = metadata.Name;
+            Type = typeParser(metadata.DataType);
+            IsNullable = metadata.IsNullable;
+
+            // Проверка первичного ключа
+            IsPrimaryKey = metadata.KeyType.Equals("primary", StringComparison.OrdinalIgnoreCase) ||
+                           metadata.KeyType.Equals("1") ||
+                           metadata.KeyType.Equals("true");
+
+            // Проверка автоинкремента
+            IsAutoIncrement = metadata.ExtraInfo.Contains("nextval") ||
+                              metadata.ExtraInfo.Equals("auto_increment", StringComparison.OrdinalIgnoreCase);
+        }
+
         public override string ToString()
         {
             return Type.ToString();
         }
 
-        /// <summary>
-        /// Создает копию колонки, изменяя её имя по переданному правилу СУБД.
-        /// Все остальные 15 полей копируются автоматически здесь и не мозолят глаза в адаптерах!
-        /// </summary>
         public ColumnSchema CloneWithTransform(Func<string?, string?> nameTransformer)
         {
             return new ColumnSchema
             {
-                // Фиксируем оригинальное C# имя для моста Dapper
                 OriginalName = this.OriginalName ?? this.Name,
-
-                // Базовое имя трансформируется по правилу конкретной СУБД
                 Name = nameTransformer(this.Name),
-
-                // Железобетонно переносим структуру
                 Type = this.Type,
                 Length = this.Length,
                 IsNullable = this.IsNullable,
@@ -62,9 +71,3 @@ namespace HomeNetOrm.Models
         }
     }
 }
-
-
-
-
-
-

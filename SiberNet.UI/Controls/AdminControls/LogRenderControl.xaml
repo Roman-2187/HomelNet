@@ -9,81 +9,72 @@
              xmlns:enums="clr-namespace:HomeNetCore.Enums;assembly=HomeNetCore"
              xmlns:behaviors="clr-namespace:SiberNet.UI.Infrastructure.Behaviors" 
              xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
-             DataContext="{Binding TerminalViewModel, Source={StaticResource ComponentHub}}">
+             >
 
 
-   <Grid >
+    <!-- 🔥 ШАГ 2: Цепляем глобальный хаб из ресурсов App.xaml -->
+    <Grid DataContext="{DynamicResource ComponentHub}">
 
+        <!-- 🔥 ШАГ 3: Проваливаемся в TerminalLogsViewModel для работы твоего кастомного посимвольного логгера -->
+        <Grid DataContext="{Binding TerminalLogsViewModel}">
 
+            <Border BorderBrush="#FF5C9EA6" BorderThickness="0.4" CornerRadius="6" Padding="15" Background="#FF111318" >
+                <ScrollViewer Margin="0" 
+                              HorizontalScrollBarVisibility="Disabled" 
+                              VerticalScrollBarVisibility="Hidden">
 
+                    <!-- Твой хитрый посимвольный автоскролл behaviors -->
+                    <i:Interaction.Behaviors>
+                        <behaviors:AutoScrollBehavior />
+                    </i:Interaction.Behaviors>
 
-        <Border  BorderBrush="#FF5C9EA6" BorderThickness="0.4" CornerRadius="6" Padding="15" Background="#FF111318" >
+                    <StackPanel TextBlock.FontFamily="Consolas" TextBlock.FontSize="14" TextBlock.FontWeight="Bold">
+                        <!-- Главный вертикальный список строк (Logs) -->
+                        <ItemsControl ItemsSource="{Binding Logs}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <!-- Внутренний горизонтальный ряд букв (Для каждой строки) -->
+                                    <ItemsControl ItemsSource="{Binding}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel Margin="0,1"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
 
-            <ScrollViewer Margin="0" 
-              HorizontalScrollBarVisibility="Disabled" 
-              VerticalScrollBarVisibility="Hidden">
-
-                <!-- 🔥 ПОДКЛЮЧАЕМ НАШ ХИТРЫЙ АВТОСКРОЛЛ: -->
-                <i:Interaction.Behaviors>
-                    <behaviors:AutoScrollBehavior />
-                </i:Interaction.Behaviors>
-
-               
-
-                    <StackPanel TextBlock.FontFamily="Consolas" TextBlock.FontSize="14" TextBlock.FontWeight="Bold"  >
-
-                    <!-- 🔥 ГЛАВНЫЙ ВЕРТИКАЛЬНЫЙ СПИСОК СТРОК (Logs) -->
-                    <ItemsControl ItemsSource="{Binding Logs}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-
-                                <!-- 🔥 ВНУТРЕННИЙ ГОРИЗОНТАЛЬНЫЙ РЯД БУКВ (Для каждой строки) -->
-                                <ItemsControl ItemsSource="{Binding}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <!-- Заставляем буквы текущей строки идти слева направо и переноситься -->
-                                            <WrapPanel Margin="0,1"/>
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <!-- Биндимся к свойству Value нашего рекорда LogChar -->
-                                            <TextBlock Text="{Binding Value}">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Value}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
                                                             <Setter Property="Foreground" Value="#00FF66"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Level}" Value="{x:Static enums:LogLevel.Critical}">
-                                                                <Setter Property="Foreground" Value="Red"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding Level}" Value="{x:Static enums:LogLevel.Error}">
-                                                                <Setter Property="Foreground" Value="OrangeRed"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding Level}" Value="{x:Static enums:LogLevel.Warning}">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Level}" Value="{x:Static enums:LogLevel.Critical}">
+                                                                    <Setter Property="Foreground" Value="Red"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Level}" Value="{x:Static enums:LogLevel.Error}">
+                                                                    <Setter Property="Foreground" Value="OrangeRed"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Level}" Value="{x:Static enums:LogLevel.Warning}">
                                                                     <Setter Property="Foreground" Value="#FFB300"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding Level}" Value="{x:Static enums:LogLevel.Debug}">
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Level}" Value="{x:Static enums:LogLevel.Debug}">
                                                                     <Setter Property="Foreground" Value="#00F0FF"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
 
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                </StackPanel> 
-
-            </ScrollViewer></Border>
-
-          
-      
+        </Grid>
     </Grid>
 
 </UserControl>

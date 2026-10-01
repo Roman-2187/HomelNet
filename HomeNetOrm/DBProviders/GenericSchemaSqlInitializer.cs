@@ -1,5 +1,6 @@
 ﻿using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetOrm.Enums;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Models;
 

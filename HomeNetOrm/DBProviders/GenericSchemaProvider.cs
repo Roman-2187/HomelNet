@@ -1,28 +1,27 @@
-﻿using HomeNetCore.Extensions;
+﻿using HomeNetCore.Exeptions;
+using HomeNetCore.Extensions;
+using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Models;
 using System.Data;
 using System.Data.Common;
-using HomeNetCore.Exeptions;
-using HomeNetCore.Interfaces.Diagnostics;
+
 namespace HomeNetOrm.DBProviders
 {
     public class GenericSchemaProvider : ISchemaProvider
     {
-        private readonly ISchemaSqlInitializer _sqlInit;
-        private readonly ISchemaAdapter _adapter;
+        private readonly ISchemaSqlInitializer _sqlInit;   
         private readonly DbConnection _requiredConnection;
         private readonly ILogger _logger;
 
-        public GenericSchemaProvider(
-            ISchemaSqlInitializer sqlInit,
-            ISchemaAdapter adapter,
-            DbConnection connection,
-            ILogger logger)
+        public DbProviderSpecification Spec { get; }
+
+        public GenericSchemaProvider(ISchemaSqlInitializer sqlInit, DbConnection connection,  DbProviderSpecification spec, ILogger logger)  
+                     
         {
             _requiredConnection = connection ?? throw new ArgumentNullException(nameof(connection));
-            _sqlInit = sqlInit ?? throw new ArgumentNullException(nameof(sqlInit));
-            _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
+            _sqlInit = sqlInit ?? throw new ArgumentNullException(nameof(sqlInit));      
+            Spec = spec ?? throw new ArgumentNullException(nameof(spec)); // Зафиксировали
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -38,10 +37,10 @@ namespace HomeNetOrm.DBProviders
 
             try
             {
-                // 1. Извлекаем сырые метаданные из БД в память
+                // 1. Извлекаем сырые метаданные из БД в память, используя индексы спецификации
                 var rawColumnsData = await FetchRawColumnsDataAsync(tableName);
 
-                // 2. Маппим сырые данные в C# модели и валидируем результат
+                // 2. Трансформируем в C# модели через умный конструктор ColumnSchema и валидируем
                 return ProcessAndValidateSchema(tableName, rawColumnsData);
             }
             catch (Exception ex)
@@ -54,9 +53,9 @@ namespace HomeNetOrm.DBProviders
         /// <summary>
         /// Чтение сырых метаданных из базы данных в изоляции.
         /// </summary>
-        private async Task<List<(string Name, string DataType, bool IsNullable, string KeyType, string ExtraInfo)>> FetchRawColumnsDataAsync(string tableName)
+        private async Task<List<RawColumnMetadata>> FetchRawColumnsDataAsync(string tableName)
         {
-            var rawColumnsData = new List<(string Name, string DataType, bool IsNullable, string KeyType, string ExtraInfo)>();
+            var rawColumnsData = new List<RawColumnMetadata>();
 
             using var command = _requiredConnection.CreateCommand();
             command.CommandText = _sqlInit.GenerateGetTableStructureSql(tableName);
@@ -69,17 +68,20 @@ namespace HomeNetOrm.DBProviders
                 command.Parameters.Add(param);
             }
 
+            var spec = Spec;
+
             using (var reader = await command.ExecuteReaderAsync())
             {
                 while (await reader.ReadAsync())
                 {
-                    rawColumnsData.Add((
-                        Name: reader.IsDBNull(_adapter.NameIndex) ? string.Empty : reader.GetString(_adapter.NameIndex),
-                        DataType: reader.IsDBNull(_adapter.TypeIndex) ? string.Empty : reader.GetString(_adapter.TypeIndex),
-                        IsNullable: ReadNullable(reader, _adapter.NullableIndex),
-                        KeyType: ReadStringUniversal(reader, _adapter.PrimaryKeyIndex),
-                        ExtraInfo: _adapter.ExtraInfoIndex >= 0 && !reader.IsDBNull(_adapter.ExtraInfoIndex)
-                            ? reader.GetValue(_adapter.ExtraInfoIndex)?.ToString() ?? string.Empty
+                    // 🔥 СТАЛО: Создаем строгий рекорд. Читать код теперь одно удовольствие!
+                    rawColumnsData.Add(new RawColumnMetadata(
+                        Name: reader.IsDBNull(spec.NameIndex) ? string.Empty : reader.GetString(spec.NameIndex),
+                        DataType: reader.IsDBNull(spec.TypeIndex) ? string.Empty : reader.GetString(spec.TypeIndex),
+                        IsNullable: ReadNullable(reader, spec.NullableIndex),
+                        KeyType: ReadStringUniversal(reader, spec.PrimaryKeyIndex),
+                        ExtraInfo: spec.ExtraInfoIndex >= 0 && !reader.IsDBNull(spec.ExtraInfoIndex)
+                            ? reader.GetValue(spec.ExtraInfoIndex)?.ToString() ?? string.Empty
                             : string.Empty
                     ));
                 }
@@ -88,29 +90,13 @@ namespace HomeNetOrm.DBProviders
             return rawColumnsData;
         }
 
-        /// <summary>
-        /// Трансформация сырых строк в сущности ColumnSchema и валидация TableSchema.
-        /// </summary>
-        private TableSchema ProcessAndValidateSchema(string tableName, List<(string Name, string DataType, bool IsNullable, string KeyType, string ExtraInfo)> rawRows)
+        private TableSchema ProcessAndValidateSchema(string tableName, List<RawColumnMetadata> rawRows)
         {
             var columns = new List<ColumnSchema>();
             foreach (var row in rawRows)
             {
-                bool isPk = row.KeyType.Equals("primary", StringComparison.OrdinalIgnoreCase) ||
-                            row.KeyType.Equals("1") || row.KeyType.Equals("true");
-
-              //  isPk = false;
-
-                columns.Add(new ColumnSchema
-                {
-                    Name = row.Name,
-                    OriginalName = row.Name,
-                    Type = _adapter.MapDbSpecificationType(row.DataType),
-                    IsNullable = row.IsNullable,
-                    IsPrimaryKey = isPk,
-                    IsAutoIncrement = row.ExtraInfo.Contains("nextval") ||
-                    row.ExtraInfo.Equals("auto_increment", StringComparison.OrdinalIgnoreCase)
-                });
+                // 🔥 ЧИСТАЯ МАГИЯ: Передаем рекорд целиком и парсер типов из спеки провайдера!
+                columns.Add(new ColumnSchema(row, Spec.DbTypeParser));
             }
 
             _logger.LogDebug($"Получено {columns.Count} столбцов для таблицы {tableName}");
@@ -127,18 +113,17 @@ namespace HomeNetOrm.DBProviders
             if (!getSchema.Initialize())
             {
                 _logger.LogWarning($"[ПРЕДУПРЕЖДЕНИЕ] В таблице '{tableName}' " +
-                    $"найдено {columns.Count} колонок," +
-                    $" но не удалось распознать Primary Key (ID)." +
-                    $" Проверьте маппинг типов!");
+                    $"найдено {columns.Count} колонок, но не удалось распознать Primary Key (ID). " +
+                    $"Проверьте маппинг типов!");
             }
             else
             {
-                _logger.LogDebug($"Получено имен колонок таблицы" +
-                    $" {tableName} : {getSchema.columnNames}");
+                _logger.LogDebug($"Получено имен колонок таблицы {tableName} : {getSchema.columnNames}");
             }
 
             return getSchema;
         }
+
 
         private bool ReadNullable(DbDataReader reader, int index)
         {
@@ -161,4 +146,3 @@ namespace HomeNetOrm.DBProviders
         }
     }
 }
-

@@ -27,6 +27,20 @@ namespace HomeNetOrm.DBProviders
                 ColumnType.Boolean => "BOOLEAN",
                 _ => "TEXT"
             };
+
+
+
+            public static ColumnType ParsePropertyType(string dbType)
+            {
+                return dbType.ToLower() switch
+                {
+                    "integer" => ColumnType.Integer,
+                    "text" => ColumnType.Varchar,
+                    "datetime" => ColumnType.DateTime,
+                    "boolean" => ColumnType.Boolean,
+                    _ => ColumnType.Unknown
+                };
+            }
         }
 
         // 🐘 НАСТРОЙКИ ДЛЯ POSTGRESQL
@@ -58,7 +72,21 @@ namespace HomeNetOrm.DBProviders
                 ColumnType.Boolean => "BOOLEAN",
                 _ => "VARCHAR"
             };
+
+
+            public static ColumnType ParsePropertyType(string dbType)
+            {
+                return dbType.ToLower() switch
+                {
+                    "integer" or "serial" => ColumnType.Integer,
+                    "character varying" or "varchar" or "text" => ColumnType.Varchar,
+                    "timestamp without time zone" or "timestamp" => ColumnType.DateTime,
+                    "boolean" => ColumnType.Boolean,
+                    _ => ColumnType.Unknown
+                };
+            }
         }
+    
     }
 }
 

@@ -1,7 +1,6 @@
 ﻿using HomeNetOrm.Enums;
 using HomeNetOrm.Helpers;
 using HomeNetOrm.Models;
-using System;
 using System.Linq.Expressions;
 
 namespace HomeNetOrm.Builders

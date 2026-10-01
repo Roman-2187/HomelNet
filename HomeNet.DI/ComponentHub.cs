@@ -1,17 +1,14 @@
-﻿using System;
-using HomeNet.DI;
-using HomeNetPresentation.ViewModels;
+﻿using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.AdminViews;
 
-namespace HomeNetAvalonia.Infrastructure
+namespace HomeNet.DI
 {
     public class ComponentHub
     {
-        public ComponentHub()
-        {
-        }
+        // Пустой конструктор, чтобы XAML мог его создать
+        public ComponentHub() { }
 
-        // 🔥 ТЕПЕРЬ ВСЕ СВОЙСТВА ЗАЩИЩЕНЫ: Если контейнер еще не собран, приложение НЕ упадет!
+        // Каждое свойство безопасно лезет в провайдер ядра
         public MainViewModel MainViewModel => GetViewModelSafe<MainViewModel>();
         public TitleBarViewModel TitleBarViewModel => GetViewModelSafe<TitleBarViewModel>();
         public StatusBarViewModel StatusBarViewModel => GetViewModelSafe<StatusBarViewModel>();
@@ -26,20 +23,17 @@ namespace HomeNetAvalonia.Infrastructure
         public TerminalLogsViewModel TerminalLogsViewModel => GetViewModelSafe<TerminalLogsViewModel>();
         public InspectorViewModel InspectorViewModel => GetViewModelSafe<InspectorViewModel>();
 
-        /// <summary>
-        /// Безопасный перехватчик. Если Авалония дергает свойства до вызова Build контейнера,
-        /// метод не выкинет Exception и не уронит приложение, а просто вернет null.
-        /// </summary>
         private T GetViewModelSafe<T>() where T : class
         {
             try
             {
-                // Проверяем твой статический провайдер ядра
+                // В реальном приложении забираем настоящий живой инстанс
                 return AppBootstrapper.GetViewModel<T>();
             }
             catch
             {
-                // Полная тишина при ранней инициализации XAML
+                // 🔥 СПАСЕНИЕ ДИЗАЙНЕРА: если приложение не запущено,
+                // возвращаем null, но без вылета исключения, чтобы Авалония не падала
                 return null!;
             }
         }

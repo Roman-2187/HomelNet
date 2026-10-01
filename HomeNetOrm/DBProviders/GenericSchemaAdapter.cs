@@ -1,4 +1,7 @@
-﻿using HomeNetOrm.Enums;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using HomeNetOrm.Enums;
 using HomeNetOrm.Helpers;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Models;
@@ -12,28 +15,12 @@ namespace HomeNetOrm.DBProviders
         private const string PrimaryKey = "PRIMARY KEY";
         private const string Unique = "UNIQUE";
 
-        // Делегат-переводчик типов для конкретной СУБД ⚙️
-        private readonly Func<ColumnType, bool, bool, int?, string> _typeMapper;
-        private readonly Func<string, ColumnType> _dbTypeParser;
+        // 🔥 СТАЛО ЧИСТО: Одна строгая, понятная модель конфигурации вместо кучи полей!
+        public DbProviderSpecification Spec { get; }
 
-        public int NameIndex { get; }
-        public int TypeIndex { get; }
-        public int NullableIndex { get; }
-        public int PrimaryKeyIndex { get; }
-        public int ExtraInfoIndex { get; }
-
-        public GenericSchemaAdapter(
-            Func<ColumnType, bool, bool, int?, string> typeMapper,
-            Func<string, ColumnType> dbTypeParser,
-            int nameIndex, int typeIndex, int nullableIndex, int primaryKeyIndex, int extraInfoIndex)
+        public GenericSchemaAdapter(DbProviderSpecification spec)
         {
-            _typeMapper = typeMapper ?? throw new ArgumentNullException(nameof(typeMapper));
-            _dbTypeParser = dbTypeParser ?? throw new ArgumentNullException(nameof(dbTypeParser));
-            NameIndex = nameIndex;
-            TypeIndex = typeIndex;
-            NullableIndex = nullableIndex;
-            PrimaryKeyIndex = primaryKeyIndex;
-            ExtraInfoIndex = extraInfoIndex;
+            Spec = spec ?? throw new ArgumentNullException(nameof(spec));
         }
 
         public string ConvertTableName(string? rawName, NameFormat format)
@@ -53,7 +40,8 @@ namespace HomeNetOrm.DBProviders
             return originalSchema.CloneWithTransform(name => name.ToSnakeCase());
         }
 
-        public ColumnType MapDbSpecificationType(string dbType) => _dbTypeParser(dbType);
+        // Пробрасываем вызов парсера типов напрямую из нашей спецификации
+        public ColumnType MapDbSpecificationType(string dbType) => Spec.DbTypeParser(dbType);
 
         public List<string> GetColumnDefinitions(TableSchema schema)
         {
@@ -64,8 +52,8 @@ namespace HomeNetOrm.DBProviders
 
                 var name = $"\"{col.Name}\"";
 
-                // Вызываем наш делегат, который вернет тип под SQLite или Postgres! 🎯
-                string sqlType = _typeMapper(col.Type, col.IsPrimaryKey, col.IsAutoIncrement, col.Length);
+                // 🔥 Вызываем делегат трансляции SQL-типов напрямую через объект Spec!
+                string sqlType = Spec.TypeMapper(col.Type, col.IsPrimaryKey, col.IsAutoIncrement, col.Length);
 
                 var constraints = new List<string>();
 
@@ -102,4 +90,3 @@ namespace HomeNetOrm.DBProviders
         }
     }
 }
-

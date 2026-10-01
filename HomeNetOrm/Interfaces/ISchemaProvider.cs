@@ -1,10 +1,9 @@
-﻿using HomeNetCore.Enums;
-using HomeNetOrm.Models;
+﻿using HomeNetOrm.Models;
 
 namespace HomeNetOrm.Interfaces
 {
     public interface ISchemaProvider
-    {       
+    {
         /// <summary>
         /// получаем актуальную схему бд
         /// </summary>
@@ -12,10 +11,7 @@ namespace HomeNetOrm.Interfaces
         /// <returns></returns>
         Task<TableSchema> GetActualTableSchemaAsync(string? tableName);
 
-     
+        // 🔥 ПЕРЕЕХАЛО СЮДА: Спека теперь законно принадлежит провайдеру!
+        DbProviderSpecification Spec { get; }  
     }
-
-
-
-
 }

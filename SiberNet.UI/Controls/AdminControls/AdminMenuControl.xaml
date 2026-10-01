@@ -10,134 +10,122 @@
     mc:Ignorable="d" 
     d:DesignHeight="500" d:DesignWidth="740" >
 
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="180"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
+    <!-- 🔥 ШАГ 2: Подхватываем единственный глобальный хаб из App.xaml -->
+    <Grid DataContext="{DynamicResource ComponentHub}">
 
-        <!-- ЛЕВАЯ ЧАСТЬ: Боковая панель -->
-        <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}" Tag="6" Margin="0,0,5,0">
-            <StackPanel Background="Transparent">
-                <Label Content="АДМИН ПАНЕЛЬ" FontWeight="Bold"
-                       Foreground="#FFF5546F" HorizontalAlignment="Center" Margin="5"/>
+        <!-- 🔥 ШАГ 3: Мягко проваливаемся в AdminViewModel для всех кнопок и триггеров -->
+        <Grid DataContext="{Binding AdminViewModel}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-                <Button Content="{Binding TableButtonText, FallbackValue='Показать users'}" 
-                        Command="{Binding ShowUserTableCommand}"
-                        Style="{StaticResource OrangeDefaultButtonStyle}"
-                        Margin="0,3"/>
-                <Button Content="{Binding ToggleButtonText, FallbackValue='Показать log'}" 
-                        Command="{Binding ShowLogPanelCommand}" 
-                        Style="{StaticResource OrangeDefaultButtonStyle}" Margin="0,3"/>
-                <Button Content="{Binding DeleteButtonText, FallbackValue='Удалить юзера'}"
-                        Command="{Binding ShowDeleteFormCommand}"
-                        Style="{StaticResource OrangeDefaultButtonStyle}" 
-                        Margin="0,3"/>
-                <Button Content="{Binding SeedButtonText, FallbackValue='Сидинг Users'}" 
-                        Command="{Binding ShowSeedFormCommand}" 
-                        Style="{StaticResource OrangeDefaultButtonStyle}" Margin="0,3"/>
-                <Button Content="{Binding InspectorButtonText, FallbackValue='Инспектор шины'}" 
-                        Command="{Binding ShowInspectorCommand}" 
-                        Style="{StaticResource OrangeDefaultButtonStyle}" Margin="0,3"/>
-                <!-- 🔥 ЖЕЛЕЗОБЕТОННЫЙ ПЕРЕХВАТ: Шторка рулится макро-зоной из TitleBarViewModel -->
-                <!-- 🔥 ЖЕСТКОЕ ГАСИЛОВО ПОД ГЛОБАЛЬНЫМ МАКРО-КОНТРОЛЕМ -->
-                <!-- Шторка живет и отображается ТОЛЬКО пока мы физически находимся в AdminZone! -->
+            <!-- ЛЕВАЯ ЧАСТЬ: Боковая панель -->
+            <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}" Tag="6" Margin="0,0,5,0">
+                <StackPanel Background="Transparent">
+                    <Label Content="АДМИН ПАНЕЛЬ" FontWeight="Bold"
+                           Foreground="#FFF5546F" HorizontalAlignment="Center" Margin="5"/>
 
-                <!-- 🔥 ЧИСТОЕ РЕШЕНИЕ: Управляем видимостью самого контрола напрямую! -->
-                <controls:AccountMenuControl HorizontalAlignment="Stretch" 
-                                             HorizontalContentAlignment="Stretch"/>
+                    <Button Content="{Binding TableButtonText, FallbackValue='Показать users'}" 
+                            Command="{Binding ShowUserTableCommand}"
+                            Style="{StaticResource OrangeDefaultButtonStyle}"
+                            Margin="0,3"/>
+                    <Button Content="{Binding ToggleButtonText, FallbackValue='Показать log'}" 
+                            Command="{Binding ShowLogPanelCommand}" 
+                            Style="{StaticResource OrangeDefaultButtonStyle}" Margin="0,3"/>
+                    <Button Content="{Binding DeleteButtonText, FallbackValue='Удалить юзера'}"
+                            Command="{Binding ShowDeleteFormCommand}"
+                            Style="{StaticResource OrangeDefaultButtonStyle}" 
+                            Margin="0,3"/>
+                    <Button Content="{Binding SeedButtonText, FallbackValue='Сидинг Users'}" 
+                            Command="{Binding ShowSeedFormCommand}" 
+                            Style="{StaticResource OrangeDefaultButtonStyle}" Margin="0,3"/>
+                    <Button Content="{Binding InspectorButtonText, FallbackValue='Инспектор шины'}" 
+                            Command="{Binding ShowInspectorCommand}" 
+                            Style="{StaticResource OrangeDefaultButtonStyle}" Margin="0,3"/>
 
+                    <controls:AccountMenuControl HorizontalAlignment="Stretch" 
+                                                 HorizontalContentAlignment="Stretch"/>
+                </StackPanel>
+            </ContentControl>
 
+            <!-- ПРАВАЯ ЧАСТЬ: Выровненная рабочая зона -->
+            <Grid Grid.Column="1">
+                <!-- Блок А: Таблица пользователей -->
+                <Border x:Name="UserTableContainer" Background="Transparent">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static enums:AdminSubTab.UserTable}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <controls:UsersTableViewControl/>
+                </Border>
 
-            </StackPanel>
-        </ContentControl>
+                <!-- Блок Б: Панель Логов -->
+                <Border x:Name="LogPanelContainer" Background="Transparent">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static enums:AdminSubTab.Logger}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <controls:LogRenderControl/>
+                </Border>
 
-        <!-- ПРАВАЯ ЧАСТЬ: Выровненная рабочая зона -->
-        <Grid Grid.Column="1">
+                <!-- Блок В: Форма удаления пользователей -->
+                <Border x:Name="DeleteFormContainer" Background="Transparent">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static enums:AdminSubTab.DeleteUsers}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <controls:DeleteUsersControl/>
+                </Border>
 
-            <!-- Блок А: Таблица пользователей -->
-            <Border x:Name="UserTableContainer" Background="Transparent">
-                <Border.Style>
-                    <Style TargetType="Border">
-                        <Setter Property="Visibility" Value="Collapsed"/>
-                        <Style.Triggers>
-                            <!-- 🎯 Вяжемся к ActiveTab и сверяем со строгим энумом ядра -->
-                            <DataTrigger Binding="{Binding ActiveTab}"
-                                         Value="{x:Static enums:AdminSubTab.UserTable}">
-                                <Setter Property="Visibility" Value="Visible"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Border.Style>
-                <controls:UsersTableViewControl/>
-            </Border>
+                <!-- Блок Г: Инспектор шины событий -->
+                <Border x:Name="InspectorFormContainer" Background="Transparent">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static enums:AdminSubTab.EventInspector}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <controls:InspectorViewControl/>
+                </Border>
 
-            <!-- Блок Б: Панель Логов -->
-            <Border x:Name="LogPanelContainer" Background="Transparent">
-                <Border.Style>
-                    <Style TargetType="Border">
-                        <Setter Property="Visibility" Value="Collapsed"/>
-                        <Style.Triggers>
-                            <!-- 🎯 Заменили значение на Logger строго по энуму -->
-                            <DataTrigger Binding="{Binding ActiveTab}"
-                                         Value="{x:Static enums:AdminSubTab.Logger}">
-                                <Setter Property="Visibility" Value="Visible"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Border.Style>
-                <controls:LogRenderControl/>
-            </Border>
-
-            <!-- Блок В: Форма удаления пользователей -->
-            <Border x:Name="DeleteFormContainer" Background="Transparent">
-                <Border.Style>
-                    <Style TargetType="Border">
-                        <Setter Property="Visibility" Value="Collapsed"/>
-                        <Style.Triggers>
-                            <!-- 🎯 Заменили значение на DeleteUsers строго по энуму -->
-                            <DataTrigger Binding="{Binding ActiveTab}"
-                                         Value="{x:Static enums:AdminSubTab.DeleteUsers}">
-                                <Setter Property="Visibility" Value="Visible"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Border.Style>
-                <controls:DeleteUsersControl/>
-            </Border>
-
-            <!-- Блок Г: Инспектор шины событий -->
-            <Border x:Name="InspectorFormContainer" Background="Transparent">
-                <Border.Style>
-                    <Style TargetType="Border">
-                        <Setter Property="Visibility" Value="Collapsed"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding ActiveTab}"
-                                         Value="{x:Static enums:AdminSubTab.EventInspector}">
-                                <Setter Property="Visibility" Value="Visible"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Border.Style>
-                <controls:InspectorViewControl/>
-            </Border>
-
-            <!-- Блок Д: Модуль генерации тестовых пользователей -->
-            <Border x:Name="SeedFormContainer" Background="Transparent">
-                <Border.Style>
-                    <Style TargetType="Border">
-                        <Setter Property="Visibility" Value="Collapsed"/>
-                        <Style.Triggers>
-                            <!-- 🎯 Заменили значение на SeedUsers строго по энуму -->
-                            <DataTrigger Binding="{Binding ActiveTab}"
-                                         Value="{x:Static enums:AdminSubTab.SeedUsers}">
-                                <Setter Property="Visibility" Value="Visible"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Border.Style>
-                <controls:SeedUsersViewControl/>
-            </Border>
+                <!-- Блок Д: Модуль генерации тестовых пользователей -->
+                <Border x:Name="SeedFormContainer" Background="Transparent">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ActiveTab}" Value="{x:Static enums:AdminSubTab.SeedUsers}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <controls:SeedUsersViewControl/>
+                </Border>
+            </Grid>
 
         </Grid>
     </Grid>
