@@ -1,0 +1,17 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="HomeNetAvalonia.Controls.AuthViewControl">
+
+
+    <!-- Временная заглушка, чтобы проект скомпилировался -->
+    <Border Background="#1A1F29" Padding="30" CornerRadius="8">
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+            <TextBlock Text="🔑 ЭКРАН АВТОРИЗАЦИИ SIBERNET" Foreground="#00F0FF" FontWeight="Bold" Margin="0,0,0,10"/>
+            <TextBlock Text="[Здесь будут поля ввода логина и пароля]" Foreground="#FFFFFF"/>
+        </StackPanel>
+    </Border>
+ 
+</UserControl>

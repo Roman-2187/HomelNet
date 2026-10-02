@@ -2,27 +2,27 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="50"
              x:Class="HomeNetAvalonia.Controls.StatusBarControl"
               xmlns:vm="using:HomeNetPresentation.ViewModels"
               x:DataType="vm:StatusBarViewModel" Background="Transparent">
-  <!-- Временно используем обычный Border с твоим киберпанк-зеленым фоном, -->
-    <!-- пока не перенесем кастомный стиль фасок для дочерних элементов -->
+ 
     <Border Background="#FF1C2433" Margin="5"
-            BorderBrush="#40F5546F" 
-            BorderThickness="1" 
+            BorderBrush="#304050" 
+            BorderThickness="0.5" 
             CornerRadius="6" 
             VerticalAlignment="Stretch" 
             HorizontalAlignment="Stretch">
         
         <Grid VerticalAlignment="Center">
             
-            <TextBlock Text="{Binding StatusText, FallbackValue='Загрузка системы...'}"
-                       Margin="0" 
-                       Padding="15,0,0,0"
-                       FontWeight="Bold"
-                       Foreground="#FFF5546F"
-                       VerticalAlignment="Center"/>
+            <TextBlock
+                Text="{Binding StatusText, FallbackValue='Загрузка системы...'}"
+                Margin="0" 
+                Padding="15,0,0,0"
+                FontWeight="Bold"
+                Foreground="#FFF5546F"
+                VerticalAlignment="Center"/>
         </Grid>
     </Border>
 </UserControl>

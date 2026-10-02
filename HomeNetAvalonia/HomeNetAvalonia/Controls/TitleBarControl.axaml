@@ -3,46 +3,47 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:enums="using:HomeNetCore.Enums.Navigation"
-    xmlns:vm="using:HomeNetPresentation.ViewModels"
-    xmlns:conv="using:HomeNetAvalonia.Converters"
-    xmlns:di="using:HomeNet.DI" 
-    mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450" 
-   
-    x:Class="HomeNetAvalonia.Controls.TitleBarControl"        
-    x:DataType="di:ComponentHub">
-    
-    
-
-  <UserControl.Resources>
+   xmlns:enums="using:HomeNetCore.Enums.Navigation"
+             xmlns:vm="using:HomeNetPresentation.ViewModels"
+             xmlns:conv="using:HomeNetAvalonia.Converters"
+             xmlns:di="using:HomeNet.DI" 
+             xmlns:controls="using:HomeNetAvalonia.Controls"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450" 
+             x:Class="HomeNetAvalonia.Controls.TitleBarControl"        
+             x:DataType="di:ComponentHub">
+ <UserControl.Resources>
         <conv:EqualityConverter x:Key="EqualityConverter"/>
-        
     </UserControl.Resources>
 
     <UserControl.Styles>
         <!-- Базовый стиль для всех кнопок в этой панели управления -->
         <Style Selector="StackPanel.control-panel Button">
-            <Setter Property="Background" Value="#FF1B222E"/>
-            <Setter Property="BorderBrush" Value="#40F5546F"/>
+            <!-- 🌌 ПОЛНАЯ ПРОЗРАЧНОСТЬ: Кнопки стали чистым текстом без серых плашек -->
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="6"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="5,5"/>
         </Style>
         
-        <!-- Стиль для стандартных широких кнопок действий (Админка, Вход...) -->
+        <!-- Ширина для стандартных кнопок действий -->
         <Style Selector="StackPanel.control-panel Button.action-btn">
-            <Setter Property="Width" Value="110"/>
+            <Setter Property="Width" Value="140"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
         </Style>
 
-        <!-- Стиль для эффекта наведения (Hover) -->
+        <!-- 🔥 Эффект наведения (Hover) — здесь включается и фон, и неон! -->
         <Style Selector="StackPanel.control-panel Button:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="#FF253042"/>
-            <Setter Property="BorderBrush" Value="#40F5546F"/>
+            <Setter Property="BorderBrush" Value="#00F0FF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
         </Style>
-        
-        <!-- 🔥 ВСЕ ПРОБЛЕМНЫЕ СЕЛЕКТОРЫ С DATACONTEXT ПОЛНОСТЬЮ УДАЛЕНЫ ОТСЮДА -->
     </UserControl.Styles>
 
     <!-- Корневой Грид, завязанный на ComponentHub -->
-   <Grid DataContext="{DynamicResource ComponentHub}"
+    <Grid DataContext="{DynamicResource ComponentHub}"
           x:DataType="di:ComponentHub"
           x:CompileBindings="True"> 
         
@@ -52,7 +53,6 @@
         </Grid.RowDefinitions>
 
         <!-- 👑 ВЕРХНЯЯ ПАНЕЛЬ ШАПКИ -->
-        <!-- А здесь мы переключаем контекст типов строго на вьюмодель шапки -->
         <Grid Grid.Row="0" 
               DataContext="{Binding TitleBarViewModel}"
               x:DataType="vm:TitleBarViewModel"
@@ -81,10 +81,8 @@
                 Margin="0,0,15,0"
                 Classes="control-panel">
                 
-                <!-- 🔥 ЧИСТЫЙ И БЕЗОПАСНЫЙ КОНТРОЛЬ СВЕТА ЧЕРЕЗ МУЛЬТИ-БИНДИНГ -->
-                <StackPanel
-                    Orientation="Horizontal"
-                    Margin="0,0,10,0">
+                <!-- КОНТРОЛЬ СВЕТА ЧЕРЕЗ МУЛЬТИ-БИНДИНГ -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,25,0">
                     <StackPanel.IsVisible>
                         <MultiBinding Converter="{x:Static BoolConverters.And}">
                             <Binding 
@@ -101,28 +99,32 @@
                     <Button
                         Content="🛠️ Админка"
                         Classes="action-btn"
-                        Margin="0,0,20,0"
+                        Margin="0,0,15,0"  Foreground="#FFF5546F"
                         Command="{Binding ToggleAdminZoneCommand}" />
                     <Button 
                         Content="🔑 Вход"
                         Classes="action-btn"
-                        Margin="0,0,10,0"
+                        Margin="0,0,15,0"  Foreground="#FFF5546F"
                         Command="{Binding OpenAuthZoneCommand}"/>
                     <Button
-                        Content="📝 Регистрация" 
+                        Content="📝 Регистрация" Foreground="#FFF5546F"
                         Classes="action-btn"
                         Command="{Binding OpenRegisterZoneCommand}"/>
                 </StackPanel>
                 
+                <!-- Системные кнопки окна -->
                 <StackPanel Orientation="Horizontal">
                     <Button
                         Content="🔳"
                         Command="{Binding ToggleGrowWindowCommand}"
-                        Margin="0,0,5,0"/>
+                        Margin="0,0,8,0"  
+                        Width="35"
+                        HorizontalContentAlignment="Center"/>
                     <Button
-                        Content="✕"
+                        Content="✕" 
                         Command="{Binding RequestCloseApplicationCommand}"
-                        Width="30" />
+                        Width="35"
+                        HorizontalContentAlignment="Center"/> 
                 </StackPanel>
                 
             </StackPanel>
@@ -131,7 +133,7 @@
         <!-- 🌌 ВЛАСТЬ НАД ЦЕНТРАЛЬНЫМ ХОЛСТОМ -->
         <Grid 
             Grid.Row="1"
-             DataContext="{Binding TitleBarViewModel}" 
+            DataContext="{Binding TitleBarViewModel}" 
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch"
             Margin="0,0,0,5"
@@ -172,9 +174,7 @@
                 IsVisible="{Binding CurrentClientTab,
                 Converter={StaticResource EqualityConverter},
                 ConverterParameter={x:Static enums:ClientSubTab.Registration}}">
-                <TextBlock
-                    Text="[ФОРМА РЕГИСТРАЦИИ]"
-                    Foreground="#00F0FF"
+                <controls:RegistrationViewControl 
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"/>
             </Border>

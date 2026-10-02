@@ -23,6 +23,8 @@ namespace HomeNet.DI
         public TerminalLogsViewModel TerminalLogsViewModel => GetViewModelSafe<TerminalLogsViewModel>();
         public InspectorViewModel InspectorViewModel => GetViewModelSafe<InspectorViewModel>();
 
+      public  SeedUsersViewModel SeedUsersViewModel => GetViewModelSafe<SeedUsersViewModel>();
+
         private T GetViewModelSafe<T>() where T : class
         {
             try

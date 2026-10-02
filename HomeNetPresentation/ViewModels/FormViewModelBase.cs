@@ -14,6 +14,10 @@ namespace HomeNetPresentation.ViewModels
     public abstract partial class FormViewModelBase<TNavigation> : ObservableObject, IDisposable, IFormViewModel
         where TNavigation : NavigationStateManager
     {
+        #pragma warning disable CS8618 
+        protected FormViewModelBase() { }     
+        #pragma warning restore CS8618
+
         protected readonly IEventBus _eventBus;
         protected readonly TNavigation _navigation; // 🔥 Строгий тип навигатора!
 
@@ -28,6 +32,8 @@ namespace HomeNetPresentation.ViewModels
         [ObservableProperty]
         private IReadOnlyDictionary<TypeField, ValidationResult> _validationResults
             = new Dictionary<TypeField, ValidationResult>();
+
+       
 
         public FormViewModelBase(IEventBus eventBus, TNavigation navigationManager)
         {

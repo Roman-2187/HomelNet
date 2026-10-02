@@ -24,4 +24,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\HomeNet.DI\HomeNet.DI.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Resources\" />
+  </ItemGroup>
 </Project>

@@ -6,35 +6,38 @@
              xmlns:local="clr-namespace:SiberNet.UI.Controls"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800"
-               DataContext="{Binding SeedUsersViewModel, Source={StaticResource ComponentHub}}">
-    <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}"
-                    Padding="15" Background="#FF1E222A">
-        <ContentControl.Tag>
-            <CornerRadius>6</CornerRadius>
-        </ContentControl.Tag>
-
+               >
+    <!-- 🔥 ШАГ 2: Подхватываем единственный глобальный хаб из App.xaml -->
+    
+        <ContentControl
+            DataContext="{Binding SeedUsersViewModel,
+            Source={StaticResource ComponentHub}}"
+            Tag="6" Padding="15" Background="#FF1E222A">
+       
         <Grid>
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Stretch">
-                <TextBlock Text="⚡ ЦЕНТРАЛЬНЫЙ МОДУЛЬ СИДИНГА ДАННЫХ" 
-                           Foreground="#FFF5546F" FontWeight="Bold" FontSize="16" 
-                           HorizontalAlignment="Center" Margin="0,0,0,15"/>
-
-                <Border BorderThickness="1" BorderBrush="#33FFB300" 
-                        Background="#1AADD8E6" CornerRadius="4"
-                        Padding="15" Margin="0,0,0,20">
-                    <TextBlock Text="{Binding SeedStatusText}" 
-                               FontFamily="Consolas" FontSize="13" 
-                               Foreground="#00FFCC" TextWrapping="Wrap"
-                               HorizontalAlignment="Center"/>
+                <TextBlock
+                    Text="⚡ ЦЕНТРАЛЬНЫЙ МОДУЛЬ СИДИНГА ДАННЫХ" 
+                    Foreground="#FFF5546F" FontWeight="Bold" FontSize="16" 
+                    HorizontalAlignment="Center" Margin="0,0,0,15"/>
+                
+                <Border
+                    BorderThickness="1" BorderBrush="#33FFB300" 
+                    Background="#1AADD8E6" CornerRadius="4"
+                    Padding="15" Margin="0,0,0,20">
+                    <TextBlock
+                        Text="{Binding SeedStatusText}" 
+                        FontFamily="Consolas" FontSize="13" 
+                        Foreground="#00FFCC" TextWrapping="Wrap"
+                        HorizontalAlignment="Center"/>
                 </Border>
 
                 <!-- Кнопка запуска генерации -->
-                <Button Content="ЗАПУСТИТЬ ГЕНЕРАЦИЮ БАЗЫ (50 USERS)" 
-                        Command="{Binding ExecuteDataSeedingCommand}"
-                        
-                    
-                        Style="{StaticResource OrangeDefaultButtonStyle}"
-                        Width="320" Height="45" Cursor="Hand"/>
+                <Button 
+                    Content="ЗАПУСТИТЬ ГЕНЕРАЦИЮ БАЗЫ (50 USERS)" 
+                    Command="{Binding ExecuteDataSeedingCommand}"                   
+                    Style="{StaticResource OrangeDefaultButtonStyle}"
+                    Width="320" Height="45" Cursor="Hand"/>
             </StackPanel>
         </Grid>
     </ContentControl>

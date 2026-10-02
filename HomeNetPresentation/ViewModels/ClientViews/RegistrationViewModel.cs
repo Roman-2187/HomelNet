@@ -22,6 +22,9 @@ namespace HomeNetPresentation.ViewModels
         private readonly ILogger _logger;
         [ObservableProperty] private UserEntity _userData = new();
 
+
+        
+
         public RegistrationViewModel(
             IRegistrationService registerService,
             IEventBus eventBus,

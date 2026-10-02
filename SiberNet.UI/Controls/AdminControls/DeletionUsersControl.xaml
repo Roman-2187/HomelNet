@@ -6,14 +6,14 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
     mc:Ignorable="d" 
     d:DesignHeight="400" d:DesignWidth="600" 
-    DataContext="{Binding DeleteUsersViewModel,
-    Source={StaticResource ComponentHub}}">
+    >
 
 
-
-
-
-    <ContentControl Style="{StaticResource CyberpunkImageChaildStyle}" Tag="6">
+    <ContentControl
+        DataContext="{Binding DeleteUsersViewModel,
+        Source={StaticResource ComponentHub}}" 
+        Style="{StaticResource CyberpunkImageChaildStyle}"
+        Tag="6">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
@@ -53,7 +53,8 @@
                            Margin="0,5,0,5"
                            VerticalAlignment="Center"/>
 
-                    <!-- Панель поиска (TextBox растягивается, кнопка прижата справа) -->
+                    <!-- Панель поиска (TextBox растягивается,
+                    кнопка прижата справа) -->
                     <Grid Grid.Row="1" Margin="0,5,0,10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"  />
@@ -62,7 +63,8 @@
                             <!-- Кнопка -->
                         </Grid.ColumnDefinitions>
 
-                        <TextBox Text="{Binding TargetUserId, UpdateSourceTrigger=PropertyChanged}"
+                        <TextBox Text="{Binding TargetUserId, 
+                            UpdateSourceTrigger=PropertyChanged}"
                              Grid.Column="0"
                              BorderBrush="#FF211E19"
                              BorderThickness="0.5"
@@ -112,7 +114,7 @@
                           ResizeDirection="Columns"
                           Margin="3,0,3,0"/>
 
-                <!-- ================= ПРАВАЯ ЧАСТЬ (ЖУРНАЛ ИСТОРИИ) ================= -->
+                <!-- ================= ПРАВАЯ ЧАСТЬ (ЖУРНАЛ ИСТОРИИ) ==-->
                 <Border Grid.Column="2"               
                     Margin="5,30,0,0"
                     BorderThickness="0"
@@ -124,26 +126,28 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="0"
-                               Text="Журнал истории удаления (Текущая сессия)"
-                               Foreground="#FFF5546F"
-                               FontSize="11"
-                               FontWeight="Bold"
-                               Margin="10,10,10,5"/>
+                        <TextBlock
+                            Grid.Row="0"
+                            Text="Журнал истории удаления (Текущая сессия)"
+                            Foreground="#FFF5546F"
+                            FontSize="11"
+                            FontWeight="Bold"
+                            Margin="10,10,10,5"/>
 
                         <Border Grid.Row="1"        
-                             Background="#1AADD8E6"
+                            Background="#1AADD8E6"
                             Margin="5,25,0,0"
                             BorderThickness="0"
                             BorderBrush="#00F0FF"
                             CornerRadius="6"
                             ClipToBounds="True">
-                            <ListBox ItemsSource="{Binding DeletedUsersHistory}"
-                                 Background="Transparent"
-                                 Margin="10,10"  
-                                 BorderThickness="0" 
-                                 Foreground="#00F0FF"
-                                      IsHitTestVisible="False"/>
+                            <ListBox
+                                ItemsSource="{Binding DeletedUsersHistory}"
+                                Background="Transparent"
+                                Margin="10,10"  
+                                BorderThickness="0" 
+                                Foreground="#00F0FF"
+                                IsHitTestVisible="False"/>
                         </Border>
                     </Grid>
                 </Border>

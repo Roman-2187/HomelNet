@@ -4,17 +4,14 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="using:HomeNetAvalonia.Views"
-        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="700"
+        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
         x:Class="HomeNetAvalonia.Views.MainWindow"
         Icon="/Assets/avalonia-logo.ico"
-        Title="SIBERNET v1.0"
-        
-        
+        Title="SIBERNET v1.0"   Width="900" Height="600"
         WindowDecorations="None"
         ExtendClientAreaToDecorationsHint="True"
         TransparencyLevelHint="Transparent"
         Background="{x:Null}"
-        
         WindowStartupLocation="CenterScreen">
         <Window.Styles>
         <!-- В обычном состоянии окно на месте, но готово к плавному сдвигу по Y -->
@@ -25,9 +22,10 @@
             <Setter Property="Transitions">
                 <Transitions>
                     <!-- Плавный сдвиг за 500мс с замедлением -->
-                    <TransformOperationsTransition Property="RenderTransform" 
-                                                   Duration="0:0:0.5" 
-                                                   Easing="QuadraticEaseIn"/>
+                    <TransformOperationsTransition 
+                        Property="RenderTransform" 
+                        Duration="0:0:0.5" 
+                        Easing="QuadraticEaseIn"/>
                 </Transitions>
             </Setter>
         </Style>

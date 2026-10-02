@@ -42,7 +42,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             // 🔥 Если навигатор подтвердил повторное открытие вкладки сидинга — сбрасываем текст в дефолт
             if (msg.ActiveTab == AdminSubTab.SeedUsers)
             {
-                SeedStatusText = "🔋 Система генерации готова к сидингу 50 пользователей...";
+                SeedStatusText = "🔋 Система генерации готова к сидингу  пользователей...";
             }
         }
 
