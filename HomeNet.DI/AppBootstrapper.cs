@@ -91,6 +91,9 @@ namespace HomeNet.DI
             // 3. Регистрация Вьюмоделей слоя Презентации
 
             services.AddSingleton<StatusBarViewModel>();
+            // Регистрируем как Singleton, раз окно у нас одно
+            services.AddSingleton<SystemButtonsViewModel>();
+
             services.AddSingleton<TableUsersViewModel>();
             services.AddSingleton<RegistrationViewModel>();
             services.AddSingleton<AuthenticationViewModel>();

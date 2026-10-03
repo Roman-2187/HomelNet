@@ -20,7 +20,7 @@
                 Text="{Binding StatusText, FallbackValue='Загрузка системы...'}"
                 Margin="0" 
                 Padding="15,0,0,0"
-                FontWeight="Bold"
+                FontWeight="Light"
                 Foreground="#FFF5546F"
                 VerticalAlignment="Center"/>
         </Grid>

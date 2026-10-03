@@ -1,0 +1,88 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:HomeNetAvalonia.ViewModels"
+             xmlns:behaviors="clr-namespace:HomeNetAvalonia.Behaviors"
+             xmlns:controls="clr-namespace:HomeNetAvalonia.Controls"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+             x:Class="HomeNetAvalonia.Views.MainView"
+             Background="Transparent">
+
+    <!-- 👑 ВОЗВРАЩАЕМ ТВОЙ СТАРЫЙ ПУЛЕНЕПРОБИВАЕМЫЙ ОБВЕС КОРПУСА -->
+     <ContentControl Classes="CyberpunkContainer"
+        CornerRadius="8"
+        Padding="0"
+        Margin="0"
+        MinWidth="900"
+        MinHeight="600">
+        
+        <Grid x:Name="MainGrid">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="9"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="50"/>   <!-- Row 0: Новая изолированная шапка (50px) -->
+                <RowDefinition Height="*"/>    <!-- Row 1: Свободная центральная зона контента -->
+                <RowDefinition Height="Auto"/> <!-- Row 2: Статус-бар в самом низу -->
+            </Grid.RowDefinitions>
+
+            <!-- ================================================================================= -->
+            <!-- 👑 ВЕРХНЯЯ ШАПКА ПРИЛОЖЕНИЯ (Ряд 0) -->
+            <!-- ================================================================================= -->
+            <!-- Накатываем беспроводной перетаскиватель окон behaviors:WindowDragBehavior.EnableDrag="True" -->
+            <Grid Grid.Row="0" Grid.ColumnSpan="2"  
+                  behaviors:WindowDragBehavior.EnableDrag="True">
+                
+                <Grid.ColumnDefinitions> 
+                    <!-- 0: Розовое неоновое название приложения -->
+                    <ColumnDefinition Width="Auto"/>
+                    <!-- 1: Пульт управления зонами (Вход/Рег/Админка) -->
+                    <ColumnDefinition Width="*"/>    
+                    <!-- 2: Векторные системные кнопки (— 🔳 ✕) -->
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- НАЗВАНИЕ ПРИЛОЖЕНИЯ (Левая часть шапки) -->
+                <TextBlock
+                    Grid.Column="0"
+                    Text="SIBERNET v1.0"
+                    Foreground="#FFF5546F" 
+                    VerticalAlignment="Center"
+                    Margin="15,0,10,0"
+                    FontWeight="Bold"
+                    FontSize="12"/>
+
+                <!-- КНОПКИ АВТОРИЗАЦИИ (В центре шапки, прижаты вправо внутри своего контрола) -->
+                <controls:TitleBarControl
+                    Grid.Column="1" 
+                    HorizontalAlignment="Stretch" 
+                    VerticalAlignment="Stretch"/>
+
+                <!-- СИСТЕМНЫЕ КНОПКИ ОКНА (Правая часть шапки) -->
+                <controls:SystemButtons
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    Margin="10,0,15,0"/>
+            </Grid>
+
+            <!-- ================================================================================= -->
+            <!-- 🌌 ЦЕНТРАЛЬНЫЙ ВЫДЕЛЕННЫЙ КОНТРОЛ ХОЛСТА (Ряд 1) -->
+            <!-- ================================================================================= -->
+            <!-- Изолированная зона, где формы регистрации будут открываться во весь рост -->
+            <controls:MainContentZoneControl 
+                Grid.Row="1" Grid.ColumnSpan="2"
+                HorizontalAlignment="Stretch" 
+                VerticalAlignment="Stretch"/>
+
+            <!-- ================================================================================= -->
+            <!-- 📡 СТАТУС-БАР ПРИЛОЖЕНИЯ (Ряд 2) -->
+            <!-- ================================================================================= -->
+            <Border Grid.Row="2" Background="Transparent" Grid.ColumnSpan="2">
+                <controls:StatusBarControl Height="40"/>
+            </Border>
+        </Grid>
+        
+    </ContentControl>
+</UserControl>

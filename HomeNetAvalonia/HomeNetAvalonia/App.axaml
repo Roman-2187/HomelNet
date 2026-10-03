@@ -5,9 +5,8 @@
     xmlns:val="using:HomeNetCore.Models.Validation;assembly=HomeNetCore"   
     xmlns:enums="using:HomeNetCore.Enums.Navigation;assembly=HomeNetCore"
     xmlns:di="clr-namespace:HomeNet.DI;assembly=HomeNet.DI"
-
-             x:Class="HomeNetAvalonia.App"
-             RequestedThemeVariant="Dark">
+    x:Class="HomeNetAvalonia.App"
+    RequestedThemeVariant="Dark">
 
     <Application.Resources>
         <!-- Твой хаб-локатор встает без ошибок -->
@@ -18,57 +17,12 @@
     <!-- Твоя FluentTheme здесь уже стоит -->
     <FluentTheme />
 
-    <!-- 👑 ТВОЙ ФИРМЕННЫЙ МНОГОСЛОЙНЫЙ КИБЕРПАНК-СТИЛЬ С ФОНОМ -->
-    <!-- В Авалонии TargetType для стилей пишется как обычный класс или тип элемента. 
-         Мы привяжем его к классу "CyberpunkContainer" на базе ContentControl -->
-    <Style Selector="ContentControl.CyberpunkContainer">
-        <!-- По умолчанию запекаем твой любимый CornerRadius = 6 -->
-        <Setter Property="CornerRadius" Value="6"/>
-        <Setter Property="Padding" Value="5"/>
-        
-        <Setter Property="Template">
-            <ControlTemplate>
-                <Grid>
-                    <!-- 🥈 ВНЕШНИЙ БОРДЕР (Основная розовая неоновая рамка) -->
-                    <Border CornerRadius="{TemplateBinding CornerRadius}" 
-                            BorderThickness="0.5" 
-                            BorderBrush="#FFF23E5C" 
-                            Background="#FF1B222E">
-                        <Grid>
-                            <!-- 🥈 СРЕДНИЙ БОРДЕР (Приглушенное неоновое свечение внутри) -->
-                            <Border BorderThickness="0.5" 
-                                    Margin="0.5" 
-                                    BorderBrush="#40F23E5C" 
-                                    CornerRadius="{TemplateBinding CornerRadius}"/>
 
-                            <!-- 🥉 ВНУТРЕННИЙ БОРДЕР (Глубокая подложка) -->
-                            <Border Margin="0.5" 
-                                    BorderThickness="0.5"
-                                    CornerRadius="{TemplateBinding CornerRadius}"
-                                    Background="#FF1C2433"
-                                    ClipToBounds="True"> <!-- ClipToBounds намертво зажмет картинку внутри скругления -->
-                                <Grid>
-                                    
-                                    <!-- 🖼️ СЛОЙ С КАРТИНКОЙ ИЗ ТВОИХ РЕСУРСОВ -->
-                                    <!-- В Авалонии вместо pack:// используется чистый и понятный путь avares://ИмяСборки/Папка/Файл -->
-                                   <Image Source="avares://HomeNetAvalonia/Assets/68fadad90ca053b59b3e0178c4983607.png" 
-                                 Stretch="UniformToFill" 
-                                                      Opacity="0.2"/>
-
-                                    <!-- 🔥 ЖЕЛЕЗНЫЙ МОСТ КОНТЕНТА -->
-                                    <ContentPresenter Name="PART_ContentPresenter"
-                                                      Content="{TemplateBinding Content}" 
-                                                      ContentTemplate="{TemplateBinding ContentTemplate}"
-                                                      Margin="{TemplateBinding Padding}"
-                                                      RecognizesAccessKey="True"/>
-                                </Grid>
-                            </Border>
-                        </Grid>
-                    </Border>
-                </Grid>
-            </ControlTemplate>
-        </Setter>
-    </Style>
+        <StyleInclude Source="avares://HomeNetAvalonia/Themes/Buttons.axaml"/>
+        <StyleInclude Source="avares://HomeNetAvalonia/Themes/Fields.axaml"/>
+       <StyleInclude Source="avares://HomeNetAvalonia/Themes/Containers.axaml"/>
+    
+   
 </Application.Styles>
 
 </Application

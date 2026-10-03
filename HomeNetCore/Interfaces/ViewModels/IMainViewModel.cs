@@ -8,5 +8,7 @@ namespace HomeNetCore.Interfaces.ViewModels
         // Системные приказы для MainWindow.xaml.cs
         public record CloseRequest();
         public record ToggleSize();
+
+
     }
 }

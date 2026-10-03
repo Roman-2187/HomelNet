@@ -1,0 +1,79 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:enums="using:HomeNetCore.Enums.Navigation"
+             xmlns:vm="using:HomeNetPresentation.ViewModels"
+             xmlns:conv="using:HomeNetAvalonia.Converters"
+             xmlns:di="using:HomeNet.DI" 
+             xmlns:controls="using:HomeNetAvalonia.Controls"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
+             x:Class="HomeNetAvalonia.Controls.MainContentZoneControl"
+             x:DataType="di:ComponentHub">
+
+    <UserControl.Resources>
+        <!-- Переносим конвертер сюда, теперь он живет по месту требования -->
+        <conv:EqualityConverter x:Key="EqualityConverter"/>
+    </UserControl.Resources>
+
+    <!-- Выключаем CompileBindings для динамического подхвата хаба в рантайме -->
+    <Grid DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False"
+          HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        
+        <Grid DataContext="{Binding TitleBarViewModel}" 
+              HorizontalAlignment="Stretch"
+              VerticalAlignment="Stretch">
+            
+            <!-- Экран А: Форма Входа -->
+            <Border 
+                x:Name="AuthScreenContainer" Background="Transparent"
+                IsVisible="{Binding CurrentClientTab,
+                Converter={StaticResource EqualityConverter},
+                ConverterParameter={x:Static enums:ClientSubTab.Authentication}}">
+               <controls:AuthViewControl
+                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+
+            <!-- Экран Б: Панель Администратора -->
+            <Border
+                x:Name="AdminScreenContainer"
+                Background="Transparent"
+                IsVisible="{Binding CurrentMainZone,
+                Converter={StaticResource EqualityConverter},
+                ConverterParameter={x:Static enums:MainTab.AdminZone}}">
+                <TextBlock
+                    Text="[ПАНЕЛЬ АДМИНИСТРАТОРА]"
+                    Foreground="#00F0FF" 
+                    HorizontalAlignment="Center" 
+                    VerticalAlignment="Center"/>
+            </Border>
+
+            <!-- Экран В: Форма Регистрации -->
+            <Border
+                x:Name="RegisterScreenContainer"
+                Background="Transparent"
+                IsVisible="{Binding CurrentClientTab,
+                Converter={StaticResource EqualityConverter},
+                ConverterParameter={x:Static enums:ClientSubTab.Registration}}">
+                <controls:RegistrationViewControl
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"/>
+            </Border>
+
+            <!-- Экран Г: Рабочая Зона Пользователя -->
+            <Border
+                x:Name="UserScreenContainer" 
+                Background="Transparent"
+                IsVisible="{Binding CurrentMainZone,
+                Converter={StaticResource EqualityConverter},
+                ConverterParameter={x:Static enums:MainTab.ClientZone}}">
+                <TextBlock
+                    Text="[РАБОЧАЯ ЗОНА МЕССЕНДЖЕРА SIBERNET]"
+                    Foreground="#00F0FF"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"/>
+            </Border>
+            
+        </Grid>
+    </Grid>
+</UserControl>

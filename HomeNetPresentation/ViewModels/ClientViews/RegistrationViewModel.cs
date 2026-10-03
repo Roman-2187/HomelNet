@@ -47,7 +47,7 @@ namespace HomeNetPresentation.ViewModels
                 new(TypeField.ConfirmedPasswordType, "Пароли должны совпадать", ValidationState.Info, true)
             };
             UpdateValidation(initialHints);
-            SubmitButtonText = "Зарегистрироваться";
+            SubmitButtonText = "Создать ID";
         }
 
         public void ResetForm()

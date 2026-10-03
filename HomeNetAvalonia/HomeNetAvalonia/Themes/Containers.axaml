@@ -1,0 +1,47 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- 🌌 ТВОЙ ОРИГИНАЛЬНЫЙ ТРЁХСЛОЙНЫЙ КИБЕРПАНК-КОНТЕЙНЕР ДЛЯ ОКНА SIBERNET -->
+    <Style Selector="ContentControl.CyberpunkContainer">     
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Padding" Value="5"/>   
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid>
+                    <!-- 🥈 ВНЕШНИЙ БОРДЕР (Основная розовая неоновая рамка) -->
+                    <Border CornerRadius="{TemplateBinding CornerRadius}" 
+                            BorderThickness="0.5" 
+                            BorderBrush="#FFF23E5C" 
+                            Background="#FF1B222E">
+                        <Grid>
+                            <!-- 🥈 СРЕДНИЙ БОРДЕР (Приглушенное неоновое свечение внутри) -->
+                            <Border BorderThickness="0.5" 
+                                    Margin="0.5" 
+                                    BorderBrush="#40F23E5C" 
+                                    CornerRadius="{TemplateBinding CornerRadius}"/>
+
+                            <!-- 🥉 ВНУТРЕННИЙ БОРДЕР (Глубокая подложка) -->
+                            <Border Margin="0.5" 
+                                    BorderThickness="0.5"
+                                    CornerRadius="{TemplateBinding CornerRadius}"
+                                    Background="#FF1C2433"
+                                    ClipToBounds="True">
+                                <!-- ClipToBounds намертво зажмет картинку внутри скругления --> 
+                                <Grid>                                                                        
+                                    <Image Source="avares://HomeNetAvalonia/Assets/68fadad90ca053b59b3e0178c4983607.png" 
+                                           Stretch="UniformToFill"
+                                           Opacity="0.2"/>                                                    
+                                  
+                                    <ContentPresenter Name="PART_ContentPresenter"
+                                                      Content="{TemplateBinding Content}" 
+                                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                      Margin="{TemplateBinding Padding}"
+                                                      RecognizesAccessKey="True"/>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+</Styles>

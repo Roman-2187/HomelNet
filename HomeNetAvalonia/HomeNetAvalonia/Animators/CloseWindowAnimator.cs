@@ -6,7 +6,7 @@ using Avalonia.Threading;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
 
-namespace HomeNetAvalonia.Infrastructure.Animators
+namespace HomeNetAvalonia.Animators
 {
     public class CloseWindowAnimator : IDisposable
     {

@@ -1,6 +1,6 @@
 ﻿using System;
 using HomeNet.DI;
-using HomeNetAvalonia.Infrastructure.Animators;
+using HomeNetAvalonia.Animators;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.OutputLogging;
 using HomeNetPresentation.Services;

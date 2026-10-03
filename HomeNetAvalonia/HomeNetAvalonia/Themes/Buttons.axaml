@@ -1,0 +1,121 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- ================================================================================= -->
+    <!-- 🧬 ЕДИНЫЙ БАЗОВЫЙ КИБЕРПАНК-СТИЛЬ ДЛЯ КНОПОК (.cyber-btn) -->
+    <!-- ================================================================================= -->
+    <Style Selector="Button.cyber-btn">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="5"/>
+        <Setter Property="Margin" Value="1"/>
+        <Setter Property="FontWeight" Value="Normal"/> 
+        <Setter Property="Foreground" Value="#FFF5546F"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border
+                    x:Name="border"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="5"
+                    Padding="{TemplateBinding Padding}">
+                    
+                    <ContentPresenter
+                        x:Name="contentPresenter"
+                        Content="{TemplateBinding Content}"
+                        ContentTemplate="{TemplateBinding ContentTemplate}"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- 🔥 ТРИГГЕР НАВЕДЕНИЯ (Hover): Контент и рамка становятся ГОЛУБЫМИ, фон — МАЛИНОВЫМ -->
+    <Style Selector="Button.cyber-btn:pointerover /template/ Border#border">
+        <Setter Property="Background" Value="#FFF5546F"/>
+        <Setter Property="BorderBrush" Value="#00CCFF"/>
+    </Style>
+    
+    <Style Selector="Button.cyber-btn:pointerover /template/ ContentPresenter#contentPresenter">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="#00CCFF"/>
+    </Style>
+
+    <!-- Принудительно красим Path в голубой при ховере кнопки -->
+    <Style Selector="Button.cyber-btn:pointerover Path">
+        <Setter Property="Stroke" Value="#00CCFF"/>
+    </Style>
+
+    <!-- 🔥 ТРИГГЕР НАЖАТИЯ (Pressed) -->
+    <Style Selector="Button.cyber-btn:pressed /template/ Border#border">
+        <Setter Property="Background" Value="#FF131926"/>
+        <Setter Property="BorderBrush" Value="#FF0D111A"/>
+    </Style>
+    <Style Selector="Button.cyber-btn:pressed /template/ ContentPresenter#contentPresenter">
+        <Setter Property="Foreground" Value="White"/>
+    </Style>
+    <Style Selector="Button.cyber-btn:pressed Path">
+        <Setter Property="Stroke" Value="White"/>
+    </Style>
+
+    <!-- 🔥 ТРИГГЕР ВЫКЛЮЧЕНИЯ (Disabled) -->
+    <Style Selector="Button.cyber-btn:disabled /template/ Border#border">
+        <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="Button.cyber-btn:disabled /template/ ContentPresenter#contentPresenter">
+        <Setter Property="Foreground" Value="#FF615959"/>
+    </Style>
+    <Style Selector="Button.cyber-btn:disabled Path">
+        <Setter Property="Stroke" Value="#FF615959"/>
+    </Style>
+    
+   
+        <!-- ================================================================================= -->
+    <!-- 📐 ТВОЯ ОРИГИНАЛЬНАЯ ЛОГИКА ДЛЯ PATH И РАЗМЕРОВ (С ФИКСОМ ЦЕНТРИРОВАНИЯ) -->
+    <!-- ================================================================================= -->
+    
+    <!-- Твой родной рабочий селектор для векторов, который Авалония теперь отцентрирует железно -->
+    <Style Selector="StackPanel Button Path">
+        <Setter Property="Stroke" Value="{Binding $parent[Button].Foreground}"/>
+        <Setter Property="StrokeThickness" Value="1"/>
+        <Setter Property="Width" Value="10"/>
+        <Setter Property="Height" Value="10"/>
+       
+      
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+
+
+
+    
+    <!-- Модификатор ширины для кнопок тайтлбара -->
+    <Style Selector="Button.action-btn">
+        <Setter Property="Width" Value="140"/>
+    </Style>
+
+    <!-- Фиксированный размер для системных кнопок -->
+    <Style Selector="StackPanel Button">
+        <Setter Property="Width" Value="32"/>
+        <Setter Property="Height" Value="32"/>
+    </Style>
+
+
+    <Style Selector="Button.form-btn">
+        <Setter Property="MinWidth" Value="110"/>
+        <Setter Property="Padding" Value="10,4"/>
+    </Style>
+
+
+</Styles>
+
+
+

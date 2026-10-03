@@ -1,5 +1,6 @@
 ﻿using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.AdminViews;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace HomeNet.DI
 {
@@ -11,6 +12,7 @@ namespace HomeNet.DI
         // Каждое свойство безопасно лезет в провайдер ядра
         public MainViewModel MainViewModel => GetViewModelSafe<MainViewModel>();
         public TitleBarViewModel TitleBarViewModel => GetViewModelSafe<TitleBarViewModel>();
+        public SystemButtonsViewModel SystemButtonsViewModel => GetViewModelSafe<SystemButtonsViewModel>();
         public StatusBarViewModel StatusBarViewModel => GetViewModelSafe<StatusBarViewModel>();
 
         public AuthenticationViewModel AuthenticationViewModel => GetViewModelSafe<AuthenticationViewModel>();

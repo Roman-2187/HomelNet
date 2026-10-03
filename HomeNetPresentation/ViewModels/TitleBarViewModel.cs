@@ -1,5 +1,4 @@
-﻿using System;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Interfaces.Events;
@@ -10,12 +9,10 @@ namespace HomeNetPresentation.ViewModels
 {
     /// <summary>
     /// Стерильная верхняя панель управления окном мессенджера SiberNet.
-    /// Полная изоляция: класс общается с навигацией ИСКЛЮЧИТЕЛЬНО через рацию автобуса,
-    /// принимая дуэт макро-параметров обратно для триггеров XAML.
+    /// Полная изоляция: класс общается с навигацией ИСКЛЮЧИТЕЛЬНО через рацию автобуса.
     /// </summary>
     public partial class TitleBarViewModel : FormViewModelBase<NavigationStateManager>, IDisposable
     {
-        // 🔥 ИСПРАВИЛИ: Никакого хардкода AdminZone на старте! Начинаем строго с чистого нуля.
         [ObservableProperty] private MainTab _currentMainZone = MainTab.StartZone;
         [ObservableProperty] private ClientSubTab _currentClientTab = ClientSubTab.None;
         [ObservableProperty] private bool _isGlobalLoggerVisible = false;
@@ -23,24 +20,22 @@ namespace HomeNetPresentation.ViewModels
         public TitleBarViewModel(IEventBus eventBus, NavigationStateManager navigationStateManager)
             : base(eventBus, navigationStateManager)
         {
-            // 🔥 СИНХРОНИЗАЦИЯ: Подписываемся строго на наш новый сквозной макро-рекорд
             _eventBus.Subscribe<ITitleBarVm.MacroZoneChanged>(OnMacroZoneChanged);
         }
 
-        #region 🎧 МЕТОД ПРИЁМА ОБРАТНОГО СИГНАЛА БЭКЕНДА переключения главных экранов 🧼
+        #region 🎧 МЕТОД ПРИЁМА ОБРАТНОГО СИГНАЛА БЭКЕНДА 🧼
 
         private void OnMacroZoneChanged(ITitleBarVm.MacroZoneChanged msg)
         {
             if (msg == null) return;
 
-            // 🔥 ПИНГ-ПОНГ: Раскладываем прилетевший обратно дуэт энумов по UI-свойствам
             CurrentMainZone = msg.ActiveZone;
             CurrentClientTab = msg.ActiveClientTab;
         }
 
         #endregion
 
-        // 🛠️ КНОПКА: Админка (Чистый, безотказный тумблер на основе локального засинхроненного стейта)
+        // 🛠️ КНОПКА: Админка
         [RelayCommand]
         public void ToggleAdminZone()
         {
@@ -54,14 +49,14 @@ namespace HomeNetPresentation.ViewModels
             }
         }
 
-        // 🔑 КНОПКА: Вход (Изолированная нано-команда PUBLIC без ломающих параметров)
+        // 🔑 КНОПКА: Вход
         [RelayCommand]
         public void OpenAuthZone()
         {
             _eventBus.Publish(this, new IUserVm.OpenAuth());
         }
 
-        // 📝 КНОПКА: Регистрация (Изолированная нано-команда PUBLIC без ломающих параметров)
+        // 📝 КНОПКА: Регистрация
         [RelayCommand]
         public void OpenRegisterZone()
         {
@@ -74,21 +69,6 @@ namespace HomeNetPresentation.ViewModels
         {
             _eventBus.Publish(this, new IUserVm.LogoutClient());
             _eventBus.Publish(this, new IStatusBarViewModel.TextChanged("Выход из аккаунта выполнен успешно"));
-        }
-
-        // ✕ КНОПКА: Закрыть приложение
-        [RelayCommand]
-        public void RequestCloseApplication()
-        {
-            _eventBus.Publish(this, new IMainViewModel.CloseRequest());
-        }
-   
-
-        // 🔳 КНОПКА: Развернуть окно
-        [RelayCommand]
-        public void ToggleGrowWindow()
-        {
-            _eventBus.Publish(this, new IMainViewModel.ToggleSize());
         }
 
         #region 🛡️ ЖЕЛЕЗОБЕТОННЫЙ СТЕРИЛИЗАТОР ПАМЯТИ

@@ -1,38 +1,38 @@
-[10/02 19:15:01.882] [INFO] [Builders -> DbContextContainer.SwitchDatabaseAsync:56] | Переключение инфраструктуры СУБД на SQLite...
+[10/03 21:57:57.073] [INFO] [Builders -> DbContextContainer.SwitchDatabaseAsync:56] | Переключение инфраструктуры СУБД на SQLite...
 
-[10/02 19:15:01.901] [INFO] [DbTableInitializer -> DbInitializer.InitializeAsync:40] | === СТАРТ ИНИЦИАЛИЗАЦИИ БАЗЫ ДАННЫХ ===
+[10/03 21:57:57.091] [INFO] [DbTableInitializer -> DbInitializer.InitializeAsync:40] | === СТАРТ ИНИЦИАЛИЗАЦИИ БАЗЫ ДАННЫХ ===
 
-[10/02 19:15:01.909] [INFO] [DbTableInitializer -> DbInitializer.InitializeAsync:52] | [БД] Проверка таблицы: users...
+[10/03 21:57:57.098] [INFO] [DbTableInitializer -> DbInitializer.InitializeAsync:52] | [БД] Проверка таблицы: users...
 
-[10/02 19:15:01.948] [DEBUG] [DbTableInitializer -> DbInitializer.InitializeAsync:62] | [БД] Таблица users существует, сверяю структуру...
+[10/03 21:57:57.127] [DEBUG] [DbTableInitializer -> DbInitializer.InitializeAsync:62] | [БД] Таблица users существует, сверяю структуру...
 
-[10/02 19:15:01.957] [DEBUG] [DBProviders -> GenericSchemaProvider.ProcessAndValidateSchema:102] | Получено 7 столбцов для таблицы users
+[10/03 21:57:57.134] [DEBUG] [DBProviders -> GenericSchemaProvider.ProcessAndValidateSchema:102] | Получено 7 столбцов для таблицы users
 
-[10/02 19:15:01.957] [DEBUG] [DBProviders -> GenericSchemaProvider.ProcessAndValidateSchema:121] | Получено имен колонок таблицы users : id, first_name, last_name, phone_number, email, password, created_at
+[10/03 21:57:57.134] [DEBUG] [DBProviders -> GenericSchemaProvider.ProcessAndValidateSchema:121] | Получено имен колонок таблицы users : id, first_name, last_name, phone_number, email, password, created_at
 
-[10/02 19:15:01.960] [INFO] [DbTableInitializer -> DbInitializer.CheckTableStructureAsync:154] |   -> Структура таблицы users в порядке.
+[10/03 21:57:57.137] [INFO] [DbTableInitializer -> DbInitializer.CheckTableStructureAsync:154] |   -> Структура таблицы users в порядке.
 
-[10/02 19:15:01.961] [INFO] [DbTableInitializer -> DbInitializer.InitializeAsync:52] | [БД] Проверка таблицы: messages...
+[10/03 21:57:57.137] [INFO] [DbTableInitializer -> DbInitializer.InitializeAsync:52] | [БД] Проверка таблицы: messages...
 
-[10/02 19:15:01.962] [DEBUG] [DbTableInitializer -> DbInitializer.InitializeAsync:62] | [БД] Таблица messages существует, сверяю структуру...
+[10/03 21:57:57.138] [DEBUG] [DbTableInitializer -> DbInitializer.InitializeAsync:62] | [БД] Таблица messages существует, сверяю структуру...
 
-[10/02 19:15:01.963] [DEBUG] [DBProviders -> GenericSchemaProvider.ProcessAndValidateSchema:102] | Получено 7 столбцов для таблицы messages
+[10/03 21:57:57.139] [DEBUG] [DBProviders -> GenericSchemaProvider.ProcessAndValidateSchema:102] | Получено 7 столбцов для таблицы messages
 
-[10/02 19:15:01.963] [DEBUG] [DBProviders -> GenericSchemaProvider.ProcessAndValidateSchema:121] | Получено имен колонок таблицы messages : id, sender_id, receiver_id, text, media_type, is_read, created_at
+[10/03 21:57:57.140] [DEBUG] [DBProviders -> GenericSchemaProvider.ProcessAndValidateSchema:121] | Получено имен колонок таблицы messages : id, sender_id, receiver_id, text, media_type, is_read, created_at
 
-[10/02 19:15:01.964] [INFO] [DbTableInitializer -> DbInitializer.CheckTableStructureAsync:154] |   -> Структура таблицы messages в порядке.
+[10/03 21:57:57.140] [INFO] [DbTableInitializer -> DbInitializer.CheckTableStructureAsync:154] |   -> Структура таблицы messages в порядке.
 
-[10/02 19:15:01.964] [INFO] [DbTableInitializer -> DbInitializer.InitializeAsync:52] | [БД] Проверка таблицы: friends...
+[10/03 21:57:57.141] [INFO] [DbTableInitializer -> DbInitializer.InitializeAsync:52] | [БД] Проверка таблицы: friends...
 
-[10/02 19:15:01.965] [DEBUG] [DbTableInitializer -> DbInitializer.InitializeAsync:62] | [БД] Таблица friends существует, сверяю структуру...
+[10/03 21:57:57.141] [DEBUG] [DbTableInitializer -> DbInitializer.InitializeAsync:62] | [БД] Таблица friends существует, сверяю структуру...
 
-[10/02 19:15:01.965] [DEBUG] [DBProviders -> GenericSchemaProvider.ProcessAndValidateSchema:102] | Получено 3 столбцов для таблицы friends
+[10/03 21:57:57.142] [DEBUG] [DBProviders -> GenericSchemaProvider.ProcessAndValidateSchema:102] | Получено 3 столбцов для таблицы friends
 
-[10/02 19:15:01.966] [DEBUG] [DBProviders -> GenericSchemaProvider.ProcessAndValidateSchema:121] | Получено имен колонок таблицы friends : user_id, friend_id, created_at
+[10/03 21:57:57.142] [DEBUG] [DBProviders -> GenericSchemaProvider.ProcessAndValidateSchema:121] | Получено имен колонок таблицы friends : user_id, friend_id, created_at
 
-[10/02 19:15:01.966] [INFO] [DbTableInitializer -> DbInitializer.CheckTableStructureAsync:154] |   -> Структура таблицы friends в порядке.
+[10/03 21:57:57.143] [INFO] [DbTableInitializer -> DbInitializer.CheckTableStructureAsync:154] |   -> Структура таблицы friends в порядке.
 
-[10/02 19:15:01.967] [INFO] [DbTableInitializer -> DbInitializer.InitializeAsync:73] | === ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ЗАВЕРШЕНА ===
+[10/03 21:57:57.143] [INFO] [DbTableInitializer -> DbInitializer.InitializeAsync:73] | === ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ЗАВЕРШЕНА ===
 
-[10/02 19:15:01.969] [INFO] [Builders -> DbContextContainer.SwitchDatabaseAsync:94] | База данных SQLite успешно перестроена и готова к работе.
+[10/03 21:57:57.145] [INFO] [Builders -> DbContextContainer.SwitchDatabaseAsync:94] | База данных SQLite успешно перестроена и готова к работе.
 

@@ -1,0 +1,98 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+ 
+    
+    
+    <!-- ================================================================================= -->
+    <!-- 🎨 ПОДСКАЗКИ (VALIDATION HINT) -->
+    <!-- ================================================================================= -->
+    <Style Selector="TextBlock.validation-hint">
+        <Setter Property="FontSize" Value="10"/>
+        <Setter Property="Foreground" Value="#00CCFF"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="Margin" Value="0,6,0,0"/>
+    </Style>
+    <Style Selector="TextBlock.validation-hint[Tag=Error]">
+        <Setter Property="Foreground" Value="#FFF5546F"/>
+    </Style>
+    <Style Selector="TextBlock.validation-hint[Tag=Success]">
+        <Setter Property="Foreground" Value="#00E666"/>
+    </Style>
+
+    <!-- ================================================================================= -->
+    <!-- 🎛 БАЗОВЫЙ СТИЛЬ ТЕКСТОВЫХ ПОЛЕЙ ВВОДА -->
+    <!-- ================================================================================= -->
+    <Style Selector="TextBox.validation-box">
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+        <Setter Property="CaretBrush" Value="#00CCFF"/>
+    </Style>
+
+    <!-- Твой родной рабочий стиль для рамки -->
+    <Style Selector="TextBox.validation-box /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="#11141A"/>
+        <Setter Property="BorderBrush" Value="#304050"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Padding" Value="10,6"/>
+    </Style>
+    
+    <!-- ТРИГГЕРЫ НАВЕДЕНИЯ И ФОКУСА ДЛЯ РАМКИ -->
+    <Style Selector="TextBox.validation-box:pointerover /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="#00CCFF"/>
+    </Style>
+    
+    <!-- 🔥 НЕЙТРАЛЬНАЯ РАМКА ПРИ ФОКУСЕ: Всегда горит бирюзовым при вводе -->
+    <Style Selector="TextBox.validation-box:focus /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="#00CCFF"/>
+        <Setter Property="Background" Value="#11141A"/>
+    </Style>
+
+    <!-- ТЕКСТ И КАРЕТКА ПРИ ФОКУСЕ: Горят бирюзовым -->
+    <Style Selector="TextBox.validation-box:focus">
+        <Setter Property="Foreground" Value="#00CCFF"/>
+        <Setter Property="CaretBrush" Value="#00CCFF"/>
+    </Style>
+
+    <!-- ================================================================================= -->
+    <!-- ⚡ ДИНАМИЧЕСКИЕ КИБЕР-ТРИГГЕРЫ СТАТУСОВ (ВКЛЮЧАЮТСЯ ТОЛЬКО КОГДА НЕТ ФОКУСА) -->
+    <!-- ================================================================================= -->
+
+    <!-- 🚨 СОСТОЯНИЕ: ОШИБКА -->
+    <Style Selector="TextBox.validation-box[Tag=Error]:not(:focus)">
+        <Setter Property="Foreground" Value="#FFF5546F"/>
+        <Setter Property="CaretBrush" Value="#FFF5546F"/>
+    </Style>
+    <!-- 🔥 ИСПРАВЛЕНИЕ: Рамка ошибки горит красным ТОЛЬКО когда у поля нет активного фокуса! -->
+    <Style Selector="TextBox.validation-box[Tag=Error]:not(:focus) /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="#FFF5546F"/>
+    </Style>
+
+       <!-- ================================================================================= -->
+    <!-- ⚡ ДИНАМИЧЕСКИЕ КИБЕР-ТРИГГЕРЫ СТАТУСОВ (ВКЛЮЧАЮТСЯ ТОЛЬКО КОГДА НЕТ ФОКУСА) -->
+    <!-- ================================================================================= -->
+
+    <!-- ... блок ошибки оставляем как есть ... -->
+
+    <!-- 🟢 СОСТОЯНИЕ: УСПЕХ -->
+    <!-- 🔥 ЖЕЛЕЗОБЕТОННЫЙ БЛОК: Выносим IsReadOnly в отдельный стиль без :not(:focus)! 
+         Теперь Авалония заблокирует поле намертво, и никакой клик мыши её не переубедит! -->
+    <Style Selector="TextBox.validation-box[Tag=Success]">
+        <Setter Property="IsReadOnly" Value="True"/>
+    </Style>
+
+    <!-- А это правило остаётся для визуала — чтобы текст зеленел только в покое -->
+    <Style Selector="TextBox.validation-box[Tag=Success]:not(:focus)">
+        <Setter Property="Foreground" Value="#00E666"/>
+        <Setter Property="CaretBrush" Value="#00E666"/>
+    </Style>
+    
+    <!-- 🔥 ИСПРАВЛЕНИЕ: Рамка успеха горит зелёным ТОЛЬКО когда у поля нет активного фокуса! -->
+    <Style Selector="TextBox.validation-box[Tag=Success]:not(:focus) /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="#00E666"/>
+    </Style>
+
+
+
+
+
+</Styles>

@@ -3,196 +3,51 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-   xmlns:enums="using:HomeNetCore.Enums.Navigation"
-             xmlns:vm="using:HomeNetPresentation.ViewModels"
-             xmlns:conv="using:HomeNetAvalonia.Converters"
-             xmlns:di="using:HomeNet.DI" 
-             xmlns:controls="using:HomeNetAvalonia.Controls"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450" 
-             x:Class="HomeNetAvalonia.Controls.TitleBarControl"        
-             x:DataType="di:ComponentHub">
- <UserControl.Resources>
+    xmlns:enums="using:HomeNetCore.Enums.Navigation"
+    xmlns:vm="using:HomeNetPresentation.ViewModels"
+    xmlns:conv="using:HomeNetAvalonia.Converters"
+    xmlns:di="using:HomeNet.DI" 
+    mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="50" 
+    x:Class="HomeNetAvalonia.Controls.TitleBarControl"        
+    x:DataType="di:ComponentHub">
+ 
+    <UserControl.Resources>
         <conv:EqualityConverter x:Key="EqualityConverter"/>
     </UserControl.Resources>
 
-    <UserControl.Styles>
-        <!-- Базовый стиль для всех кнопок в этой панели управления -->
-        <Style Selector="StackPanel.control-panel Button">
-            <!-- 🌌 ПОЛНАЯ ПРОЗРАЧНОСТЬ: Кнопки стали чистым текстом без серых плашек -->
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="CornerRadius" Value="6"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Padding" Value="5,5"/>
-        </Style>
-        
-        <!-- Ширина для стандартных кнопок действий -->
-        <Style Selector="StackPanel.control-panel Button.action-btn">
-            <Setter Property="Width" Value="140"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-        </Style>
+  
 
-        <!-- 🔥 Эффект наведения (Hover) — здесь включается и фон, и неон! -->
-        <Style Selector="StackPanel.control-panel Button:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#FF253042"/>
-            <Setter Property="BorderBrush" Value="#00F0FF"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="#FFFFFF"/>
-        </Style>
-    </UserControl.Styles>
-
-    <!-- Корневой Грид, завязанный на ComponentHub -->
-    <Grid DataContext="{DynamicResource ComponentHub}"
-          x:DataType="di:ComponentHub"
-          x:CompileBindings="True"> 
-        
-        <Grid.RowDefinitions>
-            <RowDefinition Height="50"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-
-        <!-- 👑 ВЕРХНЯЯ ПАНЕЛЬ ШАПКИ -->
-        <Grid Grid.Row="0" 
-              DataContext="{Binding TitleBarViewModel}"
-              x:DataType="vm:TitleBarViewModel"
-              Background="Transparent">
-
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-
-            <!-- НАЗВАНИЕ ПРИЛОЖЕНИЯ -->
-            <TextBlock
-                Grid.Column="0"
-                Text="SIBERNET v1.0"
-                Foreground="#FFF5546F"
-                VerticalAlignment="Center"
-                Margin="15,0,0,0"
-                FontWeight="Bold"/>
-
-            <!-- ЕДИНЫЙ ПУЛЬТ УПРАВЛЕНИЯ СПРАВА -->
-            <StackPanel
-                Grid.Column="2"
-                Orientation="Horizontal"
-                VerticalAlignment="Center"
-                Margin="0,0,15,0"
-                Classes="control-panel">
-                
-                <!-- КОНТРОЛЬ СВЕТА ЧЕРЕЗ МУЛЬТИ-БИНДИНГ -->
-                <StackPanel Orientation="Horizontal" Margin="0,0,25,0">
-                    <StackPanel.IsVisible>
-                        <MultiBinding Converter="{x:Static BoolConverters.And}">
-                            <Binding 
-                                Path="CurrentMainZone"
-                                Converter="{StaticResource EqualityConverter}"
-                                ConverterParameter="{x:Static enums:MainTab.StartZone}"/>
-                            <Binding
-                                Path="CurrentClientTab" 
-                                Converter="{StaticResource EqualityConverter}"
-                                ConverterParameter="{x:Static enums:ClientSubTab.None}"/>
-                        </MultiBinding>
-                    </StackPanel.IsVisible>
-                 
-                    <Button
-                        Content="🛠️ Админка"
-                        Classes="action-btn"
-                        Margin="0,0,15,0"  Foreground="#FFF5546F"
-                        Command="{Binding ToggleAdminZoneCommand}" />
-                    <Button 
-                        Content="🔑 Вход"
-                        Classes="action-btn"
-                        Margin="0,0,15,0"  Foreground="#FFF5546F"
-                        Command="{Binding OpenAuthZoneCommand}"/>
-                    <Button
-                        Content="📝 Регистрация" Foreground="#FFF5546F"
-                        Classes="action-btn"
-                        Command="{Binding OpenRegisterZoneCommand}"/>
-                </StackPanel>
-                
-                <!-- Системные кнопки окна -->
-                <StackPanel Orientation="Horizontal">
-                    <Button
-                        Content="🔳"
-                        Command="{Binding ToggleGrowWindowCommand}"
-                        Margin="0,0,8,0"  
-                        Width="35"
-                        HorizontalContentAlignment="Center"/>
-                    <Button
-                        Content="✕" 
-                        Command="{Binding RequestCloseApplicationCommand}"
-                        Width="35"
-                        HorizontalContentAlignment="Center"/> 
-                </StackPanel>
-                
-            </StackPanel>
-        </Grid>
-
-        <!-- 🌌 ВЛАСТЬ НАД ЦЕНТРАЛЬНЫМ ХОЛСТОМ -->
-        <Grid 
-            Grid.Row="1"
-            DataContext="{Binding TitleBarViewModel}" 
-            HorizontalAlignment="Stretch"
-            VerticalAlignment="Stretch"
-            Margin="0,0,0,5"
-            x:DataType="vm:TitleBarViewModel">
+     <!-- Корневой Грид шапки (высота 50), завязанный на ComponentHub -->
+    <Grid DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False" HorizontalAlignment="Right"> 
+        <StackPanel DataContext="{Binding TitleBarViewModel}"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center"
+                    Margin="0,0,15,0">
             
-            <!-- Экран А: Форма Входа -->
-            <Border
-                x:Name="AuthScreenContainer"
-                Background="Transparent"
-                IsVisible="{Binding CurrentClientTab, 
-                Converter={StaticResource EqualityConverter},
-                ConverterParameter={x:Static enums:ClientSubTab.Authentication}}">
-                <TextBlock
-                    Text="[ЭКРАН АВТОРИЗАЦИИ]"
-                    Foreground="#00F0FF"
-                    HorizontalAlignment="Center" 
-                    VerticalAlignment="Center"/>
-            </Border>
-
-            <!-- Экран Б: Панель Администратора -->
-            <Border
-                x:Name="AdminScreenContainer"
-                Background="Transparent"
-                IsVisible="{Binding CurrentMainZone, 
-                Converter={StaticResource EqualityConverter},
-                ConverterParameter={x:Static enums:MainTab.AdminZone}}">
-                <TextBlock
-                    Text="[ПАНЕЛЬ АДМИНИСТРАТОРА]"
-                    Foreground="#00F0FF"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"/>
-            </Border>
-
-            <!-- Экран В: Форма Регистрации -->
-            <Border
-                x:Name="RegisterScreenContainer"
-                Background="Transparent"
-                IsVisible="{Binding CurrentClientTab,
-                Converter={StaticResource EqualityConverter},
-                ConverterParameter={x:Static enums:ClientSubTab.Registration}}">
-                <controls:RegistrationViewControl 
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"/>
-            </Border>
-
-            <!-- Экран Г: Рабочая Зона Пользователя -->
-            <Border
-                x:Name="UserScreenContainer"
-                Background="Transparent"
-                IsVisible="{Binding CurrentMainZone,
-                Converter={StaticResource EqualityConverter},
-                ConverterParameter={x:Static enums:MainTab.ClientZone}}">
-                <TextBlock
-                    Text="[РАБОЧАЯ ЗОНА МЕССЕНДЖЕРА SIBERNET]" 
-                    Foreground="#00F0FF"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"/>
-            </Border>
-        </Grid>
+            <StackPanel Orientation="Horizontal">
+                <StackPanel.IsVisible>
+                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                        <Binding Path="CurrentMainZone" Converter="{StaticResource EqualityConverter}" ConverterParameter="{x:Static enums:MainTab.StartZone}"/>
+                        <Binding Path="CurrentClientTab" Converter="{StaticResource EqualityConverter}" ConverterParameter="{x:Static enums:ClientSubTab.None}"/>
+                    </MultiBinding>
+                </StackPanel.IsVisible>
+             
+                <!-- Накидываем классы: базовый киберпанк + модификатор ширины на 140px -->
+                <Button Content="🛠️ Админка" 
+                        Classes="cyber-btn action-btn" 
+                        Margin="0,0,15,0" 
+                        Command="{Binding ToggleAdminZoneCommand}" />
+                
+                <Button Content="🔑 Вход" 
+                        Classes="cyber-btn action-btn" 
+                        Margin="0,0,15,0" 
+                        Command="{Binding OpenAuthZoneCommand}"/>
+                
+                <Button Content="📝 Регистрация" 
+                        Classes="cyber-btn action-btn" 
+                        Command="{Binding OpenRegisterZoneCommand}"/>
+            </StackPanel>
+        </StackPanel>
     </Grid>
  
 </UserControl>

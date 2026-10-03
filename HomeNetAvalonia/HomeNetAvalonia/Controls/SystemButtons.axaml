@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"           
+           xmlns:di="using:HomeNet.DI"
+             mc:Ignorable="d" d:DesignWidth="150" d:DesignHeight="32"
+             x:Class="HomeNetAvalonia.Controls.SystemButtons">
+
+    
+
+ <Grid DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False">
+    <StackPanel DataContext="{Binding SystemButtonsViewModel}"
+                Orientation="Horizontal"
+                VerticalAlignment="Center">
+        
+     <!-- ➖ КНОПКА: СВЕРНУТЬ -->
+        <Button Classes="cyber-btn" Command="{Binding MinimizeWindowCommand}">         
+           <Path Data="M 2,4.75 L 8,4.75 L 8,6.25 L 2,6.25 Z"/>
+        </Button>
+
+        <!-- 🔳 КНОПКА: РАЗВЕРНУТЬ -->
+        <Button Classes="cyber-btn" Command="{Binding ToggleGrowWindowCommand}">     
+            <Path Data="M 1,1 L 9,1 L 9,9 L 1,9 Z"/>
+        </Button>
+        
+        <!-- ✕ КНОПКА: ЗАКРЫТЬ -->
+        <Button Classes="cyber-btn" Command="{Binding RequestCloseApplicationCommand}">    
+            <Path Data="M 1,1 L 9,9 M 9,1 L 1,9"/>
+        </Button>
+        
+    </StackPanel>
+</Grid>
+
+</UserControl>
