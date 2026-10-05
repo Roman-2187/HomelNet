@@ -2,16 +2,77 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="450"
+             Width="600" Height="350"
              x:Class="HomeNetAvalonia.Controls.AuthViewControl">
 
+<ContentControl Classes="CyberpunkInnerContainer" Padding="50,40,50,30" 
+                 DataContext="{DynamicResource ComponentHub}"
+                 x:CompileBindings="False">
+     
+     <!-- Переключаемся на AuthenticationViewModel -->
+     <Grid RowDefinitions="Auto, Auto, Auto, 80"
+           DataContext="{Binding AuthenticationViewModel}">
 
-    <!-- Временная заглушка, чтобы проект скомпилировался -->
-    <Border Background="#1A1F29" Padding="30" CornerRadius="8">
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-            <TextBlock Text="🔑 ЭКРАН АВТОРИЗАЦИИ SIBERNET" Foreground="#00F0FF" FontWeight="Bold" Margin="0,0,0,10"/>
-            <TextBlock Text="[Здесь будут поля ввода логина и пароля]" Foreground="#FFFFFF"/>
-        </StackPanel>
-    </Border>
+         <!-- 0️⃣ ЛОГИН / EMAIL -->
+         <StackPanel Grid.Row="0" Margin="0,0,0,20">
+             <TextBlock Text="Email или логин:" Foreground="#00CCFF" 
+                        Margin="0,0,0,4" FontSize="12"/>
+             <!-- 🟢 ИСПРАВЛЕНО: Привязка к UserData.Email и ключ EmailType вместо LoginType -->
+             <TextBox Classes="validation-box"
+                      Text="{Binding UserData.Email, Mode=TwoWay}"
+                      Tag="{Binding ValidationResults[EmailType].State}" />
+             <TextBlock Classes="validation-hint"
+                        Text="{Binding ValidationResults[EmailType].Message}"
+                        Tag="{Binding ValidationResults[EmailType].State}" />
+         </StackPanel>
+
+         <!-- 1️⃣ ПАРОЛЬ -->
+         <StackPanel Grid.Row="1" Margin="0,0,0,15">
+             <TextBlock Text="Пароль:" Foreground="#00CCFF" 
+                        Margin="0,0,0,4" FontSize="12"/>
+             <!-- 🟢 ИСПРАВЛЕНО: Привязка к UserData.Password и ключ PasswordType -->
+             <TextBox Classes="validation-box"
+                      PasswordChar="•"
+                      Text="{Binding UserData.Password, Mode=TwoWay}" 
+                      Tag="{Binding ValidationResults[PasswordType].State}" />
+             <TextBlock Classes="validation-hint"
+                        Text="{Binding ValidationResults[PasswordType].Message}"
+                        Tag="{Binding ValidationResults[PasswordType].State}" />
+         </StackPanel>
+
+         <!-- 2️⃣ СТАТУСНОЕ СООБЩЕНИЕ И ОШИБКИ -->
+         <TextBlock Grid.Row="2" Text="{Binding StatusMessage}" 
+                    Foreground="#FF0055" VerticalAlignment="Center" FontSize="12"
+                    TextWrapping="Wrap" Margin="0,5,0,5"/>
+
+         <!-- 3️⃣ НИЖНЯЯ ПАНЕЛЬ С КНОПКАМИ -->
+         <Grid Grid.Row="3" ColumnDefinitions="*, Auto" >
+             <!-- Ссылка на регистрацию, если перепутал окно -->
+            <!-- Ссылка на регистрацию, теперь с правильной нано-командой -->
+<Button Grid.Column="0" Content="Создать аккаунт" 
+        Classes="cyber-btn form-btn" 
+        Command="{Binding OpenRegisterZoneCommand}"
+        Foreground="#00CCFF" VerticalAlignment="Center" FontSize="11"/>
+             
+             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                 <!-- 🟢 ИСПРАВЛЕНО: Команды RelayCommand генерируют суффикс 'Command' автоматически -->
+                 <Button Content="Отмена" 
+                         Classes="cyber-btn form-btn" 
+                         Command="{Binding CancelCommand}" 
+                         Foreground="#00CCFF"
+                         Margin="0,0,15,0"/>
+                 
+                 <!-- 🟢 ИСПРАВЛЕНО: Подвязали текст кнопки к динамическому свойству из C# и исправили команду -->
+                 <Button Content="{Binding SubmitButtonText}" 
+                         Classes="cyber-btn form-btn" 
+                         Foreground="#00CCFF"
+                         Command="{Binding LoginCommand}"/>
+             </StackPanel>
+         </Grid>
+
+     </Grid>
+</ContentControl>
+
  
 </UserControl>

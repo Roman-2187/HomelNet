@@ -30,24 +30,30 @@
 
                     <StackPanel TextBlock.FontFamily="Consolas" TextBlock.FontSize="14" TextBlock.FontWeight="Bold">
                         <!-- Главный вертикальный список строк (Logs) -->
+                        <!-- Главный вертикальный список строк (Logs) -->
                         <ItemsControl ItemsSource="{Binding Logs}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <!-- Внутренний горизонтальный ряд букв (Для каждой строки) -->
+                                    <!-- Внутренний ряд токенов для каждой строки лога -->
                                     <ItemsControl ItemsSource="{Binding}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
-                                                <WrapPanel Margin="0,1"/>
+                                                <!-- 🔥 ИСПРАВЛЕНО: Явно задаем горизонтальную ориентацию 
+                             и запрещаем растягивать контейнер в бесконечность -->
+                                                <WrapPanel Orientation="Horizontal" Margin="0,1"/>
                                             </ItemsPanelTemplate>
                                         </ItemsControl.ItemsPanel>
 
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding Value}">
+                                                <!-- 🎯 ИСПРАВЛЕНО: Биндим свойство Text вместо Value -->
+                                                <TextBlock Text="{Binding Text}">
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock">
+                                                            <!-- Базовый терминальный неоновый зеленый цвет -->
                                                             <Setter Property="Foreground" Value="#00FF66"/>
                                                             <Style.Triggers>
+                                                                <!-- Твоя оригинальная палитра триггеров WPF -->
                                                                 <DataTrigger Binding="{Binding Level}" Value="{x:Static enums:LogLevel.Critical}">
                                                                     <Setter Property="Foreground" Value="Red"/>
                                                                 </DataTrigger>
@@ -70,6 +76,7 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+
                     </StackPanel>
                 </ScrollViewer>
             </Border>

@@ -42,7 +42,7 @@ namespace SiberNet.UI
                 if (currentMode == BackendMode.Real)
                 {
                     var dbCore = _serviceProvider.GetRequiredService<DbContextContainer>();
-                    await dbCore.InitializeAsync(DatabaseType.SQLite);
+                    await dbCore.InitializeAsync(DatabaseType.PostGreSQL);
                 }
             }
             catch (Exception ex)

@@ -1,0 +1,61 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+           
+       mc:Ignorable="d" d:DesignWidth="180" d:DesignHeight="50"
+             x:Class="HomeNetAvalonia.Controls.AccountMenuControl"
+             HorizontalAlignment="Stretch">
+
+    <!-- 🌌 Подвязываем Хаб (Сам контейнер оставляем прозрачным, без Classes) -->
+    <ContentControl DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False">
+        <Grid DataContext="{Binding AdminViewModel, FallbackValue={Binding AccountMenuViewModel}}">
+            
+            <!-- 🍔 КНОПКА-БУРГЕР -->
+            <Button Content="☰"
+                    Classes="cyber-btn"
+                    Padding="8,3"
+                    FontSize="14"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center">
+                
+                <!-- 🔽 ВСТРОЕННАЯ ШТОРКА ТЕЛЕГРАМА -->
+                <Button.Flyout>
+                    <Flyout Placement="BottomEdgeAlignedLeft" ShowMode="Standard"
+                            IsOpen="{Binding IsMenuOpen, Mode=TwoWay, FallbackValue=False}">
+                        
+                        <!-- 🟢 ВОТ СЮДА ИДЕАЛЬНО ЛОЖИТСЯ НАШ ТРЕТИЙ ТОНИРОВАННЫЙ СТИЛЬ (Без пробелов в имени!) -->
+                        <ContentControl Classes="AccountMenuContainer" Width="195" Height="400" Margin="-12">
+                           
+                            <Grid RowDefinitions="Auto, Auto, Auto">
+                                
+                                <TextBlock Grid.Row="0"
+                                           Text="УПРАВЛЕНИЕ" 
+                                           FontWeight="SemiBold"
+                                           FontSize="10" 
+                                           HorizontalAlignment="Center" 
+                                           Margin="0,5,0,10"/>
+                                
+                                <Button Grid.Row="1"
+                                        Content="👤 Профиль" 
+                                        Classes="cyber-btn"
+                                        HorizontalAlignment="Stretch"
+                                        Margin="0,4"/>
+
+                                <Button Grid.Row="2"
+                                        Content="↩ Выйти из системы" 
+                                        Command="{Binding LogoutCommand}"
+                                        Classes="cyber-btn" 
+                                        HorizontalAlignment="Stretch"
+                                        Margin="0,4"/>
+                            </Grid>
+                        </ContentControl>
+                    </Flyout>
+                </Button.Flyout>
+            </Button>
+            
+        </Grid>
+    </ContentControl>
+    
+        
+</UserControl>

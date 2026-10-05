@@ -64,6 +64,8 @@ namespace HomeNetServices.Diagnostics
                                 await Task.Delay(_typingDelayMs, token);
                         }
 
+
+
                         // 🔥 ОРЁТ В АВТОБУС ФИНАЛОМ СТРОКИ:
                         // Посылаем сигнал закрытия строки (false = закрыть параграф)
                         _eventBus.Publish(this, new ILogQueueManager.LogMessageReceived(Environment.NewLine, logEntry.level, logEntry.ns, false));

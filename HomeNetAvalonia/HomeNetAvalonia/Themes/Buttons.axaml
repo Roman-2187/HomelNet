@@ -1,20 +1,24 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-  <!-- ================================================================================= -->
+     <!-- ================================================================================= -->
     <!-- 🧬 ЕДИНЫЙ БАЗОВЫЙ КИБЕРПАНК-СТИЛЬ ДЛЯ КНОПОК (.cyber-btn) -->
     <!-- ================================================================================= -->
     <Style Selector="Button.cyber-btn">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="Padding" Value="5"/>
+        <Setter Property="Padding" Value="4"/>
         <Setter Property="Margin" Value="1"/>
-        <Setter Property="FontWeight" Value="Normal"/> 
+        <Setter Property="FontWeight" Value="Medium"/> 
         <Setter Property="Foreground" Value="#FFF5546F"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
+        
+        <!-- Используем стандартные системные шрифты, которые точно есть на ПК и не вызовут падения -->
+        <Setter Property="FontFamily" Value="Segoe UI, San Francisco, Helvetica, Arial"/>
+        <Setter Property="FontSize" Value="14"/>
         
         <Setter Property="Template">
             <ControlTemplate>
@@ -23,13 +27,14 @@
                     Background="{TemplateBinding Background}"
                     BorderBrush="{TemplateBinding BorderBrush}"
                     BorderThickness="{TemplateBinding BorderThickness}"
-                    CornerRadius="5"
+                    CornerRadius="2"
                     Padding="{TemplateBinding Padding}">
                     
                     <ContentPresenter
                         x:Name="contentPresenter"
                         Content="{TemplateBinding Content}"
                         ContentTemplate="{TemplateBinding ContentTemplate}"
+                        RecognizesAccessKey="True"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"/>
                 </Border>
@@ -37,20 +42,21 @@
         </Setter>
     </Style>
 
+
     <!-- 🔥 ТРИГГЕР НАВЕДЕНИЯ (Hover): Контент и рамка становятся ГОЛУБЫМИ, фон — МАЛИНОВЫМ -->
     <Style Selector="Button.cyber-btn:pointerover /template/ Border#border">
-        <Setter Property="Background" Value="#FFF5546F"/>
-        <Setter Property="BorderBrush" Value="#00CCFF"/>
+        <Setter Property="Background" Value="#1AADD8E6"/>
+        <Setter Property="BorderBrush" Value="#00F0FF"/>
     </Style>
     
     <Style Selector="Button.cyber-btn:pointerover /template/ ContentPresenter#contentPresenter">
         <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Foreground" Value="#00CCFF"/>
+        <Setter Property="Foreground" Value="#00F0FF"/>
     </Style>
 
     <!-- Принудительно красим Path в голубой при ховере кнопки -->
     <Style Selector="Button.cyber-btn:pointerover Path">
-        <Setter Property="Stroke" Value="#00CCFF"/>
+        <Setter Property="Stroke" Value="#00F0FF"/>
     </Style>
 
     <!-- 🔥 ТРИГГЕР НАЖАТИЯ (Pressed) -->

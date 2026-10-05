@@ -1,0 +1,95 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             
+               xmlns:behaviors="using:HomeNetAvalonia.Behaviors"
+             x:Class="HomeNetAvalonia.Controls.LogRenderControl">
+
+    <!-- 🔥 ШАГ 2: Честно цепляем глобальный хаб из ресурсов как у тебя в WPF -->
+   <!-- 🔥 ШАГ 2: Честно цепляем глобальный хаб из ресурсов как у тебя в WPF -->
+   <!-- 🪐 Подвязываем глобальный хаб из ресурсов -->
+    <Grid DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False">
+
+        <!-- 🪐 Проваливаемся в TerminalLogsViewModel -->
+        <Grid DataContext="{Binding TerminalLogsViewModel}">
+
+            <!-- Стальная подложка терминала -->
+             <Border
+                 BorderBrush="#304050"
+                 BorderThickness="0.4"
+                 CornerRadius="3" Padding="15"
+                 Background="#FF111318"
+                 Margin="0">
+                <ScrollViewer
+                    Margin="0" 
+                    HorizontalScrollBarVisibility="Disabled" 
+                    VerticalScrollBarVisibility="Hidden" behaviors:AutoScrollBehavior.EnableAutoScroll="True">
+
+                    <StackPanel>
+                        
+                        <!-- Главный вертикальный список строк (Logs) -->
+                    <ItemsControl ItemsSource="{Binding Logs}">
+    <ItemsControl.ItemTemplate>
+        <DataTemplate>                                    
+            
+            <!-- Возвращаем проверенный ItemsControl, чтобы проект компилировался без ошибок -->
+            <ItemsControl ItemsSource="{Binding}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <!-- 🎯 ХИТРЫЙ ХАМЛ-ТРЮК: Ограничиваем область видимости панели, 
+                             чтобы Skia аппаратно сбрасывала шлейфы за курсором -->
+                        <WrapPanel Margin="0,1" ClipToBounds="True"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                       <TextBlock
+                            x:Name="LogChar" 
+                            Text="{Binding Text}" 
+                            Tag="{Binding Level, StringFormat='{}{0}'}"
+                            FontFamily="Consolas" 
+                            FontSize="12" 
+                            LetterSpacing="-0.5">
+    
+                                <TextBlock.Styles>
+                                    <!-- Базовый терминальный зеленый цвет -->
+                                    <Style Selector="TextBlock">
+                                        <Setter Property="Foreground" Value="#00FF66"/>
+                                    </Style>
+        
+                                    <!-- Твоя оригинальная неоновая палитра по тегам -->
+                                    <Style Selector="TextBlock[Tag=Critical]">
+                                        <Setter Property="Foreground" Value="Red"/>
+                                    </Style>
+                                    <Style Selector="TextBlock[Tag=Error]">
+                                        <Setter Property="Foreground" Value="OrangeRed"/>
+                                    </Style>
+                                    <Style Selector="TextBlock[Tag=Warning]">
+                                        <Setter Property="Foreground" Value="#FFB300"/>
+                                    </Style>
+                                    <Style Selector="TextBlock[Tag=Debug]">
+                                        <Setter Property="Foreground" Value="#00F0FF"/>
+                                    </Style>
+                                </TextBlock.Styles>
+                            </TextBlock>
+
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            
+        </DataTemplate>
+    </ItemsControl.ItemTemplate>
+</ItemsControl>
+
+
+                        
+                    </StackPanel>
+                </ScrollViewer>
+          </Border>
+
+        </Grid>
+    </Grid>
+</UserControl>

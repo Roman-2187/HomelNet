@@ -1,39 +1,41 @@
-﻿using System;
-using HomeNet.DI;
+﻿using HomeNet.DI;
 using HomeNetAvalonia.Animators;
+using HomeNetAvalonia.Controls;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.OutputLogging;
 using HomeNetPresentation.Services;
 using Microsoft.Extensions.DependencyInjection;
+using System;
 
 namespace HomeNetAvalonia.Infrastructure
 {
     public static class AvaloniaUiBootstrapper
     {
        
-        public static IServiceProvider BuildAvaloniaContainer(BackendMode mode, string postgresConn, string sqliteConn)
+       
+            
+
+           public static IServiceProvider BuildAvaloniaContainer(BackendMode mode, string postgresConn, string sqliteConn)
         {
-            // 1. Унаследовали чертеж кроссплатформенного бэкенда из Ядра (AppBootstrapper)
+            // 1. Унаследовали чертеж кроссплатформенного бэкенда из Ядра
             ServiceCollection fullCollection = AppBootstrapper.CreateBackendCollection(mode, postgresConn, sqliteConn);
 
-            // 2. Дописываем провода, которые принадлежат исключительно Авалонии
             if (mode == BackendMode.Real || mode == BackendMode.Local)
             {
                 fullCollection.AddSingleton<CloseWindowAnimator>();
             }
 
-            // 3. Собираем ОДИН монолитный контейнер на всё приложение
+            // 2. Собираем ОДИН монолитный контейнер
             IServiceProvider provider = fullCollection.BuildServiceProvider();
 
-
-            // 🔥 ШАГ 1: ИНИЦИАЛИЗИРУЕМ БАЗОВЫЙ СТАТИЧЕСКИЙ ЛОКАТОР СЕРВИСОВ ЯДРА
+            // 🔥 ШАГ 1: ИНИЦИАЛИЗИРУЕМ БАЗОВЫЙ ЛОКАТОР СЕРВИСОВ ЯДРА
             AppBootstrapper.SetProvider(provider);
 
-            // 🔥 ШАГ 1.5: ЖЕЛЕЗНЫЙ ПРОГРЕВ НАВИГАТОРОВ SIBERNET 🧼
+            // 🔥 ШАГ 2: ПРОГРЕВ НАВИГАТОРОВ (Как в WPF!)
             provider.GetRequiredService<AdminNavigationManager>();
             provider.GetRequiredService<UserNavigationManager>();
 
-            // 🔥 ШАГ 2: БУДИМ МЕНЕДЖЕР ЛОГОВ (Запись на диск активируется)
+            // 🔥 ШАГ 3: БУДИМ МЕНЕДЖЕР ЛОГОВ (Как в WPF!)
             provider.GetRequiredService<ILogQueueManager>();
 
             // Аниматор окон
@@ -42,5 +44,12 @@ namespace HomeNetAvalonia.Infrastructure
             return provider;
         }
 
+
+
+
+
+
     }
+
 }
+

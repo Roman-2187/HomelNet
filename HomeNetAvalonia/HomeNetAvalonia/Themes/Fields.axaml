@@ -32,7 +32,7 @@
         <Setter Property="Background" Value="#11141A"/>
         <Setter Property="BorderBrush" Value="#304050"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="CornerRadius" Value="2"/>
         <Setter Property="Padding" Value="10,6"/>
     </Style>
     

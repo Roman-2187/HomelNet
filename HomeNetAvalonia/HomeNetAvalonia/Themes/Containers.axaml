@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <!-- 🌌 ТВОЙ ОРИГИНАЛЬНЫЙ ТРЁХСЛОЙНЫЙ КИБЕРПАНК-КОНТЕЙНЕР ДЛЯ ОКНА SIBERNET -->
     <Style Selector="ContentControl.CyberpunkContainer">     
-        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="CornerRadius" Value="3"/>
         <Setter Property="Padding" Value="5"/>   
         <Setter Property="Template">
             <ControlTemplate>
@@ -44,4 +44,102 @@
             </ControlTemplate>
         </Setter>
     </Style>
+
+
+
+   <Style Selector="ContentControl.CyberpunkInnerContainer">     
+     <Setter Property="Padding" Value="5"/>   
+     <Setter Property="Template">
+         <ControlTemplate>
+             <Grid>
+                 <!-- 1️⃣ ВНЕШНИЙ БОРДЕР (Тёмно-стальная рамка #304050, скругление 2) -->
+                 <Border CornerRadius="3" 
+                         BorderThickness="0.5" 
+                         BorderBrush="#304050" 
+                         Background="#FF1B222E">
+                     <Grid>
+                         <!-- 2️⃣ СРЕДНИЙ БОРДЕР (Приглушённое стальное свечение) -->
+                         <Border BorderThickness="0.5" 
+                                 Margin="0.5" 
+                                 BorderBrush="#40304050" 
+                                 CornerRadius="2"/>
+
+                         <!-- 3️⃣ ВНУТРЕННИЙ БОРДЕР (Глубокий фон и картинка) -->
+                         <Border Margin="0.5" 
+                                 BorderThickness="0.5"
+                                 CornerRadius="2"
+                                 Background="#FF1C2433"
+                                 ClipToBounds="True">
+                             <Grid>                                                                        
+                                 <Image Source="avares://HomeNetAvalonia/Assets/68fadad90ca053b59b3e0178c4983607.png" 
+                                        Stretch="UniformToFill"
+                                        Opacity="0.1"/>                                                    
+                               
+                                 <ContentPresenter Name="PART_ContentPresenter"
+                                                   Content="{TemplateBinding Content}" 
+                                                   ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                   Margin="{TemplateBinding Padding}"
+                                                   RecognizesAccessKey="True"/>
+                             </Grid>
+                         </Border>
+                     </Grid>
+                 </Border>
+             </Grid>
+         </ControlTemplate>
+     </Setter>
+ </Style>
+
+
+
+
+
+    <Style Selector="ContentControl.AccountMenuContainer">     
+     <Setter Property="Padding" Value="5"/>   
+     <Setter Property="Template">
+         <ControlTemplate>
+             <Grid>
+                 <!-- 1️⃣ ВНЕШНИЙ БОРДЕР (Тёмно-стальная рамка #304050, скругление 3) -->
+                 <Border CornerRadius="2.5" 
+                         BorderThickness="0.5" 
+                         BorderBrush="#304050" 
+                         Background="#FF1B222E">
+                     <Grid>
+                         <!-- 2️⃣ СРЕДНИЙ БОРДЕР (Приглушённое стальное свечение) -->
+                         <Border BorderThickness="0.5" 
+                                 Margin="0.5" 
+                                 BorderBrush="#40304050" 
+                                 CornerRadius="2.5"/>
+
+                         <!-- 3️⃣ ВНУТРЕННИЙ БОРДЕР (Глубокий фон и картинка) -->
+                         <Border Margin="0.5" 
+                                 BorderThickness="0.5"
+                                 CornerRadius="2.5"
+                                 Background="#FF1C2433"
+                                 ClipToBounds="True">
+                             <Grid>                                                                        
+                                 <Image Source="avares://HomeNetAvalonia/Assets/68fadad90ca053b59b3e0178c4983607.png" 
+                                        Stretch="UniformToFill"
+                                        Opacity="0.1"/>                                                    
+                               
+                                 <!-- 🟢 ТОНИРОВАНИЕ: Твой цвет ложится вторым слоем в Grid строго ПОВЕРХ картинки -->
+                                 <Border Background="#1AADD8E6"/>
+
+                                 <ContentPresenter Name="PART_ContentPresenter"
+                                                   Content="{TemplateBinding Content}" 
+                                                   ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                   Margin="{TemplateBinding Padding}"
+                                                   RecognizesAccessKey="True"/>
+                             </Grid>
+                         </Border>
+                     </Grid>
+                 </Border>
+             </Grid>
+         </ControlTemplate>
+     </Setter>
+ </Style>
+
+
+
+
+
 </Styles>

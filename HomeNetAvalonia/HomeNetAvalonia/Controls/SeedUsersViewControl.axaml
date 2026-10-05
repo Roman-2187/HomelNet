@@ -1,0 +1,57 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            xmlns:di="using:HomeNet.DI"
+             xmlns:vm="using:HomeNetPresentation.ViewModels.AdminViews"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="HomeNetAvalonia.Controls.SeedUsersViewControl"
+             x:CompileBindings="False"
+             x:DataType="di:ComponentHub">
+
+    <!-- 🪐 ПОДКЛЮЧАЕМ ХАБ: Здесь тип данных di:ComponentHub -->
+    <ContentControl DataContext="{StaticResource ComponentHub}">
+        
+        <!-- 🔥 ЖЕСТКАЯ ТИПИЗАЦИЯ: Подвязываем вьюмодель сидинга (проверь точное имя свойства в хабе) -->
+        <Grid DataContext="{Binding SeedUsersViewModel}" 
+              x:DataType="vm:SeedUsersViewModel">
+            
+            <!-- Обернули в Border, чтобы применить твой Padding="15" и темно-серый фон -->
+            <Border Padding="15" Background="#FF1E222A">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Stretch">
+                    
+                    <!-- ⚡ ЗАГОЛОВОК МОДУЛЯ -->
+                    <TextBlock Text="⚡ ЦЕНТРАЛЬНЫЙ МОДУЛЬ СИДИНГА ДАННЫХ" 
+                               Foreground="#FFF5546F" 
+                               FontWeight="Bold" 
+                               FontSize="16" 
+                               HorizontalAlignment="Center" 
+                               Margin="0,0,0,20"/>
+                    
+                    <!-- ИНФОРМАЦИОННОЕ ТАБЛО СТАТУСА ГЕНЕРАЦИИ -->
+                    <Border BorderThickness="1" 
+                            BorderBrush="#33FFB300" 
+                            Background="#1AADD8E6" 
+                            CornerRadius="4"
+                            Padding="15" 
+                            Margin="0,0,0,20">
+                        <TextBlock Text="{Binding SeedStatusText}" 
+                                   FontFamily="Consolas" 
+                                   FontSize="13" 
+                                   Foreground="#00FFCC" 
+                                   TextWrapping="Wrap"
+                                   HorizontalAlignment="Center"/>
+                    </Border>
+
+                    <!-- КНОПКА ЗАПУСКА КИБЕР-ГЕНЕРАЦИИ -->
+                    <!-- В Авалонии стиль по умолчанию OrangeDefaultButtonStyle подхватится через Classes, 
+                         если он прописан в App.axaml -->
+                    <Button Content="ЗАПУСТИТЬ ГЕНЕРАЦИЮ БАЗЫ (50 USERS)" 
+                            Command="{Binding ExecuteDataSeedingCommand}"                   
+                            Width="320" Height="45"   HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+            
+        </Grid>
+    </ContentControl>
+</UserControl>

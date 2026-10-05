@@ -11,7 +11,7 @@
 
     <!-- 👑 ВОЗВРАЩАЕМ ТВОЙ СТАРЫЙ ПУЛЕНЕПРОБИВАЕМЫЙ ОБВЕС КОРПУСА -->
      <ContentControl Classes="CyberpunkContainer"
-        CornerRadius="8"
+        CornerRadius="3"
         Padding="0"
         Margin="0"
         MinWidth="900"
@@ -72,16 +72,21 @@
             <!-- ================================================================================= -->
             <!-- Изолированная зона, где формы регистрации будут открываться во весь рост -->
             <controls:MainContentZoneControl 
-                Grid.Row="1" Grid.ColumnSpan="2"
+                Grid.Row="1" Grid.ColumnSpan="2" Margin="0,0,5,0"
                 HorizontalAlignment="Stretch" 
                 VerticalAlignment="Stretch"/>
 
-            <!-- ================================================================================= -->
-            <!-- 📡 СТАТУС-БАР ПРИЛОЖЕНИЯ (Ряд 2) -->
-            <!-- ================================================================================= -->
-            <Border Grid.Row="2" Background="Transparent" Grid.ColumnSpan="2">
-                <controls:StatusBarControl Height="40"/>
-            </Border>
+<!-- ================================================================================= -->
+<!-- 📡 СТАТУС-БАР ПРИЛОЖЕНИЯ (Ряд 2) -->
+<!-- ================================================================================= -->
+<Border Grid.Row="2" Background="Transparent" Grid.ColumnSpan="2">
+    <!-- 🟢 ИСПРАВЛЕНО: Добавили x:CompileBindings="False", чтобы компилятор не ругался на отсутствие DataType -->
+    <controls:StatusBarControl Height="40" 
+                               x:CompileBindings="False"
+                               DataContext="{Binding Source={StaticResource ComponentHub}, Path=StatusBarViewModel}"/>
+</Border>
+
+
         </Grid>
         
     </ContentControl>

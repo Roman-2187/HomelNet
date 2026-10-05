@@ -56,7 +56,7 @@ namespace HomeNet.DI
                 var eventBus = provider.GetRequiredService<IEventBus>();
 
                 // Передаем шину событий и задержку в 20 миллисекунд
-                var uiManager = new LogQueueManager(eventBus, 15);
+                var uiManager = new LogQueueManager(eventBus, 1);
 
                 var crashLogger = provider.GetRequiredService<AppFileogger>();
 
@@ -89,23 +89,25 @@ namespace HomeNet.DI
             services.AddSingleton<IFriendService, FriendService>();
 
             // 3. Регистрация Вьюмоделей слоя Презентации
+          
 
             services.AddSingleton<StatusBarViewModel>();
             // Регистрируем как Singleton, раз окно у нас одно
             services.AddSingleton<SystemButtonsViewModel>();
 
-            services.AddSingleton<TableUsersViewModel>();
+            
             services.AddSingleton<RegistrationViewModel>();
             services.AddSingleton<AuthenticationViewModel>();
             services.AddSingleton<TerminalLogsViewModel>(); // 🔥 ДОБАВИЛИ НАШУ КРОССПЛАТФОРМЕННУЮ ВЬЮМОДЕЛЬ
                                                             // Вьюмодель инспектора для вывода отчета на экран
             services.AddSingleton<InspectorViewModel>();
+           
 
             services.AddSingleton<AdminViewModel>();
             services.AddSingleton<DeleteUsersViewModel>();
             services.AddSingleton<ChatViewModel>();
             services.AddSingleton<TitleBarViewModel>();
-            services.AddSingleton<SeedUsersViewModel>();
+            services.AddSingleton<SeedUsersViewModel>(); services.AddSingleton<TableUsersViewModel>();
 
             // 🔥 СТАЛО: Регистрируем конкретных наследников-автоматов
             services.AddSingleton<AdminNavigationManager>();
@@ -115,13 +117,13 @@ namespace HomeNet.DI
             services.AddSingleton<NavigationStateManager>(provider =>
                 provider.GetRequiredService<UserNavigationManager>());
 
-
+ services.AddSingleton<UserViewModel>();
             // Изолированная левая панель контактов
             services.AddSingleton<ContactsViewModel>();
 
-            services.AddSingleton<UserViewModel>();
+            services.AddSingleton<MainViewModel>();
 
-            services.AddTransient<MainViewModel>();
+            
 
             return services;
         }

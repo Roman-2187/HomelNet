@@ -110,6 +110,17 @@ namespace HomeNetPresentation.ViewModels
             }
         }
 
+
+        [RelayCommand]
+        private void OpenRegisterZone()
+        {
+            _logger.LogInfo("[AuthVM] Запрос перехода на экран регистрации через EventBus.");
+
+            // Публикуем событие смены экрана в автобус
+            _eventBus.Publish(this, new IUserVm.OpenRegistration());
+        }
+
+
         [RelayCommand]
         private void Cancel()
         {

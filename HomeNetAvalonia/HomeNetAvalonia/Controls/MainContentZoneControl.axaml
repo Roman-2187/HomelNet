@@ -34,19 +34,18 @@
                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
 
-            <!-- Экран Б: Панель Администратора -->
-            <Border
-                x:Name="AdminScreenContainer"
-                Background="Transparent"
-                IsVisible="{Binding CurrentMainZone,
-                Converter={StaticResource EqualityConverter},
-                ConverterParameter={x:Static enums:MainTab.AdminZone}}">
-                <TextBlock
-                    Text="[ПАНЕЛЬ АДМИНИСТРАТОРА]"
-                    Foreground="#00F0FF" 
-                    HorizontalAlignment="Center" 
-                    VerticalAlignment="Center"/>
-            </Border>
+<!-- Экран Б: Панель Администратора -->
+<Border x:Name="AdminScreenContainer" 
+        Background="Transparent"
+        IsVisible="{Binding CurrentMainZone,
+        Converter={StaticResource EqualityConverter},
+        ConverterParameter={x:Static enums:MainTab.AdminZone}}">
+    
+    <!-- 🟢 ИСПРАВЛЕНО: Убрали View из имени контрола, теперь вызываем AdminMenuControl -->
+    <controls:AdminMenuControl HorizontalAlignment="Stretch" 
+                               VerticalAlignment="Stretch"/>
+</Border>
+
 
             <!-- Экран В: Форма Регистрации -->
             <Border

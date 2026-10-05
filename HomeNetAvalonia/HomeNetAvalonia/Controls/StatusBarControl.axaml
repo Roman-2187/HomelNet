@@ -10,7 +10,7 @@
     <Border Background="#FF1C2433" Margin="5"
             BorderBrush="#304050" 
             BorderThickness="0.5" 
-            CornerRadius="6" 
+            CornerRadius="2" 
             VerticalAlignment="Stretch" 
             HorizontalAlignment="Stretch">
         

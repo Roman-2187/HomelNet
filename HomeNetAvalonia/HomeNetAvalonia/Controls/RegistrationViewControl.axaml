@@ -10,7 +10,7 @@
     
   <!-- 🧼 СТИЛИ УШЛИ В РЕСУРСЫ, ТУТ ЧИСТАЯ РАЗМЕТКА -->
 
-   <ContentControl Classes="CyberpunkContainer" Padding="50,35,50,20" 
+   <ContentControl Classes="CyberpunkInnerContainer" Padding="50,35,50,20" 
             DataContext="{DynamicResource ComponentHub}"
             x:CompileBindings="False"  
            >

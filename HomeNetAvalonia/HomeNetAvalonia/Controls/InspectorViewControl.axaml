@@ -1,0 +1,69 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+              xmlns:vm="using:HomeNetPresentation.ViewModels.AdminViews"
+             mc:Ignorable="d" d:DesignHeight="450" d:DesignWidth="750"
+             x:Class="HomeNetAvalonia.Controls.InspectorViewControl">
+
+    <!-- 📡 Подвязываем DataContext к твоей чистой InspectorViewModel из Хаба ресурсов -->
+    <Grid DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False">
+        <Grid DataContext="{Binding InspectorViewModel}">
+
+            <!-- 🟢 Твой любимый строгий радиус скругления 3 -->
+            <Border BorderBrush="#304050"
+                    BorderThickness="0.4" CornerRadius="3" Padding="15" Background="#FF111318">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+
+                    <!-- Главный плоский список строк таймлайна шины -->
+                    <ItemsControl ItemsSource="{Binding GraphLines}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                
+                                <!-- Биндим текст строки, а энум состояния MessageState переводим в строку для Tag -->
+                                <TextBlock 
+                                    Text="{Binding Text}" 
+                                    Tag="{Binding State, StringFormat='{}{0}'}"
+                                    FontFamily="Consolas" 
+                                    FontSize="12" 
+                                    FontWeight="Bold"
+                                    LetterSpacing="-0.5"
+                                    Margin="0,1">
+                                    
+                                    <TextBlock.Styles>
+                                        <!-- 🩵 Дефолтный бирюзовый цвет для обычных заголовков и
+                                        таймлайна сигналов -->
+                                        <Style Selector="TextBlock">
+                                            <Setter Property="Foreground" Value="#00F0FF"/>
+                                        </Style>
+
+                                        <!-- 🔴 СТАТУС: Published (Выстрел в пустоту)
+                                        -> Жесткий Аварийный КРАСНЫЙ -->
+                                        <Style Selector="TextBlock[Tag=Published]">
+                                            <Setter Property="Foreground" Value="Red"/>
+                                        </Style>
+
+                                        <!-- 🟡 СТАТУС: Subscribed (Слушатель в засаде)
+                                        -> Предупреждающий ОРАНЖЕВЫЙ -->
+                                        <Style Selector="TextBlock[Tag=Subscribed]">
+                                            <Setter Property="Foreground" Value="#FFB300"/>
+                                        </Style>
+
+                                        <!-- 🟢 СТАТУС: Live (Живой рабочий канал)
+                                        -> Наш сочный НЕОНОВО-ЗЕЛЕНЫЙ -->
+                                        <Style Selector="TextBlock[Tag=Live]">
+                                            <Setter Property="Foreground" Value="#00FF66"/>
+                                        </Style>
+                                    </TextBlock.Styles>
+                                    
+                                </TextBlock>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                </ScrollViewer>
+            </Border>
+            
+        </Grid>
+    </Grid>
+</UserControl>

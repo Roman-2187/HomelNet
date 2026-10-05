@@ -3,11 +3,13 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using HomeNetAvalonia.Infrastructure; // Наш бутстраппер и хаб
 using HomeNetCore.Enums;
+using HomeNetCore.Extensions;
 using HomeNetOrm.Builders;
 using HomeNetOrm.Enums;
 using HomeNetOrm.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Threading.Tasks;
 
 namespace HomeNetAvalonia
 {
@@ -20,34 +22,48 @@ namespace HomeNetAvalonia
             AvaloniaXamlLoader.Load(this);
         }
 
-        public override async void OnFrameworkInitializationCompleted()
+        public override void OnFrameworkInitializationCompleted()
         {
             try
             {
                 BackendMode currentMode = BackendMode.Real;
 
-                // 1. Строки подключения (Один в один твоя логика)
+                // 1. Строки подключения
                 string dbPath = DatabasePathHelper.GetDatabasePath("home_net.db");
                 string sqliteConnectionString = $"Data Source={dbPath}";
                 string postgresConnectionString = "Server=127.0.0.1:5432;Database=home_net_db;User Id=postgres;Password=05011987;";
 
-                // 2. 🔥 ВЫЗЫВАЕМ НАШ АВАЛОНИЯ-СБОРЩИК
+                // 2. Вызываем наш Авалон-сборщик контейнера (БЕЗ запуска базы внутри!)
                 _serviceProvider = AvaloniaUiBootstrapper.BuildAvaloniaContainer(currentMode, postgresConnectionString, sqliteConnectionString);
 
-                // 3. Будим базы данных, если у нас боевой режим
-                if (currentMode == BackendMode.Real)
-                {
-                    var dbCore = _serviceProvider.GetRequiredService<DbContextContainer>();
-                    await dbCore.InitializeAsync(DatabaseType.SQLite);
-                }
-
-                // 4. Запуск главного окна
+                // 🔥 ШАГ 3 (БЫВШИЙ 4): СНАЧАЛА НАМЕРТВО ИНИЦИАЛИЗИРУЕМ ОКНО!
                 if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
                 {
                     desktop.MainWindow = new Views.MainWindow
                     {
-                        DataContext = HomeNet.DI.AppBootstrapper.GetViewModel<HomeNetPresentation.ViewModels.MainViewModel>()
+                        DataContext = _serviceProvider.GetRequiredService<HomeNetPresentation.ViewModels.MainViewModel>()
                     };
+                }
+
+                // 🔥 ШАГ 4 (БЫВШИЙ 3): БЕЗОПАСНЫЙ ФОНОВЫЙ ПУСК СУБД ПОСЛЕ ТОГО, КАК ОКНО ОТКРЫЛОСЬ!
+                if (currentMode == BackendMode.Real)
+                {
+                    var dbCore = _serviceProvider.GetRequiredService<DbContextContainer>();
+
+                    // Запускаем через фоновую задачу, чтобы UI-поток Авалонии дышал свободно!
+                    // Логи инициализации Postgres побегут прямо в твой терминал на экране!
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await dbCore.InitializeAsync(DatabaseType.PostGreSQL);
+                        }
+                        catch (Exception ex)
+                        {
+                            var logger = _serviceProvider.GetRequiredService<HomeNetCore.Interfaces.Diagnostics.ILogger>();
+                            logger.LogError($"[КРАШ СУБД В ВЕБЕ/ДЕСКТОПЕ]: {ex.Message}");
+                        }
+                    });
                 }
             }
             catch (Exception ex)
@@ -61,5 +77,6 @@ namespace HomeNetAvalonia
 
             base.OnFrameworkInitializationCompleted();
         }
+
     }
 }

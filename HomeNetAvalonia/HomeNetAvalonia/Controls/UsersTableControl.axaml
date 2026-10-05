@@ -1,0 +1,90 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:models="using:HomeNetCore.Models"
+             mc:Ignorable="d" d:DesignWidth="650" d:DesignHeight="500"
+             x:Class="HomeNetAvalonia.Controls.UsersTableControl">
+
+   <!-- 🌌 ОЖИВЛЯЕМ ХАБ: Превьюер видит модель и не слепнет -->
+    <ContentControl DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False">
+        <Grid DataContext="{Binding TableUsersViewModel}">
+         <ContentControl Classes="AccountMenuContainer">    
+            <!-- Глубокий ScrollViewer для прокрутки кибер-плиток досье -->
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Users}" Margin="10">
+                    
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+
+                   <ItemsControl.ItemTemplate>
+    <DataTemplate x:DataType="models:UserEntity"> 
+                            
+                            <!-- 🦾 УВЕЛИЧИЛИ ВЫСОТУ ДО 380, ЧТОБЫ ВЛЕЗЛА АВАТАРКА -->
+                            <ContentControl Classes="CyberpunkInnerContainer" Width="280" Height="380" Margin="8">
+                                
+                                <!-- Внутренняя сетка карточки -->
+                                <StackPanel Margin="5" Spacing="0">
+                                    
+                                    <!-- 🚷 ВЕРХНЯЯ ЗОНА: Фото профиля и базовые данные -->
+                                    <Grid ColumnDefinitions="80, *" Margin="0,0,0,15">
+                                                                               
+                                        <Border Grid.Column="0" 
+                                                Width="70" Height="70" 
+                                                BorderBrush="#FFF5546F" BorderThickness="0.5" 
+                                                CornerRadius="2" Background="#FF131926"
+                                                HorizontalAlignment="Left" VerticalAlignment="Top">                                         
+                                             <Image Source="avares://HomeNetAvalonia/Assets/blackcat.jpg" 
+                                               Stretch="UniformToFill" 
+                                                   Opacity="0.9"/>
+                                        </Border>
+
+                                        <!-- Рядом с фото выводим ID и Имя -->
+                                        <StackPanel Grid.Column="1" Spacing="4" Margin="5,5,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text=" ID:" Foreground="#FFF5546F" FontSize="8" FontWeight="Bold"/>
+                                            <TextBlock Text="{Binding Id}" Foreground="#00F0FF" FontSize="12" FontWeight="SemiBold"/>
+                                            
+                                            <TextBlock Text="ИМЯ:" Foreground="#FFF5546F" FontSize="8" FontWeight="Bold" Margin="0,2,0,0"/>
+                                            <TextBlock Text="{Binding FirstName}" Foreground="#00F0FF" FontSize="12"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- 📑 ОСТАЛЬНЫЕ ПОЛЯ ДОСЬЕ (Строго друг под другом) -->
+                                    <Grid RowDefinitions="Auto,Auto, Auto,Auto, Auto,Auto, Auto,Auto, Auto,Auto" ContextFlyout="{x:Null}">
+                                        
+                                        <!-- 👥 1. ФАМИЛИЯ -->
+                                        <TextBlock Grid.Row="0" Text="ФАМИЛИЯ ПОЛЬЗОВАТЕЛЯ:" Foreground="#FFF5546F" FontSize="9" FontWeight="Bold"/>
+                                        <TextBlock Grid.Row="1" Text="{Binding LastName}" Foreground="#00F0FF" FontSize="11" Margin="0,2,0,10"/>
+
+                                        <!-- 📞 2. ТЕЛЕФОН -->
+                                        <TextBlock Grid.Row="2" Text="КАНАЛ СВЯЗИ / ТЕЛЕФОН:" Foreground="#FFF5546F" FontSize="9" FontWeight="Bold"/>
+                                        <TextBlock Grid.Row="3" Text="{Binding PhoneNumber, FallbackValue='не указан'}" Foreground="#00F0FF" FontSize="11" Margin="0,2,0,10"/>
+
+                                        <!-- 📧 3. EMAIL -->
+                                        <TextBlock Grid.Row="4" Text="ЦИФРОВОЙ АДРЕС (EMAIL):" Foreground="#FFF5546F" FontSize="9" FontWeight="Bold"/>
+                                        <TextBlock Grid.Row="5" Text="{Binding Email}" Foreground="#00F0FF" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,10"/>
+
+                                        <!-- 🔑 4. ПАРОЛЬ -->
+                                        <TextBlock Grid.Row="6" Text="КЛЮЧ ДОСТУПА (ПАРОЛЬ):" Foreground="#FFF5546F" FontSize="9" FontWeight="Bold"/>
+                                        <TextBlock Grid.Row="7" Text="{Binding Password}" Foreground="#00F0FF" FontSize="11" FontWeight="Medium" Margin="0,2,0,10"/>
+
+                                        <!-- 📅 5. ДАТА СОЗДАНИЯ -->
+                                        <TextBlock Grid.Row="8" Text="ДАТА СОЗДАНИЯ :" Foreground="#00F0FF" FontSize="9" FontWeight="Bold"/>
+                                        <TextBlock Grid.Row="9" Text="{Binding CreatedAt, StringFormat='{}{0:dd.MM.yyyy HH:mm}'}" Foreground="#FFF5546F" FontSize="10" Margin="0,2,0,0"/>
+                                    </Grid>
+
+                                </StackPanel>
+                            </ContentControl>
+                            
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+             </ContentControl> 
+        </Grid>
+    </ContentControl>
+</UserControl>
