@@ -7,8 +7,12 @@ namespace HomeNetOrm.Interfaces
     {
         string GenerateCreateTableSql(TableSchema schema);
         string GenerateTableExistsSql(string? tableName);
-        string GenerateGetTableStructureSql(string? tableName); 
-        
+        string GenerateGetTableStructureSql(string? tableName);
+
+        public record DatabaseReady;
+
+        public record WarmUpUsersTable;
+
     }
 
 }

@@ -1,12 +1,12 @@
 ﻿using Dapper;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetCore.Interfaces.Events; // 🔥 ДОБАВЛЯЕМ СЮДА: Импорт интерфейсов твоей шины событий
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Models;
 using HomeNetOrm.Schemes;
 using System.Data;
 using System.Data.Common;
-
 
 namespace HomeNetOrm.DbTableInitializer
 {
@@ -19,12 +19,16 @@ namespace HomeNetOrm.DbTableInitializer
         private readonly ISchemaAdapter _schemaAdapter;
         private ISchemaSqlInitializer _initializer;
 
+        // 🔥 НАША ШИНА: Ссылка на EventBus
+        private readonly IEventBus _eventBus;
+
         public DBInitializer(
             DbConnection connection,
             ISchemaProvider schemaProvider,
             ISchemaAdapter schemaAdapter,
             ISchemaSqlInitializer schemaSqlGenerator,
             ISchemaSqlInitializer schemaSqlInitializer,
+            IEventBus eventBus, // 🔥 ВНЕДРЯЕМ: Передаем шину в конструктор
             ILogger logger)
         {
             _schemaProvider = schemaProvider ?? throw new ArgumentNullException(nameof(schemaProvider));
@@ -33,6 +37,7 @@ namespace HomeNetOrm.DbTableInitializer
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _schemaAdapter = schemaAdapter ?? throw new ArgumentNullException(nameof(schemaAdapter));
             _initializer = schemaSqlInitializer ?? throw new ArgumentNullException(nameof(schemaSqlInitializer));
+            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus)); //
         }
 
         public async Task InitializeAsync()
@@ -43,7 +48,6 @@ namespace HomeNetOrm.DbTableInitializer
 
             foreach (var schema in tableSchemas)
             {
-                // 🛡️ Переводим схему в змейку (из "Users" в "users"), чтобы узнать её РЕАЛЬНОЕ имя в БД
                 var dbSchema = _schemaAdapter.ConvertToSnakeCaseSchema(schema);
                 string dbTableName = dbSchema?.TableName ?? schema.TableName ?? string.Empty;
 
@@ -51,10 +55,8 @@ namespace HomeNetOrm.DbTableInitializer
                 {
                     _logger.LogInfo($"[БД] Проверка таблицы: {dbTableName}...");
 
-                    // Ищем в БД именно физическое имя "users", а не C#-имя "Users"
                     if (!await TableExistsAsync(dbTableName))
                     {
-                        // Передаем на создание уже готовую snake_case схему
                         await CreateTableAsync(dbSchema ?? schema);
                     }
                     else
@@ -71,22 +73,19 @@ namespace HomeNetOrm.DbTableInitializer
             }
 
             _logger.LogInfo("=== ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ЗАВЕРШЕНА ===");
+
+            // 🔥 ВЫСТРЕЛ В АВТОБУС: Структура всех таблиц проверена и накатана!
+            // Передаем в качестве отправителя 'this'. Вьюшки, просыпайтесь!
+            _eventBus.Publish(this, new ISchemaSqlInitializer.DatabaseReady());
         }
 
         private async Task<bool> TableExistsAsync(string tableName)
         {
-            // 🛡️ Полностью очищаем имя от кавычек и переводим в нижний регистр для сверки
             var cleanName = tableName.Trim('"', '\'').ToLower();
-
-            // Переводим системное имя из sqlite_master в нижний регистр через LOWER() 
-            // Это найдет и "Users", и "users", и "USERS" со 100% гарантией!
-            // СТАЛО (идеально под любую СУБД):
             string sql = _initializer.GenerateTableExistsSql(tableName);
-
 
             try
             {
-                // Передаем чистый параметр напрямую в Dapper, минуя кривой генератор
                 var result = await _dbConnection.ExecuteScalarAsync<int>(sql, new { cleanName });
                 return result > 0;
             }
@@ -109,7 +108,6 @@ namespace HomeNetOrm.DbTableInitializer
 
             await _dbConnection.ExecuteAsync(_schemaSqlGenerator.GenerateCreateTableSql(dbSchema));
 
-            // Проверяем по РЕАЛЬНОМУ имени, которое улетело в базу данных
             if (await TableExistsAsync(targetName))
                 _logger.LogInfo($"✅ Таблица {targetName} успешно создана в БД.");
             else
@@ -125,23 +123,18 @@ namespace HomeNetOrm.DbTableInitializer
                 await _dbConnection.OpenAsync();
             }
 
-            // Переводим исходную схему в змейку для корректного поиска структуры
             var actualAdaptedSchema = _schemaAdapter.ConvertToSnakeCaseSchema(actualSchema) ??
                 throw new ArgumentNullException(nameof(actualSchema));
 
             string dbTableName = actualAdaptedSchema.TableName ?? string.Empty;
-
-            // Запрашиваем состояние из базы по её правильному имени в нижнем регистре
             var expectedSchema = await _schemaProvider.GetActualTableSchemaAsync(dbTableName);
 
-            // 🔥 ИСПРАВЛЕННЫЙ СТРАЖ: Проверяем именно то, что прилетело ИЗ БАЗЫ (expectedSchema)!
             if (expectedSchema.Columns.Count == 0 || string.IsNullOrEmpty(expectedSchema.IdColumnName))
             {
                 _logger.LogError($"[ИНИЦИАЛИЗАТОР] Сверка структуры для таблицы '{dbTableName}'" +
                     $" пропущена, так как схема в БД повреждена, пуста или не имеет Primary Key.");
-                return; // Мгновенный выход, к сравнению ниже не идем 🛑
+                return;
             }
-
 
             var expectedAdaptedSchema = _schemaAdapter.ConvertToSnakeCaseSchema(expectedSchema) ??
                 throw new ArgumentNullException(nameof(expectedSchema));
@@ -170,4 +163,3 @@ namespace HomeNetOrm.DbTableInitializer
         }
     }
 }
-

@@ -110,7 +110,17 @@ namespace HomeNetPresentation.ViewModels
                 {
                     _log.LogInfo($"[DeleteVM] Юзер {verdict.ParsedId} стёрт.");
 
-                    _eventBus.Publish(this, new IDeleteUserVm.Deleted(verdict.ParsedId ?? -1));
+                    // 🎯 Если вердикт успешный — только тогда публикуем в шину
+                    if (verdict.IsValid && verdict.ParsedId.HasValue)
+                    {
+                        _eventBus.Publish(this, new IDeleteUserVm.Deleted(verdict.ParsedId.Value));
+                    }
+                    else
+                    {
+                        // Здесь ничего не шлём в шину, а просто выводим статус ошибки на экран / в StatusBar
+                        _log.LogError("Удаление не выполнено. Шина событий пропущена.");
+                    }
+
 
                     if (!string.IsNullOrEmpty(verdict.HistoryMessage))
                     {

@@ -1,4 +1,7 @@
-﻿using HomeNetCore.Models;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using HomeNetCore.Models;
 
 namespace HomeNetCore.Interfaces
 {
@@ -6,9 +9,15 @@ namespace HomeNetCore.Interfaces
     {
         // Только чистые базовые операции с базой/репозиторием
         Task InsertUserAsync(UserEntity user);
-        Task DeleteByIdAsync(int userId);
+
+        // 🎯 ТЕПЕРЬ ТУТ ЧЕСТНЫЙ Guid вместо int
+        Task DeleteByIdAsync(Guid userId);
+
         Task<List<UserEntity>> GetAllAsync();
-        Task<UserEntity?> GetByIdAsync(int userId);
+
+        // 🎯 ТЕПЕРЬ ТУТ ЧЕСТНЫЙ Guid вместо int
+        Task<UserEntity?> GetByIdAsync(Guid userId);
+
         Task<UserEntity?> GetByEmailAsync(string email);
     }
 }

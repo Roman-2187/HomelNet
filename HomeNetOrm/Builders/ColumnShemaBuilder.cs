@@ -25,6 +25,13 @@ namespace HomeNetOrm.Builders
             return this;
         }
 
+        // 🔥 НОВЫЙ МЕТОД: Явно размечает колонку в схеме как GUID/UUID
+        public ColumnBuilder<TEntity> AsGuid()
+        {
+            _schema.Type = ColumnType.Guid;
+            return this;
+        }
+
         public ColumnBuilder<TEntity> AsAutoIncrement()
         {
             _schema.IsAutoIncrement = true;
@@ -57,6 +64,13 @@ namespace HomeNetOrm.Builders
             return this;
         }
 
+        // 🔥 НОВЫЙ МЕТОД: Для временной метки обновления (паттерн Last Write Wins)
+        public ColumnBuilder<TEntity> IsUpdatedAtTimestamp()
+        {
+            _schema.Type = ColumnType.DateTimeOffset;
+            return this;
+        }
+
         public ColumnBuilder<TEntity> HasDefault(object value, ColumnType? forceType = null)
         {
             _schema.DefaultValue = value;
@@ -66,7 +80,6 @@ namespace HomeNetOrm.Builders
             }
             return this;
         }
-
 
         public ColumnBuilder<TEntity> HasForeignKey<TTarget>() where TTarget : class
         {
@@ -86,10 +99,11 @@ namespace HomeNetOrm.Builders
             return this;
         }
 
-
         public ColumnSchema Build()
         {
-            // Теперь проверка сработает только тогда, когда ты сам написал .AsAutoIncrement()
+            // 🛠 ФИКС ВАЛИДАЦИИ: 
+            // Теперь проверяем тип Integer только ЕСЛИ разработчик сам явно вызвал .AsAutoIncrement().
+            // Для наших Guid ключей IsAutoIncrement будет равен false, и эта проверка благополучно пропустится!
             if (_schema.IsAutoIncrement)
             {
                 if (_schema.Type != ColumnType.Integer || !_schema.IsPrimaryKey)

@@ -33,7 +33,7 @@ namespace HomeNetServices.Services.Identity
             var entity = new MessageEntity
             {
                 SenderId = msg.SenderId,
-                ReceiverId = msg.TargetId ?? 0,
+                ReceiverId = msg.TargetId ?? Guid.Empty,
                 Text = msg.Text,
                 MediaType = msg.FilePath != null ? "File" : "Text",
                 FilePath = msg.FilePath,

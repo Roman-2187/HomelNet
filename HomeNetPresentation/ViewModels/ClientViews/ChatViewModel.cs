@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
-using System;
 using System.Collections.ObjectModel;
 
 namespace HomeNetPresentation.ViewModels
@@ -19,11 +18,11 @@ namespace HomeNetPresentation.ViewModels
         [ObservableProperty] private string _currentUserName = string.Empty; // 🔥 Свойство для XAML
 
         // 🔥 КЭШ UI: Храним ID текущего авторизованного пользователя
-        private int _currentUserId;
+        private Guid _currentUserId;
 
         [ObservableProperty] private bool _isChatOpen = false;
         [ObservableProperty] private string _inputText = string.Empty;
-        [ObservableProperty] private int? _selectedFriendId;
+        [ObservableProperty] private Guid? _selectedFriendId;
 
         // 🔥 РЕАКТИВНОСТЬ: Сюда макро-панель (UserViewModel) будет напрямую докидывать сообщения из базы
         [ObservableProperty] private ObservableCollection<MessageEntity> _messages = new();
@@ -40,17 +39,17 @@ namespace HomeNetPresentation.ViewModels
 
         #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Локальный UI-кэш для ID) 🧼
 
-      
+
 
 
         private void OnUserSignedIn(IUserVm.UserSignedIn msg)
         {
             if (msg?.User == null) return;
 
-            _currentUserId = msg.User.Id;
+            _currentUserId = msg.User.Id; // GUID встанет сюда как родной
 
-            // 🔥 ЗАПОМИНАЕМ ИМЯ: Берем имя или Email залогинившегося юзера
-            CurrentUserName = msg.User.FirstName ?? msg.User.Email;
+            // Раз валидатор на регистрации не пускает пустые имена — берем напрямую!
+            CurrentUserName = msg.User.FirstName!;
         }
 
         private void OnUserSignedUp(IUserVm.UserSignedUp msg)
@@ -59,9 +58,10 @@ namespace HomeNetPresentation.ViewModels
 
             _currentUserId = msg.User.Id;
 
-            // Запоминаем при регистрации нового аккаунта
-            CurrentUserName = msg.User.FirstName ?? msg.User.Email;
+            CurrentUserName = msg.User.FirstName!;
         }
+
+
 
         private void OnFriendSelected(IContactsVm.FriendSelected msg)
         {
@@ -103,7 +103,7 @@ namespace HomeNetPresentation.ViewModels
 
         // Автоматически пересчитываем доступность кнопки отправки при вводе букв
         partial void OnInputTextChanged(string value) => SendMessageCommand.NotifyCanExecuteChanged();
-        partial void OnSelectedFriendIdChanged(int? value) => SendMessageCommand.NotifyCanExecuteChanged();
+        partial void OnSelectedFriendIdChanged(Guid? value) => SendMessageCommand.NotifyCanExecuteChanged();
 
         #endregion
 

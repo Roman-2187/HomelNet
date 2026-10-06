@@ -12,7 +12,7 @@ namespace HomeNetOrm.Helpers
         {
             MemberExpression? memberExpression = expression.Body as MemberExpression;
 
-            // Обработка Boxing для значимых типов (int, bool, DateTime)
+            // Обработка Boxing для значимых типов (int, bool, DateTime, Guid, DateTimeOffset)
             if (memberExpression == null && expression.Body is UnaryExpression unaryExpression)
             {
                 memberExpression = unaryExpression.Operand as MemberExpression;
@@ -29,18 +29,27 @@ namespace HomeNetOrm.Helpers
                 Name = propertyInfo.Name // Адаптер позже переведет в snake_case
             };
 
+            // 🔥 РАСПАКОВКА: Достаем базовый тип, если свойство является Nullable<T>
+            Type propertyType = Nullable.GetUnderlyingType(propertyInfo.PropertyType) ?? propertyInfo.PropertyType;
+
             // Чистый маппинг типов C# в твои типы ColumnType
-            schema.Type = propertyInfo.PropertyType switch
+            schema.Type = propertyType switch
             {
-                Type t when t == typeof(int) || t == typeof(long) => ColumnType.Integer,
-                Type t when t == typeof(string) => ColumnType.Varchar,
-                Type t when t == typeof(DateTime) || t == typeof(DateTime?) => ColumnType.DateTime,
-                Type t when t == typeof(bool) => ColumnType.Boolean,
-                _ => ColumnType.Unspecified
+                Type t when t == typeof(int) || t == typeof(long) => ColumnType.Integer, //
+                Type t when t == typeof(string) => ColumnType.Varchar, //
+                Type t when t == typeof(DateTime) => ColumnType.DateTime, //
+                Type t when t == typeof(bool) => ColumnType.Boolean, //
+
+                // 🎯 GUID (16-ричный код)
+                Type t when t == typeof(Guid) => ColumnType.Guid,
+
+                // ⏱ DateTimeOffset для честных штампов синхронизации
+                Type t when t == typeof(DateTimeOffset) => ColumnType.DateTimeOffset,
+
+                _ => ColumnType.Unspecified //
             };
 
             return schema;
         }
     }
 }
-

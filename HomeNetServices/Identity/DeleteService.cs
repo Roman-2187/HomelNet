@@ -34,9 +34,11 @@ namespace HomeNetServices.Services.Identity
             if (validationResults.Any(r => r.State == ValidationState.Error))
                 return new IDeleteService.SearchVerdict(false, validationResults, null);
 
-            int id = int.Parse(targetUserId);
+            // 🎯 ТЕПЕРЬ ТУТ ЧЕСТНЫЙ Guid вместо int.Parse
+            Guid id = Guid.Parse(targetUserId);
             try
             {
+                // Передаем Guid в обновленный метод сервиса
                 var user = await _userService.GetByIdAsync(id);
                 var res = validationResults.First();
 
@@ -56,22 +58,25 @@ namespace HomeNetServices.Services.Identity
             }
         }
 
+
         /// <summary>
         /// 🎯 Конвейер удаления пользователя
         /// </summary>
-        
+
         public async Task<IDeleteService.DeleteVerdict> DeleteUserAsync(string targetUserId, UserEntity? selectedUser)
         {
-            int id = selectedUser?.Id ?? (int.TryParse(targetUserId, out int parsedId) ? parsedId : -1);
+            // 🎯 Чистый, современный рефакторинг под Guid
+            Guid id = selectedUser?.Id ?? (Guid.TryParse(targetUserId, out Guid parsedId) ? parsedId : Guid.Empty);
 
             var validationResults = new List<ValidationResult>();
             var idRes = new ValidationResult { Field = TypeField.IdType, State = ValidationState.Success };
             validationResults.Add(idRes);
 
-            if (id <= 0)
+            // 🛠 ФИКС: Проверяем Guid на пустоту вместо математического сравнения <= 0
+            if (id == Guid.Empty)
             {
                 idRes.Update(ValidationState.Error, "Ошибка: Некорректный ID пользователя!");
-                return new IDeleteService.DeleteVerdict(false, validationResults, null, null);
+                return new IDeleteService.DeleteVerdict(false, validationResults, id, null); // Передаем id вместо null, так как тип возвращаемого значения, скорее всего, изменился на Guid?
             }
 
             try

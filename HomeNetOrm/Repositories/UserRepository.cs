@@ -3,8 +3,13 @@ using HomeNetCore.Interfaces;
 using HomeNetCore.Models;
 using HomeNetOrm.Builders;
 using HomeNetOrm.Enums;
+using System;
+using System.Collections.Generic;
 using System.Data.Common;
+using System.Linq;
+using System.Threading.Tasks;
 using HomeNetCore.Exeptions;
+
 namespace HomeNetOrm.Repositories
 {
     public class UserRepository : IUserRepository
@@ -18,15 +23,6 @@ namespace HomeNetOrm.Repositories
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        //public async Task<bool> EmailExistsAsync(string? email)
-        //{
-        //    // На лету вытаскиваем актуальный шлейф и генератор 🔌⚡
-        //    DbConnection connection = _context.Connection;
-        //    var sql = _context.UserSqlGen.GenerateEmailExists();
-
-        //    return await connection.ExecuteScalarAsync<bool>(sql, new { email });
-        //}
-
         public async Task<UserEntity> InsertUserAsync(UserEntity user)
         {
             try
@@ -34,8 +30,17 @@ namespace HomeNetOrm.Repositories
                 DbConnection connection = _context.Connection;
                 var sql = _context.UserSqlGen.GenerateInsert();
 
-                var newId = await connection.ExecuteScalarAsync<int>(sql, user);
-                user.Id = newId;
+                // 🎯 ФИКС: Перед вставкой генерируем новый Guid, если он еще не задан
+                if (user.Id == Guid.Empty)
+                {
+                    user.Id = Guid.NewGuid();
+                }
+
+                // Штампуем актуальное время перед отправкой в шину/базу
+                user.UpdatedAt = DateTimeOffset.UtcNow;
+
+                // Так как ID теперь Guid и создается на клиенте, используем ExecuteAsync вместо ExecuteScalarAsync<int>
+                await connection.ExecuteAsync(sql, user);
                 return user;
             }
             catch (Exception ex)
@@ -44,7 +49,8 @@ namespace HomeNetOrm.Repositories
             }
         }
 
-        public async Task DeleteByIdAsync(int id)
+        // 🎯 ТЕПЕРЬ ТУТ ЧЕСТНЫЙ Guid вместо int
+        public async Task DeleteByIdAsync(Guid id)
         {
             DbConnection connection = _context.Connection;
             var sql = _context.UserSqlGen.GenerateDelete();
@@ -73,7 +79,8 @@ namespace HomeNetOrm.Repositories
             }
         }
 
-        public async Task<UserEntity?> GetByIdAsync(int id)
+        // 🎯 ТЕПЕРЬ ТУТ ЧЕСТНЫЙ Guid вместо int
+        public async Task<UserEntity?> GetByIdAsync(Guid id)
         {
             DbConnection connection = _context.Connection;
             string sql = _context.UserSqlGen.GenerateSelectById();
@@ -94,9 +101,11 @@ namespace HomeNetOrm.Repositories
             DbConnection connection = _context.Connection;
             string sql = _context.UserSqlGen.GenerateUpdate();
 
+            // Обновляем метку времени при любом редактировании
+            user.UpdatedAt = DateTimeOffset.UtcNow;
+
             await connection.ExecuteAsync(sql, user);
         }
-
 
         public async Task<bool> EmailExistsAsync(string? email)
         {
@@ -121,6 +130,5 @@ namespace HomeNetOrm.Repositories
                 return await connection.ExecuteScalarAsync<bool>(sql, new { email });
             }
         }
-
     }
 }

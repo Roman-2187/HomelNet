@@ -8,7 +8,9 @@
         DateTime,
         Boolean,
         Unknown,
-        Real
+        Real,
+        Guid,
+        DateTimeOffset
     }
 }
 

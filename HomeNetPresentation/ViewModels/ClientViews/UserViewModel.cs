@@ -21,7 +21,7 @@ namespace HomeNetPresentation.ViewModels
         public ContactsViewModel ContactsListVM { get; }
         public ChatViewModel ChatVm { get; }
 
-        private int _currentUserId; // 🔥 Наш локальный UI-кэш для ID текущего юзера
+        private Guid _currentUserId; // 🔥 Наш локальный UI-кэш для ID текущего юзера
 
         // Локальный стейт вкладки, скопированный из реактивного факта навигатора для XAML
         [ObservableProperty] private ClientSubTab _activeClientTab = ClientSubTab.None;

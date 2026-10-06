@@ -24,12 +24,13 @@ namespace HomeNetCore.Interfaces.Services
 
         Task<DeleteVerdict> DeleteUserAsync(string targetUserId, UserEntity? selectedUser);
 
-        // В файле IDeleteUserVm.cs у нас лежит Deleted рекорд, а тут DeleteVerdict
+
+       
         public record DeleteVerdict(
-     bool IsValid,
-     List<ValidationResult> Results,
-     int? ParsedId,
-     IEnumerable<UserEntity>? UpdatedUsers = null)
+      bool IsValid,
+      List<ValidationResult> Results,
+      Guid? ParsedId, // 🎯 ТЕПЕРЬ ТУТ ЧЕСТНЫЙ Guid? вместо int?
+      IEnumerable<UserEntity>? UpdatedUsers = null)
         {
             // 🔥 Сюда сервис запишет уже готовый текст для ListBox-а истории
             public string HistoryMessage { get; set; } = string.Empty;

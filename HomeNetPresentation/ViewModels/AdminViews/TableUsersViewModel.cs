@@ -9,25 +9,21 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace HomeNetPresentation.ViewModels.AdminViews
 {
-    /// <summary>
-    /// Облегченный UI-источник правды для пользователей SiberNet.
-    /// Никакой инфраструктуры, только чистый async/await и точечные обновления коллекции.
-    /// </summary>
     public partial class TableUsersViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
     {
         private readonly IUserService _userService;
-        private bool _isLoaded = false;
 
-        // Коллекция инициализируется один раз и больше никогда не пересоздается через new!
         [ObservableProperty] private ObservableCollection<UserEntity> _users = new();
 
         public TableUsersViewModel(IEventBus eventBus, IUserService userService, AdminNavigationManager navigation)
             : base(eventBus, navigation)
         {
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+
+            // 🔥 ВСЁ СНОВА ЗДЕСЬ: Чистые, изолированные подписки на изменения данных
             InitializeBusSubscriptions();
 
-            // 🔥 Пинаем фоновый старт. С контекстом async/await возврат произойдет в UI-поток сам.
+            // 🔥 ЗАПУСК ИЗ КОНСТРУКТОРА: Метод выстрелит сразу в момент рождения класса в памяти!
             _ = InitializeDataAsync();
         }
 
@@ -35,18 +31,11 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         {
             try
             {
-               
+                var list = await _userService.GetAllAsync();
 
-                var list = await Task.Run(() => _userService.GetAllAsync());
+                // Прямая подмена ссылки для железного апдейта Avalonia
+                Users = new ObservableCollection<UserEntity>(list ?? Enumerable.Empty<UserEntity>());
 
-                // Очищаем и точечно заполняем ОДНУ И ТУ ЖЕ коллекцию
-                Users.Clear();
-                foreach (var user in list ?? Enumerable.Empty<UserEntity>())
-                {
-                    Users.Add(user);
-                }
-
-                _isLoaded = true;
                 BroadcastRefreshed();
             }
             catch (Exception ex)
@@ -57,7 +46,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 
         private void InitializeBusSubscriptions()
         {
-            _eventBus.Subscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
+            
             _eventBus.Subscribe<IDeleteUserVm.Deleted>(OnUserDeletedFromDb);
             _eventBus.Subscribe<IUsersTableVm.Added>(OnUserAdded);
             _eventBus.Subscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
@@ -65,17 +54,8 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 
         #region 🎧 МЕТОДЫ ПОДПИСОК 🧼
 
-        private void OnAdminTabChanged(IAdminVm.AdminTabChanged msg)
-        {
-            if (msg?.ActiveTab == AdminSubTab.UserTable && _isLoaded)
-            {
-                BroadcastRefreshed();
-            }
-        }
-
         private void OnUserDeletedFromDb(IDeleteUserVm.Deleted msg)
         {
-            // Точечное удаление
             var uiUser = Users.FirstOrDefault(u => u.Id == msg.Id);
             if (uiUser != null)
             {
@@ -87,8 +67,6 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         private void OnUserAdded(IUsersTableVm.Added msg)
         {
             if (msg.User == null) return;
-
-            // Точечное добавление, если такого еще нет
             if (!Users.Any(u => u.Id == msg.User.Id))
             {
                 Users.Add(msg.User);
@@ -98,14 +76,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 
         private async void OnRefreshRequest(IUsersTableVm.RefreshRequest msg)
         {
-            if (_isLoaded)
-            {
-                BroadcastRefreshed();
-            }
-            else
-            {
-                await InitializeDataAsync();
-            }
+            await InitializeDataAsync();
         }
 
         #endregion
@@ -118,7 +89,6 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         public override void Dispose()
         {
             base.Dispose();
-            _eventBus.Unsubscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
             _eventBus.Unsubscribe<IDeleteUserVm.Deleted>(OnUserDeletedFromDb);
             _eventBus.Unsubscribe<IUsersTableVm.Added>(OnUserAdded);
             _eventBus.Unsubscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);

@@ -1,4 +1,5 @@
-﻿using HomeNetCore.Enums;
+﻿using Dapper;
+using HomeNetCore.Enums;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
@@ -69,12 +70,18 @@ namespace HomeNet.DI
                 return uiManager;
             });
 
-
+            SqlMapper.AddTypeHandler(new GuidTypeHandler());
 
 
             // Контекст БД принимает строки подключения извне
+            // 🎯 ФИКС: Передаем шину событий третьим параметром в конструктор контейнера контекста!
             services.AddSingleton(provider =>
-                new DbContextContainer(postgresConn, sqliteConn, provider.GetRequiredService<ILogger>()));
+                new DbContextContainer(
+                    postgresConn,
+                    sqliteConn,
+                    provider.GetRequiredService<IEventBus>(), // 🔥 ДОПИСАЛИ СЮДА ПАДИТЕЛЬ ДЛЯ АВТОБУСА
+                    provider.GetRequiredService<ILogger>()));
+
 
             // 2. Регистрация репозиториев и бизнес-сервисов (Работают везде, даже в консоли)
             services.AddSingleton<IUserRepository, UserRepository>();
@@ -151,4 +158,30 @@ namespace HomeNet.DI
         }
 
     }
+
+
+
+    // Вставляй в самый конец файла AppBootstrapper.cs за пределами основного класса
+    public class GuidTypeHandler : Dapper.SqlMapper.TypeHandler<Guid>
+    {
+        // Как записывать Guid в базу данных
+        public override void SetValue(System.Data.IDbDataParameter parameter, Guid value)
+        {
+            parameter.Value = value.ToString();
+        }
+
+        // Как без ошибок читать Guid из базы данных обратно в C#
+        public override Guid Parse(object value)
+        {
+            if (value is Guid guid) return guid;
+
+            if (value is string str && Guid.TryParse(str, out var parsedGuid))
+            {
+                return parsedGuid;
+            }
+
+            return Guid.Empty;
+        }
+    }
+
 }

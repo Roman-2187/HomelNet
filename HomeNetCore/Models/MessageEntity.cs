@@ -13,13 +13,13 @@ namespace HomeNetCore.Models
     {
         [Key] // Главный ключ для EF Core
         [ObservableProperty]
-        private int _id;
+        private Guid _id;
 
         [ObservableProperty]
-        private int _senderId;
+        private Guid _senderId;
 
         [ObservableProperty]
-        private int _receiverId;
+        private Guid _receiverId;
 
         [ObservableProperty]
         private string _text = string.Empty;

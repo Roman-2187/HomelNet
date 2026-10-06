@@ -11,7 +11,7 @@ namespace HomeNetOrm.Schemes
         {
             // 1. СХЕМА ТАБЛИЦЫ ПОЛЬЗОВАТЕЛЕЙ (users)
             var users = new TableBuilder<UserEntity>("Users");
-            users.AddColumn(u => u.Id).AsPrimaryKey().AsAutoIncrement();
+            users.AddColumn(u => u.Id).AsPrimaryKey();
             users.AddColumn(u => u.FirstName).HasLength(50).IsRequired();
             users.AddColumn(u => u.LastName).HasLength(50);
             users.AddColumn(u => u.PhoneNumber).HasLength(50);
@@ -20,10 +20,11 @@ namespace HomeNetOrm.Schemes
             users.AddColumn(u => u.CreatedAt).IsTrackedTimestamp();
             yield return users.Generate(); // Генерация схемы, валидация и автоматический .Initialize()
 
-            
+
             // 2. ⚡ СХЕМА ТАБЛИЦЫ СООБЩЕНИЙ (messages)
             var messages = new TableBuilder<MessageEntity>("Messages");
-            messages.AddColumn(m => m.Id).AsPrimaryKey().AsAutoIncrement();
+            // 🎯 ФИКС: Убрали .AsAutoIncrement(), оставили только .AsPrimaryKey()
+            messages.AddColumn(m => m.Id).AsPrimaryKey();
             messages.AddColumn(m => m.SenderId).IsRequired().HasForeignKey<UserEntity>();
             messages.AddColumn(m => m.ReceiverId).IsRequired().HasForeignKey<UserEntity>();
             messages.AddColumn(m => m.Text).AsText();

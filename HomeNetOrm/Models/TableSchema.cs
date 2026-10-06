@@ -45,23 +45,30 @@
             }
 
             string idColumn = pkColumn.Name ?? "Null";
-
             IdColumnName = idColumn;
 
             columnNames = string.Join(", ", Columns.Select(c => $"{c.OriginalName}"));
 
+            // Для выборки (SELECT) подтягиваем все поля с алиасами
             AllFields = string.Join(", ", Columns.Select(c => $"\"{c.Name}\" AS {c.OriginalName}"));
-
             AllParameters = string.Join(", ", Columns.Select(c => $"@{c.OriginalName}"));
-         
-            InsertFields = string.Join(", ", Columns.Where(c => !string.Equals(c.Name, idColumn, StringComparison.OrdinalIgnoreCase)).Select(c => c.Name));
 
-            InsertParameters = string.Join(", ", Columns.Where(c => !string.Equals(c.Name, idColumn, StringComparison.OrdinalIgnoreCase)).Select(c => $"@{c.OriginalName}"));
+            // 🎯 ЖЕЛЕЗОБЕТОННЫЙ ФИКС ДЛЯ GUID ИНСЕРТОВ:
+            // Исключаем колонку из INSERT только если для нее включен автоинкремент базы!
+            // Наш C#-овский Guid (у которого IsAutoIncrement = false) теперь честно попадет в запрос.
+            var insertColumns = Columns.Where(c => !c.IsAutoIncrement).ToList();
 
-            SetClause = string.Join(", ", Columns.Where(c => !string.Equals(c.Name, idColumn, StringComparison.OrdinalIgnoreCase)).Select(c => $"{c.Name} = @{c.OriginalName}"));
+            InsertFields = string.Join(", ", insertColumns.Select(c => $"\"{c.Name}\""));
+            InsertParameters = string.Join(", ", insertColumns.Select(c => $"@{c.OriginalName}"));
+
+            // Для UPDATE блок SET по-прежнему должен исключать первичный ключ (его менять нельзя)
+            SetClause = string.Join(", ", Columns
+                .Where(c => !string.Equals(c.Name, idColumn, StringComparison.OrdinalIgnoreCase))
+                .Select(c => $"\"{c.Name}\" = @{c.OriginalName}"));
 
             return true;
         }
+
 
 
 

@@ -1,8 +1,11 @@
-﻿using HomeNetCore.Exeptions;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using HomeNetCore.Exeptions;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Events; 
+using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
 
@@ -12,11 +15,7 @@ namespace HomeNetServices.Services.Identity
     {
         private readonly IUserRepository _repo;
         private readonly ILogger _logger;
-        private readonly IEventBus _eventBus; 
-
-        // 🧠 Наш локальный кэш пользователей в оперативной памяти
-        private List<UserEntity>? _cachedUsers;
-        private readonly object _lock = new(); // Для потокобезопасности кэша
+        private readonly IEventBus _eventBus;
 
         public UserService(IUserRepository repo, ILogger logger, IEventBus eventBus)
         {
@@ -27,36 +26,17 @@ namespace HomeNetServices.Services.Identity
 
         public async Task<List<UserEntity>> GetAllAsync()
         {
-          
             try
             {
-                // Если кэш пуст — только тогда идем в физическую СУБД SQLite 🚀
-                if (_cachedUsers == null)
-                {
-                    _logger.LogInfo("Кэш пуст. Выполняется первичный запрос к СУБД...");
-                    var users = await _repo.GetAllAsync()
-                        ?? throw new InvalidOperationException("Репозиторий вернул null");
+                _logger.LogDebug("Запрос списка пользователей напрямую из СУБД...");
+                var users = await _repo.GetAllAsync()
+                    ?? throw new InvalidOperationException("Репозиторий вернул null");
 
-                    lock (_lock)
-                    {
-                        _cachedUsers = users;
-                    }
-                    _logger.LogInfo($"Получено и закэшировано {_cachedUsers.Count} пользователей.");
-                }
-                else
-                {
-                    _logger.LogDebug($"[КЭШ В ПАМЯТИ]: Возвращено {_cachedUsers.Count} пользователей без обращения к СУБД.");
-                }
-
-                // Возвращаем копию списка, чтобы UI-слой случайно не попортил внутренний кэш сервиса
-                lock (_lock)
-                {
-                    return _cachedUsers.ToList();
-                }
+                return users;
             }
             catch (Exception ex)
             {
-                _logger.LogError("Ошибка при получении пользователей", ex.Message);
+                _logger.LogError("Ошибка при получении пользователей из БД", ex.Message);
                 throw;
             }
         }
@@ -65,91 +45,54 @@ namespace HomeNetServices.Services.Identity
         {
             try
             {
-                // 1. Сначала пишем в базу данных
+                // 1. Пишем напрямую в базу данных
                 await _repo.InsertUserAsync(user);
-                _logger.LogDebug($"Пользователь {user.FirstName} успешно вставлен в БД.");
+                _logger.LogDebug($"Пользователь {user.FirstName} успешно записан в БД.");
 
-                // 2. Моментально обновляем кэш в оперативной памяти 🧠
-                if (_cachedUsers != null)
-                {
-                    lock (_lock)
-                    {
-                        _cachedUsers.Add(user);
-                    }
-                }
-
-                // 3. Пинаем автобус, чтобы все открытые UI-окна тут же добавили его на экраны!
+                // 2. Пинаем автобус, чтобы все UI-окна добавили его на экраны
                 _eventBus.Publish(this, new IUsersTableVm.Added(user));
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Ошибка при добавлении пользователя: {ex.Message}");
+                _logger.LogError($"Ошибка при добавлении пользователя в БД: {ex.Message}");
                 throw;
             }
         }
 
-        public async Task DeleteByIdAsync(int userId)
+        // 🎯 ТЕПЕРЬ ТУТ ЧЕСТНЫЙ Guid вместо int
+        public async Task DeleteByIdAsync(Guid userId)
         {
             try
             {
-                // 1. Сначала удаляем из физической СУБД
+                // 1. Удаляем напрямую из СУБД (коммутатор контейнера сам разберётся, куда слать запрос)
                 await _repo.DeleteByIdAsync(userId);
-                _logger.LogInfo($"Пользователь с ID {userId} удалён из БД.");
+                _logger.LogInfo($"Пользователь с GUID {userId} успешно удалён из БД.");
 
-                // 2. Моментально чистим кэш в памяти 🧠
-                if (_cachedUsers != null)
-                {
-                    lock (_lock)
-                    {
-                        var userToRemove = _cachedUsers.FirstOrDefault(u => u.Id == userId);
-                        if (userToRemove != null)
-                        {
-                            _cachedUsers.Remove(userToRemove);
-                        }
-                    }
-                }
-
-                // 3. Пинаем автобус: "Народ, этого юзера больше нет!" 📢
-                // Все вьюшки (таблица, контакты, удаление) сами выкинут его из UI без единого запроса к базе!
+                // 2. Публикуем событие в автобус — вьюшки выкинут юзера из списков UI
                 _eventBus.Publish(this, new IDeleteUserVm.Deleted(userId));
             }
             catch (NotFoundException ex)
             {
-                _logger.LogWarning("Попытка удалить несуществующего пользователя", ex.Message);
+                _logger.LogWarning($"Попытка удалить несуществующего пользователя с GUID {userId}", ex.Message);
                 throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Критическая ошибка удаления ID {userId}: {ex.Message}");
+                _logger.LogError($"Критическая ошибка удаления GUID {userId}: {ex.Message}");
                 throw;
             }
         }
 
-        public async Task<UserEntity?> GetByIdAsync(int userId)
+        // 🎯 ТЕПЕРЬ ТУТ ЧЕСТНЫЙ Guid вместо int
+        public async Task<UserEntity?> GetByIdAsync(Guid userId)
         {
-            // Если кэш уже подгружен — ищем в памяти мгновенно!
-            if (_cachedUsers != null)
-            {
-                lock (_lock)
-                {
-                    return _cachedUsers.FirstOrDefault(u => u.Id == userId);
-                }
-            }
-
-            // Иначе падаем на стандартный поход в СУБД
+            _logger.LogDebug($"Точечный запрос пользователя по GUID {userId} напрямую из СУБД...");
             return await _repo.GetByIdAsync(userId);
         }
 
         public async Task<UserEntity?> GetByEmailAsync(string email)
         {
-            if (_cachedUsers != null)
-            {
-                lock (_lock)
-                {
-                    return _cachedUsers.FirstOrDefault(u => string.Equals(u.Email, email, StringComparison.OrdinalIgnoreCase));
-                }
-            }
-
+            _logger.LogDebug($"Запрос пользователя по Email {email} напрямую из СУБД...");
             return await _repo.GetByEmailAsync(email);
         }
     }

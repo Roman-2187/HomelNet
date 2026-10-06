@@ -2,6 +2,6 @@
 {
     public interface IDeleteUserVm
     {
-        public record Deleted(int Id);
+        public record Deleted(Guid Id);
     }
 }

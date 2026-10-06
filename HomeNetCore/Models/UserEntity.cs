@@ -1,13 +1,14 @@
 ﻿using System;
-using System.ComponentModel.DataAnnotations.Schema; // 🔥 ОБЯЗАТЕЛЬНО ДЛЯ NOTMAPPED
+using System.ComponentModel.DataAnnotations.Schema;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace HomeNetCore.Models
 {
     public partial class UserEntity : ObservableObject
     {
+        // 🎯 МЕНЯЕМ НА GUID: Тулкит сам создаст публичный 'Guid Id'
         [ObservableProperty]
-        private int _id;
+        private Guid _id;
 
         [ObservableProperty]
         private string? _firstName = string.Empty;
@@ -25,22 +26,28 @@ namespace HomeNetCore.Models
         private string? _password = string.Empty;
 
         // 🔥 НАШ ХИТРЫЙ НЕВИДИМЫЙ ХВОСТ:
-        [NotMapped] // База данных Postgres эту строчку полностью проигнорирует! 🔐
+        [NotMapped]
         [ObservableProperty]
-        private string _confirmPassword = string.Empty; // Сгенерирует публичное свойство ConfirmPassword
+        private string _confirmPassword = string.Empty;
 
         [ObservableProperty]
         private DateTime _createdAt = DateTime.UtcNow;
+
+        // ⏱ НОВАЯ ВРЕМЕННАЯ МЕТКА СИНХРОНИЗАЦИИ (DateTimeOffset)
+        // Тулкит сгенерирует публичное свойство 'DateTimeOffset UpdatedAt'
+        [ObservableProperty]
+        private DateTimeOffset _updatedAt = DateTimeOffset.UtcNow;
 
         public string FullName => $"{FirstName} {LastName}";
         public string DisplayInfo => $"ID: {Id} - {Email}";
 
         partial void OnFirstNameChanged(string? value) => OnPropertyChanged(nameof(FullName));
         partial void OnLastNameChanged(string? value) => OnPropertyChanged(nameof(FullName));
-        partial void OnIdChanged(int value) => OnPropertyChanged(nameof(DisplayInfo));
+
+        // 🎯 ФИКС: Тулкит автоматически поменяет сигнатуру partial метода под Guid value!
+        partial void OnIdChanged(Guid value) => OnPropertyChanged(nameof(DisplayInfo));
         partial void OnEmailChanged(string? value) => OnPropertyChanged(nameof(DisplayInfo));
     }
 }
-
 
 
