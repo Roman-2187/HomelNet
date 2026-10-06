@@ -4,29 +4,21 @@ using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Models;
 using HomeNetPresentation.Services;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace HomeNetPresentation.ViewModels.AdminViews
 {
     /// <summary>
-    /// Центральный UI-источник правды для пользователей SiberNet.
-    /// Хранит данные в словаре для защиты от дубликатов, но транслирует в ObservableCollection для UI.
-    /// Загружается сразу со старта приложения.
+    /// Облегченный UI-источник правды для пользователей SiberNet.
+    /// Никакой инфраструктуры, только чистый async/await и точечные обновления коллекции.
     /// </summary>
     public partial class TableUsersViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
     {
         private readonly IUserService _userService;
-
-        // 🔥 ДАЛЬНОВИДНОСТЬ: Внутреннее быстрое хранилище без дубликатов
-        private readonly Dictionary<int, UserEntity> _usersMap = new();
         private bool _isLoaded = false;
 
-        // Чистая коллекция для XAML привязок
+        // Коллекция инициализируется один раз и больше никогда не пересоздается через new!
         [ObservableProperty] private ObservableCollection<UserEntity> _users = new();
 
         public TableUsersViewModel(IEventBus eventBus, IUserService userService, AdminNavigationManager navigation)
@@ -35,7 +27,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             InitializeBusSubscriptions();
 
-            // 🔥 СО СТАРТА: Сразу греем кэш в фоновом потоке, не дожидаясь кликов по вкладкам!
+            // 🔥 Пинаем фоновый старт. С контекстом async/await возврат произойдет в UI-поток сам.
             _ = InitializeDataAsync();
         }
 
@@ -43,23 +35,18 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         {
             try
             {
-                var list = await _userService.GetAllAsync();
+               
 
-                lock (_usersMap)
+                var list = await Task.Run(() => _userService.GetAllAsync());
+
+                // Очищаем и точечно заполняем ОДНУ И ТУ ЖЕ коллекцию
+                Users.Clear();
+                foreach (var user in list ?? Enumerable.Empty<UserEntity>())
                 {
-                    _usersMap.Clear();
-                    foreach (var user in list ?? Enumerable.Empty<UserEntity>())
-                    {
-                        _usersMap[user.Id] = user; // Защита от дублей на уровне ключей
-                    }
-
-                    // Синхронизируем UI коллекцию
-                    Users = new ObservableCollection<UserEntity>(_usersMap.Values);
+                    Users.Add(user);
                 }
 
                 _isLoaded = true;
-
-                // Сразу раздаем готовый список всем, кто сидит на подсосе
                 BroadcastRefreshed();
             }
             catch (Exception ex)
@@ -76,11 +63,10 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             _eventBus.Subscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
         }
 
-        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК 🧼
+        #region 🎧 МЕТОДЫ ПОДПИСОК 🧼
 
         private void OnAdminTabChanged(IAdminVm.AdminTabChanged msg)
         {
-            // Если открыли вкладку таблицы — просто напоминаем актуальный список
             if (msg?.ActiveTab == AdminSubTab.UserTable && _isLoaded)
             {
                 BroadcastRefreshed();
@@ -89,18 +75,12 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 
         private void OnUserDeletedFromDb(IDeleteUserVm.Deleted msg)
         {
-            lock (_usersMap)
+            // Точечное удаление
+            var uiUser = Users.FirstOrDefault(u => u.Id == msg.Id);
+            if (uiUser != null)
             {
-                // Мгновенное удаление из словаря по ключу за O(1)!
-                if (_usersMap.Remove(msg.Id))
-                {
-                    // Синхронизируем UI экран
-                    var uiUser = Users.FirstOrDefault(u => u.Id == msg.Id);
-                    if (uiUser != null) Users.Remove(uiUser);
-
-                    // Сразу пинаем форму удаления и контакты, чтобы они убрали его у себя
-                    BroadcastRefreshed();
-                }
+                Users.Remove(uiUser);
+                BroadcastRefreshed();
             }
         }
 
@@ -108,36 +88,23 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         {
             if (msg.User == null) return;
 
-            lock (_usersMap)
+            // Точечное добавление, если такого еще нет
+            if (!Users.Any(u => u.Id == msg.User.Id))
             {
-                // Если такой юзер уже прилетел по ошибке — словарь просто обновит его, а не продублирует!
-                bool isNew = !_usersMap.ContainsKey(msg.User.Id);
-                _usersMap[msg.User.Id] = msg.User;
-
-                if (isNew)
-                {
-                    Users.Add(msg.User);
-                }
-                else
-                {
-                    // Если обновился — пересобираем UI коллекцию
-                    Users = new ObservableCollection<UserEntity>(_usersMap.Values);
-                }
+                Users.Add(msg.User);
+                BroadcastRefreshed();
             }
-
-            BroadcastRefreshed();
         }
 
         private async void OnRefreshRequest(IUsersTableVm.RefreshRequest msg)
         {
-            // 🔥 ЖЕЛЕЗОБЕТОННО: Если форма удаления просит данные, а таблица уже всё скачала
             if (_isLoaded)
             {
-                BroadcastRefreshed(); // Просто выплевываем кэш из словаря
+                BroadcastRefreshed();
             }
             else
             {
-                await InitializeDataAsync(); // Иначе экстренно докачиваем
+                await InitializeDataAsync();
             }
         }
 
@@ -145,10 +112,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 
         private void BroadcastRefreshed()
         {
-            lock (_usersMap)
-            {
-                _eventBus.Publish(this, new IUsersTableVm.Refreshed(_usersMap.Values.ToList()));
-            }
+            _eventBus.Publish(this, new IUsersTableVm.Refreshed(Users.ToList()));
         }
 
         public override void Dispose()

@@ -41,6 +41,8 @@ namespace HomeNetAvalonia.Infrastructure
             // Аниматор окон
             provider.GetRequiredService<CloseWindowAnimator>();
 
+
+
             return provider;
         }
 

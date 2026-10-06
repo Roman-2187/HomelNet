@@ -7,6 +7,7 @@ using HomeNetCore.Extensions;
 using HomeNetOrm.Builders;
 using HomeNetOrm.Enums;
 using HomeNetOrm.Helpers;
+using HomeNetPresentation.ViewModels.AdminViews;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
@@ -49,6 +50,7 @@ namespace HomeNetAvalonia
                 if (currentMode == BackendMode.Real)
                 {
                     var dbCore = _serviceProvider.GetRequiredService<DbContextContainer>();
+                   
 
                     // Запускаем через фоновую задачу, чтобы UI-поток Авалонии дышал свободно!
                     // Логи инициализации Postgres побегут прямо в твой терминал на экране!
@@ -65,6 +67,10 @@ namespace HomeNetAvalonia
                         }
                     });
                 }
+
+
+                // 🔥 2. ОКНО ГОТОВО, ДИСПЕТЧЕР СТАРТАНУЛ — ТЕПЕРЬ БЕЗОПАСНО БУДИМ ТАБЛИЦУ
+                
             }
             catch (Exception ex)
             {
@@ -73,7 +79,9 @@ namespace HomeNetAvalonia
                 {
                     desktop.Shutdown();
                 }
-            }
+            } 
+            
+           
 
             base.OnFrameworkInitializationCompleted();
         }
