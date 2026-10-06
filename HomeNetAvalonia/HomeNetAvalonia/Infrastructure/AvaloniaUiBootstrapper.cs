@@ -4,6 +4,7 @@ using HomeNetAvalonia.Controls;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.OutputLogging;
 using HomeNetPresentation.Services;
+using HomeNetPresentation.ViewModels.AdminViews; // 🔥 ДОБАВЛЯЕМ: Импорт пространства имен твоей вьюмодели
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
@@ -11,11 +12,7 @@ namespace HomeNetAvalonia.Infrastructure
 {
     public static class AvaloniaUiBootstrapper
     {
-       
-       
-            
-
-           public static IServiceProvider BuildAvaloniaContainer(BackendMode mode, string postgresConn, string sqliteConn)
+        public static IServiceProvider BuildAvaloniaContainer(BackendMode mode, string postgresConn, string sqliteConn)
         {
             // 1. Унаследовали чертеж кроссплатформенного бэкенда из Ядра
             ServiceCollection fullCollection = AppBootstrapper.CreateBackendCollection(mode, postgresConn, sqliteConn);
@@ -42,16 +39,7 @@ namespace HomeNetAvalonia.Infrastructure
             provider.GetRequiredService<CloseWindowAnimator>();
 
 
-
             return provider;
         }
-
-
-
-
-
-
     }
-
 }
-

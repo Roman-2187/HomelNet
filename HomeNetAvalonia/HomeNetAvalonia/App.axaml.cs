@@ -7,6 +7,7 @@ using HomeNetCore.Extensions;
 using HomeNetOrm.Builders;
 using HomeNetOrm.Enums;
 using HomeNetOrm.Helpers;
+using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.AdminViews;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -50,15 +51,23 @@ namespace HomeNetAvalonia
                 if (currentMode == BackendMode.Real)
                 {
                     var dbCore = _serviceProvider.GetRequiredService<DbContextContainer>();
-                   
 
-                    // Запускаем через фоновую задачу, чтобы UI-поток Авалонии дышал свободно!
-                    // Логи инициализации Postgres побегут прямо в твой терминал на экране!
+                    
                     _ = Task.Run(async () =>
                     {
                         try
                         {
+                            
                             await dbCore.InitializeAsync(DatabaseType.PostGreSQL);
+
+                            var logger = _serviceProvider.GetRequiredService<HomeNetCore.Interfaces.Diagnostics.ILogger>();
+                            logger.LogInfo("[App Старт] Инициализация базы завершена. Аварийно будим и прогреваем вьюмодели...");
+
+                            
+                            _ = _serviceProvider.GetRequiredService<TableUsersViewModel>();
+
+                            
+                            _ = _serviceProvider.GetRequiredService<DeleteUsersViewModel>();
                         }
                         catch (Exception ex)
                         {
@@ -69,8 +78,6 @@ namespace HomeNetAvalonia
                 }
 
 
-                // 🔥 2. ОКНО ГОТОВО, ДИСПЕТЧЕР СТАРТАНУЛ — ТЕПЕРЬ БЕЗОПАСНО БУДИМ ТАБЛИЦУ
-                
             }
             catch (Exception ex)
             {
