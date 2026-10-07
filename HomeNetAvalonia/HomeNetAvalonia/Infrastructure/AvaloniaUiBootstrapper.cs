@@ -1,10 +1,13 @@
-﻿using HomeNet.DI;
+﻿using Dapper;
+using HomeNet.DI;
 using HomeNetAvalonia.Animators;
 using HomeNetAvalonia.Controls;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.OutputLogging;
+using HomeNetOrm.Helpers;
 using HomeNetPresentation.Services;
 using HomeNetPresentation.ViewModels.AdminViews; // 🔥 ДОБАВЛЯЕМ: Импорт пространства имен твоей вьюмодели
+using HomeNetServices.Synchronization;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
@@ -14,6 +17,10 @@ namespace HomeNetAvalonia.Infrastructure
     {
         public static IServiceProvider BuildAvaloniaContainer(BackendMode mode, string postgresConn, string sqliteConn)
         {
+
+            // 🔥 ЖЕЛЕЗОБЕТОННЫЙ ХЕНДЛЕР: Обучаем Dapper читать DateTimeOffset из строк SQLite без падений!
+            SqlMapper.AddTypeHandler(new DateTimeOffsetHandler());
+
             // 1. Унаследовали чертеж кроссплатформенного бэкенда из Ядра
             ServiceCollection fullCollection = AppBootstrapper.CreateBackendCollection(mode, postgresConn, sqliteConn);
 
@@ -37,6 +44,9 @@ namespace HomeNetAvalonia.Infrastructure
 
             // Аниматор окон
             provider.GetRequiredService<CloseWindowAnimator>();
+            // Будим координатор синхронизации баз данных SiberNet
+            provider.GetRequiredService<SiberNetSyncCoordinator>();
+
 
 
             return provider;

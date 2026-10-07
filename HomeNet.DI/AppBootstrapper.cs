@@ -15,6 +15,7 @@ using HomeNetServices.Diagnostics;
 using HomeNetServices.Identity;
 using HomeNetServices.Routing;
 using HomeNetServices.Services.Identity;
+using HomeNetServices.Synchronization;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HomeNet.DI
@@ -94,9 +95,11 @@ namespace HomeNet.DI
             services.AddSingleton<IDeleteService, DeleteService>();
             services.AddSingleton<IMessageService, MessageService>();
             services.AddSingleton<IFriendService, FriendService>();
+            services.AddSingleton<SiberNetSyncCoordinator>();
+
 
             // 3. Регистрация Вьюмоделей слоя Презентации
-          
+
 
             services.AddSingleton<StatusBarViewModel>();
             // Регистрируем как Singleton, раз окно у нас одно

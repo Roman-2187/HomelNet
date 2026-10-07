@@ -44,5 +44,8 @@ namespace HomeNetCore.Models
 
         [NotMapped]
         public string FormattedTime => CreatedAt.ToLocalTime().ToString("HH:mm");
+
+        public int IsSynced { get; set; }
+        public object? UpdatedAt { get; set; }
     }
 }

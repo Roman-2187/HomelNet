@@ -4,6 +4,9 @@ using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Models;
 using HomeNetOrm.Repositories;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace HomeNetServices.Services.Identity
 {
@@ -19,16 +22,25 @@ namespace HomeNetServices.Services.Identity
         }
 
         // 🤝 Добавить пользователя в контакты
-        public async Task<bool> AddFriendToUserAsync(int userId, int friendId)
+        public async Task<bool> AddFriendToUserAsync(Guid userId, Guid friendId)
         {
             try
             {
-                var friendLink = new FriendEntity { UserId = userId, FriendId = friendId };
+                // Инициализируем модель с новыми Guid-идентификаторами сущностей
+                var friendLink = new FriendEntity
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = userId,
+                    FriendId = friendId,
+                    IsSynced = 0, // По умолчанию офлайн, репозиторий сам выставит 1 если Postgres жив
+                    UpdatedAt = DateTimeOffset.UtcNow
+                };
+
                 bool success = await _friendRepository.AddFriendAsync(friendLink);
 
                 if (success)
                 {
-                    _logger.LogInfo($"[Контакты] Пользователь ID {userId} добавил в контакты ID {friendId}.");
+                    _logger.LogInfo($"[Контакты] Пользователь с GUID {userId} успешно добавил в контакты GUID {friendId}.");
                 }
                 return success;
             }
@@ -39,13 +51,13 @@ namespace HomeNetServices.Services.Identity
             }
         }
 
-        // 👥 Загрузить список контактов из базы
-        public async Task<IEnumerable<UserEntity>> GetFriendsListAsync(int userId)
+        // 👥 Загрузить список контактов из базы БЕЗ ЛАГОВ СЕТИ
+        public async Task<IEnumerable<UserEntity>> GetFriendsListAsync(Guid userId)
         {
             try
             {
                 var friends = await _friendRepository.GetFriendsForUserAsync(userId);
-                _logger.LogInfo($"[Контакты] Список друзей для пользователя ID {userId} успешно извлечён.");
+                _logger.LogInfo($"[Контакты] Список друзей для пользователя с GUID {userId} успешно извлечён из SQLite.");
                 return friends;
             }
             catch (Exception ex)

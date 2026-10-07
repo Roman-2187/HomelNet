@@ -47,35 +47,36 @@ namespace HomeNetAvalonia
                     };
                 }
 
-                // 🔥 ШАГ 4 (БЫВШИЙ 3): БЕЗОПАСНЫЙ ФОНОВЫЙ ПУСК СУБД ПОСЛЕ ТОГО, КАК ОКНО ОТКРЫЛОСЬ!
+               
+                // 🔥 ШАГ 4: БЕЗОПАСНЫЙ ФОНОВЫЙ ПУСК ОБЕИХ СУБД ОДНОВРЕМЕННО!
                 if (currentMode == BackendMode.Real)
                 {
                     var dbCore = _serviceProvider.GetRequiredService<DbContextContainer>();
 
-                    
                     _ = Task.Run(async () =>
                     {
                         try
                         {
-                            
-                            await dbCore.InitializeAsync(DatabaseType.PostGreSQL);
+                            // 🔥 МЕНЯЕМ НА НАШ ДВУСТВОЛЬНЫЙ МЕТОД!
+                            // Он параллельно запустит SQLite и Postgres, проверит структуры
+                            // и выстрелит DatabaseReady в шину событий.
+                            await dbCore.InitializeAllDatabasesAsync();
 
                             var logger = _serviceProvider.GetRequiredService<HomeNetCore.Interfaces.Diagnostics.ILogger>();
-                            logger.LogInfo("[App Старт] Инициализация базы завершена. Аварийно будим и прогреваем вьюмодели...");
+                            logger.LogInfo("[App Старт] Инициализация и параллельный запуск СУБД завершены. Прогреваем вьюмодели...");
 
-                            
+                            // Прогреваем вьюшки админки и таблиц
                             _ = _serviceProvider.GetRequiredService<TableUsersViewModel>();
-
-                            
                             _ = _serviceProvider.GetRequiredService<DeleteUsersViewModel>();
                         }
                         catch (Exception ex)
                         {
                             var logger = _serviceProvider.GetRequiredService<HomeNetCore.Interfaces.Diagnostics.ILogger>();
-                            logger.LogError($"[КРАШ СУБД В ВЕБЕ/ДЕСКТОПЕ]: {ex.Message}");
+                            logger.LogError($"[КРИТИЧЕСКИЙ КРАШ ПРИ ПАРАЛЛЕЛЬНОМ СТАРТЕ БАЗ]: {ex.Message}");
                         }
                     });
                 }
+
 
 
             }

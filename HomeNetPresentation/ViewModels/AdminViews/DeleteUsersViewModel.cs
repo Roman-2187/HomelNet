@@ -29,9 +29,10 @@ namespace HomeNetPresentation.ViewModels
         [NotifyCanExecuteChangedFor(nameof(SearchCommand))]
         private UserEntity? _selectedUser;
 
+        // Перешли с ID на Email для ввода в техтбоксе
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(SearchCommand))]
-        private string _targetUserId = string.Empty;
+        private string _targetUserEmail = string.Empty;
 
         public ObservableCollection<string> DeletedUsersHistory { get; } = new();
 
@@ -43,7 +44,7 @@ namespace HomeNetPresentation.ViewModels
             SubmitButtonText = "Удалить";
 
             _eventBus.Subscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
-            _eventBus.Subscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed); // 🔥 ПОДСОС: Ловим общий список
+            _eventBus.Subscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed);
             _eventBus.Subscribe<IDeleteUserVm.Deleted>(OnUserDeleted);
 
             ResetForm();
@@ -56,7 +57,6 @@ namespace HomeNetPresentation.ViewModels
             if (msg?.ActiveTab == AdminSubTab.DeleteUsers)
             {
                 ResetForm();
-                // 🔥 ПИНГ: Просим таблицу выплюнуть нам актуальный кэш
                 _eventBus.Publish(this, new IUsersTableVm.RefreshRequest());
             }
         }
@@ -64,7 +64,6 @@ namespace HomeNetPresentation.ViewModels
         private void OnUsersRefreshed(IUsersTableVm.Refreshed msg)
         {
             if (msg == null) return;
-            // 🔥 ПОДСОС В ДЕЙСТВИИ: Просто забираем то, что прислала таблица
             FoundUsers = new ObservableCollection<UserEntity>(msg.Users);
         }
 
@@ -85,12 +84,17 @@ namespace HomeNetPresentation.ViewModels
         private async Task SearchAsync()
         {
             StatusMessage = "Поиск...";
-            var verdict = await _srv.SearchUserAsync(TargetUserId);
+            // Сервис теперь дёргаем по Email (убедись, что метод в _srv принимает строку-email)
+            var verdict = await _srv.SearchUserAsync(TargetUserEmail.Trim());
             StatusMessage = verdict.Results.FirstOrDefault()?.Message ?? string.Empty;
 
             if (verdict.IsValid && verdict.FoundUser != null)
             {
-                FoundUsers.Add(verdict.FoundUser);
+                // Чтобы не дублировать, если такой юзер уже есть в коллекции подсоса
+                if (FoundUsers.All(u => u.Id != verdict.FoundUser.Id))
+                {
+                    FoundUsers.Add(verdict.FoundUser);
+                }
                 SelectedUser = verdict.FoundUser;
             }
         }
@@ -102,25 +106,23 @@ namespace HomeNetPresentation.ViewModels
             {
                 StatusMessage = "Удаление...";
 
-                var verdict = await _srv.DeleteUserAsync(TargetUserId, SelectedUser);
+                // Передаем TargetUserEmail вместо старого ID
+                var verdict = await _srv.DeleteUserAsync(TargetUserEmail.Trim(), SelectedUser);
                 UpdateValidation(verdict.Results);
                 StatusMessage = verdict.Results.FirstOrDefault()?.Message ?? string.Empty;
 
                 if (verdict.IsValid)
                 {
-                    _log.LogInfo($"[DeleteVM] Юзер {verdict.ParsedId} стёрт.");
+                   
 
-                    // 🎯 Если вердикт успешный — только тогда публикуем в шину
-                    if (verdict.IsValid && verdict.ParsedId.HasValue)
+                    if (verdict.ParsedId.HasValue)
                     {
                         _eventBus.Publish(this, new IDeleteUserVm.Deleted(verdict.ParsedId.Value));
                     }
                     else
                     {
-                        // Здесь ничего не шлём в шину, а просто выводим статус ошибки на экран / в StatusBar
                         _log.LogError("Удаление не выполнено. Шина событий пропущена.");
                     }
-
 
                     if (!string.IsNullOrEmpty(verdict.HistoryMessage))
                     {
@@ -129,7 +131,7 @@ namespace HomeNetPresentation.ViewModels
 
                     await Task.Delay(500);
                     ResetForm();
-                    _eventBus.Publish(this, new IUsersTableVm.RefreshRequest()); // Обновляем подсос
+                    _eventBus.Publish(this, new IUsersTableVm.RefreshRequest());
                 }
             }
             catch (Exception ex)
@@ -151,34 +153,34 @@ namespace HomeNetPresentation.ViewModels
 
         private void ResetForm()
         {
-            TargetUserId = string.Empty;
+            TargetUserEmail = string.Empty;
             SelectedUser = null;
-            OnPropertyChanged(nameof(TargetUserId));
+            OnPropertyChanged(nameof(TargetUserEmail));
             OnPropertyChanged(nameof(SelectedUser));
-            StatusMessage = "Введите ID или выберите пользователя";
+            StatusMessage = "Введите Email или выберите пользователя";
         }
 
         private bool CanSearch()
         {
-            if (FoundUsers.Count == 0 && string.IsNullOrWhiteSpace(TargetUserId)) return false;
+            if (FoundUsers.Count == 0 && string.IsNullOrWhiteSpace(TargetUserEmail)) return false;
             if (SelectedUser == null) return true;
-            return SelectedUser.Id.ToString() != TargetUserId.Trim();
+            return !string.Equals(SelectedUser.Email?.Trim(), TargetUserEmail.Trim(), StringComparison.OrdinalIgnoreCase);
         }
 
         partial void OnSelectedUserChanged(UserEntity? value)
         {
-            if (value != null && TargetUserId != value.Id.ToString())
+            if (value != null && !string.Equals(TargetUserEmail, value.Email, StringComparison.OrdinalIgnoreCase))
             {
-                _targetUserId = value.Id.ToString();
-                OnPropertyChanged(nameof(TargetUserId));
+                _targetUserEmail = value.Email ?? string.Empty;
+                OnPropertyChanged(nameof(TargetUserEmail));
             }
 
             StatusMessage = value != null
-                ? $"Выбран: ID {value.Id} — {value.FirstName} {value.LastName}"
+                ? $"Выбран: {value.Email} — {value.FirstName} {value.LastName}"
                 : $"Всего в базе: {FoundUsers.Count}. Выберите юзера.";
         }
 
-        partial void OnTargetUserIdChanged(string value)
+        partial void OnTargetUserEmailChanged(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
             {
@@ -187,12 +189,12 @@ namespace HomeNetPresentation.ViewModels
                 return;
             }
 
-            var match = FoundUsers.FirstOrDefault(u => u.Id.ToString() == value.Trim());
+            var match = FoundUsers.FirstOrDefault(u => string.Equals(u.Email?.Trim(), value.Trim(), StringComparison.OrdinalIgnoreCase));
             _selectedUser = match;
             OnPropertyChanged(nameof(SelectedUser));
 
             if (match == null)
-                StatusMessage = $"Введён сторонний ID: {value}. Нажмите 'Поиск'.";
+                StatusMessage = $"Введён сторонний Email: {value}. Нажмите 'Поиск'.";
         }
 
         #endregion

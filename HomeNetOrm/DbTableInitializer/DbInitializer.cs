@@ -1,7 +1,7 @@
 ﻿using Dapper;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Events; // 🔥 ДОБАВЛЯЕМ СЮДА: Импорт интерфейсов твоей шины событий
+using HomeNetCore.Interfaces.Events;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Models;
 using HomeNetOrm.Schemes;

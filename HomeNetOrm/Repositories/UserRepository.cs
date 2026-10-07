@@ -12,12 +12,14 @@ using HomeNetCore.Exeptions;
 
 namespace HomeNetOrm.Repositories
 {
+    /// <summary>
+    /// Репозиторий пользователей SiberNet. 
+    /// Пишет одновременно в SQLite и Postgres, обеспечивая мгновенную отказоустойчивость.
+    /// </summary>
     public class UserRepository : IUserRepository
     {
-        // 🔥 Храним ссылку на динамический контейнер контекста вместо жёстких ссылок!
         private readonly DbContextContainer _context;
 
-        // В конструкторе принимаем только контекст
         public UserRepository(DbContextContainer context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -25,110 +27,150 @@ namespace HomeNetOrm.Repositories
 
         public async Task<UserEntity> InsertUserAsync(UserEntity user)
         {
+            // 1. Готовим идентификаторы и метки времени на клиенте
+            if (user.Id == Guid.Empty)
+            {
+                user.Id = Guid.NewGuid();
+            }
+            user.UpdatedAt = DateTimeOffset.UtcNow;
+
             try
             {
-                DbConnection connection = _context.Connection;
-                var sql = _context.UserSqlGen.GenerateInsert();
+                // 2. Локальный SQLite — пишем ВСЕГДА, это наш главный оплот
+                var sqliteSql = _context.SqliteUserSqlGen.GenerateInsert();
 
-                // 🎯 ФИКС: Перед вставкой генерируем новый Guid, если он еще не задан
-                if (user.Id == Guid.Empty)
+                // Если при вставке в офлайне сеть лежит, ставим флаг синхронизации в 0
+                user.IsSynced = _context.IsPostgresAvailable ? 1 : 0;
+                await _context.SqliteConnection.ExecuteAsync(sqliteSql, user);
+
+                // 3. Центральный Postgres — пишем параллельно, если он в сети
+                if (_context.IsPostgresAvailable)
                 {
-                    user.Id = Guid.NewGuid();
+                    try
+                    {
+                        var pgSql = _context.PostgresUserSqlGen.GenerateInsert();
+                        await _context.PostgresConnection.ExecuteAsync(pgSql, user);
+                    }
+                    catch (Exception pgEx)
+                    {
+                        // Если Постгрес неожиданно упал в процессе — не ломаем приложение!
+                        // Мягко помечаем локальную запись как неотправленную
+                        await _context.SqliteConnection.ExecuteAsync(
+                            "UPDATE users SET is_synced = 0 WHERE id = @Id", new { Id = user.Id });
+                        System.Diagnostics.Debug.WriteLine($"[Repo] Postgres отвалился при вставке: {pgEx.Message}");
+                    }
                 }
 
-                // Штампуем актуальное время перед отправкой в шину/базу
-                user.UpdatedAt = DateTimeOffset.UtcNow;
-
-                // Так как ID теперь Guid и создается на клиенте, используем ExecuteAsync вместо ExecuteScalarAsync<int>
-                await connection.ExecuteAsync(sql, user);
                 return user;
             }
             catch (Exception ex)
             {
-                throw new NotFoundException($"Ошибка при вставке: {ex.Message}");
+                throw new NotFoundException($"Ошибка при вставке пользователя: {ex.Message}");
             }
         }
 
-        // 🎯 ТЕПЕРЬ ТУТ ЧЕСТНЫЙ Guid вместо int
         public async Task DeleteByIdAsync(Guid id)
         {
-            DbConnection connection = _context.Connection;
-            var sql = _context.UserSqlGen.GenerateDelete();
-
-            var affectedRows = await connection.ExecuteAsync(sql, new { id = id });
-
-            if (affectedRows == 0)
+            try
             {
-                throw new NotFoundException($"Пользователь с ID {id} не найден.");
+                // 1. Сначала удаляем из локального SQLite
+                var sqliteSql = _context.SqliteUserSqlGen.GenerateDelete();
+                var affectedRows = await _context.SqliteConnection.ExecuteAsync(sqliteSql, new { id = id });
+
+                if (affectedRows == 0)
+                {
+                    throw new NotFoundException($"Пользователь с ID {id} не найден в локальной БД.");
+                }
+
+                // 2. Если Postgres доступен — гасим запись и там (в Постгресе отработает наш фикс ::text)
+                if (_context.IsPostgresAvailable)
+                {
+                    try
+                    {
+                        var pgSql = _context.PostgresUserSqlGen.GenerateDelete();
+                        await _context.PostgresConnection.ExecuteAsync(pgSql, new { id = id });
+                    }
+                    catch (Exception pgEx)
+                    {
+                        // Если сеть моргнула — не падаем. Синхронизатор при следующем старте подчистит хвосты
+                        System.Diagnostics.Debug.WriteLine($"[Repo] Ошибка удаления из Postgres: {pgEx.Message}");
+                    }
+                }
+            }
+            catch (Exception ex) when (!(ex is NotFoundException))
+            {
+                throw new InvalidOperationException($"Ошибка при удалении: {ex.Message}");
             }
         }
 
         public async Task<List<UserEntity>> GetAllAsync()
         {
-            DbConnection connection = _context.Connection;
-            string sql = _context.UserSqlGen.GenerateSelectAll();
+            // Читаем ВСЕГДА из локального SQLite — это мгновенно, без лагов сети и тормозов UI!
+            string sql = _context.SqliteUserSqlGen.GenerateSelectAll();
 
             try
             {
-                var users = (await connection.QueryAsync<UserEntity>(sql)).ToList();
-                return users ?? throw new InvalidOperationException("Не удалось получить данные из БД");
+                var users = (await _context.SqliteConnection.QueryAsync<UserEntity>(sql)).ToList();
+                return users ?? throw new InvalidOperationException("Не удалось получить данные из SQLite");
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Не удалось выполнить запрос получения пользователей: {ex.Message}");
+                throw new InvalidOperationException($"Ошибка получения списка пользователей: {ex.Message}");
             }
         }
 
-        // 🎯 ТЕПЕРЬ ТУТ ЧЕСТНЫЙ Guid вместо int
         public async Task<UserEntity?> GetByIdAsync(Guid id)
         {
-            DbConnection connection = _context.Connection;
-            string sql = _context.UserSqlGen.GenerateSelectById();
-
-            return await connection.QueryFirstOrDefaultAsync<UserEntity>(sql, new { id = id });
+            // Читаем из локального SQLite
+            string sql = _context.SqliteUserSqlGen.GenerateSelectById();
+            return await _context.SqliteConnection.QueryFirstOrDefaultAsync<UserEntity>(sql, new { id = id });
         }
 
         public async Task<UserEntity?> GetByEmailAsync(string email)
         {
-            DbConnection connection = _context.Connection;
-            string sql = _context.UserSqlGen.GenerateSelectByEmail();
-
-            return await connection.QueryFirstOrDefaultAsync<UserEntity>(sql, new { email = email });
+            // Читаем из локального SQLite
+            string sql = _context.SqliteUserSqlGen.GenerateSelectByEmail();
+            return await _context.SqliteConnection.QueryFirstOrDefaultAsync<UserEntity>(sql, new { email = email });
         }
 
         public async Task UpdateAsync(UserEntity user)
         {
-            DbConnection connection = _context.Connection;
-            string sql = _context.UserSqlGen.GenerateUpdate();
-
-            // Обновляем метку времени при любом редактировании
             user.UpdatedAt = DateTimeOffset.UtcNow;
 
-            await connection.ExecuteAsync(sql, user);
+            try
+            {
+                // 1. Апдейтим SQLite
+                string sqliteSql = _context.SqliteUserSqlGen.GenerateUpdate();
+                user.IsSynced = _context.IsPostgresAvailable ? 1 : 0;
+                await _context.SqliteConnection.ExecuteAsync(sqliteSql, user);
+
+                // 2. Апдейтим Postgres
+                if (_context.IsPostgresAvailable)
+                {
+                    try
+                    {
+                        string pgSql = _context.PostgresUserSqlGen.GenerateUpdate();
+                        await _context.PostgresConnection.ExecuteAsync(pgSql, user);
+                    }
+                    catch (Exception pgEx)
+                    {
+                        await _context.SqliteConnection.ExecuteAsync(
+                            "UPDATE users SET is_synced = 0 WHERE id = @Id", new { Id = user.Id });
+                        System.Diagnostics.Debug.WriteLine($"[Repo] Ошибка апдейта в Postgres: {pgEx.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Ошибка обновления пользователя: {ex.Message}");
+            }
         }
 
         public async Task<bool> EmailExistsAsync(string? email)
         {
-            try
-            {
-                // 1. Пробуем долбиться в текущую выбранную базу (Postgres)
-                DbConnection connection = _context.Connection;
-                var sql = _context.UserSqlGen.GenerateEmailExists();
-                return await connection.ExecuteScalarAsync<bool>(sql, new { email });
-            }
-            catch (Exception ex) when (ex.Message.Contains("stream") || ex.Message.Contains("connection") || ex.InnerException?.Message.Contains("stream") == true)
-            {
-                // 🔥 МАГИЯ: Ловим падение сервера, пишем лог и переключаем рельсы на лету!
-                System.Diagnostics.Debug.WriteLine("⚠️ Сервер Postgres не ответил! Автоматический прыжок на SQLite...");
-
-                // Переключаем весь контекст приложения на локальный файл!
-                await _context.SwitchDatabaseAsync(DatabaseType.SQLite);
-
-                // 2. Повторяем этот же запрос еще раз, но уже в живую SQLite! 🔌⚡
-                DbConnection connection = _context.Connection;
-                var sql = _context.UserSqlGen.GenerateEmailExists();
-                return await connection.ExecuteScalarAsync<bool>(sql, new { email });
-            }
+            // Проверка уникальности Email идет строго по локальной базе — это гарантирует моментальный отклик UI
+            var sql = _context.SqliteUserSqlGen.GenerateEmailExists();
+            return await _context.SqliteConnection.ExecuteScalarAsync<bool>(sql, new { email });
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using HomeNetOrm.Models;
+﻿using HomeNetOrm.DBProviders.Extensions;
+using HomeNetOrm.Models;
 
 namespace HomeNetOrm.Interfaces
 {
@@ -12,6 +13,6 @@ namespace HomeNetOrm.Interfaces
         Task<TableSchema> GetActualTableSchemaAsync(string? tableName);
 
         // 🔥 ПЕРЕЕХАЛО СЮДА: Спека теперь законно принадлежит провайдеру!
-        DbProviderSpecification Spec { get; }  
+        DbProviderSpecificationExtensions Spec { get; }  
     }
 }

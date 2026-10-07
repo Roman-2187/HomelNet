@@ -1,7 +1,8 @@
 ﻿using HomeNetOrm.Enums;
-using HomeNetOrm.Helpers;
 using HomeNetOrm.Models;
+using System;
 using System.Linq.Expressions;
+using HomeNetOrm.DBProviders.Extensions;
 
 namespace HomeNetOrm.Builders
 {
@@ -11,7 +12,9 @@ namespace HomeNetOrm.Builders
 
         public ColumnBuilder(Expression<Func<TEntity, object?>> propertyExpression)
         {
-            _schema = PropertySchemaParser.Parse(propertyExpression);
+            // 🎯 МЕНЯЕМ НА ВЫЗОВ НАШЕГО КРАСАВЦА-РАСШИРЕНИЯ!
+            // Теперь выражение само маппит свой С# тип во внутреннюю схему ORM
+            _schema = propertyExpression.MapPropertySchema();
 
             // 🧙‍♂️ СБРОС СЛИШКОМ УМНОГО ПАРСЕРА:
             // Изначально выключаем AutoIncrement. Он включится ТОЛЬКО если 
@@ -93,7 +96,6 @@ namespace HomeNetOrm.Builders
         // Если передать ColumnType — принудительно перезапишет тип на нужный.
         public ColumnBuilder<TEntity> AsText(ColumnType? customType = null)
         {
-            // Если в твоем enum есть ColumnType.Text, используем его, иначе оставляем Varchar
             _schema.Type = customType ?? ColumnType.Varchar;
             _schema.Length = 8000;
             return this;

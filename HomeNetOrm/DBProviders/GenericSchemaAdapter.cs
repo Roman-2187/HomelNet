@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using HomeNetOrm.DBProviders.Extensions;
 using HomeNetOrm.Enums;
-using HomeNetOrm.Helpers;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Models;
 
@@ -16,12 +13,13 @@ namespace HomeNetOrm.DBProviders
         private const string Unique = "UNIQUE";
 
         // 🔥 СТАЛО ЧИСТО: Одна строгая, понятная модель конфигурации вместо кучи полей!
-        public DbProviderSpecification Spec { get; }
+        public DbProviderSpecificationExtensions Spec { get; }
 
-        public GenericSchemaAdapter(DbProviderSpecification spec)
+        public GenericSchemaAdapter(DbProviderSpecificationExtensions spec)
         {
             Spec = spec ?? throw new ArgumentNullException(nameof(spec));
         }
+
 
         public string ConvertTableName(string? rawName, NameFormat format)
         {
@@ -29,19 +27,22 @@ namespace HomeNetOrm.DBProviders
             return format == NameFormat.SnakeCase ? rawName.ToSnakeCase()! : rawName.ToCamelCase()!;
         }
 
+
         public string ConvertColumnName(string? rawName, NameFormat format)
         {
             if (string.IsNullOrEmpty(rawName)) throw new ArgumentException("Имя колонки не может быть пустым");
             return format == NameFormat.SnakeCase ? rawName.ToSnakeCase()! : rawName.ToCamelCase()!;
         }
 
+
         public TableSchema ConvertToSnakeCaseSchema(TableSchema originalSchema)
         {
             return originalSchema.CloneWithTransform(name => name.ToSnakeCase());
         }
 
-        // Пробрасываем вызов парсера типов напрямую из нашей спецификации
-        public ColumnType MapDbSpecificationType(string dbType) => Spec.DbTypeParser(dbType);
+
+        // 🎯 ФИКС: Вызываем правильное имя метода ParsePropertyType из DbProviderSpecificationExtensions
+        public ColumnType MapDbSpecificationType(string dbType) => Spec.ParsePropertyType(dbType);
 
         public List<string> GetColumnDefinitions(TableSchema schema)
         {
@@ -52,8 +53,8 @@ namespace HomeNetOrm.DBProviders
 
                 var name = $"\"{col.Name}\"";
 
-                // 🔥 Вызываем делегат трансляции SQL-типов напрямую через объект Spec!
-                string sqlType = Spec.TypeMapper(col.Type, col.IsPrimaryKey, col.IsAutoIncrement, col.Length);
+                // 🎯 ФИКС: Вызываем правильное имя свойства MapToSqlType напрямую через объект Spec!
+                string sqlType = Spec.MapToSqlType(col.Type, col.IsPrimaryKey, col.IsAutoIncrement, col.Length);
 
                 var constraints = new List<string>();
 

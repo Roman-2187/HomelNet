@@ -6,6 +6,11 @@ namespace HomeNetCore.Models
 {
     public partial class UserEntity : ObservableObject
     {
+
+
+        // Добавь это свойство в UserEntity.cs
+        public int IsSynced { get; set; } = 1; // По умолчанию считаем синхронизированным
+
         // 🎯 МЕНЯЕМ НА GUID: Тулкит сам создаст публичный 'Guid Id'
         [ObservableProperty]
         private Guid _id;

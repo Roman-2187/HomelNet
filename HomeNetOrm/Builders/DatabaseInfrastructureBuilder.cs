@@ -1,10 +1,10 @@
 ﻿using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetOrm.DBProviders;
+using HomeNetOrm.DBProviders.Extensions;
 using HomeNetOrm.DBProviders.Postgres;
 using HomeNetOrm.DBProviders.Sqlite;
 using HomeNetOrm.Enums;
 using HomeNetOrm.Interfaces;
-using HomeNetOrm.Models;
 using Microsoft.Data.Sqlite;
 using Npgsql;
 using System.Data.Common;
@@ -34,25 +34,19 @@ namespace HomeNetOrm.Builders
                 case DatabaseType.SQLite:
                     var sqliteConnection = new SqliteConnection(_connectionString);
 
-                    // 🔌 1. Запаковываем все метаданные SQLite в одну строгую модель конфигурации
-                    var sqliteSpec = new DbProviderSpecification(
-                        SqlQueriesRegistry.Sqlite.MapToSqlType,
-                        SqlQueriesRegistry.Sqlite.ParsePropertyType,
-                        SqlQueriesRegistry.Sqlite.NameIndex,
-                        SqlQueriesRegistry.Sqlite.TypeIndex,
-                        SqlQueriesRegistry.Sqlite.NullableIndex,
-                        SqlQueriesRegistry.Sqlite.PrimaryKeyIndex,
-                        SqlQueriesRegistry.Sqlite.ExtraInfoIndex
-                    );
+                    // 🔌 1. Просто забираем готовую, статически упакованную спецификацию из реестра
+                    DbProviderSpecificationExtensions sqliteSpec = SqlQueriesRegistry.Sqlite;
 
-                    // 2. Адаптер теперь забирает только спеку
+                    // 2. Адаптер забирает готовую спеку
                     var sqliteAdapter = new GenericSchemaAdapter(sqliteSpec);
 
+                    // 3. Запросы вытягиваем прямо из свойств объекта спецификации
                     var sqliteSqlInit = new GenericSchemaSqlInitializer(_logger,
-                        sqliteAdapter, SqlQueriesRegistry.Sqlite.TableExists,
-                        SqlQueriesRegistry.Sqlite.GetTableStructure);
+                        sqliteAdapter,
+                        sqliteSpec.TableExistsQuery,
+                        sqliteSpec.GetTableStructureQuery);
 
-                    // 3. Провайдер забирает инициализатор, подключение, логгер и СВОЮ спеку (без адаптера!)
+                    // 4. Провайдер забирает инициализатор, подключение, логгер и СВОЮ спеку
                     var sqliteProvider = new GenericSchemaProvider(
                         sqliteSqlInit,
                         sqliteConnection,
@@ -65,25 +59,18 @@ namespace HomeNetOrm.Builders
                 case DatabaseType.PostGreSQL:
                     var pgConnection = new NpgsqlConnection(_connectionString);
 
-                    // 🐘 1. Запаковываем все метаданные Postgres в спецификацию
-                    var pgSpec = new DbProviderSpecification(
-                        SqlQueriesRegistry.Postgres.MapToSqlType,
-                        SqlQueriesRegistry.Postgres.ParsePropertyType,
-                        SqlQueriesRegistry.Postgres.NameIndex,
-                        SqlQueriesRegistry.Postgres.TypeIndex,
-                        SqlQueriesRegistry.Postgres.NullableIndex,
-                        SqlQueriesRegistry.Postgres.PrimaryKeyIndex,
-                        SqlQueriesRegistry.Postgres.ExtraInfoIndex
-                    );
+                    // 🐘 1. Забираем готовую спецификацию Postgres со всеми маппингами и индексами
+                    DbProviderSpecificationExtensions pgSpec = SqlQueriesRegistry.Postgres;
 
                     // 2. Адаптер забирает спеку
                     var pgAdapter = new GenericSchemaAdapter(pgSpec);
 
+                    // 3. Конфигурируем инициализатор без хардкода строк — всё лежит внутри pgSpec
                     var pgSqlInit = new GenericSchemaSqlInitializer(_logger, pgAdapter,
-                        SqlQueriesRegistry.Postgres.TableExists,
-                        SqlQueriesRegistry.Postgres.GetTableStructure);
+                        pgSpec.TableExistsQuery,
+                        pgSpec.GetTableStructureQuery);
 
-                    // 3. Провайдер честно забирает свою спеку
+                    // 4. Провайдер забирает спеку в один параметр
                     var pgProvider = new GenericSchemaProvider(
                         pgSqlInit,
                         pgConnection,

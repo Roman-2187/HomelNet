@@ -55,16 +55,17 @@
 
                         <!-- В Авалонии по умолчанию текст обновляется сразу, 
                              так что UpdateSourceTrigger писать не нужно -->
-                        <TextBox Text="{Binding TargetUserId}"
-                                 Grid.Column="0"
-                                 BorderBrush="#FF211E19"
-                                 BorderThickness="0.5"
-                                 HorizontalAlignment="Stretch" 
-                                 Height="35"
-                                 VerticalContentAlignment="Center"
-                                 Foreground="#FFF5546F"
-                                 Padding="5,0,0,0"
-                                 Background="#1AADD8E6"/>
+                     <TextBox Text="{Binding TargetUserEmail}"
+         Grid.Column="0"
+         BorderBrush="#FF211E19"
+         BorderThickness="0.5"
+         HorizontalAlignment="Stretch" 
+         Height="35"
+         VerticalContentAlignment="Center"
+         Foreground="#FFF5546F"
+         Padding="5,0,0,0"
+         Background="#1AADD8E6"/>
+
 
                         <Button Content="Найти" 
                                 Grid.Column="1"
@@ -92,7 +93,7 @@
                             <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="models:UserEntity">
                                     <!-- Биндим твоё вычисляемое свойство информации о юзере -->
-                                    <TextBlock Text="{Binding DisplayInfo}"/>
+                                   <TextBlock Text="{Binding Email}"/>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>

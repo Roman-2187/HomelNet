@@ -1,6 +1,7 @@
 ﻿using HomeNetCore.Exeptions;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetOrm.DBProviders.Extensions;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Models;
 using System.Data;
@@ -10,17 +11,16 @@ namespace HomeNetOrm.DBProviders
 {
     public class GenericSchemaProvider : ISchemaProvider
     {
-        private readonly ISchemaSqlInitializer _sqlInit;   
+        private readonly ISchemaSqlInitializer _sqlInit;
         private readonly DbConnection _requiredConnection;
         private readonly ILogger _logger;
 
-        public DbProviderSpecification Spec { get; }
+        public DbProviderSpecificationExtensions Spec { get; }
 
-        public GenericSchemaProvider(ISchemaSqlInitializer sqlInit, DbConnection connection,  DbProviderSpecification spec, ILogger logger)  
-                     
+        public GenericSchemaProvider(ISchemaSqlInitializer sqlInit, DbConnection connection, DbProviderSpecificationExtensions spec, ILogger logger)
         {
             _requiredConnection = connection ?? throw new ArgumentNullException(nameof(connection));
-            _sqlInit = sqlInit ?? throw new ArgumentNullException(nameof(sqlInit));      
+            _sqlInit = sqlInit ?? throw new ArgumentNullException(nameof(sqlInit));
             Spec = spec ?? throw new ArgumentNullException(nameof(spec)); // Зафиксировали
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -74,18 +74,12 @@ namespace HomeNetOrm.DBProviders
             {
                 while (await reader.ReadAsync())
                 {
-                    // 🔥 СТАЛО: Создаем строгий рекорд. Читать код теперь одно удовольствие!
-                    rawColumnsData.Add(new RawColumnMetadata(
-                        Name: reader.IsDBNull(spec.NameIndex) ? string.Empty : reader.GetString(spec.NameIndex),
-                        DataType: reader.IsDBNull(spec.TypeIndex) ? string.Empty : reader.GetString(spec.TypeIndex),
-                        IsNullable: ReadNullable(reader, spec.NullableIndex),
-                        KeyType: ReadStringUniversal(reader, spec.PrimaryKeyIndex),
-                        ExtraInfo: spec.ExtraInfoIndex >= 0 && !reader.IsDBNull(spec.ExtraInfoIndex)
-                            ? reader.GetValue(spec.ExtraInfoIndex)?.ToString() ?? string.Empty
-                            : string.Empty
-                    ));
+                    // 🔥 МАГИЯ РАСШИРЕНИЙ: Читаем метаданные прямо из ридера, передавая спеку!
+                    rawColumnsData.Add(reader.ReadColumnMetadata(spec));
                 }
             }
+
+
 
             return rawColumnsData;
         }
@@ -95,8 +89,8 @@ namespace HomeNetOrm.DBProviders
             var columns = new List<ColumnSchema>();
             foreach (var row in rawRows)
             {
-                // 🔥 ЧИСТАЯ МАГИЯ: Передаем рекорд целиком и парсер типов из спеки провайдера!
-                columns.Add(new ColumnSchema(row, Spec.DbTypeParser));
+                // 🎯 ФИКС: Передаем правильное имя свойства ParsePropertyType из спецификации провайдера!
+                columns.Add(new ColumnSchema(row, Spec.ParsePropertyType));
             }
 
             _logger.LogDebug($"Получено {columns.Count} столбцов для таблицы {tableName}");
@@ -124,25 +118,6 @@ namespace HomeNetOrm.DBProviders
             return getSchema;
         }
 
-
-        private bool ReadNullable(DbDataReader reader, int index)
-        {
-            if (index < 0 || reader.IsDBNull(index)) return false;
-
-            string val = reader.GetValue(index)?.ToString() ?? string.Empty;
-
-            if (val.Equals("YES", StringComparison.OrdinalIgnoreCase)) return true;
-            if (val.Equals("NO", StringComparison.OrdinalIgnoreCase)) return false;
-
-            if (bool.TryParse(val, out bool res)) return !res;
-
-            return val.Equals("0");
-        }
-
-        private string ReadStringUniversal(DbDataReader reader, int index)
-        {
-            if (index < 0 || reader.IsDBNull(index)) return string.Empty;
-            return reader.GetValue(index).ToString() ?? string.Empty;
-        }
+       
     }
 }

@@ -1,10 +1,12 @@
-﻿using System;
-using System.Text;
+﻿using System.Text;
 using System.Text.RegularExpressions;
 
-namespace HomeNetOrm.Helpers
+namespace HomeNetOrm.DBProviders.Extensions
 {
-    public static class StringExtensions
+    /// <summary>
+    /// Расширения строк, созданные строго для нужд маппинга имен в SchemaAdapter.
+    /// </summary>
+    public static class StringCaseExtensions
     {
         public static string? ToSnakeCase(this string? name)
         {
@@ -31,11 +33,9 @@ namespace HomeNetOrm.Helpers
         {
             if (string.IsNullOrEmpty(name)) return name;
 
-            // Безопасно проверяем первый символ, компилятор уверен, что name не null
             if (!name.Contains('_') && char.IsUpper(name[0]))
                 return name;
 
-            // Делаем первую букву заглавной
             string safeName = char.ToUpper(name[0]) + name.Substring(1);
 
             return Regex.Replace(

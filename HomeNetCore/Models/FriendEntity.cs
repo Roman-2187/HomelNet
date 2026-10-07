@@ -4,10 +4,17 @@ namespace HomeNetCore.Models
 {
     public class FriendEntity
     {
-        // У этой таблицы нет одиночного ID, она просто связывает двух пользователей вместе! 👥
-        public int UserId { get; set; }      // Кто добавил
-        public int FriendId { get; set; }    // Кого добавил
+        // 🎯 СУРРОГАТНЫЙ ПЕРВИЧНЫЙ КЛЮЧ: Спасёт SQLite от ошибки "more than one primary key"
+        public Guid Id { get; set; } = Guid.NewGuid();
+
+        // Идентификаторы пользователей теперь СТРОГО Guid ⚡
+        public Guid UserId { get; set; }      // Кто добавил
+        public Guid FriendId { get; set; }    // Кого добавил
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // 🔥 ФИКС ТИПОВ СИНХРОНИЗАЦИИ: Никаких object?, только жесткий бэкенд-стандарт!
+        public int IsSynced { get; set; } = 1;
+        public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
     }
 }
-

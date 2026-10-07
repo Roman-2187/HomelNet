@@ -1,7 +1,9 @@
 ﻿namespace HomeNetOrm.Models
 {
-    // 🔥 ТЕПЕРЬ ОНА ЖИВЕТ ТУТ: Лёгкая структура-рекорд метаданных
-    public readonly record struct RawColumnMetadata(
+    /// <summary>
+    /// Строгий, легковесный рекорд сырых метаданных колонки из БД. Чистый переносчик данных (DTO).
+    /// </summary>
+    public record RawColumnMetadata(
         string Name,
         string DataType,
         bool IsNullable,

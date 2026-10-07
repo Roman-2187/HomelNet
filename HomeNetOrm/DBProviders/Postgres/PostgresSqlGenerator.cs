@@ -108,7 +108,10 @@ namespace HomeNetOrm.DBProviders.Postgres
             {
                 throw new InvalidOperationException($"У таблицы {_formattedTable.TableName} нет одиночного ID для удаления");
             }
-            return $"DELETE FROM \"{_formattedTable.TableName}\" WHERE {idColumn} = @{idColumn};";
+           
+
+            return $"DELETE FROM \"{_formattedTable.TableName}\" WHERE {idColumn}::text = @{idColumn}::text;";
+
         }
 
         // Выборка по ID (CRUD - Read) 🔍

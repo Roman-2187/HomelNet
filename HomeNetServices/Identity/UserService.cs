@@ -92,7 +92,7 @@ namespace HomeNetServices.Services.Identity
 
         public async Task<UserEntity?> GetByEmailAsync(string email)
         {
-            _logger.LogDebug($"Запрос пользователя по Email {email} напрямую из СУБД...");
+           
             return await _repo.GetByEmailAsync(email);
         }
     }

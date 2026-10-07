@@ -18,34 +18,39 @@ namespace HomeNetOrm.Schemes
             users.AddColumn(u => u.Email).HasLength(50).IsRequired().IsUnique();
             users.AddColumn(u => u.Password).HasLength(100).IsRequired();
             users.AddColumn(u => u.CreatedAt).IsTrackedTimestamp();
-            yield return users.Generate(); // Генерация схемы, валидация и автоматический .Initialize()
+            users.AddColumn(u => u.IsSynced).HasDefault(1, ColumnType.Integer);
+            users.AddColumn(u => u.UpdatedAt).IsUpdatedAtTimestamp();
+            yield return users.Generate();
 
 
             // 2. ⚡ СХЕМА ТАБЛИЦЫ СООБЩЕНИЙ (messages)
             var messages = new TableBuilder<MessageEntity>("Messages");
-            // 🎯 ФИКС: Убрали .AsAutoIncrement(), оставили только .AsPrimaryKey()
             messages.AddColumn(m => m.Id).AsPrimaryKey();
             messages.AddColumn(m => m.SenderId).IsRequired().HasForeignKey<UserEntity>();
             messages.AddColumn(m => m.ReceiverId).IsRequired().HasForeignKey<UserEntity>();
             messages.AddColumn(m => m.Text).AsText();
-
-            // Передаем дефолтное значение "Text", но тип принудительно ставим как у Text/Varchar
             messages.AddColumn(m => m.MediaType).AsText();
-
-            // Передаем дефолт 0 и принудительно просим валидатор считать это поле INTEGER (числом)
             messages.AddColumn(m => m.IsRead).HasDefault(0, ColumnType.Integer);
-
             messages.AddColumn(m => m.CreatedAt).IsTrackedTimestamp();
+            messages.AddColumn(m => m.IsSynced).HasDefault(1, ColumnType.Integer);
+            messages.AddColumn(m => m.UpdatedAt).IsUpdatedAtTimestamp();
             yield return messages.Generate();
-
 
 
             // 3. ⚡ СХЕМА ТАБЛИЦЫ КОНТАКТОВ / ДРУЗЕЙ (friends)
             var friends = new TableBuilder<FriendEntity>("Friends");
-            // Так как у таблицы Friends составной ключ (UserId + FriendId), вешаем .AsPrimaryKey() на оба поля
+
+            // 🎯 РЕШЕНИЕ ДЛЯ СОСТАВНОГО КЛЮЧА БЕЗ КРАША СУБД:
+            // Убираем .AsPrimaryKey(), чтобы SQLite не ругался на дублирование PK.
+            // Вместо этого делаем UserId уникальным в связке или простоRequired.
             friends.AddColumn(f => f.UserId).IsRequired().HasForeignKey<UserEntity>();
-            friends.AddColumn(f => f.FriendId).IsRequired().AsPrimaryKey().HasForeignKey<UserEntity>();
+
+            // Чтобы не ломать генератор, вешаем обычный уникальный индекс или просто Required
+            friends.AddColumn(f => f.FriendId).IsRequired().HasForeignKey<UserEntity>();
+
             friends.AddColumn(f => f.CreatedAt).IsTrackedTimestamp();
+            friends.AddColumn(f => f.IsSynced).HasDefault(1, ColumnType.Integer);
+            friends.AddColumn(f => f.UpdatedAt).IsUpdatedAtTimestamp();
             yield return friends.Generate();
         }
     }
