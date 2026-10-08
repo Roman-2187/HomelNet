@@ -1,43 +1,44 @@
 ﻿using Dapper;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Events;
+using HomeNetOrm.DBProviders.Interfaces;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Models;
 using HomeNetOrm.Schemes;
+using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace HomeNetOrm.DbTableInitializer
 {
+    /// <summary>
+    /// Универсальный сверщик и создатель таблиц.
+    /// Работает строго с одним инжектируемым шлейфом БД и его диалектным инициализатором.
+    /// </summary>
     public class DBInitializer
     {
         private readonly DbConnection _dbConnection;
-        private readonly ISchemaSqlInitializer _schemaSqlGenerator;
-        private readonly ILogger _logger;
+        private readonly ISchemaSqlInitializer _schemaSqlInitializer;
         private readonly ISchemaProvider _schemaProvider;
         private readonly ISchemaAdapter _schemaAdapter;
-        private ISchemaSqlInitializer _initializer;
-
-        // 🔥 НАША ШИНА: Ссылка на EventBus
-        private readonly IEventBus _eventBus;
+        private readonly ILogger _logger;
+   
 
         public DBInitializer(
             DbConnection connection,
             ISchemaProvider schemaProvider,
             ISchemaAdapter schemaAdapter,
-            ISchemaSqlInitializer schemaSqlGenerator,
             ISchemaSqlInitializer schemaSqlInitializer,
-            IEventBus eventBus, // 🔥 ВНЕДРЯЕМ: Передаем шину в конструктор
             ILogger logger)
         {
-            _schemaProvider = schemaProvider ?? throw new ArgumentNullException(nameof(schemaProvider));
             _dbConnection = connection ?? throw new ArgumentNullException(nameof(connection));
-            _schemaSqlGenerator = schemaSqlGenerator ?? throw new ArgumentNullException(nameof(schemaSqlGenerator));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _schemaProvider = schemaProvider ?? throw new ArgumentNullException(nameof(schemaProvider));
             _schemaAdapter = schemaAdapter ?? throw new ArgumentNullException(nameof(schemaAdapter));
-            _initializer = schemaSqlInitializer ?? throw new ArgumentNullException(nameof(schemaSqlInitializer));
-            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus)); //
+            _schemaSqlInitializer = schemaSqlInitializer ?? throw new ArgumentNullException(nameof(schemaSqlInitializer));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task InitializeAsync()
@@ -72,17 +73,15 @@ namespace HomeNetOrm.DbTableInitializer
                 }
             }
 
-            _logger.LogInfo("=== ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ЗАВЕРШЕНА ===");
-
-            // 🔥 ВЫСТРЕЛ В АВТОБУС: Структура всех таблиц проверена и накатана!
-            // Передаем в качестве отправителя 'this'. Вьюшки, просыпайтесь!
-            _eventBus.Publish(this, new ISchemaSqlInitializer.DatabaseReady());
+            _logger.LogInfo("=== ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ЗАВЕРШЕНА ===");      
         }
 
         private async Task<bool> TableExistsAsync(string tableName)
         {
             var cleanName = tableName.Trim('"', '\'').ToLower();
-            string sql = _initializer.GenerateTableExistsSql(tableName);
+
+            // Вызываем специализированный SQL под текущий диалект (SQLite или Postgres)
+            string sql = _schemaSqlInitializer.GenerateTableExistsSql(tableName);
 
             try
             {
@@ -106,7 +105,9 @@ namespace HomeNetOrm.DbTableInitializer
                 await _dbConnection.OpenAsync();
             }
 
-            await _dbConnection.ExecuteAsync(_schemaSqlGenerator.GenerateCreateTableSql(dbSchema));
+            // Вызываем правильный метод создания таблицы
+            string createTableSql = _schemaSqlInitializer.GenerateCreateTableSql(dbSchema);
+            await _dbConnection.ExecuteAsync(createTableSql);
 
             if (await TableExistsAsync(targetName))
                 _logger.LogInfo($"✅ Таблица {targetName} успешно создана в БД.");
@@ -131,8 +132,7 @@ namespace HomeNetOrm.DbTableInitializer
 
             if (expectedSchema.Columns.Count == 0 || string.IsNullOrEmpty(expectedSchema.IdColumnName))
             {
-                _logger.LogError($"[ИНИЦИАЛИЗАТОР] Сверка структуры для таблицы '{dbTableName}'" +
-                    $" пропущена, так как схема в БД повреждена, пуста или не имеет Primary Key.");
+                _logger.LogError($"[ИНИЦИАЛИЗАТОР] Сверка структуры для таблицы '{dbTableName}' пропущена, так как схема в БД повреждена, пуста или не имеет Primary Key.");
                 return;
             }
 
@@ -157,8 +157,7 @@ namespace HomeNetOrm.DbTableInitializer
                     _logger.LogWarning($"   [+] Обнаружена лишняя колонка: {extra.Name}");
 
                 foreach (var mismatch in diff.MismatchedColumns)
-                    _logger.LogWarning($"   [*] Сдвиг типа в '{mismatch.ColumnName}':" +
-                        $" ожидалось {mismatch.Expected}, прилетело {mismatch.Actual}");
+                    _logger.LogWarning($"   [*] Сдвиг типа в '{mismatch.ColumnName}': ожидалось {mismatch.Expected}, прилетело {mismatch.Actual}");
             }
         }
     }

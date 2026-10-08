@@ -1,114 +1,83 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Data.Common;
 using System.Threading.Tasks;
 using Dapper;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Models;
-using HomeNetOrm.Builders;
+using HomeNetOrm.Interfaces;
 
 namespace HomeNetOrm.Repositories
 {
     /// <summary>
-    /// Репозиторий списка друзей/контактов SiberNet.
-    /// Работает параллельно с локальным SQLite и центральным PostgreSQL.
+    /// Автономный репозиторий списка друзей/контактов SiberNet.
+    /// Выполняет чистые атомарные CRUD-операции через инжектируемое подключение.
     /// </summary>
     public class FriendRepository : IFriendRepository
     {
-        private readonly DbContextContainer _context;
+        private readonly DbConnection _connection;
+        private readonly ISqlGenerator<FriendEntity> _sqlGenerator;
 
-        public FriendRepository(DbContextContainer context)
+        public FriendRepository(DbConnection connection, ISqlGenerator<FriendEntity> sqlGenerator)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            _sqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));
         }
 
-        // 🤝 Добавить пользователя в друзья сразу в обе базы данных
+        // 🤝 Добавить пользователя в друзья через ОРМ
         public async Task<bool> AddFriendAsync(FriendEntity friend)
         {
-            // Штампуем Guid ключи и метки времени изменения на клиенте
             if (friend.Id == Guid.Empty) friend.Id = Guid.NewGuid();
             friend.CreatedAt = DateTime.UtcNow;
             friend.UpdatedAt = DateTimeOffset.UtcNow;
+            friend.IsSynced = 0; // Новая запись помечается грязной
+
+            string sql = _sqlGenerator.GenerateInsert();
 
             try
             {
-                // 1. Локальный SQLite — пишем всегда, это наш главный оплот
-                string sqliteSql = _context.SqliteFriendSqlGen.GenerateInsert();
+                // Так как мы зафиксировали поле .Id в схеме friends на прошлом шаге,
+                // дженерик-генератор гладко выдаст инсерт с перехватом ID
+                var newId = await _connection.ExecuteScalarAsync<Guid>(sql, friend);
+                if (newId != Guid.Empty) friend.Id = newId;
 
-                // Ставим флаг синхронизации: 1 если Postgres онлайн, 0 если офлайн
-                friend.IsSynced = _context.IsPostgresAvailable ? 1 : 0;
-                int sqliteRows = await _context.SqliteConnection.ExecuteAsync(sqliteSql, friend);
-
-                // 2. Удаленный PostgreSQL — пишем параллельно, если есть связь
-                if (_context.IsPostgresAvailable)
-                {
-                    try
-                    {
-                        string pgSql = _context.PostgresFriendSqlGen.GenerateInsert();
-                        await _context.PostgresConnection.ExecuteAsync(pgSql, friend);
-                    }
-                    catch (Exception pgEx)
-                    {
-                        // При обрыве связи мягко помечаем локальную запись как неотправленную
-                        await _context.SqliteConnection.ExecuteAsync(
-                            "UPDATE friends SET is_synced = 0 WHERE id = @Id", new { Id = friend.Id });
-                        System.Diagnostics.Debug.WriteLine($"[FriendRepo] Сбой дублирования в Postgres: {pgEx.Message}");
-                    }
-                }
-
-                return sqliteRows > 0;
+                return true;
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Ошибка при добавлении в друзья: {ex.Message}");
+                throw new InvalidOperationException($"Ошибка при добавлении в друзья через ОРМ: {ex.Message}");
             }
         }
 
-        // ❌ Удалить связь из таблицы friends по её уникальному GUID в обеих базах
+        // ❌ Удалить связь из таблицы friends по GUID через ОРМ
         public async Task<bool> RemoveFriendByIdAsync(Guid id)
         {
+            string sql = _sqlGenerator.GenerateDelete();
+
             try
             {
-                // 1. Удаляем из SQLite
-                string sqliteSql = _context.SqliteFriendSqlGen.GenerateDelete();
-                int rowsAffected = await _context.SqliteConnection.ExecuteAsync(sqliteSql, new { Id = id });
-
-                // 2. Удаляем из Postgres
-                if (_context.IsPostgresAvailable)
-                {
-                    try
-                    {
-                        string pgSql = _context.PostgresFriendSqlGen.GenerateDelete();
-                        await _context.PostgresConnection.ExecuteAsync(pgSql, new { Id = id });
-                    }
-                    catch (Exception pgEx)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[FriendRepo] Ошибка физического удаления в Postgres: {pgEx.Message}");
-                    }
-                }
-
+                int rowsAffected = await _connection.ExecuteAsync(sql, new { id = id });
                 return rowsAffected > 0;
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Ошибка при удалении связи контактов: {ex.Message}");
+                throw new InvalidOperationException($"Ошибка удаления связи контактов через ОРМ: {ex.Message}");
             }
         }
 
-        // 👥 Вытащить профили всех юзеров, которые находятся в друзьях у конкретного человека
+        // 👥 Вытащить профили всех друзей (ANSI SQL, полностью независимый от СУБД)
         public async Task<IEnumerable<UserEntity>> GetFriendsForUserAsync(Guid userId)
         {
-            // Выборку контактов делаем всегда из быстрого локального SQLite без лагов сети
-            string sql = @"SELECT u.* FROM users u
-                           INNER JOIN friends f ON u.id = f.friend_id 
-                           WHERE f.user_id = @UserId;";
+            const string sql = @"SELECT u.* FROM users u
+                                 INNER JOIN friends f ON u.id = f.friend_id 
+                                 WHERE f.user_id = @UserId;";
             try
             {
-                return await _context.SqliteConnection.QueryAsync<UserEntity>(sql, new { UserId = userId });
+                return await _connection.QueryAsync<UserEntity>(sql, new { UserId = userId });
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Ошибка выборки друзей из локального SQLite: {ex.Message}");
+                throw new InvalidOperationException($"Ошибка выборки друзей из базы данных: {ex.Message}");
             }
         }
     }

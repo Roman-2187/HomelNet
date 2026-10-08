@@ -47,9 +47,27 @@ namespace HomeNetOrm.DBProviders.Extensions
 
         private static string ReadStringUniversal(DbDataReader reader, int index)
         {
-            if (index < 0 || reader.IsDBNull(index)) return string.Empty;
-            return reader.GetValue(index).ToString() ?? string.Empty;
+            if (index < 0 || reader.IsDBNull(index)) return "0";
+
+            var rawValue = reader.GetValue(index);
+            if (rawValue == null) return "0";
+
+            if (rawValue is bool boolVal) return boolVal ? "1" : "0";
+
+            string strVal = rawValue.ToString()?.Trim() ?? "0";
+
+            // Ловим любые варианты маркеров ключа
+            if (strVal.Equals("1") ||
+                strVal.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+                strVal.Equals("yes", StringComparison.OrdinalIgnoreCase))
+            {
+                return "1"; // Конструктор ColumnSchema превратит "1" в IsPrimaryKey = true!
+            }
+
+            return "0";
         }
+
+
 
         #endregion
     }

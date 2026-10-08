@@ -1,13 +1,11 @@
 ﻿using Dapper;
 using HomeNet.DI;
 using HomeNetAvalonia.Animators;
-using HomeNetAvalonia.Controls;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.OutputLogging;
 using HomeNetOrm.Helpers;
+using HomeNetOrm.Interfaces.HomeNetOrm.Interfaces;
 using HomeNetPresentation.Services;
-using HomeNetPresentation.ViewModels.AdminViews; // 🔥 ДОБАВЛЯЕМ: Импорт пространства имен твоей вьюмодели
-using HomeNetServices.Synchronization;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
@@ -45,7 +43,7 @@ namespace HomeNetAvalonia.Infrastructure
             // Аниматор окон
             provider.GetRequiredService<CloseWindowAnimator>();
             // Будим координатор синхронизации баз данных SiberNet
-            provider.GetRequiredService<SiberNetSyncCoordinator>();
+            provider.GetRequiredService<ISiberNetSyncCoordinator>();
 
 
 

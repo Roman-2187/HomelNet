@@ -40,18 +40,17 @@ namespace HomeNetOrm.Schemes
             // 3. ⚡ СХЕМА ТАБЛИЦЫ КОНТАКТОВ / ДРУЗЕЙ (friends)
             var friends = new TableBuilder<FriendEntity>("Friends");
 
-            // 🎯 РЕШЕНИЕ ДЛЯ СОСТАВНОГО КЛЮЧА БЕЗ КРАША СУБД:
-            // Убираем .AsPrimaryKey(), чтобы SQLite не ругался на дублирование PK.
-            // Вместо этого делаем UserId уникальным в связке или простоRequired.
+            // 🎯 ЖЕЛЕЗОБЕТОННО: Добавляем суррогатный ID для ОРМ-автопилота
+            friends.AddColumn(f => f.Id).AsPrimaryKey();
+
             friends.AddColumn(f => f.UserId).IsRequired().HasForeignKey<UserEntity>();
-
-            // Чтобы не ломать генератор, вешаем обычный уникальный индекс или просто Required
             friends.AddColumn(f => f.FriendId).IsRequired().HasForeignKey<UserEntity>();
-
             friends.AddColumn(f => f.CreatedAt).IsTrackedTimestamp();
             friends.AddColumn(f => f.IsSynced).HasDefault(1, ColumnType.Integer);
             friends.AddColumn(f => f.UpdatedAt).IsUpdatedAtTimestamp();
             yield return friends.Generate();
+
+
         }
     }
 }

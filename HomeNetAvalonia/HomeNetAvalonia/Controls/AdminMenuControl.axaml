@@ -3,73 +3,100 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
             
-             x:Class="HomeNetAvalonia.Controls.AdminMenuControl"
-  xmlns:controls="using:HomeNetAvalonia.Controls"
-  xmlns:conv="using:HomeNetAvalonia.Converters"
+             xmlns:controls="using:HomeNetAvalonia.Controls"
+             xmlns:conv="using:HomeNetAvalonia.Converters"
              xmlns:enums="using:HomeNetCore.Enums.Navigation"
-             mc:Ignorable="d" d:DesignWidth="740" d:DesignHeight="500" 
-            >
+             x:Class="HomeNetAvalonia.Controls.AdminMenuControl"
+             mc:Ignorable="d" d:DesignWidth="740" d:DesignHeight="500">
 
     <UserControl.Resources>
-    <conv:EqualityConverter x:Key="EqualityConverter"/>
-</UserControl.Resources>
+        <conv:EqualityConverter x:Key="EqualityConverter"/>
+    </UserControl.Resources>
 
     <!-- 🌌 Глобальный DataContext Хаба для рантайма без Code-behind -->
-    <ContentControl DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False" >
+    <ContentControl
+        DataContext="{DynamicResource ComponentHub}"
+        x:CompileBindings="False">
         
         <!-- 🦾 Автоматически проваливаемся в AdminViewModel -->
-        <Grid  DataContext="{Binding AdminViewModel}" ColumnDefinitions="220, *" >
+        <Grid
+            DataContext="{Binding AdminViewModel}"
+            ColumnDefinitions="220, *">
 
-            <!-- ================= ЛЕВАЯ ЧАСТЬ: Боковая панель ================= -->
-            <!-- Наш сдержанный стальной трехслойный контейнер (картинка на Opacity 0.1) -->
-            <ContentControl Classes="CyberpunkInnerContainer"  Grid.Column="0" Margin="5,0,5,0">
+            <!-- === ЛЕВАЯ ЧАСТЬ: Боковая панель ==== -->
+            <ContentControl
+                Classes="CyberpunkInnerContainer"
+                Grid.Column="0" Margin="5,0,5,0">
                 <Grid RowDefinitions="Auto, *">
                     
                     <!-- 🔝 ШАПКА ПАНЕЛИ: Упакованный бургер-контрол и заголовок -->
-                    <Grid Grid.Row="0" ColumnDefinitions="Auto, *" >
-                        <!-- Наш переиспользуемый контрол, который сам прячется при клике мимо -->
+                    <Grid Grid.Row="0"
+                          ColumnDefinitions="Auto, *">
                         <controls:AccountMenuControl Grid.Column="0"/>
-                        
-                        <TextBlock Grid.Column="1" 
-                                   Text="АДМИН ПАНЕЛЬ" 
-                                   FontWeight="Bold"
-                                   Foreground="#FFF5546F" 
-                                   VerticalAlignment="Center"
-                                   HorizontalAlignment="Center"
-                                   FontSize="13"/>
+                        <TextBlock
+                            Grid.Column="1" 
+                            Text="АДМИН ПАНЕЛЬ" 
+                            FontWeight="Bold"
+                            Foreground="#FFF5546F" 
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            FontSize="13"/>
                     </Grid>
 
-         <!-- НАВИГАЦИОННЫЕ КНОПКИ УПРАВЛЕНИЯ -->
-<!-- 🟢 ЗАМЕНИЛИ StackPanel НА Grid: Теперь селектор StackPanel Button их просто не увидит, и они станут полноразмерными! -->
-<Grid Grid.Row="1" RowDefinitions="Auto, Auto, Auto, Auto, Auto" VerticalAlignment="Top">
-    <!-- Для каждой кнопки задаем свою строку и отступ Margin вместо Spacing -->
-    <Button Grid.Row="0" Content="{Binding TableButtonText, FallbackValue='Показать users'}" 
-            Command="{Binding ShowUserTableCommand}"
-            Classes="cyber-btn" HorizontalAlignment="Stretch" Margin="0,3"/>
-    
-    <Button Grid.Row="1" Content="{Binding ToggleButtonText, FallbackValue='Показать log'}" 
-            Command="{Binding ShowLogPanelCommand}" 
-            Classes="cyber-btn" HorizontalAlignment="Stretch" Margin="0,3"/>
-    
-    <Button Grid.Row="2" Content="{Binding DeleteButtonText, FallbackValue='Удалить юзера'}"
-            Command="{Binding ShowDeleteFormCommand}"
-            Classes="cyber-btn" HorizontalAlignment="Stretch" Margin="0,3"/>
-    
-    <Button Grid.Row="3" Content="{Binding SeedButtonText, FallbackValue='Сидинг Users'}" 
-            Command="{Binding ShowSeedFormCommand}" 
-            Classes="cyber-btn" HorizontalAlignment="Stretch" Margin="0,3"/>
-    
-    <Button Grid.Row="4" Content="{Binding InspectorButtonText, FallbackValue='Инспектор шины'}" 
-            Command="{Binding ShowInspectorCommand}" 
-            Classes="cyber-btn" HorizontalAlignment="Stretch" Margin="0,3"/>
-</Grid>
+                    <!-- НАВИГАЦИОННЫЕ КНОПКИ УПРАВЛЕНИЯ -->
+                    <Grid Grid.Row="1"
+                          RowDefinitions="Auto, Auto, Auto, Auto, Auto"
+                          VerticalAlignment="Top" Margin="0,10,0,0">
 
-
-                    
+                        <Button
+                            Grid.Row="0"
+                            Content="{Binding TableButtonText,
+                            FallbackValue='Показать users'}" 
+                            Command="{Binding ShowUserTableCommand}"
+                            Classes="cyber-btn"
+                            HorizontalAlignment="Stretch"
+                            Margin="0,3"/>
+                        
+                        <Button
+                            Grid.Row="1"
+                            Content="{Binding ToggleButtonText,
+                            FallbackValue='Показать log'}" 
+                            Command="{Binding ShowLogPanelCommand}" 
+                            Classes="cyber-btn"
+                            HorizontalAlignment="Stretch"
+                            Margin="0,3"/>
+                        
+                        <Button
+                            Grid.Row="2"
+                            Content="{Binding DeleteButtonText,
+                            FallbackValue='Удалить юзера'}"
+                            Command="{Binding ShowDeleteFormCommand}"
+                            Classes="cyber-btn"
+                            HorizontalAlignment="Stretch"
+                            Margin="0,3"/>
+                        
+                        <Button
+                            Grid.Row="3"
+                            Content="{Binding SeedButtonText,
+                            FallbackValue='Сидинг Users'}" 
+                            Command="{Binding ShowSeedFormCommand}" 
+                            Classes="cyber-btn"
+                            HorizontalAlignment="Stretch"
+                            Margin="0,3"/>
+                        
+                        <Button
+                            Grid.Row="4"
+                            Content="{Binding InspectorButtonText,
+                            FallbackValue='Инспектор шины'}" 
+                            Command="{Binding ShowInspectorCommand}" 
+                            Classes="cyber-btn"
+                            HorizontalAlignment="Stretch"
+                            Margin="0,3"/>
+                    </Grid>
                 </Grid>
             </ContentControl>
 
-            <!-- ================= ПРАВАЯ ЧАСТЬ: Рабочая зона вкладок ================= -->
+            <!-- === ПРАВАЯ ЧАСТЬ: Рабочая зона вкладок === -->
             <Grid Grid.Column="1">
                 <Grid.Styles>
                     <!-- Базово прячем все контейнеры-вкладки -->
@@ -78,40 +105,54 @@
                     </Style>
                 </Grid.Styles>
 
-               <!-- Блок А: Таблица пользователей (теперь плиточное досье) -->
-<ContentControl Classes="tab-content" 
-                IsVisible="{Binding ActiveTab, Converter={StaticResource EqualityConverter}, ConverterParameter={x:Static enums:AdminSubTab.UserTable}}">
-    <!-- 🟢 ИСПРАВЛЕНО: Вызываем чистое лаконичное имя без View -->
-    <controls:UsersTableControl/>
-</ContentControl>
+                <!-- Блок А: Таблица пользователей -->
+                <ContentControl
+                    Classes="tab-content" 
+                    IsVisible="{Binding ActiveTab,
+                    Converter={StaticResource EqualityConverter},
+                    ConverterParameter={x:Static enums:AdminSubTab.UserTable}}">
+                    <controls:UsersTableControl/>
+                </ContentControl>
 
-               <!-- Блок Б: Панель Логов (Твой кастомный посимвольный терминал SiberNet) -->
-<ContentControl Classes="tab-content" 
-                IsVisible="{Binding ActiveTab, Converter={StaticResource EqualityConverter}, ConverterParameter={x:Static enums:AdminSubTab.Logger}}">
-    
-    <!-- 🟢 ВРУБИЛИ ЖИВОГО ПАЦИЕНТА: Теперь вместо текстовой заглушки встанет твой логгер -->
-    <controls:LogRenderControl HorizontalAlignment="Stretch" 
-                               VerticalAlignment="Stretch"/>
-</ContentControl>
+                <!-- Блок Б: Панель Логов -->
+                <ContentControl
+                    Classes="tab-content" 
+                    IsVisible="{Binding ActiveTab,
+                    Converter={StaticResource EqualityConverter},
+                    ConverterParameter={x:Static enums:AdminSubTab.Logger}}">
+                    <controls:LogRenderControl
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"/>
+                </ContentControl>
 
+                <!-- Блок В: Удаление пользователей (Исправлено навешиванием tab-content) -->
+                <ContentControl
+                    Classes="tab-content" 
+                    IsVisible="{Binding ActiveTab,
+                    Converter={StaticResource EqualityConverter},
+                    ConverterParameter={x:Static enums:AdminSubTab.DeleteUsers}}">
+                    <controls:DeleteUsersControl/>
+                </ContentControl>
 
-              <!-- 🔥 ВМЕСТО ЗАГЛУШКИ ПОДКЛЮЧАЕМ НАСТОЯЩИЙ КИБЕР-КОНТРОЛ УДАЛЕНИЯ -->
-<controls:DeleteUsersControl 
-    IsVisible="{Binding ActiveTab, Converter={StaticResource EqualityConverter}, ConverterParameter={x:Static enums:AdminSubTab.DeleteUsers}}"/>
+                <!-- Блок Г: Инспектор шины событий (Исправлено навешиванием tab-content) -->
+                <ContentControl
+                    Classes="tab-content" 
+                    IsVisible="{Binding ActiveTab,
+                    Converter={StaticResource EqualityConverter},
+                    ConverterParameter={x:Static enums:AdminSubTab.EventInspector}}">
+                    <controls:InspectorViewControl/>
+                </ContentControl>
 
-
-                <!-- Блок Г: Инспектор шины событий -->
-               <!-- 🟢 ИСПРАВЛЕНО ДЛЯ АВАЛОНИИ: Вызываем наш кроссплатформенный инспектор шины -->
-<controls:InspectorViewControl 
-
-                           IsVisible="{Binding ActiveTab, Converter={StaticResource EqualityConverter}, ConverterParameter={x:Static enums:AdminSubTab.EventInspector}}"/>
-
-             <!-- 🔥 ПОДКЛЮЧАЕМ НАСТОЯЩИЙ ЦЕНТРАЛЬНЫЙ МОДУЛЬ СИДИНГА -->
- <controls:SeedUsersViewControl 
-    IsVisible="{Binding ActiveTab, Converter={StaticResource EqualityConverter}, ConverterParameter={x:Static enums:AdminSubTab.SeedUsers}}"/>
+                <!-- Блок Д: Модуль сидинга (Исправлено навешиванием tab-content) -->
+                <ContentControl
+                    Classes="tab-content" 
+                    IsVisible="{Binding ActiveTab,
+                    Converter={StaticResource EqualityConverter},
+                    ConverterParameter={x:Static enums:AdminSubTab.SeedUsers}}">
+                    <controls:SeedUsersViewControl/>
+                </ContentControl>
 
             </Grid>
-
         </Grid>
     </ContentControl>
 </UserControl>

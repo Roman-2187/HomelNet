@@ -3,7 +3,7 @@ using HomeNetOrm.Enums;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Models;
 
-namespace HomeNetOrm.DBProviders
+namespace HomeNetOrm.DBProviders.Base
 {
     public class GenericSchemaAdapter : ISchemaAdapter
     {

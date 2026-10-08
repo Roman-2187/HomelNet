@@ -7,7 +7,13 @@ using HomeNetCore.Interfaces.OutputLogging;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Interfaces.Services;
 using HomeNetOrm.Builders;
+using HomeNetOrm.DBProviders.Base;
+using HomeNetOrm.DBProviders.Interfaces;
+using HomeNetOrm.DBProviders.Sqlite;
+using HomeNetOrm.Interfaces;
+using HomeNetOrm.Interfaces.HomeNetOrm.Interfaces;
 using HomeNetOrm.Repositories;
+using HomeNetOrm.Sync.HomeNetOrm.Sync;
 using HomeNetPresentation.Services;
 using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.AdminViews;
@@ -15,8 +21,8 @@ using HomeNetServices.Diagnostics;
 using HomeNetServices.Identity;
 using HomeNetServices.Routing;
 using HomeNetServices.Services.Identity;
-using HomeNetServices.Synchronization;
 using Microsoft.Extensions.DependencyInjection;
+using System.Data.Common;
 
 namespace HomeNet.DI
 {
@@ -28,8 +34,7 @@ namespace HomeNet.DI
             ?? throw new InvalidOperationException("Контейнер еще не собран. Вызовите Build() или воспользуйтесь UI сборщиком.");
 
         /// <summary>
-        /// 🔥 ШАГ А: Накидывает бэкенд-провода на чертеж (без сборки контейнера!)
-        /// Используется в WPF для дальнейшего расширения UI-сервисами.
+        /// 🔥 НАКИДЫВАЕТ БЭКЕНД-ПРОВОДА НА ЧЕРТЕЖ
         /// </summary>
         public static ServiceCollection CreateBackendCollection(BackendMode mode, string postgresConn, string sqliteConn)
         {
@@ -37,29 +42,19 @@ namespace HomeNet.DI
 
             // 1. Системная инфраструктура (Singleton)
             services.AddSingleton<ILogger, Logger>();
-
-
-            // 1. Регистрируем сам чистый класс инспектора, чтобы EventBus смог его сожрать через конструктор!
             services.AddSingleton<EventBusInspector>();
-
-            // 2. Регистрируем шину (DI-контейнер сам закинет туда инспектор, созданный строкой выше)
             services.AddSingleton<IEventBus, EventBus>();
 
-            // 3. Перенаправляем интерфейс IEventInspector на ТОТ ЖЕ САМЫЙ экземпляр инспектора
             services.AddSingleton<IEventInspector>(provider =>
                 provider.GetRequiredService<EventBusInspector>());
 
-
             // Логгер-неубивашка для моментального бэкапа
-            IServiceCollection serviceCollection = services.AddSingleton<AppFileogger>(provider => new AppFileogger("App_debug.txt"));
+            services.AddSingleton<AppFileogger>(provider => new AppFileogger("App_debug.txt"));
 
             services.AddSingleton<ILogQueueManager>(provider =>
             {
                 var eventBus = provider.GetRequiredService<IEventBus>();
-
-                // Передаем шину событий и задержку в 20 миллисекунд
                 var uiManager = new LogQueueManager(eventBus, 1);
-
                 var crashLogger = provider.GetRequiredService<AppFileogger>();
 
                 provider.GetRequiredService<ILogger>().SetOutput((msg, level, ns) =>
@@ -73,20 +68,65 @@ namespace HomeNet.DI
 
             SqlMapper.AddTypeHandler(new GuidTypeHandler());
 
+            // =================================================================
+            // 📡 ШАГ 1: РЕГИСТРАЦИЯ КОНКРЕТНЫХ КЛАССОВ ПОДКЛЮЧЕНИЙ
+            // =================================================================
 
-            // Контекст БД принимает строки подключения извне
-            // 🎯 ФИКС: Передаем шину событий третьим параметром в конструктор контейнера контекста!
-            services.AddSingleton(provider =>
-                new DbContextContainer(
-                    postgresConn,
-                    sqliteConn,
-                    provider.GetRequiredService<IEventBus>(), // 🔥 ДОПИСАЛИ СЮДА ПАДИТЕЛЬ ДЛЯ АВТОБУСА
+            // Локальный SQLite коннект регистрируем как конкретный тип, чтобы не было путаницы!
+            services.AddSingleton<Microsoft.Data.Sqlite.SqliteConnection>(provider =>
+                new Microsoft.Data.Sqlite.SqliteConnection(sqliteConn));
+
+            // Центральный Postgres коннект
+            services.AddSingleton<Npgsql.NpgsqlConnection>(provider =>
+                new Npgsql.NpgsqlConnection(postgresConn));
+
+            // Регистрация общего DbConnection для репозиториев (пусть по умолчанию указывает на SQLite!)
+            services.AddSingleton<DbConnection>(provider =>
+                provider.GetRequiredService<Microsoft.Data.Sqlite.SqliteConnection>());
+
+
+            // =================================================================
+            // 🏗️ ШАГ 2: РЕГИСТРАЦИЯ СТРОИТЕЛЕЙ ПОДКЛЮЧЕНИЙ (BUILDERS)
+            // =================================================================
+
+            // Наглухо скармливаем SQLite коннект в его билдер
+            services.AddSingleton<IDbConnectionBuilder>(provider =>
+                new SqliteConnectionBuilder(
+                    provider.GetRequiredService<Microsoft.Data.Sqlite.SqliteConnection>(),
                     provider.GetRequiredService<ILogger>()));
 
+            // Наглухо скармливаем NpgsqlConnection в Postgres билдер
+            services.AddSingleton<PostgresConnectionBuilder>(provider =>
+                new PostgresConnectionBuilder(
+                    provider.GetRequiredService<Npgsql.NpgsqlConnection>(),
+                    provider.GetRequiredService<ILogger>()));
 
-            // 2. Регистрация репозиториев и бизнес-сервисов (Работают везде, даже в консоли)
+            // =================================================================
+            // 🎛️ ШАГ 3: РЕГИСТРАЦИЯ ХАБА КОНТЕКСТОВ СУБД (DbContextContainer)
+            // =================================================================
+            services.AddSingleton<IDbContextContainer, DbContextContainer>(provider =>
+                new DbContextContainer(
+                    provider.GetRequiredService<IDbConnectionBuilder>(),
+                    provider.GetRequiredService<PostgresConnectionBuilder>(),
+                    provider.GetRequiredService<IEventBus>(),
+                    provider.GetRequiredService<ILogger>()));
+
+            // =================================================================
+            // 🧬 ШАГ 4: РЕГИСТРАЦИЯ НОВЫХ СПЕЦИАЛИЗИРОВАННЫХ ОРМ-ГЕНЕРАТОРОВ СУБД
+            // =================================================================
+
+            // Настраиваем SQLite ОРМ-адаптер для обслуживания локального репозитория
+            services.AddSingleton<ISchemaAdapter>(provider =>
+                new GenericSchemaAdapter(new SqliteProviderSpecification()));
+
+            services.AddSingleton<IUserSqlGenerator, SqliteUserSqlGenerator>();
+            services.AddSingleton<IMessageSqlGenerator, SqliteMessageSqlGenerator>();
+
+            // =================================================================
+            // 📦 ШАГ 5: РЕГИСТРАЦИЯ РЕПОЗИТОРИЕВ, СЕРВИСОВ И СИНХРОНИЗАТОРА
+            // =================================================================
+
             services.AddSingleton<IUserRepository, UserRepository>();
-            services.AddSingleton<FriendRepository>();
             services.AddSingleton<IMessageRepository, MessageRepository>();
 
             services.AddSingleton<IUserService, UserService>();
@@ -95,96 +135,85 @@ namespace HomeNet.DI
             services.AddSingleton<IDeleteService, DeleteService>();
             services.AddSingleton<IMessageService, MessageService>();
             services.AddSingleton<IFriendService, FriendService>();
-            services.AddSingleton<SiberNetSyncCoordinator>();
 
+            // Автономный ОРМ координатор синхронизации
+            services.AddSingleton<ISiberNetSyncCoordinator, SiberNetSyncCoordinator>();
 
             // 3. Регистрация Вьюмоделей слоя Презентации
-
-
             services.AddSingleton<StatusBarViewModel>();
-            // Регистрируем как Singleton, раз окно у нас одно
             services.AddSingleton<SystemButtonsViewModel>();
-
-            
             services.AddSingleton<RegistrationViewModel>();
             services.AddSingleton<AuthenticationViewModel>();
-            services.AddSingleton<TerminalLogsViewModel>(); // 🔥 ДОБАВИЛИ НАШУ КРОССПЛАТФОРМЕННУЮ ВЬЮМОДЕЛЬ
-                                                            // Вьюмодель инспектора для вывода отчета на экран
+            services.AddSingleton<TerminalLogsViewModel>();
             services.AddSingleton<InspectorViewModel>();
-           
-
             services.AddSingleton<AdminViewModel>();
             services.AddSingleton<DeleteUsersViewModel>();
             services.AddSingleton<ChatViewModel>();
             services.AddSingleton<TitleBarViewModel>();
-            services.AddSingleton<SeedUsersViewModel>(); services.AddSingleton<TableUsersViewModel>();
+            services.AddSingleton<SeedUsersViewModel>();
+            services.AddSingleton<TableUsersViewModel>();
 
-            // 🔥 СТАЛО: Регистрируем конкретных наследников-автоматов
             services.AddSingleton<AdminNavigationManager>();
             services.AddSingleton<UserNavigationManager>();
 
-            // Кастомный мост для обратной совместимости, если где-то захардкожена базовая ссылка
             services.AddSingleton<NavigationStateManager>(provider =>
                 provider.GetRequiredService<UserNavigationManager>());
 
- services.AddSingleton<UserViewModel>();
-            // Изолированная левая панель контактов
+            services.AddSingleton<UserViewModel>();
             services.AddSingleton<ContactsViewModel>();
-
             services.AddSingleton<MainViewModel>();
-
-            
 
             return services;
         }
 
         /// <summary>
-        /// Универсальный метод сборки чистого бэкенда (например, для консольного клиента)
+        /// Универсальный метод сборки бэкенда
         /// </summary>
         public static IServiceProvider Build(BackendMode mode, string postgresConn, string sqliteConn)
         {
             var services = CreateBackendCollection(mode, postgresConn, sqliteConn);
             _serviceProvider = services.BuildServiceProvider();
+
+            // 🔥 АВТОСТАРТ ИНИЦИАЛИЗАЦИИ И СИНХРОНИЗАЦИИ ПРИ СБОРКЕ КОНТЕЙНЕРА
+            var dbContainer = _serviceProvider.GetRequiredService<IDbContextContainer>();
+            var syncCoordinator = _serviceProvider.GetRequiredService<ISiberNetSyncCoordinator>();
+
+            // Пинаем параллельный прогрев баз данных в бэкграунде
+            Task.Run(async () =>
+            {
+                await dbContainer.InitializeAllDatabasesAsync();
+                await syncCoordinator.StartAsync();
+            });
+
             return _serviceProvider;
         }
 
-        // Локатор для дата-контекста окон
         public static TGet GetViewModel<TGet>() where TGet : class
         {
             return ServiceProvider.GetRequiredService<TGet>();
         }
 
-
         public static void SetProvider(IServiceProvider provider)
         {
             _serviceProvider = provider ?? throw new ArgumentNullException(nameof(provider));
         }
-
     }
 
-
-
-    // Вставляй в самый конец файла AppBootstrapper.cs за пределами основного класса
     public class GuidTypeHandler : Dapper.SqlMapper.TypeHandler<Guid>
     {
-        // Как записывать Guid в базу данных
         public override void SetValue(System.Data.IDbDataParameter parameter, Guid value)
         {
             parameter.Value = value.ToString();
         }
 
-        // Как без ошибок читать Guid из базы данных обратно в C#
         public override Guid Parse(object value)
         {
             if (value is Guid guid) return guid;
-
             if (value is string str && Guid.TryParse(str, out var parsedGuid))
             {
                 return parsedGuid;
             }
-
             return Guid.Empty;
         }
     }
-
 }

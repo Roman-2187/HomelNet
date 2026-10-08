@@ -2,26 +2,37 @@
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetOrm.DBProviders.Extensions;
+using HomeNetOrm.DBProviders.Interfaces;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Models;
 using System.Data;
 using System.Data.Common;
 
-namespace HomeNetOrm.DBProviders
+namespace HomeNetOrm.DBProviders.Base
 {
+    /// <summary>
+    /// Универсальный поставщик актуальных схем данных из СУБД.
+    /// Оркеструет вычитку метаданных на основе инжектируемых инициализаторов и спецификаций баз.
+    /// </summary>
     public class GenericSchemaProvider : ISchemaProvider
     {
         private readonly ISchemaSqlInitializer _sqlInit;
         private readonly DbConnection _requiredConnection;
         private readonly ILogger _logger;
 
+        // Паспорт спецификации (спека)
         public DbProviderSpecificationExtensions Spec { get; }
 
-        public GenericSchemaProvider(ISchemaSqlInitializer sqlInit, DbConnection connection, DbProviderSpecificationExtensions spec, ILogger logger)
+        // В конструктор прилетает интерфейс инициализатора (Sqlite или Postgres) и нужное подключение!
+        public GenericSchemaProvider(
+            ISchemaSqlInitializer sqlInit,
+            DbConnection connection,
+            DbProviderSpecificationExtensions spec,
+            ILogger logger)
         {
             _requiredConnection = connection ?? throw new ArgumentNullException(nameof(connection));
             _sqlInit = sqlInit ?? throw new ArgumentNullException(nameof(sqlInit));
-            Spec = spec ?? throw new ArgumentNullException(nameof(spec)); // Зафиксировали
+            Spec = spec ?? throw new ArgumentNullException(nameof(spec));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -37,10 +48,10 @@ namespace HomeNetOrm.DBProviders
 
             try
             {
-                // 1. Извлекаем сырые метаданные из БД в память, используя индексы спецификации
+                // 1. Извлекаем сырые метаданные из БД через специфичный для СУБД SQL-скрипт
                 var rawColumnsData = await FetchRawColumnsDataAsync(tableName);
 
-                // 2. Трансформируем в C# модели через умный конструктор ColumnSchema и валидируем
+                // 2. Трансформируем в C# модели и валидируем структуру
                 return ProcessAndValidateSchema(tableName, rawColumnsData);
             }
             catch (Exception ex)
@@ -50,17 +61,16 @@ namespace HomeNetOrm.DBProviders
             }
         }
 
-        /// <summary>
-        /// Чтение сырых метаданных из базы данных в изоляции.
-        /// </summary>
         private async Task<List<RawColumnMetadata>> FetchRawColumnsDataAsync(string tableName)
         {
             var rawColumnsData = new List<RawColumnMetadata>();
 
             using var command = _requiredConnection.CreateCommand();
+
+            // Здесь подставится либо PRAGMA table_info для SQLite, либо SELECT из information_schema для Postgres!
             command.CommandText = _sqlInit.GenerateGetTableStructureSql(tableName);
 
-            if (command.Parameters.Contains("@tableName") == false)
+            if (!command.Parameters.Contains("@tableName"))
             {
                 var param = command.CreateParameter();
                 param.ParameterName = "@tableName";
@@ -68,18 +78,14 @@ namespace HomeNetOrm.DBProviders
                 command.Parameters.Add(param);
             }
 
-            var spec = Spec;
-
             using (var reader = await command.ExecuteReaderAsync())
             {
                 while (await reader.ReadAsync())
                 {
-                    // 🔥 МАГИЯ РАСШИРЕНИЙ: Читаем метаданные прямо из ридера, передавая спеку!
-                    rawColumnsData.Add(reader.ReadColumnMetadata(spec));
+                    // Читаем метаданные из ридера, передавая спеку конкретного диалекта
+                    rawColumnsData.Add(reader.ReadColumnMetadata(Spec));
                 }
             }
-
-
 
             return rawColumnsData;
         }
@@ -89,7 +95,6 @@ namespace HomeNetOrm.DBProviders
             var columns = new List<ColumnSchema>();
             foreach (var row in rawRows)
             {
-                // 🎯 ФИКС: Передаем правильное имя свойства ParsePropertyType из спецификации провайдера!
                 columns.Add(new ColumnSchema(row, Spec.ParsePropertyType));
             }
 
@@ -97,8 +102,7 @@ namespace HomeNetOrm.DBProviders
 
             if (columns.Count == 0)
             {
-                _logger.LogError($"[КРИТИЧЕСКАЯ ОШИБКА] Таблица '{tableName}' " +
-                    $"не найдена в БД или запрос метаданных вернул пустой результат!");
+                _logger.LogError($"[КРИТИЧЕСКАЯ ОШИБКА] Таблица '{tableName}' не найдена в БД или запрос метаданных вернул пустой результат!");
                 return new TableSchema { TableName = tableName };
             }
 
@@ -106,9 +110,7 @@ namespace HomeNetOrm.DBProviders
 
             if (!getSchema.Initialize())
             {
-                _logger.LogWarning($"[ПРЕДУПРЕЖДЕНИЕ] В таблице '{tableName}' " +
-                    $"найдено {columns.Count} колонок, но не удалось распознать Primary Key (ID). " +
-                    $"Проверьте маппинг типов!");
+                _logger.LogWarning($"[ПРЕДУПРЕЖДЕНИЕ] В таблице '{tableName}' найдено {columns.Count} колонок, но не удалось распознать Primary Key (ID). Проверьте маппинг типов!");
             }
             else
             {
@@ -117,7 +119,5 @@ namespace HomeNetOrm.DBProviders
 
             return getSchema;
         }
-
-       
     }
 }

@@ -1,6 +1,15 @@
-﻿namespace HomeNetOrm.Interfaces
+﻿using HomeNetOrm.Models;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace HomeNetOrm.Interfaces
 {
-    // 🌌 ЕДИНЫЙ интерфейс генератора для ВСЕХ баз данных в системе!
+
+    /// <summary>
+    /// Атомарный контракт универсального генератора SQL.
+    /// Содержит только чистый базовый CRUD.
+    /// </summary>
     public interface ISqlGenerator<T> where T : class
     {
         string GenerateInsert();
@@ -9,11 +18,10 @@
         string GenerateSelectById();
         string GenerateSelectAll();
 
-        // Универсальные контракты для работы с бизнес-логикой
-        string GenerateSelectByEmail();
-        string GenerateEmailExists();
-
-        string GenerateSelectChatHistory();
+        /// <summary>
+        /// Метаданные адаптированной под snake_case схемы таблицы.
+        /// Используются внешними статическими методами расширения (Extensions) для сборки кастомных SQL.
+        /// </summary>
+        TableSchema FormattedTable { get; }
     }
 }
-

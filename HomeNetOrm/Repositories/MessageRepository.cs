@@ -1,170 +1,158 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.Common;
-using System.Linq;
-using System.Threading.Tasks;
-using Dapper;
+﻿using Dapper;
+using HomeNetCore.Interfaces.Events; // 🔌 Подключили шину ядра
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Models;
-using HomeNetOrm.Builders;
-using HomeNetOrm.Enums;
+using HomeNetOrm.DBProviders.Interfaces;
+using HomeNetOrm.Interfaces.HomeNetOrm.Interfaces;
+using System.Data.Common;
 
 namespace HomeNetOrm.Repositories
 {
     /// <summary>
-    /// Репозиторий сообщений SiberNet.
-    /// Пишет одновременно в SQLite и Postgres, обеспечивая мгновенную отказоустойчивость чата.
+    /// Автономный репозиторий сообщений SiberNet.
+    /// Работает на чистом подключении и специализированном генераторе сообщений. Пушит сигналы репликации в шину.
     /// </summary>
     public class MessageRepository : IMessageRepository
     {
-        private readonly DbContextContainer _context;
+        private readonly DbConnection _connection;
+        private readonly IMessageSqlGenerator _sqlGenerator;
+        private readonly IEventBus _eventBus; // Ссылка на глобальный автобус
 
-        public MessageRepository(DbContextContainer context)
+        public MessageRepository(DbConnection connection, IMessageSqlGenerator sqlGenerator, IEventBus eventBus)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            _sqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));
+            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         }
 
-        // 💬 Сохранить СМС в базу на автопилоте дженерика!
+        // 💬 Сохранить сообщение через ОРМ
         public async Task<bool> SaveMessageAsync(MessageEntity message)
         {
-            // Готовим штамп времени на клиенте
             message.CreatedAt = DateTime.UtcNow;
+            message.IsSynced = 0; // По умолчанию запись локальная и "грязная"
+
+            string sql = _sqlGenerator.GenerateInsert();
 
             try
             {
-                // 1. В локальный SQLite пишем ВСЕГДА
-                string sqliteSql = _context.SqliteMessageSqlGen.GenerateInsert();
+                var newId = await _connection.ExecuteScalarAsync<Guid>(sql, message);
+                message.Id = newId;
 
-                // Ставим флаг синхронизации: 1 если Postgres онлайн, 0 если офлайн
-                message.IsSynced = _context.IsPostgresAvailable ? 1 : 0;
-                int sqliteRows = await _context.SqliteConnection.ExecuteAsync(sqliteSql, message);
+                // 🔥 ВЫСТРЕЛ В АВТОБУС: Координатор синхронизации, забирай мессагу в Postgres!
+                _eventBus.Publish(this, new ISiberNetSyncCoordinator.MessageInserted(message));
 
-                // 2. В центральный Postgres пишем параллельно, если он доступен
-                if (_context.IsPostgresAvailable)
-                {
-                    try
-                    {
-                        string pgSql = _context.PostgresMessageSqlGen.GenerateInsert();
-                        await _context.PostgresConnection.ExecuteAsync(pgSql, message);
-                    }
-                    catch (Exception pgEx)
-                    {
-                        // Если сеть моргнула во время отправки — не крашим чат!
-                        // Мягко помечаем локальную запись в SQLite как неотправленную
-                        await _context.SqliteConnection.ExecuteAsync(
-                            "UPDATE messages SET is_synced = 0 WHERE id = @Id", new { Id = message.Id });
-                        System.Diagnostics.Debug.WriteLine($"[MsgRepo] Ошибка дублирования в Postgres: {pgEx.Message}");
-                    }
-                }
-
-                return sqliteRows > 0;
+                return true;
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Ошибка сохранения сообщения: {ex.Message}");
+                throw new InvalidOperationException($"Ошибка сохранения сообщения через ОРМ: {ex.Message}");
             }
         }
 
-        // 🔍 Выгрузить историю переписки конкретной пары (Вася + Иван) БЕЗ ЛАГОВ СЕТИ
+        // 🔍 Выгрузить историю переписки конкретной пары по схемам ОРМ
         public async Task<IEnumerable<MessageEntity>> GetChatHistoryAsync(int senderId, int receiverId)
         {
+            string sql = _sqlGenerator.GenerateSelectChatHistory();
             try
             {
-                // История чата ВСЕГДА мгновенно вычитывается из локального SQLite! 
-                // Никаких зависаний UI и сетевых прыжков на лету.
-                string sql = _context.SqliteMessageSqlGen.GenerateSelectChatHistory();
-                return await _context.SqliteConnection.QueryAsync<MessageEntity>(sql, new { userId = senderId, friendId = receiverId });
+                return await _connection.QueryAsync<MessageEntity>(sql, new { userId = senderId, friendId = receiverId });
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Не удалось получить историю чата из SQLite: {ex.Message}");
+                throw new InvalidOperationException($"Не удалось получить историю чата через ОРМ: {ex.Message}");
             }
         }
 
-        // 🧼 Отметить сообщения диалога как прочитанные в обеих базах
+        // 🧼 Отметить сообщения диалога как прочитанные через ОРМ
         public async Task<bool> MarkAsReadAsync(int senderId, int receiverId)
         {
-            string sql = @"UPDATE messages SET is_read = 1 
-                           WHERE sender_id = @SenderId AND receiver_id = @ReceiverId AND is_read = 0;";
+            string sql = _sqlGenerator.GenerateMarkAsRead();
 
-            // 1. Локальный апдейт
-            int rowsAffected = await _context.SqliteConnection.ExecuteAsync(sql, new { SenderId = senderId, ReceiverId = receiverId });
-
-            // 2. Удаленный апдейт
-            if (_context.IsPostgresAvailable)
+            try
             {
-                try
-                {
-                    await _context.PostgresConnection.ExecuteAsync(sql, new { SenderId = senderId, ReceiverId = receiverId });
-                }
-                catch (Exception pgEx)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[MsgRepo] Не удалось обновить статус прочитано в Postgres: {pgEx.Message}");
-                }
-            }
+                int rowsAffected = await _connection.ExecuteAsync(sql, new { SenderId = senderId, ReceiverId = receiverId });
 
-            return rowsAffected > 0;
+                if (rowsAffected > 0)
+                {
+                    // Вытаскиваем измененные строки или генерируем событие апдейта диалога
+                    // Для примера шлем пустой апдейт или конкретную сущность
+                    // _eventBus.Publish(this, new ISiberNetSyncCoordinator.MessageUpdated(...));
+                }
+
+                return rowsAffected > 0;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Ошибка обновления статуса прочтения сообщений через ОРМ: {ex.Message}");
+            }
         }
 
-        // 🔢 Считаем unread-статус строго по локальной базе для мгновенного отклика
+        // 🔢 Считаем количество непрочитанных через ОРМ
         public async Task<int> GetUnreadCountAsync(int currentUserId, int senderId)
         {
-            string sql = @"SELECT COUNT(*) FROM messages 
-                           WHERE receiver_id = @CurrentUserId 
-                             AND sender_id = @SenderId 
-                             AND is_read = 0;";
+            string sql = _sqlGenerator.GenerateUnreadCount();
 
-            return await _context.SqliteConnection.ExecuteScalarAsync<int>(sql, new { CurrentUserId = currentUserId, SenderId = senderId });
+            try
+            {
+                return await _connection.ExecuteScalarAsync<int>(sql, new { CurrentUserId = currentUserId, SenderId = senderId });
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Ошибка подсчета непрочитанных через ОРМ: {ex.Message}");
+            }
         }
 
-        // ❌ Полное физическое удаление конкретного сообщения по его ID (Удалить у всех)
+        // ❌ Удаление конкретного сообщения по ID через ОРМ
         public async Task<bool> RemoveMessageByIdAsync(int id)
         {
-            // 1. Удаляем из SQLite
-            string sqliteSql = _context.SqliteMessageSqlGen.GenerateDelete();
-            int rowsAffected = await _context.SqliteConnection.ExecuteAsync(sqliteSql, new { Id = id });
+            // Сначала вытаскиваем Guid сообщения, чтобы репликатор на сервере знал, что стирать
+            var message = await _connection.QueryFirstOrDefaultAsync<MessageEntity>(
+                _sqlGenerator.GenerateSelectById(), new { id = id });
 
-            // 2. Удаляем из Postgres
-            if (_context.IsPostgresAvailable)
+            string sql = _sqlGenerator.GenerateDelete();
+            try
             {
-                try
-                {
-                    string pgSql = _context.PostgresMessageSqlGen.GenerateDelete();
-                    await _context.PostgresConnection.ExecuteAsync(pgSql, new { Id = id });
-                }
-                catch (Exception pgEx)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[MsgRepo] Ошибка физического удаления в Postgres: {pgEx.Message}");
-                }
-            }
+                int rowsAffected = await _connection.ExecuteAsync(sql, new { id = id });
 
-            return rowsAffected > 0;
+                if (rowsAffected > 0 && message != null)
+                {
+                    // 🔥 Сигналим об успешном удалении по Guid
+                    _eventBus.Publish(this, new ISiberNetSyncCoordinator.MessageDeleted(message.Id));
+                }
+
+                return rowsAffected > 0;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Ошибка удаления сообщения по ID через ОРМ: {ex.Message}");
+            }
         }
 
-        // 🧹 Полная очистка переписки между двумя конкретными людьми
+        // 🧹 Полная очистка переписки между двумя людьми через ОРМ
         public async Task<bool> ClearChatHistoryAsync(int senderId, int receiverId)
         {
-            string sql = @"DELETE FROM messages 
-                   WHERE (sender_id = @SenderId AND receiver_id = @ReceiverId)
-                      OR (sender_id = @ReceiverId AND receiver_id = @SenderId);";
+            string sql = _sqlGenerator.GenerateClearChatHistory();
 
-            // 1. Очищаем локально
-            int rowsAffected = await _context.SqliteConnection.ExecuteAsync(sql, new { SenderId = senderId, ReceiverId = receiverId });
-
-            // 2. Очищаем на сервере
-            if (_context.IsPostgresAvailable)
+            try
             {
-                try
-                {
-                    await _context.PostgresConnection.ExecuteAsync(sql, new { SenderId = senderId, ReceiverId = receiverId });
-                }
-                catch (Exception pgEx)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[MsgRepo] Ошибка очистки чата в Postgres: {pgEx.Message}");
-                }
-            }
+                // Вытаскиваем Guid участников для передачи в рекорд
+                var sender = await _connection.QueryFirstOrDefaultAsync<UserEntity>("SELECT id FROM users WHERE id = @id", new { id = senderId });
+                var receiver = await _connection.QueryFirstOrDefaultAsync<UserEntity>("SELECT id FROM users WHERE id = @id", new { id = receiverId });
 
-            return rowsAffected > 0;
+                int rowsAffected = await _connection.ExecuteAsync(sql, new { SenderId = senderId, ReceiverId = receiverId });
+
+                if (rowsAffected > 0 && sender != null && receiver != null)
+                {
+                    // 🔥 Сигналим о полной очистке ветки чата
+                    _eventBus.Publish(this, new ISiberNetSyncCoordinator.ChatCleared(sender.Id, receiver.Id));
+                }
+
+                return rowsAffected > 0;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Ошибка при полной очистке чата через ОРМ: {ex.Message}");
+            }
         }
     }
 }
