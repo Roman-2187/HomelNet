@@ -7,11 +7,10 @@ namespace HomeNetCore.Models
 {
     /// <summary>
     /// 🔥 РЕАКТИВНАЯ СУЩНОСТЬ СООБЩЕНИЯ SiberNet
-    /// Идеально мапится в Entity Framework (Postgres/SQLite) и автоматически обновляет UI WPF!
     /// </summary>
     public partial class MessageEntity : ObservableObject
     {
-        [Key] // Главный ключ для EF Core
+        [Key]
         [ObservableProperty]
         private Guid _id;
 
@@ -34,18 +33,24 @@ namespace HomeNetCore.Models
         [ObservableProperty]
         private bool _isRead;
 
+        // ⏱ ТОТАЛЬНЫЙ DateTimeOffset: Точное время отправки сообщения
         [ObservableProperty]
-        private DateTime _createdAt = DateTime.UtcNow;
+        private DateTimeOffset _createdAt = DateTimeOffset.UtcNow;
+
+        // ⏱ Высокоточная временная метка изменения (Last Write Wins)
+        [ObservableProperty]
+        private DateTimeOffset _updatedAt = DateTimeOffset.UtcNow;
+
+        // 🎯 СИНХРО-ФЛАГ: Теперь реактивный. UI моментально покажет, что сообщение улетело на сервер
+        [ObservableProperty]
+        private int _isSynced = 0;
 
         // --- Хитрые свойства для UI (Вычисляемые на лету) ---
 
-        [NotMapped] // База данных (Postgres/SQLite) проигнорирует эти свойства
+        [NotMapped]
         public bool IsOutgoing => true; // Тут потом сделаешь проверку (SenderId == CurrentUserId)
 
         [NotMapped]
         public string FormattedTime => CreatedAt.ToLocalTime().ToString("HH:mm");
-
-        public int IsSynced { get; set; }
-        public object? UpdatedAt { get; set; }
     }
 }

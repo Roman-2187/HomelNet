@@ -2,8 +2,8 @@
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
 using HomeNetOrm.Interfaces;
-using System;
-using System.Threading.Tasks;
+using Dapper;
+using HomeNetOrm.Infrastructure; 
 
 namespace HomeNetOrm.Builders
 {
@@ -33,6 +33,9 @@ namespace HomeNetOrm.Builders
 
         public async Task InitializeAllDatabasesAsync()
         {
+            // 🔥 Просто регистрируем твой хэндлер из папки инфраструктуры!
+            SqlMapper.AddTypeHandler(new GuidTypeHandler());
+
             _logger.LogInfo("=== [СУБД ХАБ] ЗАПУСК ПАРАЛЛЕЛЬНОЙ ИНИЦИАЛИЗАЦИИ ИНФРАСТРУКТУРЫ ===");
 
             Task sqliteInitTask = InitializeSqliteChannelInternalAsync();

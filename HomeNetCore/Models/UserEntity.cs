@@ -6,12 +6,13 @@ namespace HomeNetCore.Models
 {
     public partial class UserEntity : ObservableObject
     {
+        // 🎯 СИНХРО-ФЛАГ: Теперь это правильное Observable-свойство.
+        // Тулкит сгенерирует публичный 'int IsSynced { get; set; }'
+        // По умолчанию 0 — новая запись локально не синхронизирована с сервером
+        [ObservableProperty]
+        private int _isSynced = 0;
 
-
-        // Добавь это свойство в UserEntity.cs
-        public int IsSynced { get; set; } = 1; // По умолчанию считаем синхронизированным
-
-        // 🎯 МЕНЯЕМ НА GUID: Тулкит сам создаст публичный 'Guid Id'
+        // Идентификатор на GUID-ах для распределенной архитектуры
         [ObservableProperty]
         private Guid _id;
 
@@ -30,29 +31,25 @@ namespace HomeNetCore.Models
         [ObservableProperty]
         private string? _password = string.Empty;
 
-        // 🔥 НАШ ХИТРЫЙ НЕВИДИМЫЙ ХВОСТ:
+        // Наш хитрый невидимый хвост для валидации при регистрации
         [NotMapped]
         [ObservableProperty]
         private string _confirmPassword = string.Empty;
 
+        // ⏱ ТАТАЛЬНЫЙ DateTimeOffset: Теперь дата создания знает свой часовой пояс.
+        // Тулкит сгенерирует публичное свойство 'DateTimeOffset CreatedAt'
         [ObservableProperty]
-        private DateTime _createdAt = DateTime.UtcNow;
+        private DateTimeOffset _createdAt = DateTimeOffset.UtcNow;
 
-        // ⏱ НОВАЯ ВРЕМЕННАЯ МЕТКА СИНХРОНИЗАЦИИ (DateTimeOffset)
-        // Тулкит сгенерирует публичное свойство 'DateTimeOffset UpdatedAt'
+        // Высокоточная временная метка обновления (паттерн Last Write Wins)
         [ObservableProperty]
         private DateTimeOffset _updatedAt = DateTimeOffset.UtcNow;
 
-        public string FullName => $"{FirstName} {LastName}";
-        public string DisplayInfo => $"ID: {Id} - {Email}";
+        // Вычисляемое свойство для UI
+        public string FullName => $"{FirstName} {LastName}".Trim();
 
+        // Быстрое обновление FullName при изменении имени или фамилии
         partial void OnFirstNameChanged(string? value) => OnPropertyChanged(nameof(FullName));
         partial void OnLastNameChanged(string? value) => OnPropertyChanged(nameof(FullName));
-
-        // 🎯 ФИКС: Тулкит автоматически поменяет сигнатуру partial метода под Guid value!
-        partial void OnIdChanged(Guid value) => OnPropertyChanged(nameof(DisplayInfo));
-        partial void OnEmailChanged(string? value) => OnPropertyChanged(nameof(DisplayInfo));
     }
 }
-
-

@@ -18,18 +18,21 @@ namespace HomeNetOrm.DBProviders.Sqlite
             {
                 ColumnType.Integer => "INTEGER",
                 ColumnType.Varchar => "TEXT",
-                ColumnType.DateTime => "DATETIME",
                 ColumnType.Boolean => "BOOLEAN",
                 ColumnType.Guid => "TEXT",
-                ColumnType.DateTimeOffset => "DATETIME", // Наш Dapper-фикс
+
+                // 🎯 Единый тип времени для ОРМ
+                ColumnType.DateTimeOffset => "DATETIME",
                 _ => "TEXT"
             },
             parsePropertyType: dbType => dbType.ToLower() switch
             {
                 "integer" => ColumnType.Integer,
                 "text" or "varchar" => ColumnType.Varchar,
-                "datetime" or "datetimeoffset" => ColumnType.DateTimeOffset,
                 "boolean" => ColumnType.Boolean,
+
+                // ⚡ Любые форматы времени из SQLite переводим в глобальный DateTimeOffset
+                "datetime" or "datetimeoffset" or "timestamp" => ColumnType.DateTimeOffset,
                 _ => ColumnType.Unknown
             },
             nameIndex: 1,

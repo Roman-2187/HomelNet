@@ -53,13 +53,14 @@ namespace HomeNetOrm.DBProviders.Extensions
             {
                 Type t when t == typeof(int) || t == typeof(long) => ColumnType.Integer,
                 Type t when t == typeof(string) => ColumnType.Varchar,
-                Type t when t == typeof(DateTime) => ColumnType.DateTime,
                 Type t when t == typeof(bool) => ColumnType.Boolean,
 
                 // Наш бро для кросс-базовой синхронизации (SQLite + Postgres) ⚡
                 Type t when t == typeof(Guid) => ColumnType.Guid,
 
-                // Высокоточные метки времени
+                // ⏱ ТОТАЛЬНЫЙ DateTimeOffset: 
+                // Заставляем любые типы даты-времени C# жестко маппиться в тип со смещением!
+                Type t when t == typeof(DateTime) => ColumnType.DateTimeOffset,
                 Type t when t == typeof(DateTimeOffset) => ColumnType.DateTimeOffset,
 
                 _ => ColumnType.Unspecified

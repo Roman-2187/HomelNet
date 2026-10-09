@@ -5,7 +5,7 @@ namespace HomeNetCore.Models
     public class DbSeedData
     {
         // Превратили свойство в метод с параметром по умолчанию (10 штук) 🛸🦾
-        public static List<UserEntity> GetGeneratedUsers(int count = 10)
+        public static List<UserEntity> GetGeneratedUsers(int count = 20)
         {
             var firstNames = new[]
             {

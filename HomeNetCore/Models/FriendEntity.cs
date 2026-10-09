@@ -1,20 +1,34 @@
 ﻿using System;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace HomeNetCore.Models
 {
-    public class FriendEntity
+    /// <summary>
+    /// 🔥 РЕАКТИВНАЯ СУЩНОСТЬ СВЯЗИ ДРУЗЕЙ SiberNet
+    /// </summary>
+    public partial class FriendEntity : ObservableObject
     {
-        // 🎯 СУРРОГАТНЫЙ ПЕРВИЧНЫЙ КЛЮЧ: Спасёт SQLite от ошибки "more than one primary key"
-        public Guid Id { get; set; } = Guid.NewGuid();
+        // 🎯 СУРРОГАТНЫЙ ПЕРВИЧНЫЙ КЛЮЧ: Идеально для распределенной синхронизации
+        [ObservableProperty]
+        private Guid _id = Guid.NewGuid();
 
         // Идентификаторы пользователей теперь СТРОГО Guid ⚡
-        public Guid UserId { get; set; }      // Кто добавил
-        public Guid FriendId { get; set; }    // Кого добавил
+        [ObservableProperty]
+        private Guid _userId;      // Кто добавил
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        [ObservableProperty]
+        private Guid _friendId;    // Кого добавил
 
-        // 🔥 ФИКС ТИПОВ СИНХРОНИЗАЦИИ: Никаких object?, только жесткий бэкенд-стандарт!
-        public int IsSynced { get; set; } = 1;
-        public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+        // ⏱ ТОТАЛЬНЫЙ DateTimeOffset: Дата добавления в друзья со смещением
+        [ObservableProperty]
+        private DateTimeOffset _createdAt = DateTimeOffset.UtcNow;
+
+        // 🎯 СИНХРО-ФЛАГ: Теперь реактивный! 
+        [ObservableProperty]
+        private int _isSynced = 0; // По умолчанию 0 (новая локальная запись)
+
+        // ⏱ Высокоточная временная метка изменения (Last Write Wins)
+        [ObservableProperty]
+        private DateTimeOffset _updatedAt = DateTimeOffset.UtcNow;
     }
 }

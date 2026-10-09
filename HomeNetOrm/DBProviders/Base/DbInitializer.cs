@@ -5,12 +5,8 @@ using HomeNetOrm.DBProviders.Interfaces;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Models;
 using HomeNetOrm.Schemes;
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace HomeNetOrm.DbTableInitializer
 {

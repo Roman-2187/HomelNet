@@ -13,7 +13,7 @@ using HomeNetOrm.DBProviders.Sqlite;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Interfaces.HomeNetOrm.Interfaces;
 using HomeNetOrm.Repositories;
-using HomeNetOrm.Sync.HomeNetOrm.Sync;
+using HomeNetOrm.Sync;
 using HomeNetPresentation.Services;
 using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.AdminViews;
@@ -22,7 +22,9 @@ using HomeNetServices.Identity;
 using HomeNetServices.Routing;
 using HomeNetServices.Services.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Data.Common;
+using System.Threading.Tasks;
 
 namespace HomeNet.DI
 {
@@ -66,8 +68,6 @@ namespace HomeNet.DI
                 return uiManager;
             });
 
-            SqlMapper.AddTypeHandler(new GuidTypeHandler());
-
             // =================================================================
             // 📡 ШАГ 1: РЕГИСТРАЦИЯ КОНКРЕТНЫХ КЛАССОВ ПОДКЛЮЧЕНИЙ
             // =================================================================
@@ -83,7 +83,6 @@ namespace HomeNet.DI
             // Регистрация общего DbConnection для репозиториев (пусть по умолчанию указывает на SQLite!)
             services.AddSingleton<DbConnection>(provider =>
                 provider.GetRequiredService<Microsoft.Data.Sqlite.SqliteConnection>());
-
 
             // =================================================================
             // 🏗️ ШАГ 2: РЕГИСТРАЦИЯ СТРОИТЕЛЕЙ ПОДКЛЮЧЕНИЙ (BUILDERS)
@@ -136,8 +135,15 @@ namespace HomeNet.DI
             services.AddSingleton<IMessageService, MessageService>();
             services.AddSingleton<IFriendService, FriendService>();
 
-            // Автономный ОРМ координатор синхронизации
-            services.AddSingleton<ISiberNetSyncCoordinator, SiberNetSyncCoordinator>();
+            // 🔥 ИСПРАВЛЕНО: Явно разводим билдеры по своим местам для координатора.
+            // Передаем конкретный PostgresConnectionBuilder, решая проблему путаницы баз!
+            services.AddSingleton<ISiberNetSyncCoordinator>(provider =>
+                new SiberNetSyncCoordinator(
+                    provider.GetRequiredService<IDbConnectionBuilder>(), // SQLite
+                    provider.GetRequiredService<PostgresConnectionBuilder>(), // Postgres
+                    provider.GetRequiredService<IDbContextContainer>(),
+                    provider.GetRequiredService<IEventBus>(),
+                    provider.GetRequiredService<ILogger>()));
 
             // 3. Регистрация Вьюмоделей слоя Презентации
             services.AddSingleton<StatusBarViewModel>();
@@ -196,24 +202,6 @@ namespace HomeNet.DI
         public static void SetProvider(IServiceProvider provider)
         {
             _serviceProvider = provider ?? throw new ArgumentNullException(nameof(provider));
-        }
-    }
-
-    public class GuidTypeHandler : Dapper.SqlMapper.TypeHandler<Guid>
-    {
-        public override void SetValue(System.Data.IDbDataParameter parameter, Guid value)
-        {
-            parameter.Value = value.ToString();
-        }
-
-        public override Guid Parse(object value)
-        {
-            if (value is Guid guid) return guid;
-            if (value is string str && Guid.TryParse(str, out var parsedGuid))
-            {
-                return parsedGuid;
-            }
-            return Guid.Empty;
         }
     }
 }

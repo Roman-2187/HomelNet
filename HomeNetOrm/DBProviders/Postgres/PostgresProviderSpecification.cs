@@ -17,24 +17,24 @@ namespace HomeNetOrm.DBProviders.Postgres
            {
                ColumnType.Integer => isPk && isAi ? "SERIAL" : "INTEGER",
                ColumnType.Varchar => length.HasValue ? $"VARCHAR({length})" : "VARCHAR",
-               // 🎯 ИСПРАВЛЕНО: переводим на обычный TIMESTAMP, чтобы типы совпали с SQLite!
-               ColumnType.DateTime => "TIMESTAMP",
-               ColumnType.DateTimeOffset => "TIMESTAMP",
                ColumnType.Boolean => "BOOLEAN",
                ColumnType.Guid => "UUID",
+
+               // 🔥 ВОЗВРАЩАЕМ РОДНУЮ ТАЙМЗОНУ: Теперь Postgres хранит глобальное время со смещением!
+               ColumnType.DateTimeOffset => "TIMESTAMPTZ",
                _ => "VARCHAR"
            },
-parsePropertyType: dbType => dbType.ToLower() switch
-{
-    "integer" or "serial" => ColumnType.Integer,
-    "character varying" or "varchar" or "text" => ColumnType.Varchar,
-    // 🎯 ИСПРАВЛЕНО: ловим TIMESTAMP как ColumnType.DateTime
-    "timestamp without time zone" or "timestamp" => ColumnType.DateTime,
-    "timestamp with time zone" or "timestamptz" => ColumnType.DateTime,
-    "uuid" => ColumnType.Guid,
-    "boolean" => ColumnType.Boolean,
-    _ => ColumnType.Unknown
-},
+            parsePropertyType: dbType => dbType.ToLower() switch
+            {
+                "integer" or "serial" => ColumnType.Integer,
+                "character varying" or "varchar" or "text" => ColumnType.Varchar,
+                "uuid" => ColumnType.Guid,
+                "boolean" => ColumnType.Boolean,
+
+                // ⚡ ЧИТАЕМ СТРУКТУРУ: Любые типы штампов времени из Postgres приводим к DateTimeOffset
+                "timestamp without time zone" or "timestamp" or "timestamp with time zone" or "timestamptz" => ColumnType.DateTimeOffset,
+                _ => ColumnType.Unknown
+            },
 
             nameIndex: 0,
             typeIndex: 1,

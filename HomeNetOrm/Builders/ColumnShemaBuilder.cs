@@ -1,6 +1,5 @@
 ﻿using HomeNetOrm.Enums;
 using HomeNetOrm.Models;
-using System;
 using System.Linq.Expressions;
 using HomeNetOrm.DBProviders.Extensions;
 
@@ -12,13 +11,11 @@ namespace HomeNetOrm.Builders
 
         public ColumnBuilder(Expression<Func<TEntity, object?>> propertyExpression)
         {
-            // 🎯 МЕНЯЕМ НА ВЫЗОВ НАШЕГО КРАСАВЦА-РАСШИРЕНИЯ!
-            // Теперь выражение само маппит свой С# тип во внутреннюю схему ORM
+            // 🎯 Инициализируем схему через наш маппер расширений
             _schema = propertyExpression.MapPropertySchema();
 
-            // 🧙‍♂️ СБРОС СЛИШКОМ УМНОГО ПАРСЕРА:
-            // Изначально выключаем AutoIncrement. Он включится ТОЛЬКО если 
-            // разработчик сам явно вызовет метод .AsAutoIncrement() в SchemaRegistry!
+            // 🧙‍♂️ СБРОС АВТОИНКРЕМЕНТА:
+            // По умолчанию выключен. Включается только явным вызовом .AsAutoIncrement()
             _schema.IsAutoIncrement = false;
         }
 
@@ -28,7 +25,7 @@ namespace HomeNetOrm.Builders
             return this;
         }
 
-        // 🔥 НОВЫЙ МЕТОД: Явно размечает колонку в схеме как GUID/UUID
+        // 🔥 Явно размечает колонку в схеме как GUID/UUID
         public ColumnBuilder<TEntity> AsGuid()
         {
             _schema.Type = ColumnType.Guid;
@@ -60,14 +57,15 @@ namespace HomeNetOrm.Builders
             return this;
         }
 
+        // 🎯 ИСПРАВЛЕНО: Полностью перешли на DateTimeOffset для фикса расхождений в логах
         public ColumnBuilder<TEntity> IsTrackedTimestamp()
         {
             _schema.IsCreatedAt = true;
-            _schema.Type = ColumnType.DateTime;
+            _schema.Type = ColumnType.DateTimeOffset;
             return this;
         }
 
-        // 🔥 НОВЫЙ МЕТОД: Для временной метки обновления (паттерн Last Write Wins)
+        // 🎯 ИСПРАВЛЕНО: Синхронно с датой создания использует высокоточный DateTimeOffset
         public ColumnBuilder<TEntity> IsUpdatedAtTimestamp()
         {
             _schema.Type = ColumnType.DateTimeOffset;
@@ -92,8 +90,6 @@ namespace HomeNetOrm.Builders
             return this;
         }
 
-        // Если вызван без параметров — это обычный длинный текст. 
-        // Если передать ColumnType — принудительно перезапишет тип на нужный.
         public ColumnBuilder<TEntity> AsText(ColumnType? customType = null)
         {
             _schema.Type = customType ?? ColumnType.Varchar;
@@ -103,9 +99,8 @@ namespace HomeNetOrm.Builders
 
         public ColumnSchema Build()
         {
-            // 🛠 ФИКС ВАЛИДАЦИИ: 
-            // Теперь проверяем тип Integer только ЕСЛИ разработчик сам явно вызвал .AsAutoIncrement().
-            // Для наших Guid ключей IsAutoIncrement будет равен false, и эта проверка благополучно пропустится!
+            // 🛠 ВАЛИДАЦИЯ АВТОИНКРЕМЕНТА: 
+            // Проверяем тип Integer только если автоинкремент был включен вручную.
             if (_schema.IsAutoIncrement)
             {
                 if (_schema.Type != ColumnType.Integer || !_schema.IsPrimaryKey)
