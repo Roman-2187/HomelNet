@@ -5,16 +5,14 @@ using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Models;
-using System;
+using HomeNetOrm.DBProviders.Extensions; // 🔥 ПОДКЛЮЧАЕМ НАШИ СПОЙЛЕРЫ-РАСШИРЕНИЯ!
 using System.Data.Common;
-using System.Runtime.Intrinsics.X86;
-using System.Threading.Tasks;
 
 namespace HomeNetOrm.Sync
 {
     /// <summary>
-    /// Реализация координатора синхронизации SiberNet ОРМ-слоя.
-    /// Изолированно синхронизирует базы данных между собой в обход бизнес-сервисов.
+    /// Автономный координатор синхронизации SiberNet ОРМ-слоя.
+    /// Работает как чистый диспетчер через методы расширения, не влезая в кишки репозиториев.
     /// </summary>
     public class SiberNetSyncCoordinator : ISiberNetSyncCoordinator, IDisposable
     {
@@ -24,6 +22,16 @@ namespace HomeNetOrm.Sync
         private readonly IEventBus _eventBus;
         private readonly ILogger _logger;
 
+        // Источники правды (Пары генераторов для каждой таблицы приложения)
+        private readonly ISqlGenerator<UserEntity> _sqliteUserGen;
+        private readonly ISqlGenerator<UserEntity> _pgUserGen;
+
+        private readonly ISqlGenerator<MessageEntity> _sqliteMsgGen;
+        private readonly ISqlGenerator<MessageEntity> _pgMsgGen;
+
+        private readonly ISqlGenerator<FriendEntity> _sqliteFriendGen;
+        private readonly ISqlGenerator<FriendEntity> _pgFriendGen;
+
         private bool _isInitialSyncExecuted;
 
         public SiberNetSyncCoordinator(
@@ -31,7 +39,15 @@ namespace HomeNetOrm.Sync
             IDbConnectionBuilder postgresBuilder,
             IDbContextContainer contextContainer,
             IEventBus eventBus,
-            ILogger logger)
+            ILogger logger,
+            // Затягиваем SQLite генераторы
+            ISqlGenerator<UserEntity> sqliteUserGen,
+            ISqlGenerator<MessageEntity> sqliteMsgGen,
+            ISqlGenerator<FriendEntity> sqliteFriendGen,
+            // Затягиваем Postgres генераторы
+            ISqlGenerator<UserEntity> pgUserGen,
+            ISqlGenerator<MessageEntity> pgMsgGen,
+            ISqlGenerator<FriendEntity> pgFriendGen)
         {
             _sqliteBuilder = sqliteBuilder ?? throw new ArgumentNullException(nameof(sqliteBuilder));
             _postgresBuilder = postgresBuilder ?? throw new ArgumentNullException(nameof(postgresBuilder));
@@ -39,7 +55,16 @@ namespace HomeNetOrm.Sync
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            // 🔌 Подписываемся на ОРМ-рекорды мутаций для реалтайм-репликации
+            _sqliteUserGen = sqliteUserGen ?? throw new ArgumentNullException(nameof(sqliteUserGen));
+            _pgUserGen = pgUserGen ?? throw new ArgumentNullException(nameof(pgUserGen));
+
+            _sqliteMsgGen = sqliteMsgGen ?? throw new ArgumentNullException(nameof(sqliteMsgGen));
+            _pgMsgGen = pgMsgGen ?? throw new ArgumentNullException(nameof(pgMsgGen));
+
+            _sqliteFriendGen = sqliteFriendGen ?? throw new ArgumentNullException(nameof(sqliteFriendGen));
+            _pgFriendGen = pgFriendGen ?? throw new ArgumentNullException(nameof(pgFriendGen));
+
+            // 🔌 Именованные подписки (Идеально для EventBusInspector)
             _eventBus.Subscribe<ISiberNetSyncCoordinator.UserInserted>(OnUserInserted);
             _eventBus.Subscribe<ISiberNetSyncCoordinator.UserUpdated>(OnUserUpdated);
             _eventBus.Subscribe<ISiberNetSyncCoordinator.UserDeleted>(OnUserDeleted);
@@ -60,180 +85,56 @@ namespace HomeNetOrm.Sync
                 return;
             }
 
-            _logger.LogInfo("=== [СИНХРОНИЗАТОР] ЗАПУСК ПЕРВОНАЧАЛЬНОЙ СВЕРКИ ===");
+            _logger.LogInfo("=== [СИНХРОНИЗАТОР] ЗАПУСК ПАКЕТНОЙ СВЕРКИ ЧЕРЕЗ МЕТОДЫ РАСШИРЕНИЯ ===");
 
             try
             {
-                // 🔌 Открываем чистые соединения напрямую через билдеры подключений
                 var sqlite = _sqliteBuilder.Connection;
                 var pg = _postgresBuilder.Connection;
 
                 if (sqlite.State != System.Data.ConnectionState.Open) await sqlite.OpenAsync();
                 if (pg.State != System.Data.ConnectionState.Open) await pg.OpenAsync();
 
-                // 🔥 ШАГ 1: PULL (Стягиваем то, что появилось на сервере)
-                await PullFromPostgresAsync(sqlite, pg);
+                // 🔥 ШАГ 1: Потоковый PULL для всех трех таблиц в одну строчку!
+                await sqlite.PullTableAsync(pg, _sqliteUserGen, _pgUserGen);
+                await sqlite.PullTableAsync(pg, _sqliteMsgGen, _pgMsgGen);
+                await sqlite.PullTableAsync(pg, _sqliteFriendGen, _pgFriendGen);
 
-                // 🔥 ШАГ 2: PUSH (Выгружаем локальные оффлайн-изменения, включая 12 юзеров!)
-                await PushLocalChangesToPostgresAsync(sqlite, pg);
+                // 🔥 ШАГ 2: Потоковый PUSH для всех трех таблиц в одну строчку!
+                await sqlite.PushTableAsync(pg, _sqliteUserGen, _pgUserGen);
+                await sqlite.PushTableAsync(pg, _sqliteMsgGen, _pgMsgGen);
+                await sqlite.PushTableAsync(pg, _sqliteFriendGen, _pgFriendGen);
 
-                _logger.LogInfo("=== [СИНХРОНИЗАТОР] ПЕРВОНАЧАЛЬНАЯ СВЕРКА УСПЕШНО ЗАВЕРШЕНА ===");
+                _logger.LogInfo("=== [СИНХРОНИЗАТОР] ПАКЕТНАЯ СВЕРКА УСПЕШНО ЗАВЕРШЕНА ===");
             }
             catch (Exception ex)
             {
-                _logger.LogError($"[СИНХРОНИЗАТОР] Катастрофа стартовой синхронизации: {ex.Message}");
+                _logger.LogError($"[СИНХРОНИЗАТОР] Катастрофа пакетной синхронизации: {ex.Message}");
             }
         }
-
-        /// <summary>
-        /// Скачивает новые записи с сервера (Postgres) в локальный кэш (SQLite)
-        /// </summary>
-        private async Task PullFromPostgresAsync(DbConnection sqlite, DbConnection pg)
-        {
-            _logger.LogInfo("[СИНХРОНИЗАТОР] Шаг PULL: Скачиваем новых пользователей с Postgres...");
-
-            var pgUsers = await pg.QueryAsync<UserEntity>("SELECT * FROM users;");
-
-            foreach (var pgUser in pgUsers)
-            {
-                var exists = await sqlite.ExecuteScalarAsync<bool>(
-                    "SELECT COUNT(1) FROM users WHERE id = @Id;", new { Id = pgUser.Id });
-
-                if (!exists)
-                {
-                    _logger.LogInfo($"[СИНХРОНИЗАТОР] Найдена новая запись на сервере. Скачиваем {pgUser.Id} в SQLite...");
-                    const string insertSql = "INSERT INTO users (id, first_name, last_name, phone_number, email, password, created_at, updated_at, is_synced) " +
-                                             "VALUES (@Id, @FirstName, @LastName, @PhoneNumber, @Email, @Password, @CreatedAt, @UpdatedAt, 1);";
-                    await sqlite.ExecuteAsync(insertSql, pgUser);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Проталкивает локальные несинхронизированные данные (is_synced = 0) на сервер (Postgres)
-        /// </summary>
-        private async Task PushLocalChangesToPostgresAsync(DbConnection sqlite, DbConnection pg)
-        {
-            _logger.LogInfo("[СИНХРОНИЗАТОР] Шаг PUSH: Выгружаем локальных пользователей (is_synced = 0) в Postgres...");
-
-            // 🎯 ФИНТ С АЛИАСАМИ: Явно маппим snake_case из SQLite в свойства C# модели UserEntity,
-            // чтобы Dapper не собирал пустые объекты с дефолтными Guid.Empty
-            const string selectSql = @"
-                SELECT 
-                    id AS Id, 
-                    first_name AS FirstName, 
-                    last_name AS LastName, 
-                    phone_number AS PhoneNumber, 
-                    email AS Email, 
-                    password AS Password, 
-                    created_at AS CreatedAt, 
-                    updated_at AS UpdatedAt, 
-                    is_synced AS IsSynced 
-                FROM users 
-                WHERE is_synced = 0;";
-
-            var localUnsyncedUsers = await sqlite.QueryAsync<UserEntity>(selectSql);
-
-            foreach (var user in localUnsyncedUsers)
-            {
-                _logger.LogInfo($"[СИНХРОНИЗАТОР] Выгрузка оффлайн-пользователя {user.Id} ({user.FullName}) в Postgres...");
-
-                // 🛡️ Открываем транзакцию для Postgres, чтобы гарантировать запись без зависания в буферах
-                using var transaction = pg.BeginTransaction();
-                try
-                {
-                    // Исправлено: запрашиваем количество как чистый int вместо коварного bool
-                    const string checkSql = "SELECT COUNT(1) FROM users WHERE id = @Id;";
-                    var count = await pg.ExecuteScalarAsync<int>(checkSql, new { Id = user.Id }, transaction);
-
-                    if (count == 0)
-                    {
-                        const string insertPgSql = @"
-                            INSERT INTO users 
-                                (id, first_name, last_name, phone_number, email, password, created_at, updated_at, is_synced) 
-                            VALUES 
-                                (@Id, @FirstName, @LastName, @PhoneNumber, @Email, @Password, @CreatedAt, @UpdatedAt, 1);";
-
-                        await pg.ExecuteAsync(insertPgSql, user, transaction);
-                    }
-
-                    // Обновляем флаг синхронизации локально в SQLite
-                    const string updateSql = "UPDATE users SET is_synced = 1 WHERE id = @Id;";
-                    await sqlite.ExecuteAsync(updateSql, new { Id = user.Id });
-
-                    // 🔥 Фиксируем изменения в Postgres на диске
-                    transaction.Commit();
-                }
-                catch (Exception ex)
-                {
-                    transaction.Rollback();
-                    _logger.LogError($"[СИНХРОНИЗАТОР] Сбой выгрузки пользователя {user.Id}: {ex.Message}");
-                    throw; // Пробрасываем выше, чтобы остановить цикл при критической ошибке базы
-                }
-            }
-        }
-
 
         // =================================================================
-        // 🛠 ОБРАБОТЧИКИ РЕАЛТАЙМ-РЕПЛИКАЦИИ ПОЛЬЗОВАТЕЛЕЙ (НА ЛЕТУ)
+        // 📡 ЯВНЫЕ ОБРАБОТЧИКИ РЕКОРДОВ ДЛЯ ИНСПЕКТОРА (НА ЛЕТУ В POSTGRES)
         // =================================================================
 
         private void OnUserInserted(ISiberNetSyncCoordinator.UserInserted msg) =>
-            ExecuteSyncTask(async (pg) =>
-            {
-                _logger.LogInfo($"[СИНХРОНИЗАТОР] Репликация нового пользователя {msg.User.Id} в Postgres...");
-                const string sql = "INSERT INTO users (id, first_name, last_name, phone_number, email, password, created_at, updated_at, is_synced) " +
-                                   "VALUES (@Id, @FirstName, @LastName, @PhoneNumber, @Email, @Password, @CreatedAt, @UpdatedAt, 1);";
-                await pg.ExecuteAsync(sql, msg.User);
-            }, "User Insert");
+            ExecuteSyncTask(async (pg) => await pg.ExecuteAsync(_pgUserGen.GenerateInsert(), msg.User), "User Insert");
 
         private void OnUserUpdated(ISiberNetSyncCoordinator.UserUpdated msg) =>
-            ExecuteSyncTask(async (pg) =>
-            {
-                _logger.LogInfo($"[СИНХРОНИЗАТОР] Репликация обновления пользователя {msg.User.Id} в Postgres...");
-                const string sql = "UPDATE users SET first_name = @FirstName, last_name = @LastName, phone_number = @PhoneNumber, " +
-                                   "email = @Email, password = @Password, updated_at = @UpdatedAt, is_synced = 1 WHERE id = @Id;";
-                await pg.ExecuteAsync(sql, msg.User);
-            }, "User Update");
+            ExecuteSyncTask(async (pg) => await pg.ExecuteAsync(_pgUserGen.GenerateUpdate(), msg.User), "User Update");
 
         private void OnUserDeleted(ISiberNetSyncCoordinator.UserDeleted msg) =>
-            ExecuteSyncTask(async (pg) =>
-            {
-                _logger.LogInfo($"[СИНХРОНИЗАТОР] Репликация удаления пользователя {msg.UserId} в Postgres...");
-                await pg.ExecuteAsync("DELETE FROM users WHERE id = @Id", new { Id = msg.UserId });
-            }, "User Delete");
-
-        // =================================================================
-        // 🛠 ОБРАБОТЧИКИ РЕАЛТАЙМ-РЕПЛИКАЦИИ СООБЩЕНИЙ (НА ЛЕТУ)
-        // =================================================================
+            ExecuteSyncTask(async (pg) => await pg.ExecuteAsync(_pgUserGen.GenerateDelete(), new { id = msg.UserId }), "User Delete");
 
         private void OnMessageInserted(ISiberNetSyncCoordinator.MessageInserted msg) =>
-            ExecuteSyncTask(async (pg) =>
-            {
-                _logger.LogInfo($"[СИНХРОНИЗАТОР] Репликация сообщения {msg.Message.Id} в центральный Postgres...");
-                const string sql = "INSERT INTO messages (id, sender_id, receiver_id, text, media_type, file_path, is_read, created_at, updated_at, is_synced) " +
-                                   "VALUES (@Id, @SenderId, @ReceiverId, @Text, @MediaType, @FilePath, @IsRead, @CreatedAt, @UpdatedAt, 1);";
-                await pg.ExecuteAsync(sql, msg.Message);
-            }, "Message Insert");
+            ExecuteSyncTask(async (pg) => await pg.ExecuteAsync(_pgMsgGen.GenerateInsert(), msg.Message), "Message Insert");
 
         private void OnMessageUpdated(ISiberNetSyncCoordinator.MessageUpdated msg) =>
-            ExecuteSyncTask(async (pg) =>
-            {
-                _logger.LogInfo($"[СИНХРОНИЗАТОР] Репликация статуса сообщения {msg.Message.Id} в Postgres...");
-                const string sql = "UPDATE messages SET is_read = @IsRead, text = @Text, updated_at = @UpdatedAt, is_synced = 1 WHERE id = @Id;";
-                await pg.ExecuteAsync(sql, msg.Message);
-            }, "Message Update");
+            ExecuteSyncTask(async (pg) => await pg.ExecuteAsync(_pgMsgGen.GenerateUpdate(), msg.Message), "Message Update");
 
         private void OnMessageDeleted(ISiberNetSyncCoordinator.MessageDeleted msg) =>
-            ExecuteSyncTask(async (pg) =>
-            {
-                
-                _logger.LogInfo($"[СИНХРОНИЗАТОР] Репликация удаления сообщения {msg.MessageId} в Postgres...");
-                await pg.ExecuteAsync("DELETE FROM messages WHERE id = @Id", new { Id = msg.MessageId });
-            }, "Message Delete");
-        // =================================================================
-        // 🛡️ ЗАСТРАХОВАННЫЙ КОНВЕЙЕР ВЫПОЛНЕНИЯ ЗАДАЧ СИНХРОНИЗАЦИИ
-        // =================================================================
+            ExecuteSyncTask(async (pg) => await pg.ExecuteAsync(_pgMsgGen.GenerateDelete(), new { id = msg.MessageId }), "Message Delete");
+
         private void ExecuteSyncTask(Func<DbConnection, Task> syncAction, string operationName)
         {
             if (!_contextContainer.IsPostgresAvailable) return;
@@ -242,10 +143,7 @@ namespace HomeNetOrm.Sync
                 try
                 {
                     var pgConnection = _postgresBuilder.Connection;
-                    if (pgConnection.State != System.Data.ConnectionState.Open)
-                    {
-                        await pgConnection.OpenAsync();
-                    }
+                    if (pgConnection.State != System.Data.ConnectionState.Open) await pgConnection.OpenAsync();
                     await syncAction(pgConnection);
                 }
                 catch (Exception ex)
@@ -254,6 +152,7 @@ namespace HomeNetOrm.Sync
                 }
             });
         }
+
         public void Dispose()
         {
             _eventBus.Unsubscribe<ISiberNetSyncCoordinator.UserInserted>(OnUserInserted);

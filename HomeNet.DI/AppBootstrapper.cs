@@ -6,9 +6,11 @@ using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.OutputLogging;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Interfaces.Services;
+using HomeNetCore.Models;
 using HomeNetOrm.Builders;
 using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.DBProviders.Interfaces;
+using HomeNetOrm.DBProviders.Postgres;
 using HomeNetOrm.DBProviders.Sqlite;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Interfaces.HomeNetOrm.Interfaces;
@@ -24,6 +26,7 @@ using HomeNetServices.Services.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Data.Common;
+using System.Runtime.Intrinsics.X86;
 using System.Threading.Tasks;
 
 namespace HomeNet.DI
@@ -76,7 +79,7 @@ namespace HomeNet.DI
             services.AddSingleton<Microsoft.Data.Sqlite.SqliteConnection>(provider =>
                 new Microsoft.Data.Sqlite.SqliteConnection(sqliteConn));
 
-            // Центральный Postgres коннект
+            // Central Postgres коннект
             services.AddSingleton<Npgsql.NpgsqlConnection>(provider =>
                 new Npgsql.NpgsqlConnection(postgresConn));
 
@@ -111,15 +114,32 @@ namespace HomeNet.DI
                     provider.GetRequiredService<ILogger>()));
 
             // =================================================================
-            // 🧬 ШАГ 4: РЕГИСТРАЦИЯ НОВЫХ СПЕЦИАЛИЗИРОВАННЫХ ОРМ-ГЕНЕРАТОРОВ СУБД
+            // 🧬 ШАГ 4: РЕГИСТРАЦИЯ ОРМ-ГЕНЕРАТОРОВ ПОД КАЖДУЮ СУБД СЕПАРАТНО
             // =================================================================
 
-            // Настраиваем SQLite ОРМ-адаптер для обслуживания локального репозитория
+            // Общий адаптер для SQLite провайдера
             services.AddSingleton<ISchemaAdapter>(provider =>
                 new GenericSchemaAdapter(new SqliteProviderSpecification()));
 
+            // 🎯 РЕГИСТРАЦИЯ ДЛЯ БИЗНЕС-РЕПОЗИТОРИЕВ (Чтобы UserRepository не падал!)
             services.AddSingleton<IUserSqlGenerator, SqliteUserSqlGenerator>();
             services.AddSingleton<IMessageSqlGenerator, SqliteMessageSqlGenerator>();
+            // services.AddSingleton<IFriendSqlGenerator, SqliteFriendSqlGenerator>(); // Если есть такой интерфейс
+
+            // 🎯 РЕГИСТРАЦИЯ ДЛЯ КООРДИНАТОРОВ И МЕТОДОВ РАСШИРЕНИЯ (Дженерик-ссылки)
+            services.AddSingleton<ISqlGenerator<UserEntity>>(provider =>
+                provider.GetRequiredService<IUserSqlGenerator>());
+
+            services.AddSingleton<ISqlGenerator<MessageEntity>>(provider =>
+                provider.GetRequiredService<IMessageSqlGenerator>());
+
+            services.AddSingleton<ISqlGenerator<FriendEntity>, SqliteFriendSqlGenerator>();
+
+            // Точечные Postgres-генераторы (Источники правды для центрального сервера)
+            services.AddSingleton<PostgresUserSqlGenerator>();
+            services.AddSingleton<PostgresMessageSqlGenerator>();
+            services.AddSingleton<PostgresFriendSqlGenerator>();
+
 
             // =================================================================
             // 📦 ШАГ 5: РЕГИСТРАЦИЯ РЕПОЗИТОРИЕВ, СЕРВИСОВ И СИНХРОНИЗАТОРА
@@ -135,15 +155,24 @@ namespace HomeNet.DI
             services.AddSingleton<IMessageService, MessageService>();
             services.AddSingleton<IFriendService, FriendService>();
 
-            // 🔥 ИСПРАВЛЕНО: Явно разводим билдеры по своим местам для координатора.
-            // Передаем конкретный PostgresConnectionBuilder, решая проблему путаницы баз!
+            // 🔥 Явно разводим провода и пары генераторов для модульной машины SiberNet!
             services.AddSingleton<ISiberNetSyncCoordinator>(provider =>
                 new SiberNetSyncCoordinator(
-                    provider.GetRequiredService<IDbConnectionBuilder>(), // SQLite
-                    provider.GetRequiredService<PostgresConnectionBuilder>(), // Postgres
-                    provider.GetRequiredService<IDbContextContainer>(),
-                    provider.GetRequiredService<IEventBus>(),
-                    provider.GetRequiredService<ILogger>()));
+                    sqliteBuilder: provider.GetRequiredService<IDbConnectionBuilder>(),
+                    postgresBuilder: provider.GetRequiredService<PostgresConnectionBuilder>(),
+                    contextContainer: provider.GetRequiredService<IDbContextContainer>(),
+                    eventBus: provider.GetRequiredService<IEventBus>(),
+                    logger: provider.GetRequiredService<ILogger>(),
+
+                    // Пачка локальных SQLite генераторов
+                    sqliteUserGen: provider.GetRequiredService<ISqlGenerator<UserEntity>>(),
+                    sqliteMsgGen: provider.GetRequiredService<ISqlGenerator<MessageEntity>>(),
+                    sqliteFriendGen: provider.GetRequiredService<ISqlGenerator<FriendEntity>>(),
+
+                    // Пачка удаленных Postgres генераторов
+                    pgUserGen: provider.GetRequiredService<PostgresUserSqlGenerator>(),
+                    pgMsgGen: provider.GetRequiredService<PostgresMessageSqlGenerator>(),
+                    pgFriendGen: provider.GetRequiredService<PostgresFriendSqlGenerator>()));
 
             // 3. Регистрация Вьюмоделей слоя Презентации
             services.AddSingleton<StatusBarViewModel>();
@@ -178,8 +207,8 @@ namespace HomeNet.DI
         public static IServiceProvider Build(BackendMode mode, string postgresConn, string sqliteConn)
         {
             var services = CreateBackendCollection(mode, postgresConn, sqliteConn);
+           
             _serviceProvider = services.BuildServiceProvider();
-
             // 🔥 АВТОСТАРТ ИНИЦИАЛИЗАЦИИ И СИНХРОНИЗАЦИИ ПРИ СБОРКЕ КОНТЕЙНЕРА
             var dbContainer = _serviceProvider.GetRequiredService<IDbContextContainer>();
             var syncCoordinator = _serviceProvider.GetRequiredService<ISiberNetSyncCoordinator>();
@@ -190,10 +219,8 @@ namespace HomeNet.DI
                 await dbContainer.InitializeAllDatabasesAsync();
                 await syncCoordinator.StartAsync();
             });
-
             return _serviceProvider;
         }
-
         public static TGet GetViewModel<TGet>() where TGet : class
         {
             return ServiceProvider.GetRequiredService<TGet>();

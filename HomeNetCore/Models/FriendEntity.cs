@@ -1,12 +1,13 @@
 ﻿using System;
 using CommunityToolkit.Mvvm.ComponentModel;
+using HomeNetCore.Interfaces.Repositories;
 
 namespace HomeNetCore.Models
 {
     /// <summary>
     /// 🔥 РЕАКТИВНАЯ СУЩНОСТЬ СВЯЗИ ДРУЗЕЙ SiberNet
     /// </summary>
-    public partial class FriendEntity : ObservableObject
+    public partial class FriendEntity : ObservableObject, ISyncableEntity
     {
         // 🎯 СУРРОГАТНЫЙ ПЕРВИЧНЫЙ КЛЮЧ: Идеально для распределенной синхронизации
         [ObservableProperty]

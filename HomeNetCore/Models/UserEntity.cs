@@ -1,10 +1,11 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations.Schema;
 using CommunityToolkit.Mvvm.ComponentModel;
+using HomeNetCore.Interfaces.Repositories;
 
 namespace HomeNetCore.Models
 {
-    public partial class UserEntity : ObservableObject
+    public partial class UserEntity : ObservableObject, ISyncableEntity
     {
         // 🎯 СИНХРО-ФЛАГ: Теперь это правильное Observable-свойство.
         // Тулкит сгенерирует публичный 'int IsSynced { get; set; }'

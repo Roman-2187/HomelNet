@@ -2,13 +2,14 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using CommunityToolkit.Mvvm.ComponentModel;
+using HomeNetCore.Interfaces.Repositories;
 
 namespace HomeNetCore.Models
 {
     /// <summary>
     /// 🔥 РЕАКТИВНАЯ СУЩНОСТЬ СООБЩЕНИЯ SiberNet
     /// </summary>
-    public partial class MessageEntity : ObservableObject
+    public partial class MessageEntity : ObservableObject, ISyncableEntity
     {
         [Key]
         [ObservableProperty]
