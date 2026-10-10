@@ -1,7 +1,7 @@
-﻿using HomeNetCore.Exeptions;
+﻿using Dapper;
+using HomeNetCore.Exeptions;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetOrm.DBProviders.Extensions;
 using HomeNetOrm.DBProviders.Interfaces;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Models;
@@ -12,27 +12,24 @@ namespace HomeNetOrm.DBProviders.Base
 {
     /// <summary>
     /// Универсальный поставщик актуальных схем данных из СУБД.
-    /// Оркеструет вычитку метаданных на основе инжектируемых инициализаторов и спецификаций баз.
+    /// Оркеструет вычитку метаданных на основе чистых SQL-запросов и Dapper.
     /// </summary>
     public class GenericSchemaProvider : ISchemaProvider
     {
         private readonly ISchemaSqlInitializer _sqlInit;
         private readonly DbConnection _requiredConnection;
+        private readonly IDbProviderSpecification _spec; // Наш новый изолированный контракт
         private readonly ILogger _logger;
 
-        // Паспорт спецификации (спека)
-        public DbProviderSpecificationExtensions Spec { get; }
-
-        // В конструктор прилетает интерфейс инициализатора (Sqlite или Postgres) и нужное подключение!
         public GenericSchemaProvider(
             ISchemaSqlInitializer sqlInit,
             DbConnection connection,
-            DbProviderSpecificationExtensions spec,
+            IDbProviderSpecification spec, // Инжектируем новый чистый интерфейс
             ILogger logger)
         {
             _requiredConnection = connection ?? throw new ArgumentNullException(nameof(connection));
             _sqlInit = sqlInit ?? throw new ArgumentNullException(nameof(sqlInit));
-            Spec = spec ?? throw new ArgumentNullException(nameof(spec));
+            _spec = spec ?? throw new ArgumentNullException(nameof(spec));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -48,8 +45,9 @@ namespace HomeNetOrm.DBProviders.Base
 
             try
             {
-                // 1. Извлекаем сырые метаданные из БД через специфичный для СУБД SQL-скрипт
-                var rawColumnsData = await FetchRawColumnsDataAsync(tableName);
+                // 1. Быстро забираем слепок метаданных из системных таблиц одной строчкой через Dapper!
+                string sql = _sqlInit.GenerateGetTableStructureSql(tableName);
+                var rawColumnsData = await _requiredConnection.QueryAsync<RawColumnMetadata>(sql, new { TableName = tableName });
 
                 // 2. Трансформируем в C# модели и валидируем структуру
                 return ProcessAndValidateSchema(tableName, rawColumnsData);
@@ -61,42 +59,27 @@ namespace HomeNetOrm.DBProviders.Base
             }
         }
 
-        private async Task<List<RawColumnMetadata>> FetchRawColumnsDataAsync(string tableName)
-        {
-            var rawColumnsData = new List<RawColumnMetadata>();
-
-            using var command = _requiredConnection.CreateCommand();
-
-            // Здесь подставится либо PRAGMA table_info для SQLite, либо SELECT из information_schema для Postgres!
-            command.CommandText = _sqlInit.GenerateGetTableStructureSql(tableName);
-
-            if (!command.Parameters.Contains("@tableName"))
-            {
-                var param = command.CreateParameter();
-                param.ParameterName = "@tableName";
-                param.Value = tableName;
-                command.Parameters.Add(param);
-            }
-
-            using (var reader = await command.ExecuteReaderAsync())
-            {
-                while (await reader.ReadAsync())
-                {
-                    // Читаем метаданные из ридера, передавая спеку конкретного диалекта
-                    rawColumnsData.Add(reader.ReadColumnMetadata(Spec));
-                }
-            }
-
-            return rawColumnsData;
-        }
-
-        private TableSchema ProcessAndValidateSchema(string tableName, List<RawColumnMetadata> rawRows)
+        private TableSchema ProcessAndValidateSchema(string tableName, IEnumerable<RawColumnMetadata> rawRows)
         {
             var columns = new List<ColumnSchema>();
+
             foreach (var row in rawRows)
             {
-                columns.Add(new ColumnSchema(row, Spec.ParsePropertyType));
+                // Собираем ColumnSchema
+                columns.Add(new ColumnSchema
+                {
+                    Name = row.Name,
+                    OriginalName = row.Name,
+                    Type = _spec.ParsePropertyType(row.DataType),
+
+                    // ⚡ ПРОСТО ПОДСТАВЛЯЕМ: Раз row.IsNullable уже булево, никакой string.Equals не нужен!
+                    IsNullable = row.IsNullable,
+
+                    // Тут проверяем, как у тебя объявлен KeyType в рекорде (если строка, оставляем так)
+                    IsPrimaryKey = string.Equals(row.KeyType, "YES", StringComparison.OrdinalIgnoreCase) || row.KeyType == "1"
+                });
             }
+
 
             _logger.LogDebug($"Получено {columns.Count} столбцов для таблицы {tableName}");
 

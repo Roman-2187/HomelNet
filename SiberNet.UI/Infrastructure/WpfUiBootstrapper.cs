@@ -1,9 +1,10 @@
 ﻿
+using Dapper;
 using HomeNet.DI;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.OutputLogging;
 using HomeNetCore.Interfaces.ViewModels;
-using HomeNetPresentation.Services; // Добавили пространство имен для менеджеров навигации
+using HomeNetPresentation.Services;
 using HomeNetPresentation.ViewModels.AdminViews;
 using Microsoft.Extensions.DependencyInjection;
 using SiberNet.UI.Infrastructure.Animators;
@@ -19,22 +20,27 @@ namespace SiberNet.UI.Infrastructure
         /// </summary>
         public static IServiceProvider BuildWpfContainer(BackendMode mode, string postgresConn, string sqliteConn)
         {
+            // 🔥 РУБЕЖ ОБОРОНЫ: Обучаем Dapper читать даты из SQLite
+            SqlMapper.AddTypeHandler(new HomeNetOrm.Helpers.DateTimeOffsetHandler());
+
             // 1. Унаследовали чертеж кроссплатформенного бэкенда из Ядра
             ServiceCollection fullCollection = AppBootstrapper.CreateBackendCollection(mode, postgresConn, sqliteConn);
 
             // 2. Дописываем провода, которые принадлежат исключительно WPF
             if (mode == BackendMode.Real || mode == BackendMode.Local)
             {
+                // Регистрируем аниматоры окон
                 fullCollection.AddSingleton<CloseWindowAnimator>();
                 fullCollection.AddSingleton<ResizeWindowAnimator>();
-                // 🔥 СТАЛО: Связываем стерильный интерфейс ядра с тяжелым WPF-аниматором окна!
+
+                // Связываем стерильный интерфейс широкоэкранного режима с тяжелым WPF-аниматором
                 fullCollection.AddSingleton<IWidescreenService, WidescreenAnimator>();
             }
 
             // 3. Собираем ОДИН монолитный контейнер на всё приложение
             IServiceProvider provider = fullCollection.BuildServiceProvider();
 
-            // 🔥 ШАГ 1: ИНИЦИАЛИЗИРУЕМ БАЗОВЫЙ ЛОКАТОР СЕРВИСОВ
+            // 🔥 ШАГ 1: ИНИЦИАЛИЗИРУЕМ БАЗОВЫЙ ЛОКАТОР СЕРВИСОВ ЯДРА
             AppBootstrapper.SetProvider(provider);
 
             // 🔥 ШАГ 1.5: ЖЕЛЕЗНЫЙ ПРОГРЕВ НАВИГАТОРОВ SIBERNET 🧼
@@ -50,16 +56,14 @@ namespace SiberNet.UI.Infrastructure
             var terminalVm = provider.GetRequiredService<TerminalLogsViewModel>();
             System.Windows.Data.BindingOperations.EnableCollectionSynchronization(terminalVm.Logs, new object());
 
-            // 4. 🔥 АКТИВИРУЕМ АНИМАТОРЫ ОКНА
+            // 4. 🔥 АКТИВИРУЕМ АНИМАТОРЫ ОКНА (Будим их, чтобы они подписались на шину EventBus!)
             if (mode == BackendMode.Real || mode == BackendMode.Local)
             {
+                // Принудительно вытаскиваем экземпляры из контейнера, чтобы отработали их конструкторы с подписками
                 provider.GetRequiredService<CloseWindowAnimator>();
                 provider.GetRequiredService<ResizeWindowAnimator>();
-
-                // 🔥 СТАЛО: Достаем синглтон через интерфейс ядра, чтобы он сел на шину ДО кликов админа!
                 provider.GetRequiredService<IWidescreenService>();
             }
-
 
             return provider;
         }

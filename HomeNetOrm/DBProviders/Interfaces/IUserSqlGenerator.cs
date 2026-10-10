@@ -1,8 +1,5 @@
 ﻿using HomeNetCore.Models;
 using HomeNetOrm.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace HomeNetOrm.DBProviders.Interfaces
 {

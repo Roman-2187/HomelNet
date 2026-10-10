@@ -1,6 +1,4 @@
-﻿using System;
-using System.Data.Common;
-using System.Threading.Tasks;
+﻿using System.Data.Common;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.DBProviders.Base;

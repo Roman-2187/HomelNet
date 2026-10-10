@@ -1,11 +1,10 @@
 ﻿using Dapper;
-using global::HomeNetOrm.Interfaces;
-using global::HomeNetOrm.Interfaces.HomeNetOrm.Interfaces;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Models;
-using HomeNetOrm.DBProviders.Extensions; // 🔥 ПОДКЛЮЧАЕМ НАШИ СПОЙЛЕРЫ-РАСШИРЕНИЯ!
+using HomeNetOrm.DBProviders.Extensions;
+using HomeNetOrm.Interfaces;
 using System.Data.Common;
 
 namespace HomeNetOrm.Sync
@@ -16,6 +15,9 @@ namespace HomeNetOrm.Sync
     /// </summary>
     public class SiberNetSyncCoordinator : ISiberNetSyncCoordinator, IDisposable
     {
+
+        // 🔒 СЕМАФОР ДЛЯ ПОТОКОБЕЗОПАСНОСТИ: одновременно к базе пускаем только 1 таску
+        private readonly SemaphoreSlim _dbLock = new SemaphoreSlim(1, 1);
         private readonly IDbConnectionBuilder _sqliteBuilder;
         private readonly IDbConnectionBuilder _postgresBuilder;
         private readonly IDbContextContainer _contextContainer;
@@ -138,17 +140,28 @@ namespace HomeNetOrm.Sync
         private void ExecuteSyncTask(Func<DbConnection, Task> syncAction, string operationName)
         {
             if (!_contextContainer.IsPostgresAvailable) return;
+
             Task.Run(async () =>
             {
+                // 1. Встаем в очередь и ждем, пока освободится подключение к Postgres
+                await _dbLock.WaitAsync();
+
                 try
                 {
                     var pgConnection = _postgresBuilder.Connection;
                     if (pgConnection.State != System.Data.ConnectionState.Open) await pgConnection.OpenAsync();
+
+                    // 2. Выполняем наш INSERT / UPDATE / DELETE в полной тишине и безопасности
                     await syncAction(pgConnection);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError($"[СИНХРОНИЗАТОР] Сбой операции '{operationName}' при пуше в Postgres: {ex.Message}");
+                }
+                finally
+                {
+                    // 3. ОБЯЗАТЕЛЬНО ОТПУСКАЕМ: открываем дверь для следующего юзера из очереди
+                    _dbLock.Release();
                 }
             });
         }
@@ -161,6 +174,9 @@ namespace HomeNetOrm.Sync
             _eventBus.Unsubscribe<ISiberNetSyncCoordinator.MessageInserted>(OnMessageInserted);
             _eventBus.Unsubscribe<ISiberNetSyncCoordinator.MessageUpdated>(OnMessageUpdated);
             _eventBus.Unsubscribe<ISiberNetSyncCoordinator.MessageDeleted>(OnMessageDeleted);
+
+            // Освобождаем семафор
+            _dbLock.Dispose();
         }
     }
 }

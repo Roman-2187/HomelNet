@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using HomeNetCore.Interfaces.Repositories;
-using HomeNetCore.Models;
 using HomeNetOrm.Interfaces;
 using System.Data.Common;
 
@@ -14,7 +13,6 @@ namespace HomeNetOrm.DBProviders.Extensions
     {
         // 🔒 Статический семафор для жесткой блокировки параллельных потоков в Postgres
         private static readonly SemaphoreSlim _pgDbLock = new SemaphoreSlim(1, 1);
-
 
 
 
@@ -43,7 +41,7 @@ namespace HomeNetOrm.DBProviders.Extensions
 
             string checkSql = sqliteGen.GenerateCountByIdSqlite();
             string insertSql = sqliteGen.GenerateInsert();
-            string deleteSql = sqliteGen.GenerateDeleteByIdSqlite(); // 🔥 Наш новый SQLite-экстеншен удаления!
+            string deleteSql = sqliteGen.GenerateDeleteByIdSqlite(); // Наш новый SQLite-экстеншен удаления!
 
             // --- ШАГ А: Вставка новых данных с сервера ---
             foreach (var record in pgRecords)
@@ -54,6 +52,14 @@ namespace HomeNetOrm.DBProviders.Extensions
                     record.IsSynced = 1;
                     await sqlite.ExecuteAsync(insertSql, record);
                 }
+            }
+
+            // 🎯 ЖЕЛЕЗОБЕТОННАЯ ЗАЩИТА ОТ ДРОПА ПОСТГРЕСА:
+            // Если сервер вернул абсолютную пустоту (0 записей), мы ОСТАНАВЛИВАЕМ удаление.
+            // Это защитит SQLite от слепой зачистки, если центральная база была сброшена!
+            if (remoteIds.Count == 0)
+            {
+                return; // Выходим из метода Pull, не трогая локальный кэш, и даем отработать Push'у
             }
 
             // --- ШАГ Б: ОЧИСТКА УДАРЕННЫХ НА СЕРВЕРЕ ЗАПИСЕЙ ---
@@ -75,9 +81,7 @@ namespace HomeNetOrm.DBProviders.Extensions
                     await sqlite.ExecuteAsync(deleteSql, new { id = localRecord.Id });
                 }
             }
-
         }
-
 
 
 

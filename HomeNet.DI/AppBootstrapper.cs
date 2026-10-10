@@ -1,5 +1,4 @@
-﻿using Dapper;
-using HomeNetCore.Enums;
+﻿using HomeNetCore.Enums;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
@@ -13,7 +12,6 @@ using HomeNetOrm.DBProviders.Interfaces;
 using HomeNetOrm.DBProviders.Postgres;
 using HomeNetOrm.DBProviders.Sqlite;
 using HomeNetOrm.Interfaces;
-using HomeNetOrm.Interfaces.HomeNetOrm.Interfaces;
 using HomeNetOrm.Repositories;
 using HomeNetOrm.Sync;
 using HomeNetPresentation.Services;
@@ -24,10 +22,7 @@ using HomeNetServices.Identity;
 using HomeNetServices.Routing;
 using HomeNetServices.Services.Identity;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 using System.Data.Common;
-using System.Runtime.Intrinsics.X86;
-using System.Threading.Tasks;
 
 namespace HomeNet.DI
 {
@@ -124,7 +119,7 @@ namespace HomeNet.DI
             // 🎯 РЕГИСТРАЦИЯ ДЛЯ БИЗНЕС-РЕПОЗИТОРИЕВ (Чтобы UserRepository не падал!)
             services.AddSingleton<IUserSqlGenerator, SqliteUserSqlGenerator>();
             services.AddSingleton<IMessageSqlGenerator, SqliteMessageSqlGenerator>();
-            // services.AddSingleton<IFriendSqlGenerator, SqliteFriendSqlGenerator>(); // Если есть такой интерфейс
+            // services.AddSingleton<IFriendSqlGenerator, SqliteFriendSqlGenerator>(); 
 
             // 🎯 РЕГИСТРАЦИЯ ДЛЯ КООРДИНАТОРОВ И МЕТОДОВ РАСШИРЕНИЯ (Дженерик-ссылки)
             services.AddSingleton<ISqlGenerator<UserEntity>>(provider =>

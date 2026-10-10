@@ -3,16 +3,15 @@ using HomeNetOrm.Models;
 
 namespace HomeNetOrm.Interfaces
 {
-    public interface ISchemaProvider
-    {
-        /// <summary>
-        /// получаем актуальную схему бд
-        /// </summary>
-        /// <param name="tableName"></param>
-        /// <returns></returns>
-        Task<TableSchema> GetActualTableSchemaAsync(string? tableName);
-
-        // 🔥 ПЕРЕЕХАЛО СЮДА: Спека теперь законно принадлежит провайдеру!
-        DbProviderSpecificationExtensions Spec { get; }  
-    }
+    
+        public interface ISchemaProvider
+        {
+            /// <summary>
+            /// Извлекает актуальную схему таблицы напрямую из системных каталогов СУБД.
+            /// </summary>
+            /// <param name="tableName">Имя проверяемой таблицы в базе данных.</param>
+            /// <returns>Готовая объектная модель схемы TableSchema для последующей сверки.</returns>
+            Task<TableSchema> GetActualTableSchemaAsync(string? tableName);
+        }
+    
 }

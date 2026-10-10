@@ -1,9 +1,9 @@
-﻿using HomeNetCore.Extensions;
+﻿using Dapper;
+using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
-using HomeNetOrm.Interfaces;
-using Dapper;
 using HomeNetOrm.Infrastructure; 
+using HomeNetOrm.Interfaces;
 
 namespace HomeNetOrm.Builders
 {

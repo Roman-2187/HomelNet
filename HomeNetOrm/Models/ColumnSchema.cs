@@ -33,10 +33,9 @@ namespace HomeNetOrm.Models
             Type = typeParser(metadata.DataType);
             IsNullable = metadata.IsNullable;
 
-            // Проверка первичного ключа
-            IsPrimaryKey = metadata.KeyType.Equals("primary", StringComparison.OrdinalIgnoreCase) ||
-                           metadata.KeyType.Equals("1") ||
-                           metadata.KeyType.Equals("true");
+            // Базы теперь возвращают строго "YES" благодаря нашим новым CASE WHEN в SQL!
+            IsPrimaryKey = string.Equals(metadata.KeyType, "YES", StringComparison.OrdinalIgnoreCase);
+
 
             // Проверка автоинкремента
             IsAutoIncrement = metadata.ExtraInfo.Contains("nextval") ||

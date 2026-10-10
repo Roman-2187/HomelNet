@@ -4,11 +4,8 @@ using Avalonia.Markup.Xaml;
 using HomeNetAvalonia.Infrastructure; // Наш бутстраппер и хаб
 using HomeNetCore.Enums;
 using HomeNetCore.Extensions;
-using HomeNetOrm.Builders;
-using HomeNetOrm.Enums;
 using HomeNetOrm.Helpers;
 using HomeNetOrm.Interfaces;
-using HomeNetOrm.Interfaces.HomeNetOrm.Interfaces;
 using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.AdminViews;
 using Microsoft.Extensions.DependencyInjection;

@@ -4,7 +4,7 @@ using HomeNetAvalonia.Animators;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.OutputLogging;
 using HomeNetOrm.Helpers;
-using HomeNetOrm.Interfaces.HomeNetOrm.Interfaces;
+using HomeNetOrm.Interfaces;
 using HomeNetPresentation.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System;

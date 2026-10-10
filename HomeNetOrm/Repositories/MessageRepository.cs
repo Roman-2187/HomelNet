@@ -3,7 +3,7 @@ using HomeNetCore.Interfaces.Events; // 🔌 Подключили шину яд�
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Models;
 using HomeNetOrm.DBProviders.Interfaces;
-using HomeNetOrm.Interfaces.HomeNetOrm.Interfaces;
+using HomeNetOrm.Interfaces;
 using System.Data.Common;
 
 namespace HomeNetOrm.Repositories

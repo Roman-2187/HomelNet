@@ -8,9 +8,7 @@ namespace HomeNetOrm.Interfaces
     using System.Threading.Tasks;
     using HomeNetCore.Models;
 
-    namespace HomeNetOrm.Interfaces
-    {
-        /// <summary>
+   /// <summary>
         /// Контракт управления фоновой и реалтайм синхронизацией между SQLite и PostgreSQL.
         /// </summary>
         public interface ISiberNetSyncCoordinator
@@ -35,6 +33,6 @@ namespace HomeNetOrm.Interfaces
             public record MessageDeleted(Guid MessageId);
             public record ChatCleared(Guid SenderId, Guid ReceiverId);
         }
-    }
+    
 
 }
