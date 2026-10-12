@@ -1,7 +1,8 @@
 ﻿using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Models;
 using HomeNetOrm.DBProviders.Base;
-using HomeNetOrm.Interfaces;
+using HomeNetOrm.Interfaces.DbInfrastructure;
+using HomeNetOrm.Interfaces.Generators;
 
 namespace HomeNetOrm.DBProviders.Postgres
 {

@@ -1,67 +1,56 @@
 ﻿using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Interfaces.Services;
-using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
-using System;
+using HomeNetOrm.Sinc;
 
 namespace HomeNetServices.Services.Identity
 {
-    /// <summary>
-    /// Автономный диспетчер сообщений SiberNet.
-    /// Зависит только от интерфейсов ядра, никаких ссылок на презентацию UI!
-    /// </summary>
-    public class MessageService : IDisposable,IMessageService
+    public class MessageService : IMessageService
     {
-        private readonly IEventBus _eventBus;
         private readonly IMessageRepository _messageRepo;
+        private readonly IEventBus _eventBus;
 
-        public MessageService(IEventBus eventBus, IMessageRepository messageRepo)
+        public MessageService(IMessageRepository messageRepo, IEventBus eventBus)
         {
-            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             _messageRepo = messageRepo ?? throw new ArgumentNullException(nameof(messageRepo));
-
-            // Ловим намерение отправить
-            _eventBus.Subscribe<IChatViewModel.Send>(OnSendMessageRequested);
+            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         }
 
-        private async void OnSendMessageRequested(IChatViewModel.Send msg)
+        public async Task<IMessageService.ChatVerdict> SendPrivateMessageAsync(Guid senderId, Guid receiverId, string text)
         {
-            if (msg == null) return;
+            // Валидация прямо как в сервисе регистрации!
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return new IMessageService.ChatVerdict(false, "Сообщение не может быть пустым", null);
+            }
 
-            // 🔥 ЧИСТОТА: ID отправителя прилетает прямо в рекорде из UI!
             var entity = new MessageEntity
             {
-                SenderId = msg.SenderId,
-                ReceiverId = msg.TargetId ?? Guid.Empty,
-                Text = msg.Text,
-                MediaType = msg.FilePath != null ? "File" : "Text",
-                FilePath = msg.FilePath,
+                Id = Guid.NewGuid(),
+                SenderId = senderId,
+                ReceiverId = receiverId,
+                Text = text.Trim(),
+                MediaType = "Text",
                 IsRead = false,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                IsSynced = 0 // Наш оффлайн-флаг для координатора
             };
 
             try
             {
+                // 1. Железобетонно пишем в локальную SQLite
                 await _messageRepo.SaveMessageAsync(entity);
 
-                _eventBus.Publish(this, new IChatViewModel.Received(
-                    MessageId: entity.Id,
-                    SenderId: entity.SenderId,
-                    Text: entity.Text,
-                    ChatType: msg.ChatType,
-                    FilePath: msg.FilePath
-                ));
+                // 2. Выстреливаем в автобус "вдогонку" — SiberNetSyncCoordinator поймает и утащит в Postgres!
+                _eventBus.Publish(this, new ISiberNetSyncCoordinator.MessageInserted(entity));
+
+                return new IMessageService.ChatVerdict(true, string.Empty, entity);
             }
             catch (Exception ex)
             {
-                _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"[Сбой базы чата]: {ex.Message}"));
+                return new IMessageService.ChatVerdict(false, $"Ошибка бэкенда при сохранении: {ex.Message}", null);
             }
-        }
-
-        public void Dispose()
-        {
-            _eventBus.Unsubscribe<IChatViewModel.Send>(OnSendMessageRequested);
         }
     }
 }

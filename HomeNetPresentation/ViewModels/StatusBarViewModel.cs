@@ -12,12 +12,12 @@ namespace HomeNetPresentation.ViewModels
     /// Глобальная строка состояния приложения SiberNet.
     /// Наследуется от дженерик-базы с указанием базового менеджера навигации верхнего уровня.
     /// </summary>
-    public partial class StatusBarViewModel : FormViewModelBase<NavigationStateManager>, IDisposable
+    public partial class StatusBarViewModel : FormViewModelBase<BaseNavigationState>, IDisposable
     {
         [ObservableProperty]
         private string _statusText = "Готов к работе";
 
-        public StatusBarViewModel(IEventBus eventBus, NavigationStateManager navigation)
+        public StatusBarViewModel(IEventBus eventBus, BaseNavigationState navigation)
             : base(eventBus, navigation) // Передали базовый навигатор верхнего уровня
         {
             InitializeBusSubscriptions();

@@ -19,4 +19,8 @@ namespace HomeNetAvalonia.Converters
             throw new NotImplementedException();
         }
     }
+
+
+
+
 }

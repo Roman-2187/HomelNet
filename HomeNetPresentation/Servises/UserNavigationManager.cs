@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNetCore.Enums.Navigation;
+using HomeNetCore.Extensions;
+using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
 
@@ -9,12 +11,14 @@ namespace HomeNetPresentation.Services
     /// Автономный менеджер навигации зоны пользователя мессенджера SiberNet.
     /// Напрямую рулит гостевыми экранами и мессенджером, отправляя полный дуэт стейтов.
     /// </summary>
-    public partial class UserNavigationManager : NavigationStateManager
+    public partial class UserNavigationManager : BaseNavigationState
     {
+        ILogger _logger { get; set; }
         [ObservableProperty] private ClientSubTab _currentClientTab = ClientSubTab.None;
 
-        public UserNavigationManager(IEventBus eventBus) : base(eventBus)
+        public UserNavigationManager(IEventBus eventBus,ILogger logger) : base(eventBus)
         {
+            _logger = logger;
             EventBus.Subscribe<IUserVm.OpenAuth>(OnOpenAuthRequested);
             EventBus.Subscribe<IUserVm.OpenRegistration>(OnOpenRegistrationRequested);
             EventBus.Subscribe<IUserVm.BackToStart>(OnBackToStartRequested);
@@ -26,36 +30,34 @@ namespace HomeNetPresentation.Services
             EventBus.Subscribe<IUserVm.LogoutClient>(OnLogoutClientRequested);
         }
 
-        #region 👤 МАКРО-УПРАВЛЕНИЕ ЗОНОЙ ПОЛЬЗОВАТЕЛЯ И ГОСТЯ
+        #region 👤 УПРАВЛЕНИЕ ВНУТРЕННИМИ ЭНУМАМИ ХОЛСТА ПОЛЬЗОВАТЕЛЯ
 
         private void OnOpenAuthRequested(IUserVm.OpenAuth msg)
         {
-            CurrentMainZone = MainTab.StartZone; // Мы всё ещё в стартовой локации
-            CurrentClientTab = ClientSubTab.Authentication; // Но включили форму входа
+            // 🚀 СРАЗУ включаем макро-холст пользователя!
+            CurrentMainZone = MainTab.ClientZone;
+            CurrentClientTab = ClientSubTab.Authentication; // Показываем форму входа
+            PublishStateDuet();
 
-            // 🔥 ПИНГ-ПОНГ: Выстреливаем дуэтом стейтов обратно в тайтлбар!
-            EventBus.Publish(this, new ITitleBarVm.MacroZoneChanged(CurrentMainZone, CurrentClientTab));
-            EventBus.Publish(this, new IUserVm.ClientTabChanged(CurrentClientTab));
+            _logger.LogInfo($"Зашли в OnOpenAuthRequested текущий стате {CurrentClientTab}");
         }
 
         private void OnOpenRegistrationRequested(IUserVm.OpenRegistration msg)
         {
-            CurrentMainZone = MainTab.StartZone;
-            CurrentClientTab = ClientSubTab.Registration;
+            // 🚀 СРАЗУ включаем макро-холст пользователя!
+            CurrentMainZone = MainTab.ClientZone;
+            CurrentClientTab = ClientSubTab.Registration; // Показываем форму регистрации
+            PublishStateDuet();
 
-            // 🔥 ПИНГ-ПОНГ: Выстреливаем дуэтом стейтов!
-            EventBus.Publish(this, new ITitleBarVm.MacroZoneChanged(CurrentMainZone, CurrentClientTab));
-            EventBus.Publish(this, new IUserVm.ClientTabChanged(CurrentClientTab));
+            _logger.LogInfo($"Зашли в OnOpenRegistrationRequested текущий стате {CurrentClientTab}");
         }
 
         private void OnBackToStartRequested(IUserVm.BackToStart msg)
         {
+            // А вот если нажали отмену на формах — вылетаем обратно на чистую заставку гостя
             CurrentMainZone = MainTab.StartZone;
-            CurrentClientTab = ClientSubTab.None; // Потушили за собой форму гостя
-
-            // 🔥 ПИНГ-ПОНГ: Полный сброс в стартовые нули! Кнопки вернутся.
-            EventBus.Publish(this, new ITitleBarVm.MacroZoneChanged(CurrentMainZone, CurrentClientTab));
-            EventBus.Publish(this, new IUserVm.ClientTabChanged(CurrentClientTab));
+            CurrentClientTab = ClientSubTab.None;
+            PublishStateDuet();
         }
 
         private void OnUserAuthenticatedRequested(IUserVm.UserSignedIn msg)
@@ -63,40 +65,43 @@ namespace HomeNetPresentation.Services
             if (msg?.User == null) return;
 
             CurrentUser = msg.User;
-            CurrentMainZone = MainTab.ClientZone; // Переключили рубильник вертикали на Клиента!
-            CurrentClientTab = ClientSubTab.Messenger; // Переключили внутренний стейт на мессенджер
-
-            // 🔥 ПИНГ-ПОНГ: Отправляем стейты успешного входа! В XAML откроется мессенджер.
-            EventBus.Publish(this, new ITitleBarVm.MacroZoneChanged(CurrentMainZone, CurrentClientTab));
-            EventBus.Publish(this, new IUserVm.ClientTabChanged(CurrentClientTab));
+            CurrentMainZone = MainTab.ClientZone;
+            CurrentClientTab = ClientSubTab.Messenger; // 🎯 Просто переключаем внутренний энум на мессенджер!
+            PublishStateDuet();
         }
 
-        // 🔥 ДОБАВЛЕННЫЙ МЕТОД: Обработка успешного SignUp (Регистрация)
         private void OnUserSignedUpRequested(IUserVm.UserSignedUp msg)
         {
             if (msg?.User == null) return;
 
-            CurrentUser = msg.User; // Запоминаем только что созданную сущность в сессию
-            CurrentMainZone = MainTab.ClientZone; // Жестко переключаем макро-рубильник холста на Клиента!
-            CurrentClientTab = ClientSubTab.Messenger; // Схлопываем форму регистрации в мессенджер
-
-            // 🔥 ПИНГ-ПОНГ НАЗАД: Выстреливаем дуэтом стейтов, чтобы сработал DataTrigger в TitleBarControl.xaml!
-            EventBus.Publish(this, new ITitleBarVm.MacroZoneChanged(CurrentMainZone, CurrentClientTab));
-            EventBus.Publish(this, new IUserVm.ClientTabChanged(CurrentClientTab));
+            CurrentUser = msg.User;
+            CurrentMainZone = MainTab.ClientZone;
+            CurrentClientTab = ClientSubTab.Messenger; // 🎯 И здесь просто переключаем на мессенджер!
+            PublishStateDuet();
         }
 
         private void OnLogoutClientRequested(IUserVm.LogoutClient msg)
         {
             CurrentUser = null;
-            CurrentMainZone = MainTab.StartZone;
-            CurrentClientTab = ClientSubTab.None; // Выключили свет за собой
+            CurrentMainZone = MainTab.StartZone; // Полный вылет на заставку
+            CurrentClientTab = ClientSubTab.None;
 
-            // 🔥 ПИНГ-ПОНГ: Полный возврат на заставку
+            
+            PublishStateDuet();
+        }
+
+        #endregion
+
+
+
+        private void PublishStateDuet()
+        {
+            // Отправляем сквозной дуэт стейтов, чтобы обновились DataTrigger в XAML
             EventBus.Publish(this, new ITitleBarVm.MacroZoneChanged(CurrentMainZone, CurrentClientTab));
             EventBus.Publish(this, new IUserVm.ClientTabChanged(CurrentClientTab));
         }
 
-        #endregion
+
 
         public override void Dispose()
         {

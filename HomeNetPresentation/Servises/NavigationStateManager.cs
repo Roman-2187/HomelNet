@@ -6,7 +6,7 @@ using HomeNetCore.Models;
 
 namespace HomeNetPresentation.Services
 {
-    public partial class NavigationStateManager : ObservableObject, IDisposable
+    public partial class BaseNavigationState : ObservableObject, IDisposable
     {
         protected readonly IEventBus EventBus;
 
@@ -14,7 +14,7 @@ namespace HomeNetPresentation.Services
         [ObservableProperty] private MainTab _currentMainZone = MainTab.StartZone;
         [ObservableProperty] private UserEntity? _currentUser;
 
-        public NavigationStateManager(IEventBus eventBus)
+        public BaseNavigationState(IEventBus eventBus)
         {
             EventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         }

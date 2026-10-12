@@ -12,7 +12,7 @@ namespace HomeNetPresentation.ViewModels
     /// Строго типизирует навигатор для каждого конкретного экрана.
     /// </summary>
     public abstract partial class FormViewModelBase<TNavigation> : ObservableObject, IDisposable, IFormViewModel
-        where TNavigation : NavigationStateManager
+        where TNavigation : BaseNavigationState
     {
         #pragma warning disable CS8618 
         protected FormViewModelBase() { }     

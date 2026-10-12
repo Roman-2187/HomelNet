@@ -35,15 +35,7 @@ namespace SiberNet.UI
                 string sqliteConnectionString = $"Data Source={dbPath}";
                 string postgresConnectionString = "Server=127.0.0.1:5432;Database=home_net_db;User Id=postgres;Password=05011987;";
 
-                // 2. 🔥 ВЫЗЫВАЕМ НАШ ОБЪЕДИНЕННЫЙ СБОРЩИК:
-                // Он сам внутри себя запустит бэкграунд-прогрев баз и стартанет SiberNetSyncCoordinator!
-                _serviceProvider = AppBootstrapper.Build(currentMode, postgresConnectionString, sqliteConnectionString);
-
-                _serviceProvider.GetRequiredService<ILogQueueManager>();
-
-                // 3. Открываем главное окно (или что у тебя тут запускает UI)
-                // var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
-                // mainWindow.Show();
+               
             }
             catch (Exception ex)
             {

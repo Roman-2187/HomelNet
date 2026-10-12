@@ -1,8 +1,8 @@
 ﻿using Dapper;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetOrm.DBProviders.Interfaces;
 using HomeNetOrm.Interfaces;
+using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
 using HomeNetOrm.Schemes;
 using System.Data;
@@ -21,7 +21,9 @@ namespace HomeNetOrm.DbTableInitializer
         private readonly ISchemaProvider _schemaProvider;
         private readonly ISchemaAdapter _schemaAdapter;
         private readonly ILogger _logger;
-   
+
+        // 🔥 Динамический маркер имени базы данных
+        private readonly string _dbName;
 
         public DBInitializer(
             DbConnection connection,
@@ -35,11 +37,19 @@ namespace HomeNetOrm.DbTableInitializer
             _schemaAdapter = schemaAdapter ?? throw new ArgumentNullException(nameof(schemaAdapter));
             _schemaSqlInitializer = schemaSqlInitializer ?? throw new ArgumentNullException(nameof(schemaSqlInitializer));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+            // 🎯 АВТООПРЕДЕЛЕНИЕ: вычисляем имя базы данных по типу класса подключения!
+            _dbName = _dbConnection.GetType().Name switch
+            {
+                "NpgsqlConnection" => "PostgreSQL",
+                "SqliteConnection" => "SQLite",
+                _ => "СУБД"
+            };
         }
 
         public async Task InitializeAsync()
         {
-            _logger.LogInfo("=== СТАРТ ИНИЦИАЛИЗАЦИИ БАЗЫ ДАННЫХ ===");
+            _logger.LogInfo($"=== СТАРТ ИНИЦИАЛИЗАЦИИ БАЗЫ ДАННЫХ [{_dbName}] ===");
 
             var tableSchemas = SchemaRegistry.GetAllSchemas();
 
@@ -50,7 +60,7 @@ namespace HomeNetOrm.DbTableInitializer
 
                 try
                 {
-                    _logger.LogInfo($"[БД] Проверка таблицы: {dbTableName}...");
+                    _logger.LogInfo($"[{_dbName}] Проверка таблицы: {dbTableName}...");
 
                     if (!await TableExistsAsync(dbTableName))
                     {
@@ -58,25 +68,24 @@ namespace HomeNetOrm.DbTableInitializer
                     }
                     else
                     {
-                        _logger.LogDebug($"[БД] Таблица {dbTableName} существует, сверяю структуру...");
+                        _logger.LogDebug($"[{_dbName}] Таблица {dbTableName} существует, сверяю структуру...");
                         await CheckTableStructureAsync(schema);
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"[КРИТ] Сбой при обработке таблицы {dbTableName}: {ex.Message}");
+                    _logger.LogError($"[{_dbName} КРИТ] Сбой при обработке таблицы {dbTableName}: {ex.Message}");
                     throw;
                 }
             }
 
-            _logger.LogInfo("=== ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ЗАВЕРШЕНА ===");      
+            _logger.LogInfo($"=== ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ [{_dbName}] ЗАВЕРШЕНА ===");
         }
 
         private async Task<bool> TableExistsAsync(string tableName)
         {
             var cleanName = tableName.Trim('"', '\'').ToLower();
 
-            // Вызываем специализированный SQL под текущий диалект (SQLite или Postgres)
             string sql = _schemaSqlInitializer.GenerateTableExistsSql(tableName);
 
             try
@@ -86,7 +95,7 @@ namespace HomeNetOrm.DbTableInitializer
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Ошибка проверки существования {tableName}: {ex.Message}");
+                _logger.LogError($"[{_dbName}] Ошибка проверки существования {tableName}: {ex.Message}");
                 return false;
             }
         }
@@ -94,22 +103,21 @@ namespace HomeNetOrm.DbTableInitializer
         private async Task CreateTableAsync(TableSchema dbSchema)
         {
             string targetName = dbSchema.TableName ?? string.Empty;
-            _logger.LogWarning($"Таблица {targetName} не обнаружена. Запуск генерации...");
+            _logger.LogWarning($"[{_dbName}] Таблица {targetName} не обнаружена. Запуск генерации...");
 
             if (_dbConnection.State != ConnectionState.Open)
             {
                 await _dbConnection.OpenAsync();
             }
 
-            // Вызываем правильный метод создания таблицы
             string createTableSql = _schemaSqlInitializer.GenerateCreateTableSql(dbSchema);
             await _dbConnection.ExecuteAsync(createTableSql);
 
             if (await TableExistsAsync(targetName))
-                _logger.LogInfo($"✅ Таблица {targetName} успешно создана в БД.");
+                _logger.LogInfo($"[{_dbName}] ✅ Таблица {targetName} успешно создана в БД.");
             else
             {
-                _logger.LogError($"❌ Ошибка создания! Таблица {targetName} отсутствует после выполнения скрипта.");
+                _logger.LogError($"[{_dbName}] ❌ Ошибка создания! Таблица {targetName} отсутствует после выполнения скрипта.");
             }
         }
 
@@ -128,7 +136,7 @@ namespace HomeNetOrm.DbTableInitializer
 
             if (expectedSchema.Columns.Count == 0 || string.IsNullOrEmpty(expectedSchema.IdColumnName))
             {
-                _logger.LogError($"[ИНИЦИАЛИЗАТОР] Сверка структуры для таблицы '{dbTableName}' пропущена, так как схема в БД повреждена, пуста или не имеет Primary Key.");
+                _logger.LogError($"[{_dbName} ИНИЦИАЛИЗАТОР] Сверка структуры для таблицы '{dbTableName}' пропущена, так как схема в БД повреждена, пуста или не имеет Primary Key.");
                 return;
             }
 
@@ -140,11 +148,11 @@ namespace HomeNetOrm.DbTableInitializer
 
             if (diff.IsIdentical)
             {
-                _logger.LogInfo($"  -> Структура таблицы {dbTableName} в порядке.");
+                _logger.LogInfo($"  -> [{_dbName}] Структура таблицы {dbTableName} в порядке.");
             }
             else
             {
-                _logger.LogWarning($"⚠️ Обнаружены расхождения в структуре {dbTableName}:");
+                _logger.LogWarning($"⚠️ [{_dbName}] Обнаружены расхождения в структуре {dbTableName}:");
 
                 foreach (var missing in diff.MissingColumns)
                     _logger.LogWarning($"   [-] Отсутствует колонка: {missing.Name}");

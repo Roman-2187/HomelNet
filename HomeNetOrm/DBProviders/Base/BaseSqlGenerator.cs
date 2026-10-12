@@ -1,10 +1,9 @@
 ﻿using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetOrm.Interfaces;
+using HomeNetOrm.Interfaces.DbInfrastructure;
+using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
 using HomeNetOrm.Schemes;
-using System;
-using System.Linq;
 
 namespace HomeNetOrm.DBProviders.Base
 {

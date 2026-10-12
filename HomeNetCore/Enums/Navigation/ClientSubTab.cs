@@ -1,13 +1,17 @@
 ﻿namespace HomeNetCore.Enums.Navigation
 {
-    // Внутренние вкладки обычной зоны пользователя
-    public enum ClientSubTab 
-    { 
-        None,
-        Profile,
-        Messenger,
-       Authentication,
-       Registration
-
+    /// <summary>
+    /// Внутренние вкладки и состояния общей зоны пользователя SiberNet.
+    /// Рулят отображением экранов на гигантской подложке холста! 🧼
+    /// </summary>
+    public enum ClientSubTab
+    {
+        None,            // Абсолютный ноль заставки (формы гостя скрыты)
+        Authentication,  // Форма входа в аккаунт
+        Registration,    // Форма создания нового ID
+        Messenger,       // Авторизованная зона (только левый контрол списка контактов)
+        Chat,            // 🔥 АКТИВНЫЙ ЧАТ: когда выбрали друга и зажгли правый контрол переписки!
+        Profile          // Экран редактирования профиля пользователя
     }
 }
+

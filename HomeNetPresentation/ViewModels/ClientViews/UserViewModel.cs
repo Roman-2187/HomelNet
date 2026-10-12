@@ -1,143 +1,88 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNetCore.Enums.Navigation;
+using HomeNetCore.Extensions;
+using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
-using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Interfaces.ViewModels;
-using HomeNetCore.Models;
 using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels
 {
     /// <summary>
     /// Тотально изолированная и чистая панель пользователя SiberNet.
-    /// Наследуется от дженерик-базы с указанием конкретного менеджера навигации.
-    /// Управляется новыми браузерными веб-ивентами авторизации и регистрации.
+    /// Больше не содержит внутри себя ссылки на другие вью-модели! 🧼
     /// </summary>
     public partial class UserViewModel : FormViewModelBase<UserNavigationManager>, IDisposable
     {
-        private readonly IMessageRepository _messageRepo;
+        private Guid _currentUserId;
 
-        // 🔥 НАШИ ДВА АВТОНОМНЫХ БЛОКА
-        public ContactsViewModel ContactsListVM { get; }
-        public ChatViewModel ChatVm { get; }
+        ILogger _logger;
 
-        private Guid _currentUserId; // 🔥 Наш локальный UI-кэш для ID текущего юзера
-
-        // Локальный стейт вкладки, скопированный из реактивного факта навигатора для XAML
         [ObservableProperty] private ClientSubTab _activeClientTab = ClientSubTab.None;
 
-        public UserViewModel(
-            IEventBus eventBus,
-            IMessageRepository messageRepo,
-            ContactsViewModel contactsListViewModel,
-            ChatViewModel chatVm,
-            UserNavigationManager navigation) : base(eventBus, navigation) // Передали навигатор в generic-базу
+        public UserViewModel(ILogger logger,
+        IEventBus eventBus,
+            UserNavigationManager navigation) : base(eventBus, navigation)
         {
-            _messageRepo = messageRepo ?? throw new ArgumentNullException(nameof(messageRepo));
-            ContactsListVM = contactsListViewModel ?? throw new ArgumentNullException(nameof(contactsListViewModel));
-            ChatVm = chatVm ?? throw new ArgumentNullException(nameof(chatVm));
+           _logger = logger;  InitializeBusSubscriptions();
 
-            InitializeBusSubscriptions();
+           
         }
 
         private void InitializeBusSubscriptions()
         {
-            // 🔥 ВЕБ-СТАНДАРТ: Слушаем раздельные каналы входа и регистрации для Инспектора! 🧼
+            _logger.LogInfo("[UserVM] Запуск инициализации подписок на автобус событий.");
+
             _eventBus.Subscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
             _eventBus.Subscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
 
-            _eventBus.Subscribe<IChatViewModel.NewSent>(OnNewMessageSent);
-            _eventBus.Subscribe<IContactsVm.FriendSelected>(OnFriendSelected);
-
-            // Наш новый навигатор при изменении под-зон будет пулять этот факт в шину
+            // 🔥 ЛОГИРУЕМ СТАРТ ПОДПИСКИ: Проверим, вызывается ли этот метод вообще
             _eventBus.Subscribe<IUserVm.ClientTabChanged>(OnClientTabChanged);
+
+            _logger.LogInfo("[UserVM] Подписка на IUserVm.ClientTabChanged успешно оформлена.");
         }
 
-        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Для идеального графа в Инспекторе) 🧼
+        private void OnClientTabChanged(IUserVm.ClientTabChanged msg)
+        {
+            if (msg == null)
+            {
+                _logger.LogError("[UserVM] OnClientTabChanged вызван, но сообщение msg == NULL!");
+                return;
+            }
+
+            // 🔥 ГЛАВНЫЙ СЛЕДСТВЕННЫЙ ЛОГ: Проверяем, какой стейт прилетел в модель из шины
+            _logger.LogInfo($"[UserVM -> OnClientTabChanged] Автобус доставил стейт: {msg.ActiveTab}. Было в модели: {ActiveClientTab}");
+
+            // Пишем в свойство
+            ActiveClientTab = msg.ActiveTab;
+
+            // Мануально пинаем интерфейс
+            OnPropertyChanged(nameof(ActiveClientTab));
+
+            _logger.LogInfo($"[UserVM] Свойство ActiveClientTab обновлено на {ActiveClientTab} и отправлено уведомление PropertyChanged.");
+        }
+
 
         private void OnUserSignedIn(IUserVm.UserSignedIn msg)
         {
             if (msg?.User == null) return;
-
-            _currentUserId = msg.User.Id; // 🔥 Запомнили, кто сидит за рулем мессенджера!
-            ChatVm.IsChatOpen = false;
-            ContactsListVM.SetCurrentUser(msg.User);
+            _currentUserId = msg.User.Id;
         }
 
         private void OnUserSignedUp(IUserVm.UserSignedUp msg)
         {
             if (msg?.User == null) return;
-
-            _currentUserId = msg.User.Id; // Запомнили при регистрации
-            ChatVm.IsChatOpen = false;
-            ContactsListVM.SetCurrentUser(msg.User);
+            _currentUserId = msg.User.Id;
         }
 
-        private void OnClientTabChanged(IUserVm.ClientTabChanged msg)
-        {
-            if (msg == null) return;
-
-            // Ловим пулю от навигатора и сохраняем стейт вкладки у себя для триггеров UI
-            ActiveClientTab = msg.ActiveTab;
-        }
-
-        /// <summary>
-        /// 🔥 Перехватчик отправки сообщений из чата для записи в БД
-        /// </summary>
-        private async void OnNewMessageSent(IChatViewModel.NewSent msg)
-        {
-            // ЖЕСТКИЙ КОНТРОЛЬ: Берем ID текущего юзера прямо из синглтон-навигатора базового класса!
-            if (msg == null || Navigation.CurrentUser == null) return;
-
-            var entity = new MessageEntity
-            {
-                SenderId = Navigation.CurrentUser.Id, // Прямой и безопасный доступ без кастов
-                ReceiverId = msg.ReceiverId,
-                Text = msg.Text,
-                MediaType = "Text",
-                IsRead = false,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            try
-            {
-                // 1. Сохраняем эсэмэску в SQLite / Postgres через репозиторий
-                await _messageRepo.SaveMessageAsync(entity);
-
-                // 2. Пушим в визуальную ленту чата, если открыт именно этот собеседник
-                if (ContactsListVM.SelectedFriend != null && ContactsListVM.SelectedFriend.Id == msg.ReceiverId)
-                {
-                    ChatVm.Messages.Add(entity);
-                }
-            }
-            catch (Exception ex)
-            {
-                _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"[БЭКЕНД ЧАТА СБОЙ]: {ex.Message}"));
-            }
-        }
-
-        private void OnFriendSelected(IContactsVm.FriendSelected msg)
-        {
-            ChatVm.IsChatOpen = true;
-        }
-
-        #endregion
-
-        #region 🛡️ ЖЕЛЕЗОБЕТОННЫЙ СТЕРИЛИЗАТОР ПАМЯТИ
+       
 
         public override void Dispose()
         {
-            base.Dispose(); // Чистим базовые ресурсы
-
-            // 🔥 Обновили отписки на новые рекорды, чтобы не было утечек памяти!
+            base.Dispose();
             _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
             _eventBus.Unsubscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
-
-            _eventBus.Unsubscribe<IChatViewModel.NewSent>(OnNewMessageSent);
-            _eventBus.Unsubscribe<IContactsVm.FriendSelected>(OnFriendSelected);
             _eventBus.Unsubscribe<IUserVm.ClientTabChanged>(OnClientTabChanged);
         }
-
-        #endregion
     }
 }

@@ -1,6 +1,5 @@
 ﻿using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetOrm.DBProviders.Interfaces;
-using HomeNetOrm.Interfaces;
+using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
 
 namespace HomeNetOrm.DBProviders.Sqlite

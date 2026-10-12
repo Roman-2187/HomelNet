@@ -1,42 +1,49 @@
-﻿using System.Data.Common;
-using Dapper;
+﻿using Dapper;
+using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Models;
-using HomeNetOrm.Interfaces;
+using HomeNetOrm.Interfaces.Generators;
+using HomeNetOrm.Interfaces.Builders;
+using HomeNetOrm.Sinc;
+using System.Data.Common;
 
 namespace HomeNetOrm.Repositories
 {
     /// <summary>
     /// Автономный репозиторий списка друзей/контактов SiberNet.
-    /// Выполняет чистые атомарные CRUD-операции через инжектируемое подключение.
+    /// Выполняет CRUD-операции через инжектируемый движок СУБД и шлет события в EventBus.
     /// </summary>
     public class FriendRepository : IFriendRepository
     {
         private readonly DbConnection _connection;
         private readonly ISqlGenerator<FriendEntity> _sqlGenerator;
+        private readonly IEventBus _eventBus; // Добавили шину событий
 
-        public FriendRepository(DbConnection connection, ISqlGenerator<FriendEntity> sqlGenerator)
+        public FriendRepository(IDbEngine dbEngine, IEventBus eventBus)
         {
-            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
-            _sqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));
+            if (dbEngine == null) throw new ArgumentNullException(nameof(dbEngine));
+
+            _connection = dbEngine.Connection;
+            _sqlGenerator = dbEngine.GetGenerator<FriendEntity>();
+            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         }
 
-        // 🤝 Добавить пользователя в друзья через ОРМ
         public async Task<bool> AddFriendAsync(FriendEntity friend)
         {
             if (friend.Id == Guid.Empty) friend.Id = Guid.NewGuid();
             friend.CreatedAt = DateTime.UtcNow;
             friend.UpdatedAt = DateTimeOffset.UtcNow;
-            friend.IsSynced = 0; // Новая запись помечается грязной
+            friend.IsSynced = 0;
 
             string sql = _sqlGenerator.GenerateInsert();
 
             try
             {
-                // Так как мы зафиксировали поле .Id в схеме friends на прошлом шаге,
-                // дженерик-генератор гладко выдаст инсерт с перехватом ID
                 var newId = await _connection.ExecuteScalarAsync<Guid>(sql, friend);
                 if (newId != Guid.Empty) friend.Id = newId;
+
+                // 🔥 ВЫСТРЕЛ В АВТОБУС: Синхронизатор, тащи новый контакт на Postgres сервер!
+                _eventBus.Publish(this, new ISiberNetSyncCoordinator.FriendInserted(friend));
 
                 return true;
             }
@@ -46,7 +53,6 @@ namespace HomeNetOrm.Repositories
             }
         }
 
-        // ❌ Удалить связь из таблицы friends по GUID через ОРМ
         public async Task<bool> RemoveFriendByIdAsync(Guid id)
         {
             string sql = _sqlGenerator.GenerateDelete();
@@ -54,6 +60,13 @@ namespace HomeNetOrm.Repositories
             try
             {
                 int rowsAffected = await _connection.ExecuteAsync(sql, new { id = id });
+
+                if (rowsAffected > 0)
+                {
+                    // 🔥 Сигналим об удалении контакта по Guid для репликатора сервера
+                    _eventBus.Publish(this, new ISiberNetSyncCoordinator.FriendDeleted(id));
+                }
+
                 return rowsAffected > 0;
             }
             catch (Exception ex)
@@ -62,7 +75,6 @@ namespace HomeNetOrm.Repositories
             }
         }
 
-        // 👥 Вытащить профили всех друзей (ANSI SQL, полностью независимый от СУБД)
         public async Task<IEnumerable<UserEntity>> GetFriendsForUserAsync(Guid userId)
         {
             const string sql = @"SELECT u.* FROM users u

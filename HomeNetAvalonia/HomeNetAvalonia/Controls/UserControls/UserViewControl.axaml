@@ -1,0 +1,55 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            x:Class="HomeNetAvalonia.Controls.UserViewControl"
+             xmlns:enums="using:HomeNetCore.Enums.Navigation"
+             xmlns:conv="using:HomeNetAvalonia.Converters"
+             xmlns:di="using:HomeNet.DI" 
+             xmlns:controls="using:HomeNetAvalonia.Controls"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
+             x:DataType="di:ComponentHub">
+
+    <UserControl.Resources>
+        <conv:EqualityConverter x:Key="EqualityConverter"/>
+    </UserControl.Resources>
+
+    <!-- 🌌 Цепляемся напрямую к глобальному Хабу компонентов -->
+    <Grid DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False"
+          HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        
+        <!-- ============================================================= -->
+        <!-- 🔓 ЗОНА ГОСТЯ: Формы входа и регистрации                      -->
+        <!-- ============================================================= -->
+        
+        <!-- Под-экран А: Форма Входа -->
+        <!-- 🎯 Читаем стейт НАПРЯМУЮ из навигатора шапки! Никакого раздвоения энумов -->
+        <ContentControl
+            IsVisible="{Binding TitleBarViewModel.CurrentClientTab,
+            Converter={StaticResource EqualityConverter},
+            ConverterParameter={x:Static enums:ClientSubTab.Authentication}}">
+            <controls:AuthViewControl HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </ContentControl>
+
+        <!-- Под-экран Б: Форма Регистрации -->
+        <!-- 🎯 Читаем стейт НАПРЯМУЮ из навигатора шапки! -->
+        <ContentControl
+            IsVisible="{Binding TitleBarViewModel.CurrentClientTab,
+            Converter={StaticResource EqualityConverter},
+            ConverterParameter={x:Static enums:ClientSubTab.Registration}}">
+            <controls:RegistrationViewControl HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </ContentControl>
+
+        <!-- ============================================================= -->
+        <!-- 💬 ЗОНА ПОЛЬЗОВАТЕЛЯ: Список контактов                        -->
+        <!-- ============================================================= -->
+        <ContentControl
+            IsVisible="{Binding TitleBarViewModel.CurrentClientTab,
+            Converter={StaticResource EqualityConverter},
+            ConverterParameter={x:Static enums:ClientSubTab.Messenger}}"
+            HorizontalAlignment="Left" VerticalAlignment="Stretch">
+            <controls:ContactsListViewControl/>
+        </ContentControl>
+
+    </Grid>
+</UserControl>

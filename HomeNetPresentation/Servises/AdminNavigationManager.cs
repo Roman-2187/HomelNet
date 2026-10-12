@@ -9,7 +9,7 @@ namespace HomeNetPresentation.Services
     /// Автономный менеджер навигации зоны администратора SiberNet.
     /// Переключает макро-зону и возвращает полный дуэт стейтов в тайтлбар.
     /// </summary>
-    public partial class AdminNavigationManager : NavigationStateManager
+    public partial class AdminNavigationManager : BaseNavigationState
     {
         [ObservableProperty] private AdminSubTab _currentAdminTab = AdminSubTab.None;
 

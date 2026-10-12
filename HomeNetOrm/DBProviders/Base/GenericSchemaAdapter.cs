@@ -1,8 +1,7 @@
 ﻿using HomeNetCore.Extensions;
 using HomeNetOrm.DBProviders.Extensions;
-using HomeNetOrm.DBProviders.Interfaces; // Наш новый чистый интерфейс
 using HomeNetOrm.Enums;
-using HomeNetOrm.Interfaces;
+using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
 
 namespace HomeNetOrm.DBProviders.Base

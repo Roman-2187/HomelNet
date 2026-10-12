@@ -92,6 +92,8 @@ namespace HomeNetPresentation.ViewModels
                     // 🔥 Публикуем факт успешного SignUp (Регистрация)
                     _eventBus.Publish(this, new IUserVm.UserSignedUp(finalUser));
 
+
+
                     await Task.Delay(500);
                     ResetForm();
                     InitializeInitialHints();

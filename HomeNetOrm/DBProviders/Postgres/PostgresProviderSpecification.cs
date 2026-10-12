@@ -1,5 +1,5 @@
 ﻿using HomeNetOrm.Enums;
-using HomeNetOrm.DBProviders.Interfaces;
+using HomeNetOrm.Interfaces.DbInfrastructure;
 
 namespace HomeNetOrm.DBProviders.Postgres
 {

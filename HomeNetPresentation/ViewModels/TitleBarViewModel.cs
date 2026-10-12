@@ -1,9 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Enums.Navigation;
+using HomeNetCore.Extensions;
+using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetPresentation.Services;
+using HomeNetServices.Diagnostics;
 
 namespace HomeNetPresentation.ViewModels
 {
@@ -11,16 +14,20 @@ namespace HomeNetPresentation.ViewModels
     /// Стерильная верхняя панель управления окном мессенджера SiberNet.
     /// Полная изоляция: класс общается с навигацией ИСКЛЮЧИТЕЛЬНО через рацию автобуса.
     /// </summary>
-    public partial class TitleBarViewModel : FormViewModelBase<NavigationStateManager>, IDisposable
+    public partial class TitleBarViewModel : FormViewModelBase<BaseNavigationState>, IDisposable
     {
+
+    ILogger _logger;
         [ObservableProperty] private MainTab _currentMainZone = MainTab.StartZone;
         [ObservableProperty] private ClientSubTab _currentClientTab = ClientSubTab.None;
-        [ObservableProperty] private bool _isGlobalLoggerVisible = false;
+       
 
-        public TitleBarViewModel(IEventBus eventBus, NavigationStateManager navigationStateManager)
+        public TitleBarViewModel(IEventBus eventBus,ILogger logger, BaseNavigationState navigationStateManager)
             : base(eventBus, navigationStateManager)
         {
             _eventBus.Subscribe<ITitleBarVm.MacroZoneChanged>(OnMacroZoneChanged);
+
+            _logger = logger;
         }
 
         #region 🎧 МЕТОД ПРИЁМА ОБРАТНОГО СИГНАЛА БЭКЕНДА 🧼
@@ -54,6 +61,8 @@ namespace HomeNetPresentation.ViewModels
         public void OpenAuthZone()
         {
             _eventBus.Publish(this, new IUserVm.OpenAuth());
+
+            _logger.LogInfo("Зашли в аутенфикацию");
         }
 
         // 📝 КНОПКА: Регистрация
@@ -61,6 +70,8 @@ namespace HomeNetPresentation.ViewModels
         public void OpenRegisterZone()
         {
             _eventBus.Publish(this, new IUserVm.OpenRegistration());
+
+            _logger.LogInfo("Зашли в регистрацию");
         }
 
         // 🔑 КНОПКА: Выход из профиля клиента

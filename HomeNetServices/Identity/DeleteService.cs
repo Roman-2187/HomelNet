@@ -13,7 +13,7 @@ namespace HomeNetServices.Services.Identity
         private readonly IUserService _userService;
         private readonly ILogger _logger;
 
-        public DeleteService(ILogger logger, IUserService userService)
+        public DeleteService(IUserService userService,ILogger logger )
         {
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

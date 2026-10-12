@@ -1,11 +1,11 @@
-﻿using HomeNetCore.Interfaces;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
-using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Models;
+using HomeNetOrm.Interfaces.Builders;
 using HomeNetPresentation.Services;
 using System.Collections.ObjectModel;
-using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace HomeNetPresentation.ViewModels.AdminViews
 {
@@ -16,16 +16,32 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         [ObservableProperty] private ObservableCollection<UserEntity> _users = new();
 
         public TableUsersViewModel(IEventBus eventBus, IUserService userService, AdminNavigationManager navigation)
-            : base(eventBus, navigation)
+    : base(eventBus, navigation)
         {
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
 
-            // 🔥 ВСЁ СНОВА ЗДЕСЬ: Чистые, изолированные подписки на изменения данных
             InitializeBusSubscriptions();
-
-            // 🔥 ЗАПУСК ИЗ КОНСТРУКТОРА: Метод выстрелит сразу в момент рождения класса в памяти!
-            _ = InitializeDataAsync();
         }
+
+        private void InitializeBusSubscriptions()
+        {
+            _eventBus.Subscribe<IDeleteUserVm.Deleted>(OnUserDeletedFromDb);
+            _eventBus.Subscribe<IUsersTableVm.Added>(OnUserAdded);
+            _eventBus.Subscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
+
+            // 🔥 ДОБАВЛЯЕМ: Ждем, пока Хаб баз данных отмаринует и прогреет обе СУБД!
+            _eventBus.Subscribe<IDbContextContainer.InfrastructureReady>(OnInfrastructureReady);
+        }
+
+        private async void OnInfrastructureReady(IDbContextContainer.InfrastructureReady msg)
+        {
+            // Базы прогреты, схемы на месте — теперь загружать данные полностью БЕЗОПАСНО!
+            await InitializeDataAsync();
+        }
+
+
+
+
 
         private async Task InitializeDataAsync()
         {
@@ -44,13 +60,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             }
         }
 
-        private void InitializeBusSubscriptions()
-        {
-            
-            _eventBus.Subscribe<IDeleteUserVm.Deleted>(OnUserDeletedFromDb);
-            _eventBus.Subscribe<IUsersTableVm.Added>(OnUserAdded);
-            _eventBus.Subscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
-        }
+        
 
         #region 🎧 МЕТОДЫ ПОДПИСОК 🧼
 

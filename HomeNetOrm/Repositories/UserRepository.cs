@@ -1,29 +1,30 @@
 ﻿using Dapper;
 using HomeNetCore.Exeptions;
 using HomeNetCore.Interfaces;
-using HomeNetCore.Interfaces.Events; // 🔌 Подключили шину ядра
+using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Models;
-using HomeNetOrm.DBProviders.Interfaces;
-using HomeNetOrm.Interfaces;
+using HomeNetOrm.Interfaces.Builders;
+using HomeNetOrm.Interfaces.Generators;
+using HomeNetOrm.Sinc;
 using System.Data.Common;
 
 namespace HomeNetOrm.Repositories
 {
-    /// <summary>
-    /// Автономный репозиторий пользователей SiberNet.
-    /// Работает с чистым подключением, генератором и шлёт рекорды синхронизации в шину.
-    /// </summary>
     public class UserRepository : IUserRepository
     {
         private readonly DbConnection _connection;
-        private readonly IUserSqlGenerator _sqlGenerator;
-        private readonly IEventBus _eventBus; // Локальная ссылка на автобус
+        private readonly IUserSqlGenerator _sqlGenerator; // Вернули специализированный тип!
+        private readonly IEventBus _eventBus;
 
-        public UserRepository(DbConnection connection, IUserSqlGenerator sqlGenerator, IEventBus eventBus)
+        public UserRepository(IDbEngine dbEngine, IEventBus eventBus)
         {
-            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
-            _sqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));
+            if (dbEngine == null) throw new ArgumentNullException(nameof(dbEngine));
+
+            _connection = dbEngine.Connection;
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+
+            // 🔥 Достаем базовый генератор и явно кастим его к интерфейсу пользователя!
+            _sqlGenerator = (IUserSqlGenerator)dbEngine.GetGenerator<UserEntity>();
         }
 
         public async Task<UserEntity> InsertUserAsync(UserEntity user)
@@ -41,7 +42,7 @@ namespace HomeNetOrm.Repositories
             {
                 await _connection.ExecuteAsync(sql, user);
 
-                // 🔥 ВЫСТРЕЛ В АВТОБУС: Координатор, пушнь нового юзера в Postgres!
+                // 🔥 ВЫСТРЕЛ В АВТОБУС: Координатор, пуши нового юзера в Postgres!
                 _eventBus.Publish(this, new ISiberNetSyncCoordinator.UserInserted(user));
 
                 return user;
@@ -62,7 +63,6 @@ namespace HomeNetOrm.Repositories
 
                 if (affectedRows > 0)
                 {
-                    // 🔥 Сигналим об успешном удалении пользователя по Guid
                     _eventBus.Publish(this, new ISiberNetSyncCoordinator.UserDeleted(id));
                 }
             }
@@ -102,15 +102,13 @@ namespace HomeNetOrm.Repositories
         public async Task UpdateAsync(UserEntity user)
         {
             user.UpdatedAt = DateTimeOffset.UtcNow;
-            user.IsSynced = 0; // Сбрасываем флаг
+            user.IsSynced = 0;
 
             string sql = _sqlGenerator.GenerateUpdate();
 
             try
             {
                 await _connection.ExecuteAsync(sql, user);
-
-                // 🔥 Сигналим об изменении профиля юзера
                 _eventBus.Publish(this, new ISiberNetSyncCoordinator.UserUpdated(user));
             }
             catch (Exception ex)

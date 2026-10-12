@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:enums="using:HomeNetCore.Enums.Navigation"
+             xmlns:conv="using:HomeNetAvalonia.Converters"
+             xmlns:di="using:HomeNet.DI" 
+             xmlns:controls="using:HomeNetAvalonia.Controls"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
+             x:Class="HomeNetAvalonia.Controls.MainContentZoneControl"
+             x:DataType="di:ComponentHub">
+
+    <UserControl.Resources>
+        <conv:EqualityConverter x:Key="EqualityConverter"/>
+    </UserControl.Resources>
+
+    <!-- 🌌 Глобальный DataContext Хаба для рантайма без Code-behind -->
+     <Grid DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False"
+          HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        
+         <!-- ⚡ ВАЖНО: Убрали общий DataContext TitleBarViewModel отсюда, чтобы не ломать дочерние элементы! -->
+         <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+
+            <!-- 🖥️ МАКРО-ЭКРАН 1: СТАРТОВАЯ ЗАСТАВКА (Явно лезем в TitleBarViewModel за зоной) -->
+            <Border 
+                x:Name="StartScreenContainer" Background="Transparent"
+                IsVisible="{Binding TitleBarViewModel.CurrentMainZone,
+                Converter={StaticResource EqualityConverter},
+                ConverterParameter={x:Static enums:MainTab.StartZone}}">
+            </Border>
+
+            <!-- 🖥️ МАКРО-ЭКРАН 2: ПАНЕЛЬ АДМИНИСТРАТОРА -->
+            <Border 
+                x:Name="AdminScreenContainer" Background="Transparent"
+                IsVisible="{Binding TitleBarViewModel.CurrentMainZone,
+                Converter={StaticResource EqualityConverter},
+                ConverterParameter={x:Static enums:MainTab.AdminZone}}">
+                
+                <controls:AdminMenuControl />
+            </Border>
+
+            <!-- 🖥️ МАКРО-ЭКРАН 3: ГЛАВНЫЙ ОБЩИЙ ХОЛСТ КЛИЕНТА (Вход, Регистрация, Чат) -->
+            <!-- 🎯 Явно биндим IsVisible через TitleBarViewModel.CurrentMainZone -->
+            <Border
+                x:Name="UserScreenContainer" 
+                Background="Gray"
+                IsVisible="{Binding TitleBarViewModel.CurrentMainZone,
+                Converter={StaticResource EqualityConverter},
+                ConverterParameter={x:Static enums:MainTab.ClientZone}}">
+                
+                <!-- 🦾 А здесь UserViewControl теперь без проблем подхватит ComponentHub.UserViewModel! -->
+                <controls:UserViewControl HorizontalAlignment="Stretch" 
+                                          VerticalAlignment="Stretch"/>
+            </Border>
+            
+        </Grid>
+    </Grid>
+</UserControl>

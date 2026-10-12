@@ -1,22 +1,20 @@
 ﻿using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using HomeNetAvalonia.Infrastructure; // Наш бутстраппер и хаб
+using HomeNet.DI;
+using HomeNetAvalonia.Infrastructure;
 using HomeNetCore.Enums;
-using HomeNetCore.Extensions;
 using HomeNetOrm.Helpers;
-using HomeNetOrm.Interfaces;
 using HomeNetPresentation.ViewModels;
-using HomeNetPresentation.ViewModels.AdminViews;
-using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Threading.Tasks;
+using HomeNetCore.Extensions;
 
 namespace HomeNetAvalonia
 {
     public partial class App : Application
     {
-        private IServiceProvider? _serviceProvider;
+        // Храним ссылку на наш ручной конструктор вместо IServiceProvider
+        private AppCompositionRoot? _compositionRoot;
 
         public override void Initialize()
         {
@@ -29,59 +27,33 @@ namespace HomeNetAvalonia
             {
                 BackendMode currentMode = BackendMode.Real;
 
-                // 1. Строки подключения
+                // 1. Находим пути к базам
                 string dbPath = DatabasePathHelper.GetDatabasePath("home_net.db");
                 string sqliteConnectionString = $"Data Source={dbPath}";
                 string postgresConnectionString = "Server=127.0.0.1:5432;Database=home_net_db;User Id=postgres;Password=05011987;";
 
-                // 2. Вызываем наш Авалон-сборщик контейнера (БЕЗ запуска базы внутри!)
-                _serviceProvider = AvaloniaUiBootstrapper.BuildAvaloniaContainer(currentMode, postgresConnectionString, sqliteConnectionString);
+                // 2. Запускаем наш "тупой" сборщик на чистом "new"
+                _compositionRoot = AvaloniaUiBootstrapper.BuildAvaloniaContainer(currentMode, postgresConnectionString, sqliteConnectionString);
 
-                // 🔥 ШАГ 3 (БЫВШИЙ 4): СНАЧАЛА НАМЕРТВО ИНИЦИАЛИЗИРУЕМ ОКНО!
+                // 🔥 ШАГ 3: НАМЕРТВО ИНИЦИАЛИЗИРУЕМ ОКНО И ДАЁМ ЕМУ ВЬЮМОДЕЛЬ НАПРЯМУЮ!
                 if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
                 {
                     desktop.MainWindow = new Views.MainWindow
                     {
-                        DataContext = _serviceProvider.GetRequiredService<HomeNetPresentation.ViewModels.MainViewModel>()
+                        // Просто забираем MainViewModel из ручного графа! Без всяких GetRequiredService
+                        DataContext = _compositionRoot.GetViewModel<MainViewModel>()
                     };
                 }
 
+                // 🔥 ШАГ 4: БЕЗОПАСНЫЙ ФОНОВЫЙ ПУСК ОБЕИХ СУБД И СИНХРОНИЗАТОРА!
+                // Поскольку AppCompositionRoot при вызове Initialize() сам запускает фоновую таску 
+                // прогрева DbContextContainer и SyncCoordinator, нам здесь даже писать ничего не нужно!
+                // Но для логирования старта оставим простое уведомление:
 
-                // 🔥 ШАГ 4: БЕЗОПАСНЫЙ ФОНОВЫЙ ПУСК ОБЕИХ СУБД ОДНОВРЕМЕННО!
-                // 🔥 ШАГ 4: БЕЗОПАСНЫЙ ФОНОВЫЙ ПРОГРЕВ И СИНХРОНИЗАЦИЯ СУБД ОДНОВРЕМЕННО!
                 if (currentMode == BackendMode.Real)
                 {
-                    // Берём наш Хаб и Координатор строго по интерфейсам из DI
-                    var dbCore = _serviceProvider.GetRequiredService<IDbContextContainer>();
-                    var syncCoordinator = _serviceProvider.GetRequiredService<ISiberNetSyncCoordinator>();
-
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            // Поскольку AppBootstrapper.Build уже пнул инициализацию баз на старте,
-                            // мы просто дожидаемся завершения прогрева каналов и запускаем координатор репликации!
-                            await dbCore.InitializeAllDatabasesAsync();
-                            await syncCoordinator.StartAsync();
-
-                            var logger = _serviceProvider.GetRequiredService<HomeNetCore.Interfaces.Diagnostics.ILogger>();
-                            logger.LogInfo("[App Старт] Двуствольный запуск СУБД и координатора репликации SiberNet успешно выполнен. Прогреваем вьюмодели...");
-
-                            // Мягко прогреваем ленивые вьюшки админки
-                            _ = _serviceProvider.GetRequiredService<TableUsersViewModel>();
-                            _ = _serviceProvider.GetRequiredService<DeleteUsersViewModel>();
-                        }
-                        catch (Exception ex)
-                        {
-                            var logger = _serviceProvider.GetRequiredService<HomeNetCore.Interfaces.Diagnostics.ILogger>();
-                            logger.LogError($"[КРИТИЧЕСКИЙ КРАШ ПРИ ПАРАЛЛЕЛЬНОМ СТАРТЕ БАЗ И СИНХРОНИЗАЦИИ]: {ex.Message}");
-                        }
-                    });
+                    _compositionRoot.Logger.LogInfo("[App Старт] Двуствольный запуск СУБД движков и координатора репликации успешно запущен в фоне.");
                 }
-
-
-
-
             }
             catch (Exception ex)
             {
@@ -90,12 +62,9 @@ namespace HomeNetAvalonia
                 {
                     desktop.Shutdown();
                 }
-            } 
-            
-           
+            }
 
             base.OnFrameworkInitializationCompleted();
         }
-
     }
 }
