@@ -1,4 +1,4 @@
-﻿namespace HomeNetOrm.Sinc
+﻿namespace HomeNetOrm.Interfaces.Sinc
 {
     using System;
     using System.Threading.Tasks;

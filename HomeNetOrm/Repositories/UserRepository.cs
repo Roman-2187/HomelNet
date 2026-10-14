@@ -5,7 +5,7 @@ using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Models;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetOrm.Interfaces.Generators;
-using HomeNetOrm.Sinc;
+using HomeNetOrm.Interfaces.Sinc;
 using System.Data.Common;
 
 namespace HomeNetOrm.Repositories
