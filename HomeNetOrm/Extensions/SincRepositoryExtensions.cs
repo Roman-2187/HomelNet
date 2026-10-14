@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using HomeNetCore.Interfaces.Repositories;
+using HomeNetCore.Models;
 using HomeNetOrm.Interfaces.Generators;
 using System.Data.Common;
 
@@ -66,8 +67,10 @@ namespace HomeNetOrm.Extensions
             return pulledCount;
         }
 
+
         /// <summary>
         /// Универсальный PUSH: Находит оффлайн-изменения и возвращает количество выгруженных строк.
+        /// Полностью защищен от конфликтов типов boolean/integer на стыке СУБД! 🦾
         /// </summary>
         public static async Task<int> PushTableAsync<TEntity>(
             this DbConnection sqlite,
@@ -86,14 +89,36 @@ namespace HomeNetOrm.Extensions
             foreach (var record in localUnsynced)
             {
                 await _pgDbLock.WaitAsync();
+
+                // В зависимости от СУБД, Dapper может некорректно маппить bool свойства.
+                // Если мы пушим сообщение (MessageEntity), подменяем параметры на безопасные
+                object pgParameters = record;
+                if (record is MessageEntity msg)
+                {
+                    // 🔥 КРОСС-ПЛАТФОРМЕННЫЙ ХАК: Явно передаем значения, чтобы Postgres понимала их как boolean/integer без конфликтов
+                    pgParameters = new
+                    {
+                        msg.Id,
+                        msg.SenderId,
+                        msg.ReceiverId,
+                        msg.Text,
+                        msg.MediaType,
+                        IsRead = msg.IsRead,
+                        msg.CreatedAt,
+                        IsSynced = true, // На сервер улетает уже синхронизированным
+                        msg.UpdatedAt
+                    };
+                }
+
                 using var transaction = pg.BeginTransaction();
                 try
                 {
                     var count = await pg.ExecuteScalarAsync<int>(checkPgSql, new { id = record.Id }, transaction);
                     if (count == 0)
                     {
-                        await pg.ExecuteAsync(insertPgSql, record, transaction);
-                        pushedCount++; // Считаем успешный пуш
+                        // Сюда скармливаем наши безопасные параметры pgParameters
+                        await pg.ExecuteAsync(insertPgSql, pgParameters, transaction);
+                        pushedCount++;
                     }
 
                     await sqlite.ExecuteAsync(updateSql, new { id = record.Id });

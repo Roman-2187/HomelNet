@@ -1,18 +1,25 @@
 ﻿using HomeNetCore.Models;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace HomeNetCore.Interfaces.Repositories
 {
     public interface IMessageRepository
     {
         Task<bool> SaveMessageAsync(MessageEntity message);
-        Task<IEnumerable<MessageEntity>> GetChatHistoryAsync(int senderId, int receiverId);
-        Task<bool> MarkAsReadAsync(int senderId, int receiverId);
 
-        // 🔥 ТОТ САМЫЙ МЕТОД: Посчитать непрочитанные от конкретного собеседника текущему юзеру
-        Task<int> GetUnreadCountAsync(int currentUserId, int senderId);
+        // 🎯 ТЕПЕРЬ НА GUID: Идеально для распределенной синхронизации
+        Task<IEnumerable<MessageEntity>> GetChatHistoryAsync(Guid senderId, Guid receiverId);
 
-        Task<bool> RemoveMessageByIdAsync(int id);
-        Task<bool> ClearChatHistoryAsync(int senderId, int receiverId);
+        Task<bool> MarkAsReadAsync(Guid senderId, Guid receiverId);
 
+        // Посчитать непрочитанные от конкретного собеседника текущему юзеру
+        Task<int> GetUnreadCountAsync(Guid currentUserId, Guid senderId);
+
+        // Идентификатор самого сообщения тоже переводим на Guid
+        Task<bool> RemoveMessageByIdAsync(Guid id);
+
+        Task<bool> ClearChatHistoryAsync(Guid senderId, Guid receiverId);
     }
 }

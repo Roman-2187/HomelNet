@@ -116,54 +116,57 @@ namespace HomeNetTests
         [Fact]
         public void When_UserSignedIn_Then_UserViewModel_ShouldReceive_MessengerTab()
         {
-            // 1. ARRANGE
+            // 1. ARRANGE (Подготовка окружения)
             var eventBusMock = new Mock<IEventBus>();
             var loggerMock = new Mock<ILogger>();
 
-            Action<IUserVm.UserSignedIn> navigatorSignedInCallback = null;
+            // Коллекция для хранения ВСЕХ подписчиков на событие успешного входа
+            var signedInCallbacks = new List<Action<IUserVm.UserSignedIn>>();
             Action<IUserVm.ClientTabChanged> userVmTabChangedCallback = null;
 
-            // Перехватываем подписку навигатора
+            // Универсальный перехватчик подписок на UserSignedIn. 
+            // Каждый раз, когда кто-то (Навигатор или ЮзерВМ) вызывает Subscribe, мы добавляем его колбэк в список.
             eventBusMock
                 .Setup(bus => bus.Subscribe(It.IsAny<Action<IUserVm.UserSignedIn>>()))
-                .Callback<Action<IUserVm.UserSignedIn>>(action => navigatorSignedInCallback = action);
+                .Callback<Action<IUserVm.UserSignedIn>>(action => signedInCallbacks.Add(action));
 
-            // Перехватываем подписку UserViewModel
+            // Перехватываем подписку UserViewModel на изменение вкладок
             eventBusMock
                 .Setup(bus => bus.Subscribe(It.IsAny<Action<IUserVm.ClientTabChanged>>()))
                 .Callback<Action<IUserVm.ClientTabChanged>>(action => userVmTabChangedCallback = action);
 
-            // 🔥 ВСЕЯДНЫЙ ПЕРЕХВАТЧИК: Принимает object и object, чтобы переварить MacroZoneChanged и ClientTabChanged подряд
+            // Имитируем работу реальной шины: когда Навигатор публикует ClientTabChanged, 
+            // мок сразу же перенаправляет это событие во Вью-Модель
             eventBusMock
                 .Setup(bus => bus.Publish(It.IsAny<object>(), It.IsAny<object>()))
                 .Callback<object, object>((sender, msg) =>
                 {
-                    // Если в шину летит ClientTabChanged — бережно передаем его во вью-модель
                     if (msg is IUserVm.ClientTabChanged tabChangedMsg)
                     {
                         userVmTabChangedCallback?.Invoke(tabChangedMsg);
                     }
                 });
 
-            // Инициализируем компоненты
+            // Инициализируем компоненты (они внутри себя вызовут Subscribe, и наши списки заполнятся)
             var navigator = new UserNavigationManager(eventBusMock.Object, loggerMock.Object);
             var userViewModel = new UserViewModel(loggerMock.Object, eventBusMock.Object, navigator);
 
-            // Создаем реального юзера
+            // Создаем реальные объекты данных для отправки
             var realUser = new UserEntity();
-
-            // 🔥 ЧИСТЫЙ С# ОБЪЕКТ (БЕЗ Moq) — так как это класс/рекорд. 
-            // Навигатор без проблем прочитает .User и не споткнется на null!
             var realMessage = new IUserVm.UserSignedIn(realUser);
 
-            // 2. ACT
-            // Отправляем реальный рекорд в навигатор
-            navigatorSignedInCallback.Invoke(realMessage);
+            // 2. ACT (Действие)
+            // Имитируем падение события UserSignedIn в шину — оповещаем ВСЕХ зарегистрированных подписчиков
+            foreach (var callback in signedInCallbacks)
+            {
+                callback.Invoke(realMessage);
+            }
 
-            // 3. ASSERT
-            // Теперь цепочка отработает до конца, и вью-модель получит Messenger
+            // 3. ASSERT (Проверка результата)
+            // Теперь Навигатор гарантированно обработал ивент, переключил стейт на Messenger и пнул Вью-Модель!
             Assert.Equal(ClientSubTab.Messenger, userViewModel.ActiveClientTab);
         }
+
 
 
 

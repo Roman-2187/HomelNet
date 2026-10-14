@@ -142,7 +142,7 @@ namespace HomeNetOrm.Infrastructure
         {
             if (msg?.Message == null) return;
 
-            // 🔥 ЗАЩИТА: Блокируем петлю, если сообщение прилетело в SQLite с сервера со статусом IsSynced = 1
+            // Блокируем петлю репликации
             if (msg.Message.IsSynced == 1) return;
 
             string preview = msg.Message.Text != null && msg.Message.Text.Length > 20
@@ -152,8 +152,26 @@ namespace HomeNetOrm.Infrastructure
             _logger.LogInfo($"[СИНХРОНИЗАТОР] Перехвачено событие: Пуш СМС от ID '{msg.Message.SenderId}' -> Текст: \"{preview}\" в PostgreSQL...");
 
             var pgGen = _postgresEngine.GetGenerator<MessageEntity>();
-            ExecuteSyncTask(async (pg) => await pg.ExecuteAsync(pgGen.GenerateInsert(), msg.Message), "Message Insert");
+
+            // 🔥 КРОСС-ПЛАТФОРМЕННЫЙ ХАК: Пересобираем параметры для Postgres.
+            // Явно подсовываем true/false, чтобы Dapper сгенерировал корректный булев тип для сервера!
+            var pgParameters = new
+            {
+                msg.Message.Id,
+                msg.Message.SenderId,
+                msg.Message.ReceiverId,
+                msg.Message.Text,
+                msg.Message.MediaType,
+                IsRead = false,       // Новое сообщение всегда не прочитано (false)
+                msg.Message.CreatedAt,
+                IsSynced = true,      // На сервер оно улетает уже синхронизированным (true)
+                msg.Message.UpdatedAt
+            };
+
+            // Передаем pgParameters вместо msg.Message
+            ExecuteSyncTask(async (pg) => await pg.ExecuteAsync(pgGen.GenerateInsert(), pgParameters), "Message Insert");
         }
+
 
         private void OnMessageUpdated(ISiberNetSyncCoordinator.MessageUpdated msg)
         {

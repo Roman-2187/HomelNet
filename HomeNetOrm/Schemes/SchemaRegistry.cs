@@ -22,7 +22,6 @@ namespace HomeNetOrm.Schemes
             users.AddColumn(u => u.UpdatedAt).IsUpdatedAtTimestamp();
             yield return users.Generate();
 
-
             // 2. ⚡ СХЕМА ТАБЛИЦЫ СООБЩЕНИЙ (messages)
             var messages = new TableBuilder<MessageEntity>("Messages");
             messages.AddColumn(m => m.Id).AsPrimaryKey();
@@ -30,11 +29,18 @@ namespace HomeNetOrm.Schemes
             messages.AddColumn(m => m.ReceiverId).IsRequired().HasForeignKey<UserEntity>();
             messages.AddColumn(m => m.Text).AsText();
             messages.AddColumn(m => m.MediaType).AsText();
-            messages.AddColumn(m => m.IsRead).HasDefault(0, ColumnType.Integer);
+
+            // 🎯 МЕНЯЕМ НА BOOLEAN: По умолчанию false (не прочитано)
+            messages.AddColumn(m => m.IsRead).HasDefault(false, ColumnType.Boolean);
+
             messages.AddColumn(m => m.CreatedAt).IsTrackedTimestamp();
-            messages.AddColumn(m => m.IsSynced).HasDefault(1, ColumnType.Integer);
+
+            // 🎯 МЕНЯЕМ НА BOOLEAN: По умолчанию false (оффлайн-сообщение, требует синхронизации)
+            messages.AddColumn(m => m.IsSynced).HasDefault(false, ColumnType.Boolean);
+
             messages.AddColumn(m => m.UpdatedAt).IsUpdatedAtTimestamp();
             yield return messages.Generate();
+
 
 
             // 3. ⚡ СХЕМА ТАБЛИЦЫ КОНТАКТОВ / ДРУЗЕЙ (friends)

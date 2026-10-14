@@ -26,6 +26,11 @@ namespace HomeNet.DI
         // Стало:
         public UserViewModel UserViewModel => GetViewModelSafe<UserViewModel>();
 
+        // 🔥 ВОТ ЭТОГО НЕ ХВАТАЛО! Добавляем модель списка контактов в локатор
+        public ContactsViewModel ContactsViewModel => GetViewModelSafe<ContactsViewModel>();
+
+        public ChatViewModel ChatViewModel => GetViewModelSafe<ChatViewModel>();
+
 
         public TableUsersViewModel TableUsersViewModel => GetViewModelSafe<TableUsersViewModel>();
         public DeleteUsersViewModel DeleteUsersViewModel => GetViewModelSafe<DeleteUsersViewModel>();

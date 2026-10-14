@@ -1,38 +1,84 @@
-[10/05 20:28:24.417] [INFO] [Builders -> DbContextContainer.SwitchDatabaseAsync:68] | Переключение инфраструктуры СУБД на PostGreSQL...
+[10/13 19:02:24.018] [INFO] [Modules -> CoreInfrastructureModule..ctor:32] | [Инфраструктура] Логгер успешно поднят и настроен.
 
-[10/05 20:28:24.602] [INFO] [DbTableInitializer -> DbInitializer.InitializeAsync:40] | === СТАРТ ИНИЦИАЛИЗАЦИИ БАЗЫ ДАННЫХ ===
+[10/13 19:02:24.081] [ERROR] [ViewModels -> MainViewModel..ctor:21] | === [СИСТЕМА SIBERNET ЗАПУЩЕНА]: ТЕСТ КИБЕРПАНК ЛОГГЕРА ===
 
-[10/05 20:28:24.620] [INFO] [DbTableInitializer -> DbInitializer.InitializeAsync:52] | [БД] Проверка таблицы: users...
+[10/13 19:02:24.084] [INFO] [HomeNetAvalonia -> axaml.OnFrameworkInitializationCompleted:55] | [App Старт] Двуствольный запуск СУБД движков и координатора репликации успешно запущен в фоне.
 
-[10/05 20:28:24.697] [DEBUG] [DbTableInitializer -> DbInitializer.InitializeAsync:62] | [БД] Таблица users существует, сверяю структуру...
+[10/13 19:02:24.085] [INFO] [Infrastructure -> DbContextContainer.InitializeAllDatabasesAsync:25] | === [СУБД ХАБ] ЗАПУСК ПАРАЛЛЕЛЬНОЙ ИНИЦИАЛИЗАЦИИ ДВИЖКОВ ===
 
-[10/05 20:28:24.733] [DEBUG] [DBProviders -> GenericSchemaProvider.ProcessAndValidateSchema:102] | Получено 7 столбцов для таблицы users
+[10/13 19:02:24.093] [INFO] [Base -> DbInitializer.InitializeAsync:52] | === СТАРТ ИНИЦИАЛИЗАЦИИ БАЗЫ ДАННЫХ [SQLite] ===
 
-[10/05 20:28:24.734] [DEBUG] [DBProviders -> GenericSchemaProvider.ProcessAndValidateSchema:121] | Получено имен колонок таблицы users : id, first_name, last_name, phone_number, email, password, created_at
+[10/13 19:02:24.094] [INFO] [Base -> DbInitializer.InitializeAsync:63] | [SQLite] Проверка таблицы: users...
 
-[10/05 20:28:24.736] [INFO] [DbTableInitializer -> DbInitializer.CheckTableStructureAsync:154] |   -> Структура таблицы users в порядке.
+[10/13 19:02:24.124] [DEBUG] [Base -> DbInitializer.InitializeAsync:71] | [SQLite] Таблица users существует, сверяю структуру...
 
-[10/05 20:28:24.737] [INFO] [DbTableInitializer -> DbInitializer.InitializeAsync:52] | [БД] Проверка таблицы: messages...
+[10/13 19:02:24.145] [DEBUG] [Base -> GenericSchemaProvider.ProcessAndValidateSchema:84] | Получено 9 столбцов для таблицы users
 
-[10/05 20:28:24.740] [DEBUG] [DbTableInitializer -> DbInitializer.InitializeAsync:62] | [БД] Таблица messages существует, сверяю структуру...
+[10/13 19:02:24.145] [DEBUG] [Base -> GenericSchemaProvider.ProcessAndValidateSchema:100] | Получено имен колонок таблицы users : id, first_name, last_name, phone_number, email, password, created_at, is_synced, updated_at
 
-[10/05 20:28:24.758] [DEBUG] [DBProviders -> GenericSchemaProvider.ProcessAndValidateSchema:102] | Получено 7 столбцов для таблицы messages
+[10/13 19:02:24.148] [INFO] [Base -> DbInitializer.CheckTableStructureAsync:151] |   -> [SQLite] Структура таблицы users в порядке.
 
-[10/05 20:28:24.759] [DEBUG] [DBProviders -> GenericSchemaProvider.ProcessAndValidateSchema:121] | Получено имен колонок таблицы messages : id, sender_id, receiver_id, text, media_type, is_read, created_at
+[10/13 19:02:24.148] [INFO] [Base -> DbInitializer.InitializeAsync:63] | [SQLite] Проверка таблицы: messages...
 
-[10/05 20:28:24.759] [INFO] [DbTableInitializer -> DbInitializer.CheckTableStructureAsync:154] |   -> Структура таблицы messages в порядке.
+[10/13 19:02:24.149] [DEBUG] [Base -> DbInitializer.InitializeAsync:71] | [SQLite] Таблица messages существует, сверяю структуру...
 
-[10/05 20:28:24.760] [INFO] [DbTableInitializer -> DbInitializer.InitializeAsync:52] | [БД] Проверка таблицы: friends...
+[10/13 19:02:24.150] [DEBUG] [Base -> GenericSchemaProvider.ProcessAndValidateSchema:84] | Получено 9 столбцов для таблицы messages
 
-[10/05 20:28:24.762] [DEBUG] [DbTableInitializer -> DbInitializer.InitializeAsync:62] | [БД] Таблица friends существует, сверяю структуру...
+[10/13 19:02:24.150] [DEBUG] [Base -> GenericSchemaProvider.ProcessAndValidateSchema:100] | Получено имен колонок таблицы messages : id, sender_id, receiver_id, text, media_type, is_read, created_at, is_synced, updated_at
 
-[10/05 20:28:24.768] [DEBUG] [DBProviders -> GenericSchemaProvider.ProcessAndValidateSchema:102] | Получено 3 столбцов для таблицы friends
+[10/13 19:02:24.151] [INFO] [Base -> DbInitializer.CheckTableStructureAsync:151] |   -> [SQLite] Структура таблицы messages в порядке.
 
-[10/05 20:28:24.769] [DEBUG] [DBProviders -> GenericSchemaProvider.ProcessAndValidateSchema:121] | Получено имен колонок таблицы friends : user_id, friend_id, created_at
+[10/13 19:02:24.151] [INFO] [Base -> DbInitializer.InitializeAsync:63] | [SQLite] Проверка таблицы: friends...
 
-[10/05 20:28:24.769] [INFO] [DbTableInitializer -> DbInitializer.CheckTableStructureAsync:154] |   -> Структура таблицы friends в порядке.
+[10/13 19:02:24.152] [DEBUG] [Base -> DbInitializer.InitializeAsync:71] | [SQLite] Таблица friends существует, сверяю структуру...
 
-[10/05 20:28:24.770] [INFO] [DbTableInitializer -> DbInitializer.InitializeAsync:73] | === ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ЗАВЕРШЕНА ===
+[10/13 19:02:24.152] [DEBUG] [Base -> GenericSchemaProvider.ProcessAndValidateSchema:84] | Получено 6 столбцов для таблицы friends
 
-[10/05 20:28:24.772] [INFO] [Builders -> DbContextContainer.SwitchDatabaseAsync:106] | База данных PostGreSQL успешно перестроена и готова к работе.
+[10/13 19:02:24.153] [DEBUG] [Base -> GenericSchemaProvider.ProcessAndValidateSchema:100] | Получено имен колонок таблицы friends : id, user_id, friend_id, created_at, is_synced, updated_at
+
+[10/13 19:02:24.153] [INFO] [Base -> DbInitializer.CheckTableStructureAsync:151] |   -> [SQLite] Структура таблицы friends в порядке.
+
+[10/13 19:02:24.153] [INFO] [Base -> DbInitializer.InitializeAsync:82] | === ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ [SQLite] ЗАВЕРШЕНА ===
+
+[10/13 19:02:24.247] [INFO] [Base -> DbInitializer.InitializeAsync:52] | === СТАРТ ИНИЦИАЛИЗАЦИИ БАЗЫ ДАННЫХ [PostgreSQL] ===
+
+[10/13 19:02:24.248] [INFO] [Base -> DbInitializer.InitializeAsync:63] | [PostgreSQL] Проверка таблицы: users...
+
+[10/13 19:02:24.296] [DEBUG] [Base -> DbInitializer.InitializeAsync:71] | [PostgreSQL] Таблица users существует, сверяю структуру...
+
+[10/13 19:02:24.318] [DEBUG] [Base -> GenericSchemaProvider.ProcessAndValidateSchema:84] | Получено 9 столбцов для таблицы users
+
+[10/13 19:02:24.318] [DEBUG] [Base -> GenericSchemaProvider.ProcessAndValidateSchema:100] | Получено имен колонок таблицы users : id, first_name, last_name, phone_number, email, password, created_at, is_synced, updated_at
+
+[10/13 19:02:24.319] [INFO] [Base -> DbInitializer.CheckTableStructureAsync:151] |   -> [PostgreSQL] Структура таблицы users в порядке.
+
+[10/13 19:02:24.319] [INFO] [Base -> DbInitializer.InitializeAsync:63] | [PostgreSQL] Проверка таблицы: messages...
+
+[10/13 19:02:24.322] [DEBUG] [Base -> DbInitializer.InitializeAsync:71] | [PostgreSQL] Таблица messages существует, сверяю структуру...
+
+[10/13 19:02:24.327] [DEBUG] [Base -> GenericSchemaProvider.ProcessAndValidateSchema:84] | Получено 9 столбцов для таблицы messages
+
+[10/13 19:02:24.327] [DEBUG] [Base -> GenericSchemaProvider.ProcessAndValidateSchema:100] | Получено имен колонок таблицы messages : id, sender_id, receiver_id, text, media_type, is_read, created_at, is_synced, updated_at
+
+[10/13 19:02:24.328] [INFO] [Base -> DbInitializer.CheckTableStructureAsync:151] |   -> [PostgreSQL] Структура таблицы messages в порядке.
+
+[10/13 19:02:24.328] [INFO] [Base -> DbInitializer.InitializeAsync:63] | [PostgreSQL] Проверка таблицы: friends...
+
+[10/13 19:02:24.330] [DEBUG] [Base -> DbInitializer.InitializeAsync:71] | [PostgreSQL] Таблица friends существует, сверяю структуру...
+
+[10/13 19:02:24.335] [DEBUG] [Base -> GenericSchemaProvider.ProcessAndValidateSchema:84] | Получено 6 столбцов для таблицы friends
+
+[10/13 19:02:24.335] [DEBUG] [Base -> GenericSchemaProvider.ProcessAndValidateSchema:100] | Получено имен колонок таблицы friends : id, user_id, friend_id, created_at, is_synced, updated_at
+
+[10/13 19:02:24.336] [INFO] [Base -> DbInitializer.CheckTableStructureAsync:151] |   -> [PostgreSQL] Структура таблицы friends в порядке.
+
+[10/13 19:02:24.336] [INFO] [Base -> DbInitializer.InitializeAsync:82] | === ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ [PostgreSQL] ЗАВЕРШЕНА ===
+
+[10/13 19:02:24.337] [INFO] [Infrastructure -> DbContextContainer.InitializeAllDatabasesAsync:33] | === [СУБД ХАБ] ИНИЦИАЛИЗАЦИЯ ДВИЖКОВ ЗАВЕРШЕНА ===
+
+[10/13 19:02:24.340] [DEBUG] [Identity -> UserService.GetAllAsync:31] | Запрос списка пользователей напрямую из СУБД...
+
+[10/13 19:02:24.347] [INFO] [Infrastructure -> SiberNetSyncCoordinator.StartAsync:66] | === [СИНХРОНИЗАТОР] ЗАПУСК ПАКЕТНОЙ СВЕРКИ ЧЕРЕЗ МЕТОДЫ РАСШИРЕНИЯ ===
+
+[10/13 19:02:24.407] [INFO] [Infrastructure -> SiberNetSyncCoordinator.StartAsync:95] | === [СИНХРОНИЗАТОР] ПАКЕТНАЯ СВЕРКА УСПЕШНО ЗАВЕРШЕНА ===
 

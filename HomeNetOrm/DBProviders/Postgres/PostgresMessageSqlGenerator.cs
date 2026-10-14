@@ -47,12 +47,13 @@ namespace HomeNetOrm.DBProviders.Postgres
                ORDER BY created_at ASC;";
 
         public string GenerateMarkAsRead() =>
-            $@"UPDATE ""{FormattedTable.TableName}"" SET is_read = 1 
-               WHERE sender_id = @SenderId AND receiver_id = @ReceiverId AND is_read = 0;";
+      $@"UPDATE ""{FormattedTable.TableName}"" SET is_read = TRUE 
+       WHERE sender_id = @SenderId AND receiver_id = @ReceiverId AND is_read = FALSE;";
 
         public string GenerateUnreadCount() =>
             $@"SELECT COUNT(*) FROM ""{FormattedTable.TableName}"" 
-               WHERE receiver_id = @CurrentUserId AND sender_id = @SenderId AND is_read = 0;";
+       WHERE receiver_id = @CurrentUserId AND sender_id = @SenderId AND is_read = FALSE;";
+
 
         public string GenerateClearChatHistory() =>
             $@"DELETE FROM ""{FormattedTable.TableName}"" 

@@ -1,9 +1,11 @@
 ﻿using HomeNetOrm.Interfaces.Generators;
+using System;
 
 namespace HomeNetOrm.Extensions
 {
     /// <summary>
     /// 🔥 СПОЙЛЕР ДЛЯ POSTGRESQL: Генерирует запросы синхронизации строго под синтаксис Postgres.
+    /// Реализовано на базе честного типа BOOLEAN для распределенной репликации! 🦾
     /// </summary>
     public static class PostgresSincExtensions
     {
@@ -13,7 +15,9 @@ namespace HomeNetOrm.Extensions
 
             // Берем базовый селект провайдера Postgres (он уже содержит нужные кавычки "")
             string baseSelect = generator.GenerateSelectAll().TrimEnd(';');
-            return $"{baseSelect} WHERE is_synced = 0 OR is_synced = 1;"; // В Postgres булево поле честное
+
+            // 🎯 МЕНЯЕМ НА БУЛЕВУ ЛОГИКУ: В Postgres теперь честное поле boolean, числа уронят синк!
+            return $"{baseSelect} WHERE is_synced = FALSE;";
         }
 
         public static string GenerateUpdateMarkAsSyncedPostgres<T>(this ISqlGenerator<T> generator) where T : class
@@ -26,7 +30,8 @@ namespace HomeNetOrm.Extensions
             string tableName = $"\"{table.TableName}\"";
             string idColumn = $"\"{table.IdColumnName ?? "id"}\"";
 
-            return $"UPDATE {tableName} SET is_synced = 1 WHERE {idColumn} = @id;";
+            // 🎯 МЕНЯЕМ НА TRUE: Выставляем логический флаг успешной синхронизации в Postgres
+            return $"UPDATE {tableName} SET is_synced = TRUE WHERE {idColumn} = @id;";
         }
 
         public static string GenerateCountByIdPostgres<T>(this ISqlGenerator<T> generator) where T : class
@@ -47,7 +52,5 @@ namespace HomeNetOrm.Extensions
             var table = ((dynamic)generator).FormattedTable;
             return $"DELETE FROM \"{table.TableName}\" WHERE \"{table.IdColumnName ?? "id"}\" = @id;";
         }
-
     }
 }
-

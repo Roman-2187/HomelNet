@@ -29,17 +29,53 @@ namespace HomeNetPresentation.ViewModels
 
         private void InitializeBusSubscriptions()
         {
+            // Слушаем изменения таблицы пользователей в БД
             _eventBus.Subscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed);
             _eventBus.Subscribe<IUsersTableVm.Added>(OnUserAdded);
             _eventBus.Subscribe<IDeleteUserVm.Deleted>(OnUserDeleted);
+
+            // 🔥 ЛОВИМ ГЛОБАЛЬНЫЕ ИВЕНТЫ АВТОРИЗАЦИИ НАПРЯМУЮ ИЗ АВТОБУСА
+            _eventBus.Subscribe<IUserVm.UserSignedIn>(OnGlobalUserSignedIn);
+            _eventBus.Subscribe<IUserVm.UserSignedUp>(OnGlobalUserSignedUp);
+        }
+
+
+
+
+        // Переводим отслеживание на ID вошедшего пользователя
+        private Guid? _currentUserId;
+
+        private void OnGlobalUserSignedIn(IUserVm.UserSignedIn msg)
+        {
+            if (msg?.User == null) return;
+
+            // 🎯 Забираем ID юзера прямо из прилетевшего сообщения входа
+            _currentUserId = msg.User.Id;
+            _currentUser = msg.User;
+
+            // Запрашиваем обновление списка у БД
+            _eventBus.Publish(this, new IUsersTableVm.RefreshRequest());
+        }
+
+        private void OnGlobalUserSignedUp(IUserVm.UserSignedUp msg)
+        {
+            if (msg?.User == null) return;
+
+            // 🎯 Забираем ID юзера прямо из прилетевшего сообщения регистрации
+            _currentUserId = msg.User.Id;
+            _currentUser = msg.User;
+
+            _eventBus.Publish(this, new IUsersTableVm.RefreshRequest());
         }
 
         private void OnUsersRefreshed(IUsersTableVm.Refreshed msg)
         {
             if (msg?.Users == null) return;
 
+            // 🎯 Железобетонная фильтрация: исключаем по сохраненному из автобуса ID.
+            // Теперь Иван гарантированно отсекается, даже если запросы в шине перемешались!
             var filtered = msg.Users
-                .Where(u => _currentUser == null || u.Id != _currentUser.Id)
+                .Where(u => _currentUserId == null || u.Id != _currentUserId.Value)
                 .Select(u => {
                     if (u.FirstName == null) u.FirstName = "Пользователь без имени";
                     return u;
@@ -47,6 +83,9 @@ namespace HomeNetPresentation.ViewModels
 
             Friends = new ObservableCollection<UserEntity>(filtered);
         }
+
+
+      
 
         [RelayCommand]
         private void Logout()
@@ -75,7 +114,7 @@ namespace HomeNetPresentation.ViewModels
         {
             if (value != null)
             {
-                // 🔥 ТУТ ПРОСТО ШВЫРЯЕМ НАМЕРЕНИЕ В АВТОБУС! Навигатор сам поймает этот факт.
+                // 🔥 Просто швыряем намерение в автобус, навигатор чата сам поймает этот факт
                 _eventBus.Publish(this, new IContactsVm.FriendSelected(value));
             }
         }
@@ -91,6 +130,10 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Unsubscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed);
             _eventBus.Unsubscribe<IUsersTableVm.Added>(OnUserAdded);
             _eventBus.Unsubscribe<IDeleteUserVm.Deleted>(OnUserDeleted);
+
+            // 🔥 Очищаем подписки на авторизацию при уничтожении вью-модели
+            _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnGlobalUserSignedIn);
+            _eventBus.Unsubscribe<IUserVm.UserSignedUp>(OnGlobalUserSignedUp);
         }
     }
 }

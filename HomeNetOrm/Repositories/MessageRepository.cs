@@ -5,18 +5,21 @@ using HomeNetCore.Models;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetOrm.Sinc;
+using System;
+using System.Collections.Generic;
 using System.Data.Common;
+using System.Threading.Tasks;
 
 namespace HomeNetOrm.Repositories
 {
     /// <summary>
     /// Автономный репозиторий сообщений SiberNet.
-    /// Работает на базе IDbEngine и пушит сигналы репликации в шину ядра.
+    /// Работает строго на базе Guid для обеспечения распределенной репликации! 🦾
     /// </summary>
     public class MessageRepository : IMessageRepository
     {
         private readonly DbConnection _connection;
-        private readonly IMessageSqlGenerator _sqlGenerator; // Вернули специализированный тип!
+        private readonly IMessageSqlGenerator _sqlGenerator;
         private readonly IEventBus _eventBus;
 
         public MessageRepository(IDbEngine dbEngine, IEventBus eventBus)
@@ -26,10 +29,9 @@ namespace HomeNetOrm.Repositories
             _connection = dbEngine.Connection;
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
 
-            // 🔥 Вытаскиваем и кастим к генератору сообщений!
+            // Вытаскиваем специализированный генератор для сообщений
             _sqlGenerator = (IMessageSqlGenerator)dbEngine.GetGenerator<MessageEntity>();
         }
-
 
         public async Task<bool> SaveMessageAsync(MessageEntity message)
         {
@@ -40,21 +42,23 @@ namespace HomeNetOrm.Repositories
 
             try
             {
-                var newId = await _connection.ExecuteScalarAsync<Guid>(sql, message);
-                message.Id = newId;
+                // Заменяем ExecuteScalar на обычный Execute. База просто сохранит твой Guid.NewGuid()
+                await _connection.ExecuteAsync(sql, message);
 
-                // 🔥 Сигналим координатору
+                // Ничего не перезаписываем! Оригинальный Guid остается в message.Id
                 _eventBus.Publish(this, new ISiberNetSyncCoordinator.MessageInserted(message));
 
                 return true;
             }
+
             catch (Exception ex)
             {
                 throw new InvalidOperationException($"Ошибка сохранения сообщения через ОРМ: {ex.Message}");
             }
         }
 
-        public async Task<IEnumerable<MessageEntity>> GetChatHistoryAsync(int senderId, int receiverId)
+        // 🎯 ТЕПЕРЬ НА GUID: История чата
+        public async Task<IEnumerable<MessageEntity>> GetChatHistoryAsync(Guid senderId, Guid receiverId)
         {
             string sql = _sqlGenerator.GenerateSelectChatHistory();
             try
@@ -67,7 +71,8 @@ namespace HomeNetOrm.Repositories
             }
         }
 
-        public async Task<bool> MarkAsReadAsync(int senderId, int receiverId)
+        // 🎯 ТЕПЕРЬ НА GUID: Статус прочтения
+        public async Task<bool> MarkAsReadAsync(Guid senderId, Guid receiverId)
         {
             string sql = _sqlGenerator.GenerateMarkAsRead();
 
@@ -82,7 +87,8 @@ namespace HomeNetOrm.Repositories
             }
         }
 
-        public async Task<int> GetUnreadCountAsync(int currentUserId, int senderId)
+        // 🎯 ТЕПЕРЬ НА GUID: Подсчет непрочитанных
+        public async Task<int> GetUnreadCountAsync(Guid currentUserId, Guid senderId)
         {
             string sql = _sqlGenerator.GenerateUnreadCount();
 
@@ -96,7 +102,8 @@ namespace HomeNetOrm.Repositories
             }
         }
 
-        public async Task<bool> RemoveMessageByIdAsync(int id)
+        // 🎯 ТЕПЕРЬ НА GUID: Удаление сообщения по его UUID
+        public async Task<bool> RemoveMessageByIdAsync(Guid id)
         {
             var message = await _connection.QueryFirstOrDefaultAsync<MessageEntity>(
                 _sqlGenerator.GenerateSelectById(), new { id = id });
@@ -119,12 +126,14 @@ namespace HomeNetOrm.Repositories
             }
         }
 
-        public async Task<bool> ClearChatHistoryAsync(int senderId, int receiverId)
+        // 🎯 ТЕПЕРЬ НА GUID: Полная очистка диалога
+        public async Task<bool> ClearChatHistoryAsync(Guid senderId, Guid receiverId)
         {
             string sql = _sqlGenerator.GenerateClearChatHistory();
 
             try
             {
+                // Запросы возвращают UserEntity, где Id теперь гарантированно Guid
                 var sender = await _connection.QueryFirstOrDefaultAsync<UserEntity>("SELECT id FROM users WHERE id = @id", new { id = senderId });
                 var receiver = await _connection.QueryFirstOrDefaultAsync<UserEntity>("SELECT id FROM users WHERE id = @id", new { id = receiverId });
 

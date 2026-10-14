@@ -2,9 +2,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-            x:Class="HomeNetAvalonia.Controls.UserViewControl"
+             x:Class="HomeNetAvalonia.Controls.UserViewControl"
              xmlns:enums="using:HomeNetCore.Enums.Navigation"
              xmlns:conv="using:HomeNetAvalonia.Converters"
+             xmlns:vm="using:HomeNetPresentation.ViewModels"
              xmlns:di="using:HomeNet.DI" 
              xmlns:controls="using:HomeNetAvalonia.Controls"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
@@ -14,42 +15,97 @@
         <conv:EqualityConverter x:Key="EqualityConverter"/>
     </UserControl.Resources>
 
-    <!-- 🌌 Цепляемся напрямую к глобальному Хабу компонентов -->
-    <Grid DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False"
-          HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <Design.DataContext>
+        <vm:UserViewModel ActiveClientTab="{x:Static enums:ClientSubTab.None}"/>
+    </Design.DataContext>
+
+    <UserControl.Styles>
+        <!-- По умолчанию сетка мессенджера всегда скрыта 🕶️ -->
+        <Style Selector="Grid.chat-zone">
+            <Setter Property="IsVisible" Value="False"/>
+        </Style>
+
+        <!-- Показываем сетку, если стейт переключился на Messenger -->
+        <Style Selector="Grid.chat-zone[Tag={x:Static enums:ClientSubTab.Messenger}]">
+            <Setter Property="IsVisible" Value="True"/>
+        </Style>
+
+        <!-- Показываем сетку, если стейт переключился на Chat -->
+        <Style Selector="Grid.chat-zone[Tag={x:Static enums:ClientSubTab.Chat}]">
+            <Setter Property="IsVisible" Value="True"/>
+        </Style>
+    </UserControl.Styles>
+
+    <!-- 🌌 Корневой Grid оставляем на ComponentHub, чтобы пути биндингов были прозрачными -->
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
         
-        <!-- ============================================================= -->
-        <!-- 🔓 ЗОНА ГОСТЯ: Формы входа и регистрации                      -->
-        <!-- ============================================================= -->
-        
-        <!-- Под-экран А: Форма Входа -->
-        <!-- 🎯 Читаем стейт НАПРЯМУЮ из навигатора шапки! Никакого раздвоения энумов -->
+        <!-- Под-экран А: Форма Входа (явно указываем путь через UserViewModel) -->
         <ContentControl
-            IsVisible="{Binding TitleBarViewModel.CurrentClientTab,
+            IsVisible="{Binding UserViewModel.ActiveClientTab,
             Converter={StaticResource EqualityConverter},
             ConverterParameter={x:Static enums:ClientSubTab.Authentication}}">
             <controls:AuthViewControl HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </ContentControl>
 
         <!-- Под-экран Б: Форма Регистрации -->
-        <!-- 🎯 Читаем стейт НАПРЯМУЮ из навигатора шапки! -->
         <ContentControl
-            IsVisible="{Binding TitleBarViewModel.CurrentClientTab,
+            IsVisible="{Binding UserViewModel.ActiveClientTab,
             Converter={StaticResource EqualityConverter},
             ConverterParameter={x:Static enums:ClientSubTab.Registration}}">
             <controls:RegistrationViewControl HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </ContentControl>
 
+                <!-- ============================================================= -->
+        <!-- 💬 ЗОНА МЕССЕНДЖЕРА И ЧАТА: Монолитное деление экрана         -->
         <!-- ============================================================= -->
-        <!-- 💬 ЗОНА ПОЛЬЗОВАТЕЛЯ: Список контактов                        -->
-        <!-- ============================================================= -->
-        <ContentControl
-            IsVisible="{Binding TitleBarViewModel.CurrentClientTab,
-            Converter={StaticResource EqualityConverter},
-            ConverterParameter={x:Static enums:ClientSubTab.Messenger}}"
-            HorizontalAlignment="Left" VerticalAlignment="Stretch">
-            <controls:ContactsListViewControl/>
-        </ContentControl>
+        <Grid ColumnDefinitions="300, *" 
+              HorizontalAlignment="Stretch" 
+              VerticalAlignment="Stretch">
+            
+            <!-- 🎯 Включаем сетку, если мы в Messenger ИЛИ в Chat -->
+            <Grid.IsVisible>
+                <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                    <Binding Path="UserViewModel.ActiveClientTab" 
+                             Converter="{StaticResource EqualityConverter}" 
+                             ConverterParameter="{x:Static enums:ClientSubTab.Messenger}"/>
+                    <Binding Path="UserViewModel.ActiveClientTab" 
+                             Converter="{StaticResource EqualityConverter}" 
+                             ConverterParameter="{x:Static enums:ClientSubTab.Chat}"/>
+                </MultiBinding>
+            </Grid.IsVisible>
+            
+            <!-- ЛЕВАЯ ЧАСТЬ: Список контактов -->
+            <controls:ContactsListViewControl Grid.Column="0"
+                                              HorizontalAlignment="Stretch" 
+                                              VerticalAlignment="Stretch"/>
+
+            <!-- ПРАВАЯ ЧАСТЬ: Динамическая зона переписки -->
+            <Grid Grid.Column="1">
+                
+                <!-- Блок А: Заглушка, если чат еще не выбран (Стейт = Messenger) -->
+                <Border Background="Transparent"
+                        IsVisible="{Binding UserViewModel.ActiveClientTab,
+                        Converter={StaticResource EqualityConverter},
+                        ConverterParameter={x:Static enums:ClientSubTab.Messenger}}">
+                    <TextBlock Text="🌌 ВЫБЕРИТЕ КОНТАКТ ДЛЯ НАЧАЛА ШИФРОВАНИЯ" 
+                               Foreground="#4400F0FF"
+                               HorizontalAlignment="Center" 
+                               VerticalAlignment="Center"
+                               FontSize="14"
+                               FontWeight="Bold"/>
+                </Border>
+
+                <!-- Блок Б: Настоящий контрол чата (Стейт = Chat) -->
+                <controls:ChatViewControl
+                        IsVisible="{Binding UserViewModel.ActiveClientTab,
+                        Converter={StaticResource EqualityConverter},
+                        ConverterParameter={x:Static enums:ClientSubTab.Chat}}"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"/>
+                
+            </Grid>
+        </Grid>
+
 
     </Grid>
 </UserControl>

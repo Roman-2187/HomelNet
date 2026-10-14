@@ -1,0 +1,109 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:HomeNetPresentation.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="500"
+             x:Class="HomeNetAvalonia.Controls.ChatViewControl"
+             x:DataType="vm:ChatViewModel">
+
+    <!-- 🌌 Глобальный DataContext Хаба для полной автономности контрола -->
+    <ContentControl
+        DataContext="{DynamicResource ComponentHub}"
+        x:CompileBindings="False">
+
+        <!-- 🦾 Автоматически проваливаемся в родную ChatViewModel -->
+        <Grid DataContext="{Binding ChatViewModel}" RowDefinitions="Auto, *, Auto" Margin="5">
+
+            <!-- 🔝 ВЕРХНЯЯ ЧАСТЬ: Шапка текущего чата -->
+            <Border Grid.Row="0" 
+                    Background="#1100F0FF" 
+                    BorderBrush="#00F0FF" 
+                    BorderThickness="1" 
+                    Padding="15,10" 
+                    Margin="0,0,0,5">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <!-- Зеленый неоновый индикатор онлайна -->
+                    <Ellipse Width="10" Height="10" Fill="#00FF66" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding SelectedFriendName, FallbackValue='Загрузка защищенного канала...'}" 
+                               Foreground="#00F0FF" 
+                               FontWeight="Bold"
+                               FontSize="14"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <!-- 💬 СРЕДНЯЯ ЧАСТЬ: Лента сообщений -->
+            <Border Grid.Row="1" 
+                    Background="#22000000" 
+                    BorderBrush="#00F0FF" 
+                    BorderThickness="1" 
+                    Margin="0,0,0,5">
+                
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <!-- Используем ItemsControl, так как кликать по сообщениям не нужно -->
+                    <ItemsControl ItemsSource="{Binding Messages}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <!-- Каждое сообщение заворачиваем в контейнер с отступами -->
+                                <Border Margin="10,5" 
+                                        Padding="10" 
+                                        CornerRadius="4"
+                                        Background="#1500F0FF"
+                                        BorderBrush="#3300F0FF"
+                                        BorderThickness="1"
+                                        HorizontalAlignment="Stretch">
+                                    <Grid RowDefinitions="Auto, Auto">
+                                        <!-- Текст сообщения -->
+                                        <TextBlock Grid.Row="0" 
+                                                   Text="{Binding Text}" 
+                                                   Foreground="#00F0FF" 
+                                                   FontSize="13" 
+                                                   TextWrapping="Wrap"/>
+                                        <!-- Время отправки в углу -->
+                                        <TextBlock Grid.Row="1" 
+                                                   Text="{Binding CreatedAt, StringFormat='{}{0:HH:mm}'}" 
+                                                   Foreground="#5500F0FF" 
+                                                   FontSize="10" 
+                                                   HorizontalAlignment="Right" 
+                                                   Margin="0,3,0,0"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Border>
+
+            <!-- ⌨️ НИЖНЯЯ ЧАСТЬ: Поле ввода и кнопка отправки -->
+           <Grid Grid.Row="2" ColumnDefinitions="*, Auto" ColumnSpacing="5">
+
+                <!-- Неоновое текстовое поле ввода -->
+                <TextBox Grid.Column="0" 
+                         Text="{Binding InputText, Mode=TwoWay}"
+                         PlaceholderText="Введите шифрованное сообщение..."
+                         Foreground="#00F0FF"
+                         Background="#1100F0FF"
+                         BorderBrush="#00F0FF"
+                         BorderThickness="1"
+                         FontSize="13"
+                         VerticalContentAlignment="Center">
+                    <!-- Позволяет отправлять сообщение по нажатию Enter -->
+                    <TextBox.KeyBindings>
+                        <KeyBinding Gesture="Enter" Command="{Binding SendMessageCommand}"/>
+                    </TextBox.KeyBindings>
+                </TextBox>
+
+                <!-- Киберпанк кнопка отправки -->
+                <Button Grid.Column="1" 
+                        Content="ОТПРАВИТЬ" 
+                        Command="{Binding SendMessageCommand}"
+                        Classes="cyber-btn"
+                        Width="100"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"/>
+            </Grid>
+
+        </Grid>
+    </ContentControl>
+</UserControl>

@@ -43,7 +43,7 @@
             <!-- 🎯 Явно биндим IsVisible через TitleBarViewModel.CurrentMainZone -->
             <Border
                 x:Name="UserScreenContainer" 
-                Background="Gray"
+                Background="Transparent"
                 IsVisible="{Binding TitleBarViewModel.CurrentMainZone,
                 Converter={StaticResource EqualityConverter},
                 ConverterParameter={x:Static enums:MainTab.ClientZone}}">
