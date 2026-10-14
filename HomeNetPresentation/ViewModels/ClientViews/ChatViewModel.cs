@@ -17,7 +17,10 @@ namespace HomeNetPresentation.ViewModels
         private readonly IEventBus _eventBus;
         private readonly IMessageService _messageService;
 
-        private Guid _currentUserId;
+      
+
+        [ObservableProperty] private Guid _currentUserId; // Было приватным полем, станет свойством!
+
 
         [ObservableProperty] private string _currentUserName = string.Empty;
         [ObservableProperty] private bool _isChatOpen = false;
@@ -43,21 +46,21 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Subscribe<IContactsVm.FriendSelected>(OnFriendSelected);
 
             // 🔥 ОЧЕНЬ ВАЖНО: Слушаем шину на предмет новых входящих сообщений в реальном времени!
-            // Название ивента подстройте под ваш интерфейс (например, IMessageVm.Received или как у вас в ядре)
+           
             _eventBus.Subscribe<IMessageService.MessageReceived>(OnMessageReceivedInRealTime);
         }
 
         private void OnUserSignedIn(IUserVm.UserSignedIn msg)
         {
             if (msg?.User == null) return;
-            _currentUserId = msg.User.Id;
+            CurrentUserId = msg.User.Id;
             CurrentUserName = msg.User.FirstName ?? "Вы";
         }
 
         private void OnUserSignedUp(IUserVm.UserSignedUp msg)
         {
             if (msg?.User == null) return;
-            _currentUserId = msg.User.Id;
+           CurrentUserId = msg.User.Id;
             CurrentUserName = msg.User.FirstName ?? "Вы";
         }
 
@@ -65,6 +68,8 @@ namespace HomeNetPresentation.ViewModels
         {
             if (msg?.Friend == null) return;
 
+            // Запоминаем ID текущего юзера и выбранного друга
+            CurrentUserId = msg.CurrentUserId;
             SelectedFriendId = msg.Friend.Id;
             SelectedFriendName = msg.Friend.FirstName ?? "Собеседник";
             Messages.Clear();
@@ -72,11 +77,25 @@ namespace HomeNetPresentation.ViewModels
 
             try
             {
-                // 🚀 ЗАГРУЖАЕМ ИСТОРИЮ: Вытаскиваем сообщения из локальной СУБД/сервиса
-                var history = await _messageService.GetPrivateHistoryAsync(_currentUserId, SelectedFriendId.Value);
+                // Вытаскиваем сырые сообщения из базы
+                var history = await _messageService.GetPrivateHistoryAsync(CurrentUserId, SelectedFriendId.Value);
+
+                // Очищаем старый чат
+                Messages.Clear();
+
                 if (history != null)
                 {
-                    Messages = new ObservableCollection<MessageEntity>(history);
+                    var historyList = history.ToList();
+
+                    foreach (var m in historyList)
+                    {
+                        m.IsOutgoing = m.SenderId == CurrentUserId;
+                        Messages.Add(m); // 🎯 Вызов Add заставит UI-поток Avalonia перерисовать конкретный элемент с правильным Tag!
+                    }
+
+
+                    // Только ТЕПЕРЬ, когда вся история размечена, отдаем ее в UI
+                    Messages = new ObservableCollection<MessageEntity>(historyList);
                 }
             }
             catch (Exception ex)
@@ -84,6 +103,9 @@ namespace HomeNetPresentation.ViewModels
                 _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"[ОШИБКА ИСТОРИИ]: {ex.Message}"));
             }
         }
+
+
+
 
         [RelayCommand(CanExecute = nameof(CanSendMessage))]
         private async Task SendMessageAsync()
@@ -94,13 +116,18 @@ namespace HomeNetPresentation.ViewModels
             InputText = string.Empty; // Мгновенно чистим поле ввода в киберпанк-стиле
 
             // Отправляем запрос в сервис
-            var verdict = await _messageService.SendPrivateMessageAsync(_currentUserId, SelectedFriendId.Value, rawText);
+            var verdict = await _messageService.SendPrivateMessageAsync(CurrentUserId, SelectedFriendId.Value, rawText);
+
+          
 
             if (verdict.IsValid && verdict.CreatedMessage != null)
             {
-                // Сообщение улетело и сохранилось — пушим на экран
+                // Новое сообщение, которое отправил ТЫ, всегда является исходящим!
+                verdict.CreatedMessage.IsOutgoing = true;
                 Messages.Add(verdict.CreatedMessage);
             }
+
+
             else
             {
                 // Выводим ошибку в неоновый статусбар приложения
@@ -114,7 +141,7 @@ namespace HomeNetPresentation.ViewModels
 
             // 🔥 ПРОВЕРКА СВЯЗИ: Если новое сообщение пришло от того друга, чей чат сейчас ОТКРЫТ, 
             // и предназначалось именно МНЕ — мгновенно рендерим его на экране
-            if (msg.Message.SenderId == SelectedFriendId && msg.Message.ReceiverId == _currentUserId)
+            if (msg.Message.SenderId == SelectedFriendId && msg.Message.ReceiverId == CurrentUserId)
             {
                 // Avalonia сама обновит ListBox/ItemsControl благодаря ObservableCollection
                 Messages.Add(msg.Message);

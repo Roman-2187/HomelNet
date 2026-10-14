@@ -2,73 +2,65 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:vm="using:HomeNetPresentation.ViewModels"
+              xmlns:vm="using:HomeNetPresentation.ViewModels"
+             xmlns:models="using:HomeNetCore.Models"
              mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="500"
              x:Class="HomeNetAvalonia.Controls.ChatViewControl"
              x:DataType="vm:ChatViewModel">
 
+       <UserControl.Styles>
+        <!-- 🕶️ ЧУЖИЕ СООБЩЕНИЯ (Входящие слева): -->
+        <Style Selector="Border.msg-cloud">
+            <Setter Property="Border.HorizontalAlignment" Value="Left"/>
+            <Setter Property="Border.Background" Value="#1500F0FF"/>
+            <!-- 🎯 ОТСТУП СЛЕВА: Отодвигаем от левого края на 20, а справа оставляем 0 -->
+            <Setter Property="Border.Margin" Value="100,5,0,5"/>
+        </Style>
+
+        <!-- 🎯 ТВОИ СООБЩЕНИЯ (Исходящие справа): -->
+        <Style Selector="Border.msg-cloud[Tag=true]">
+            <Setter Property="Border.HorizontalAlignment" Value="Right"/>
+            <Setter Property="Border.Background" Value="#3300F0FF"/>
+            <!-- 🎯 ОТСТУП СПРАВА: Слева ставим 0, а от правого края отодвигаем на 20 -->
+            <Setter Property="Border.Margin" Value="0,5,100,5"/>
+        </Style>
+    </UserControl.Styles>
+
+
     <!-- 🌌 Глобальный DataContext Хаба для полной автономности контрола -->
-    <ContentControl
-        DataContext="{DynamicResource ComponentHub}"
-        x:CompileBindings="False">
-
-        <!-- 🦾 Автоматически проваливаемся в родную ChatViewModel -->
+    <ContentControl DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False">
         <Grid DataContext="{Binding ChatViewModel}" RowDefinitions="Auto, *, Auto" Margin="5">
-
+            
             <!-- 🔝 ВЕРХНЯЯ ЧАСТЬ: Шапка текущего чата -->
-            <Border Grid.Row="0" 
-                    Background="#1100F0FF" 
-                    BorderBrush="#00F0FF" 
-                    BorderThickness="1" 
-                    Padding="15,10" 
-                    Margin="0,0,0,5">
+            <Border Grid.Row="0" Background="#1100F0FF" BorderBrush="#00F0FF" BorderThickness="1" Padding="15,10" Margin="0,0,0,5">
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                    <!-- Зеленый неоновый индикатор онлайна -->
                     <Ellipse Width="10" Height="10" Fill="#00FF66" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding SelectedFriendName, FallbackValue='Загрузка защищенного канала...'}" 
-                               Foreground="#00F0FF" 
-                               FontWeight="Bold"
-                               FontSize="14"
-                               VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding SelectedFriendName, FallbackValue='Загрузка защищенного канала...'}" Foreground="#00F0FF" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
                 </StackPanel>
             </Border>
 
             <!-- 💬 СРЕДНЯЯ ЧАСТЬ: Лента сообщений -->
-            <Border Grid.Row="1" 
-                    Background="#22000000" 
-                    BorderBrush="#00F0FF" 
-                    BorderThickness="1" 
-                    Margin="0,0,0,5">
-                
+            <Border Grid.Row="1" Background="#22000000" BorderBrush="#00F0FF" BorderThickness="1" Margin="0,0,0,5">
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <!-- Используем ItemsControl, так как кликать по сообщениям не нужно -->
                     <ItemsControl ItemsSource="{Binding Messages}">
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <!-- Каждое сообщение заворачиваем в контейнер с отступами -->
-                                <Border Margin="10,5" 
-                                        Padding="10" 
-                                        CornerRadius="4"
-                                        Background="#1500F0FF"
-                                        BorderBrush="#3300F0FF"
-                                        BorderThickness="1"
-                                        HorizontalAlignment="Stretch">
+                            <DataTemplate x:DataType="models:MessageEntity">
+                                
+                                <!-- 🦾 СВЯЗУЮЩИЙ МОСТ: Прямо пихаем булево свойство в Tag без StringFormat! -->
+                                <Border Classes="msg-cloud" 
+                                        Tag="{Binding IsOutgoing}"
+                                        
+                                        Padding="50,5,50,5" 
+                                        CornerRadius="4" 
+                                        BorderThickness="1" 
+                                        BorderBrush="#3300F0FF" 
+                                        MaxWidth="380">
                                     <Grid RowDefinitions="Auto, Auto">
-                                        <!-- Текст сообщения -->
-                                        <TextBlock Grid.Row="0" 
-                                                   Text="{Binding Text}" 
-                                                   Foreground="#00F0FF" 
-                                                   FontSize="13" 
-                                                   TextWrapping="Wrap"/>
-                                        <!-- Время отправки в углу -->
-                                        <TextBlock Grid.Row="1" 
-                                                   Text="{Binding CreatedAt, StringFormat='{}{0:HH:mm}'}" 
-                                                   Foreground="#5500F0FF" 
-                                                   FontSize="10" 
-                                                   HorizontalAlignment="Right" 
-                                                   Margin="0,3,0,0"/>
+                                        <TextBlock Grid.Row="0" Text="{Binding Text}" Foreground="#00F0FF" FontSize="13" TextWrapping="Wrap"/>
+                                        <TextBlock Grid.Row="1" Text="{Binding FormattedTime, FallbackValue='00:00'}" Foreground="#5500F0FF" FontSize="10" HorizontalAlignment="Right" Margin="0,3,0,0"/>
                                     </Grid>
                                 </Border>
+                                
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
@@ -76,32 +68,13 @@
             </Border>
 
             <!-- ⌨️ НИЖНЯЯ ЧАСТЬ: Поле ввода и кнопка отправки -->
-           <Grid Grid.Row="2" ColumnDefinitions="*, Auto" ColumnSpacing="5">
-
-                <!-- Неоновое текстовое поле ввода -->
-                <TextBox Grid.Column="0" 
-                         Text="{Binding InputText, Mode=TwoWay}"
-                         PlaceholderText="Введите шифрованное сообщение..."
-                         Foreground="#00F0FF"
-                         Background="#1100F0FF"
-                         BorderBrush="#00F0FF"
-                         BorderThickness="1"
-                         FontSize="13"
-                         VerticalContentAlignment="Center">
-                    <!-- Позволяет отправлять сообщение по нажатию Enter -->
+            <Grid Grid.Row="2" ColumnDefinitions="*, Auto" ColumnSpacing="5">
+                <TextBox Grid.Column="0" Text="{Binding InputText, Mode=TwoWay}" PlaceholderText="Введите шифрованное сообщение..." Foreground="#00F0FF" Background="#1100F0FF" BorderBrush="#00F0FF" BorderThickness="1" FontSize="13" VerticalContentAlignment="Center">
                     <TextBox.KeyBindings>
                         <KeyBinding Gesture="Enter" Command="{Binding SendMessageCommand}"/>
                     </TextBox.KeyBindings>
                 </TextBox>
-
-                <!-- Киберпанк кнопка отправки -->
-                <Button Grid.Column="1" 
-                        Content="ОТПРАВИТЬ" 
-                        Command="{Binding SendMessageCommand}"
-                        Classes="cyber-btn"
-                        Width="100"
-                        HorizontalContentAlignment="Center"
-                        VerticalContentAlignment="Center"/>
+                <Button Grid.Column="1" Content="ОТПРАВИТЬ" Command="{Binding SendMessageCommand}" Classes="cyber-btn" Width="100" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
             </Grid>
 
         </Grid>

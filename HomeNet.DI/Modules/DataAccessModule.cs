@@ -54,6 +54,7 @@ namespace HomeNet.DI.Modules
 
         public CompositeSyncCoordinator(ISiberNetSyncCoordinator userSync, ISiberNetSyncCoordinator messageSync)
         {
+            Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
             _userSync = userSync;
             _messageSync = messageSync;
         }

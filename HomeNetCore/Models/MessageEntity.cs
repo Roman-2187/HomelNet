@@ -46,12 +46,12 @@ namespace HomeNetCore.Models
         [ObservableProperty]
         private int _isSynced = 0;
 
-        // --- Хитрые свойства для UI (Вычисляемые на лету) ---
+       
+        [ObservableProperty][NotMapped] private bool _isOutgoing;
 
-        [NotMapped]
-        public bool IsOutgoing => true; // Тут потом сделаешь проверку (SenderId == CurrentUserId)
 
         [NotMapped]
         public string FormattedTime => CreatedAt.ToLocalTime().ToString("HH:mm");
+
     }
 }

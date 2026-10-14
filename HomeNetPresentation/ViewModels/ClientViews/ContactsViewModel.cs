@@ -21,6 +21,12 @@ namespace HomeNetPresentation.ViewModels
         [ObservableProperty] private UserEntity? _selectedFriend;
         [ObservableProperty] private ObservableCollection<UserEntity> _friends = new();
 
+        // 🎯 ДОБАВЛЯЕМ СВОЙСТВО ДЛЯ UI ПЛАШКИ "КТО Я"
+        [ObservableProperty] private string _currentUserName = "Авторизация...";
+
+        // Переводим отслеживание на ID вошедшего пользователя
+        private Guid? _currentUserId;
+
         public ContactsViewModel(IEventBus eventBus)
         {
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
@@ -39,12 +45,6 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Subscribe<IUserVm.UserSignedUp>(OnGlobalUserSignedUp);
         }
 
-
-
-
-        // Переводим отслеживание на ID вошедшего пользователя
-        private Guid? _currentUserId;
-
         private void OnGlobalUserSignedIn(IUserVm.UserSignedIn msg)
         {
             if (msg?.User == null) return;
@@ -52,6 +52,9 @@ namespace HomeNetPresentation.ViewModels
             // 🎯 Забираем ID юзера прямо из прилетевшего сообщения входа
             _currentUserId = msg.User.Id;
             _currentUser = msg.User;
+
+            // 🎯 ЗАПОМИНАЕМ ИМЯ ТЕКУЩЕГО КИБЕР-ЮЗЕРА ДЛЯ ВЕРХНЕЙ ПЛАШКИ
+            CurrentUserName = msg.User.FirstName ?? "Вы";
 
             // Запрашиваем обновление списка у БД
             _eventBus.Publish(this, new IUsersTableVm.RefreshRequest());
@@ -64,6 +67,9 @@ namespace HomeNetPresentation.ViewModels
             // 🎯 Забираем ID юзера прямо из прилетевшего сообщения регистрации
             _currentUserId = msg.User.Id;
             _currentUser = msg.User;
+
+            // 🎯 ЗАПОМИНАЕМ ИМЯ ПРИ РЕГИСТРАЦИИ ДЛЯ ВЕРХНЕЙ ПЛАШКИ
+            CurrentUserName = msg.User.FirstName ?? "Вы";
 
             _eventBus.Publish(this, new IUsersTableVm.RefreshRequest());
         }
@@ -84,13 +90,11 @@ namespace HomeNetPresentation.ViewModels
             Friends = new ObservableCollection<UserEntity>(filtered);
         }
 
-
-      
-
         [RelayCommand]
         private void Logout()
         {
             IsMenuOpen = false;
+            CurrentUserName = "Авторизация...";
             _eventBus.Publish(this, new IUserVm.LogoutClient());
         }
 
@@ -114,14 +118,18 @@ namespace HomeNetPresentation.ViewModels
         {
             if (value != null)
             {
-                // 🔥 Просто швыряем намерение в автобус, навигатор чата сам поймает этот факт
-                _eventBus.Publish(this, new IContactsVm.FriendSelected(value));
+                // 🔥 Передаем и выбранного друга, и СВОЙ СОБСТВЕННЫЙ сохраненный ID!
+                _eventBus.Publish(this, new IContactsVm.FriendSelected(value, _currentUserId ?? Guid.Empty));
             }
         }
 
         public void SetCurrentUser(UserEntity? currentUser)
         {
             _currentUser = currentUser;
+            if (_currentUser != null)
+            {
+                CurrentUserName = _currentUser.FirstName ?? "Вы";
+            }
             _eventBus.Publish(this, new IUsersTableVm.RefreshRequest());
         }
 
