@@ -1,11 +1,11 @@
 ﻿using Dapper;
 using HomeNetCore.Extensions;
+using HomeNetCore.Interfaces; // Для IApiClient
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
+using HomeNetCore.Interfaces.Sinc;
 using HomeNetCore.Models;
-using HomeNetOrm.Extensions;
 using HomeNetOrm.Interfaces.Builders;
-using HomeNetOrm.Interfaces.Sinc;
 using System.Data.Common;
 
 namespace HomeNetOrm.Sinc
@@ -13,9 +13,9 @@ namespace HomeNetOrm.Sinc
     public class UserSynchronizer : BaseSynchronizer<UserEntity>
     {
         public UserSynchronizer(
-            IDbEngine localEngine, IDbEngine remoteEngine,
+            IDbEngine localEngine, IApiClient apiClient, // Меняем тут тип
             IDbContextContainer contextContainer, IEventBus eventBus, ILogger logger)
-            : base(localEngine, remoteEngine, contextContainer, eventBus, logger) { }
+            : base(localEngine, apiClient, contextContainer, eventBus, logger) { }
 
         protected override void SubscribeEvents()
         {
@@ -31,13 +31,10 @@ namespace HomeNetOrm.Sinc
             EventBus.Unsubscribe<ISiberNetSyncCoordinator.UserDeleted>(OnUserDeleted);
         }
 
-        protected override async Task ExecuteTableSyncInternalAsync(DbConnection local, DbConnection remote)
+        protected override async Task ExecuteTableSyncInternalAsync(DbConnection local, IApiClient api)
         {
-            int usersPulled = await local.PullTableAsync(remote, LocalEngine.GetGenerator<UserEntity>(), RemoteEngine.GetGenerator<UserEntity>());
-            if (usersPulled > 0) Logger.LogInfo($"[UserSync] Из сети скачано новых пользователей: {usersPulled}");
-
-            int usersPushed = await local.PushTableAsync(remote, LocalEngine.GetGenerator<UserEntity>(), RemoteEngine.GetGenerator<UserEntity>());
-            if (usersPushed > 0) Logger.LogInfo($"[UserSync] На сервер успешно выгружено оффлайн-пользователей: {usersPushed}");
+            // Пакетную сверку пользователей допишем вместе со сверкой сообщений
+            await Task.CompletedTask;
         }
 
         private void OnUserInserted(ISiberNetSyncCoordinator.UserInserted msg)
@@ -45,27 +42,33 @@ namespace HomeNetOrm.Sinc
             if (msg?.User == null || msg.User.IsSynced == 1) return;
 
             string name = msg.User.FirstName ?? "Без имени";
-            Logger.LogInfo($"[UserSync] Перехвачен пуш профиля '{name}' (ID: {msg.User.Id})");
+            Logger.LogInfo($"[UserSync] Перехвачен пуш профиля '{name}' (ID: {msg.User.Id}). Отправляем в API.");
 
-            var remoteGen = RemoteEngine.GetGenerator<UserEntity>();
-            ExecuteSyncTask(async (remote) => await remote.ExecuteAsync(remoteGen.GenerateInsert(), msg.User), $"User Insert ({name})");
+            // Вместо SQL Insert пушим профиль пользователя в сеть
+            ExecuteSyncTask(async (apiClient) =>
+            {
+                bool success = await apiClient.PushUserAsync(msg.User);
+                if (success)
+                {
+                    // Помечаем локально, что пользователь улетел в облако успешно
+                    using (var localConn = LocalEngine.Connection)
+                    {
+                        if (localConn.State != System.Data.ConnectionState.Open) await localConn.OpenAsync();
+                        await localConn.ExecuteAsync("UPDATE users SET is_synced = 1 WHERE id = @Id", new { msg.User.Id });
+                    }
+                }
+            }, $"User Insert ({name}) via API");
         }
 
         private void OnUserUpdated(ISiberNetSyncCoordinator.UserUpdated msg)
         {
             if (msg?.User == null || msg.User.IsSynced == 1) return;
-
-            string name = msg.User.FirstName ?? "Без имени";
-            var remoteGen = RemoteEngine.GetGenerator<UserEntity>();
-            ExecuteSyncTask(async (remote) => await remote.ExecuteAsync(remoteGen.GenerateUpdate(), msg.User), $"User Update ({name})");
+            Logger.LogInfo($"[UserSync] Перехвачено обновление профиля '{msg.User.FirstName}'");
         }
 
         private void OnUserDeleted(ISiberNetSyncCoordinator.UserDeleted msg)
         {
             Logger.LogWarning($"[UserSync] Перехвачено удаление пользователя с ID '{msg.UserId}'");
-
-            var remoteGen = RemoteEngine.GetGenerator<UserEntity>();
-            ExecuteSyncTask(async (remote) => await remote.ExecuteAsync(remoteGen.GenerateDelete(), new { id = msg.UserId }), "User Delete");
         }
     }
 }

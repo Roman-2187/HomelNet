@@ -1,11 +1,11 @@
 ﻿using Dapper;
 using HomeNetCore.Extensions;
+using HomeNetCore.Interfaces; // Для IApiClient
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
+using HomeNetCore.Interfaces.Sinc;
 using HomeNetCore.Models;
-using HomeNetOrm.Extensions;
 using HomeNetOrm.Interfaces.Builders;
-using HomeNetOrm.Interfaces.Sinc;
 using System.Data.Common;
 
 namespace HomeNetOrm.Sinc
@@ -13,9 +13,9 @@ namespace HomeNetOrm.Sinc
     public class MessageSynchronizer : BaseSynchronizer<MessageEntity>
     {
         public MessageSynchronizer(
-            IDbEngine localEngine, IDbEngine remoteEngine,
+            IDbEngine localEngine, IApiClient apiClient, // Меняем тут тип
             IDbContextContainer contextContainer, IEventBus eventBus, ILogger logger)
-            : base(localEngine, remoteEngine, contextContainer, eventBus, logger) { }
+            : base(localEngine, apiClient, contextContainer, eventBus, logger) { }
 
         protected override void SubscribeEvents()
         {
@@ -31,19 +31,11 @@ namespace HomeNetOrm.Sinc
             EventBus.Unsubscribe<ISiberNetSyncCoordinator.MessageDeleted>(OnMessageDeleted);
         }
 
-        protected override async Task ExecuteTableSyncInternalAsync(DbConnection local, DbConnection remote)
+        protected override async Task ExecuteTableSyncInternalAsync(DbConnection local, IApiClient api)
         {
-            int msgsPulled = await local.PullTableAsync(remote, LocalEngine.GetGenerator<MessageEntity>(), RemoteEngine.GetGenerator<MessageEntity>());
-            int friendsPulled = await local.PullTableAsync(remote, LocalEngine.GetGenerator<FriendEntity>(), RemoteEngine.GetGenerator<FriendEntity>());
-
-            if (msgsPulled > 0) Logger.LogInfo($"[MessageSync] Из сети скачано новых сообщений: {msgsPulled}");
-            if (friendsPulled > 0) Logger.LogInfo($"[MessageSync] Из сети скачано новых контактов: {friendsPulled}");
-
-            int msgsPushed = await local.PushTableAsync(remote, LocalEngine.GetGenerator<MessageEntity>(), RemoteEngine.GetGenerator<MessageEntity>());
-            int friendsPushed = await local.PushTableAsync(remote, LocalEngine.GetGenerator<FriendEntity>(), RemoteEngine.GetGenerator<FriendEntity>());
-
-            if (msgsPushed > 0) Logger.LogInfo($"[MessageSync] На сервер успешно выгружено оффлайн-сообщений: {msgsPushed}");
-            if (friendsPushed > 0) Logger.LogInfo($"[MessageSync] На сервер успешно выгружено оффлайн-контактов: {friendsPushed}");
+            // Пакетную сверку таблиц через HTTP запросы мы допишем чуть позже, 
+            // когда сделаем GET-эндпоинты на сервере для скачивания истории.
+            await Task.CompletedTask;
         }
 
         private void OnMessageInserted(ISiberNetSyncCoordinator.MessageInserted msg)
@@ -56,35 +48,33 @@ namespace HomeNetOrm.Sinc
 
             Logger.LogInfo($"[MessageSync] Перехвачен пуш СМС от ID '{msg.Message.SenderId}' -> Текст: \"{preview}\"");
 
-            var remoteGen = RemoteEngine.GetGenerator<MessageEntity>();
-            var pgParameters = new
+            // Вместо генерации SQL-инсерта просто фигачим объект в API!
+            ExecuteSyncTask(async (apiClient) =>
             {
-                msg.Message.Id,
-                msg.Message.SenderId,
-                msg.Message.ReceiverId,
-                msg.Message.Text,
-                msg.Message.MediaType,
-                IsRead = false,
-                msg.Message.CreatedAt,
-                IsSynced = true,
-                msg.Message.UpdatedAt
-            };
-
-            ExecuteSyncTask(async (remote) => await remote.ExecuteAsync(remoteGen.GenerateInsert(), pgParameters), "Message Insert");
+                bool success = await apiClient.PushMessageAsync(msg.Message);
+                if (success)
+                {
+                    // Проставляем IsSynced = 1 в локальной SQLite, чтобы больше не отправлять
+                    using (var localConn = LocalEngine.Connection)
+                    {
+                        if (localConn.State != System.Data.ConnectionState.Open) await localConn.OpenAsync();
+                        await localConn.ExecuteAsync("UPDATE messages SET is_synced = 1 WHERE id = @Id", new { msg.Message.Id });
+                    }
+                }
+            }, "Message Insert via API");
         }
 
         private void OnMessageUpdated(ISiberNetSyncCoordinator.MessageUpdated msg)
         {
             if (msg?.Message == null || msg.Message.IsSynced == 1) return;
 
-            var remoteGen = RemoteEngine.GetGenerator<MessageEntity>();
-            ExecuteSyncTask(async (remote) => await remote.ExecuteAsync(remoteGen.GenerateUpdate(), msg.Message), "Message Update");
+            // Для прототипа апдейты можно пока пропустить или слать через тот же апи
+            Logger.LogInfo($"[MessageSync] Перехвачено обновление СМС '{msg.Message.Id}'");
         }
 
         private void OnMessageDeleted(ISiberNetSyncCoordinator.MessageDeleted msg)
         {
-            var remoteGen = RemoteEngine.GetGenerator<MessageEntity>();
-            ExecuteSyncTask(async (remote) => await remote.ExecuteAsync(remoteGen.GenerateDelete(), new { id = msg.MessageId }), "Message Delete");
+            Logger.LogWarning($"[MessageSync] Перехвачено удаление СМС с ID '{msg.MessageId}'");
         }
     }
 }

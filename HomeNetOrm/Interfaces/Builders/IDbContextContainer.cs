@@ -3,7 +3,8 @@
     public interface IDbContextContainer
     {
         Task InitializeAllDatabasesAsync();
-        bool IsPostgresAvailable { get; }
+       
+        bool IsServerAvailable { get; }
 
         /// <summary>
         /// Вложенный рекорд сигнала готовности Хаба

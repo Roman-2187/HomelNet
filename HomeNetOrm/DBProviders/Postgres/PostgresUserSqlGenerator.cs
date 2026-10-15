@@ -6,7 +6,7 @@ using HomeNetOrm.Interfaces.Generators;
 
 namespace HomeNetOrm.DBProviders.Postgres
 {
-    public class PostgresUserSqlGenerator : BaseSqlGenerator<UserEntity>, ISyncSqlGenerator<UserEntity> // 🔥 ПОДКЛЮЧИЛИ МОДУЛЬ!
+    public class PostgresUserSqlGenerator : BaseSqlGenerator<UserEntity>, ISyncSqlGenerator<UserEntity> , IUserSqlGenerator// 🔥 ПОДКЛЮЧИЛИ МОДУЛЬ!
     {
         public PostgresUserSqlGenerator(ISchemaAdapter adapter, ILogger logger) : base(adapter, logger) { }
 

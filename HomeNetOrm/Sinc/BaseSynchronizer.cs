@@ -1,24 +1,20 @@
 ﻿using HomeNetCore.Extensions;
+using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
+using HomeNetCore.Interfaces.Sinc;
 using HomeNetOrm.Interfaces.Builders;
-using HomeNetOrm.Interfaces.Sinc;
 using System.Data.Common;
 
 namespace HomeNetOrm.Sinc
 {
-    /// <summary>
-    /// Абстрактный фундамент семейства синхронизаторов SiberNet.
-    /// Работает строго через абстрактные интерфейсы IDbEngine! 🧼
-    /// </summary>
     public abstract class BaseSynchronizer<TEntity> : ISiberNetSyncCoordinator, IDisposable
         where TEntity : class
     {
-       
-
-
         protected readonly IDbEngine LocalEngine;
-        protected readonly IDbEngine RemoteEngine;
+
+        // Вместо IDbEngine RemoteEngine теперь используем наш сетевой контракт
+        protected readonly IApiClient ApiClient;
         protected readonly IDbContextContainer ContextContainer;
         protected readonly IEventBus EventBus;
         protected readonly ILogger Logger;
@@ -27,13 +23,13 @@ namespace HomeNetOrm.Sinc
 
         protected BaseSynchronizer(
             IDbEngine localEngine,
-            IDbEngine remoteEngine,
+            IApiClient apiClient, // Меняем тут тип
             IDbContextContainer contextContainer,
             IEventBus eventBus,
             ILogger logger)
         {
             LocalEngine = localEngine ?? throw new ArgumentNullException(nameof(localEngine));
-            RemoteEngine = remoteEngine ?? throw new ArgumentNullException(nameof(remoteEngine));
+            ApiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
             ContextContainer = contextContainer ?? throw new ArgumentNullException(nameof(contextContainer));
             EventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -41,75 +37,54 @@ namespace HomeNetOrm.Sinc
             SubscribeEvents();
         }
 
-        /// <summary>
-        /// Каждый дочерний синхронизатор сам решает, на какие именно рекорды шины ему подписываться
-        /// </summary>
         protected abstract void SubscribeEvents();
         protected abstract void UnsubscribeEvents();
-        protected abstract Task ExecuteTableSyncInternalAsync(DbConnection local, DbConnection remote);
+
+        // Метод сверки теперь принимает локальное подключение и клиент API
+        protected abstract Task ExecuteTableSyncInternalAsync(DbConnection local, IApiClient api);
 
         public async Task StartAsync()
         {
             if (_isInitialSyncExecuted) return;
             _isInitialSyncExecuted = true;
 
-            if (!ContextContainer.IsPostgresAvailable)
+            // Здесь проверяешь доступность веб-сервера через ContextContainer
+            if (!ContextContainer.IsServerAvailable)
             {
-                Logger.LogWarning($"[{GetType().Name}] Центральный сервер недоступен. Пакетная сверка пропущена.");
+                Logger.LogWarning($"[{GetType().Name}] Центральный сервер API недоступен. Пакетная сверка пропущена.");
                 return;
             }
 
-            // 🎯 ШАГ 1: Ставим семафор в САМУЮ ПЕРВУЮ СТРОКУ метода!
-            // Ни один поток не сдвинется дальше этой точки, пока первый полностью не выйдет!
-            await PostgresSyncLock.Instance.WaitAsync();
-
             try
             {
-                // 🎯 ШАГ 2: Только ПОСЛЕ захвата семафора безопасно пишем лог и трогаем подключения
-                Logger.LogInfo($"=== [{GetType().Name}] ЗАПУСК ПАКЕТНОЙ СВЕРКИ СУБД ===");
+                Logger.LogInfo($"=== [{GetType().Name}] ЗАПУСК ПАКЕТНОЙ СВЕРКИ ЧЕРЕЗ API ===");
 
                 var localConn = LocalEngine.Connection;
-                var remoteConn = RemoteEngine.Connection;
-
                 if (localConn.State != System.Data.ConnectionState.Open) await localConn.OpenAsync();
-                if (remoteConn.State != System.Data.ConnectionState.Open) await remoteConn.OpenAsync();
 
-                await ExecuteTableSyncInternalAsync(localConn, remoteConn);
+                // Запускаем сверку, отдавая SQLite и HTTP клиент
+                await ExecuteTableSyncInternalAsync(localConn, ApiClient);
 
-                Logger.LogInfo($"=== [{GetType().Name}] ПАКЕТНАЯ СВЕРКА УСПЕШНО ЗАВЕРШЕНА ===");
+                Logger.LogInfo($"=== [{GetType().Name}] ПАКЕТНАЯ СВЕРКА ЧЕРЕЗ API ЗАВЕРШЕНА ===");
             }
             catch (Exception ex)
             {
                 Logger.LogError($"[{GetType().Name}] Катастрофа пакетной синхронизации: {ex.Message}");
             }
-            finally
-            {
-                // 🎯 ШАГ 3: Железобетонно освобождаем турникет для следующего класса
-                PostgresSyncLock.Instance.Release();
-            }
         }
 
-
-        protected void ExecuteSyncTask(Func<DbConnection, Task> syncAction, string operationName)
+        // Метод фоновой отправки одиночных записей (при перехвате событий из шины)
+        protected void ExecuteSyncTask(Func<IApiClient, Task> syncAction, string operationName)
         {
-            if (!ContextContainer.IsPostgresAvailable) return;
-
             Task.Run(async () =>
             {
-                await PostgresSyncLock.Instance.WaitAsync();
                 try
                 {
-                    var remoteConn = RemoteEngine.Connection;
-                    if (remoteConn.State != System.Data.ConnectionState.Open) await remoteConn.OpenAsync();
-                    await syncAction(remoteConn);
+                    await syncAction(ApiClient);
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogError($"[{GetType().Name}] Сбой операции '{operationName}' при репликации: {ex.Message}");
-                }
-                finally
-                {
-                    PostgresSyncLock.Instance.Release();
+                    Logger.LogError($"[{GetType().Name}] Сбой операции '{operationName}' при отправке в API: {ex.Message}");
                 }
             });
         }
@@ -117,17 +92,6 @@ namespace HomeNetOrm.Sinc
         public virtual void Dispose()
         {
             UnsubscribeEvents();
-            PostgresSyncLock.Instance.Dispose();
         }
-    }
-
-
-    /// <summary>
-    /// Единый глобальный турникет для всех потоков репликации СУБД.
-    /// Защищает общий провод DbConnection от параллельных запросов! 🦾
-    /// </summary>
-    public static class PostgresSyncLock
-    {
-        public static readonly SemaphoreSlim Instance = new SemaphoreSlim(1, 1);
     }
 }

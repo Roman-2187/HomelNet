@@ -23,15 +23,19 @@
                 <ColumnDefinition Width="9"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="50"/>   <!-- Row 0: Новая изолированная шапка (50px) -->
-                <RowDefinition Height="*"/>    <!-- Row 1: Свободная центральная зона контента -->
-                <RowDefinition Height="Auto"/> <!-- Row 2: Статус-бар в самом низу -->
+                <RowDefinition Height="50"/>
+                <!-- Row 1: Свободная центральная зона контента -->
+                <RowDefinition Height="*"/> 
+                <!-- Row 2: Статус-бар в самом низу -->
+                <RowDefinition Height="Auto"/>
+               
             </Grid.RowDefinitions>
 
-            <!-- ================================================================================= -->
+            <!-- ========================================= -->
             <!-- 👑 ВЕРХНЯЯ ШАПКА ПРИЛОЖЕНИЯ (Ряд 0) -->
-            <!-- ================================================================================= -->
-            <!-- Накатываем беспроводной перетаскиватель окон behaviors:WindowDragBehavior.EnableDrag="True" -->
+            <!-- ========================================= -->
+            <!-- Накатываем беспроводной перетаскиватель окон ,
+            behaviors:WindowDragBehavior.EnableDrag="True" -->
             <Grid Grid.Row="0" Grid.ColumnSpan="2"  
                   behaviors:WindowDragBehavior.EnableDrag="True">
                 
@@ -54,7 +58,8 @@
                     FontWeight="Bold"
                     FontSize="12"/>
 
-                <!-- КНОПКИ АВТОРИЗАЦИИ (В центре шапки, прижаты вправо внутри своего контрола) -->
+                <!-- КНОПКИ АВТОРИЗАЦИИ (В центре шапки,
+                прижаты вправо внутри своего контрола) -->
                 <controls:TitleBarControl
                     Grid.Column="1" 
                     HorizontalAlignment="Stretch" 
@@ -67,23 +72,31 @@
                     Margin="10,0,15,0"/>
             </Grid>
 
-            <!-- ================================================================================= -->
+            <!-- ================================================ -->
             <!-- 🌌 ЦЕНТРАЛЬНЫЙ ВЫДЕЛЕННЫЙ КОНТРОЛ ХОЛСТА (Ряд 1) -->
-            <!-- ================================================================================= -->
-            <!-- Изолированная зона, где формы регистрации будут открываться во весь рост -->
+            <!-- ================================================ -->
+            <!-- Изолированная зона, 
+            где формы регистрации будут открываться во весь рост -->
             <controls:MainContentZoneControl 
-                Grid.Row="1" Grid.ColumnSpan="2" Margin="0,0,5,0"
+                Grid.Row="1"
+                Grid.ColumnSpan="2" Margin="0,0,5,0"
                 HorizontalAlignment="Stretch" 
                 VerticalAlignment="Stretch"/>
 
-<!-- ================================================================================= -->
+<!-- ============================================================ -->
 <!-- 📡 СТАТУС-БАР ПРИЛОЖЕНИЯ (Ряд 2) -->
-<!-- ================================================================================= -->
-<Border Grid.Row="2" Background="Transparent" Grid.ColumnSpan="2">
-    <!-- 🟢 ИСПРАВЛЕНО: Добавили x:CompileBindings="False", чтобы компилятор не ругался на отсутствие DataType -->
-    <controls:StatusBarControl Height="40" 
-                               x:CompileBindings="False"
-                               DataContext="{Binding Source={StaticResource ComponentHub}, Path=StatusBarViewModel}"/>
+<!-- ============================================================ -->
+<Border
+    Grid.Row="2"
+    Background="Transparent"
+    Grid.ColumnSpan="2">
+ 
+
+    <controls:StatusBarControl
+        Height="40" 
+        x:CompileBindings="False"
+        DataContext="{Binding Source={StaticResource ComponentHub},
+        Path=StatusBarViewModel}"/>
 </Border>
 
 

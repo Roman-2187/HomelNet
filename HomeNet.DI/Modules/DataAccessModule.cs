@@ -1,52 +1,65 @@
-﻿using HomeNetCore.Interfaces;
+﻿using HomeNet.Network;              
+using HomeNet.Network.HomeNet.Network;
+using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
+using HomeNetCore.Interfaces.Network; 
 using HomeNetCore.Interfaces.Repositories;
+using HomeNetCore.Interfaces.Sinc;
 using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Interfaces.Builders;
-using HomeNetOrm.Interfaces.Sinc;
 using HomeNetOrm.Repositories;
 using HomeNetOrm.Sinc;
+
 
 namespace HomeNet.DI.Modules
 {
     public class DataAccessModule
     {
         public IDbEngine SqliteEngine { get; }
-        public IDbEngine PostgresEngine { get; }
+        public IApiClient ApiClient { get; }
         public IDbContextContainer DbContextContainer { get; }
         public IUserRepository UserRepository { get; }
         public IMessageRepository MessageRepository { get; }
         public IFriendRepository FriendRepository { get; }
-
-        // Оставляем общий интерфейс координирования для AppCompositionRoot
         public ISiberNetSyncCoordinator SyncCoordinator { get; }
 
-        public DataAccessModule(string sqliteConn, string postgresConn, ILogger logger, IEventBus eventBus)
-        {
-            // 1. Создаем реальные экземпляры наших движков
-            SqliteEngine = new SqliteDbEngine(sqliteConn, logger);
-            PostgresEngine = new PostgresDbEngine(postgresConn, logger);
+        // Теперь здесь лежит наш чистый, универсальный слушатель из HomeNet.Network
+        public SignalRNotificationListener NotificationListener { get; }
 
-            DbContextContainer = new DbContextContainer(SqliteEngine, PostgresEngine, eventBus, logger);
+        public DataAccessModule(string sqliteConn, string apiBaseUrl, ILogger logger, IEventBus eventBus)
+        {
+            // 1. Инициализируем локальный движок
+            SqliteEngine = new SqliteDbEngine(sqliteConn, logger);
+
+            // 2. Инициализируем сетевой HttpClient
+            ApiClient = new HttpApiClient(apiBaseUrl, logger);
+
+            // 3. ФИКС: Скармливаем контейнеру новые абстрактные параметры
+            DbContextContainer = new DbContextContainer(SqliteEngine, apiBaseUrl, eventBus, logger);
 
             UserRepository = new UserRepository(SqliteEngine, eventBus);
             MessageRepository = new MessageRepository(SqliteEngine, eventBus);
             FriendRepository = new FriendRepository(SqliteEngine, eventBus);
 
-            // 2. ⚡ РЕФАКТОРИНГ СБОРКИ: Собираем композит под-синхронизаторов!
-            // Передаем SqliteEngine как локальный источник, а PostgresEngine как удаленный сервер!
-            var userSync = new UserSynchronizer(SqliteEngine, PostgresEngine, DbContextContainer, eventBus, logger);
-            var messageSync = new MessageSynchronizer(SqliteEngine, PostgresEngine, DbContextContainer, eventBus, logger);
+            // 4. Передаем ApiClient в синхронизаторы
+            var userSync = new UserSynchronizer(SqliteEngine, ApiClient, DbContextContainer, eventBus, logger);
+            var messageSync = new MessageSynchronizer(SqliteEngine, ApiClient, DbContextContainer, eventBus, logger);
 
-            // Обертка-композит, которая просто запустит StartAsync() для обоих наследников
             SyncCoordinator = new CompositeSyncCoordinator(userSync, messageSync);
+
+            // 5. ФИКС: Собираем типизированные сетевые обработчики по SOLID
+            var networkHandlers = new INetworkHandler[]
+            {
+                new MessageNetworkHandler(eventBus),
+                new UserNetworkHandler(eventBus)
+            };
+
+            // 6. ФИКС: Собираем универсальный листенер без жесткой привязки к СУБД
+            NotificationListener = new SignalRNotificationListener(apiBaseUrl, networkHandlers, logger);
         }
     }
 
-    /// <summary>
-    /// Легковесный композит-фасад, чтобы не ломать сигнатуры запуска в AppCompositionRoot
-    /// </summary>
     public class CompositeSyncCoordinator : ISiberNetSyncCoordinator
     {
         private readonly ISiberNetSyncCoordinator _userSync;
@@ -61,7 +74,6 @@ namespace HomeNet.DI.Modules
 
         public async Task StartAsync()
         {
-            // Запускаем пакетные сверки параллельно!
             await Task.WhenAll(_userSync.StartAsync(), _messageSync.StartAsync());
         }
     }

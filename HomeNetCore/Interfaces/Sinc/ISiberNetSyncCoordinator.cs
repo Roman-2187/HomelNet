@@ -1,8 +1,10 @@
-﻿namespace HomeNetOrm.Interfaces.Sinc
+﻿ using System;
+ using System.Threading.Tasks;
+ using HomeNetCore.Models;
+
+namespace HomeNetCore.Interfaces.Sinc
 {
-    using System;
-    using System.Threading.Tasks;
-    using HomeNetCore.Models;
+   
 
     /// <summary>
     /// Контракт управления фоновой и реалтайм синхронизацией между SQLite и PostgreSQL.

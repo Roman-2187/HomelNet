@@ -30,10 +30,20 @@ namespace HomeNetAvalonia
                 // 1. Находим пути к базам
                 string dbPath = DatabasePathHelper.GetDatabasePath("home_net.db");
                 string sqliteConnectionString = $"Data Source={dbPath}";
-                string postgresConnectionString = "Server=127.0.0.1:5432;Database=home_net_db;User Id=postgres;Password=05011987;";
+
+                // СТАЛО: Передаем сетевой адрес нашего ASP.NET Core API сервера
+                string apiBaseUrl = "http://localhost:5210"; // <--- Ставим порт 5210 вместо 5000!
+
 
                 // 2. Запускаем наш "тупой" сборщик на чистом "new"
-                _compositionRoot = AvaloniaUiBootstrapper.BuildAvaloniaContainer(currentMode, postgresConnectionString, sqliteConnectionString);
+                _compositionRoot = AvaloniaUiBootstrapper.BuildAvaloniaContainer(currentMode, apiBaseUrl, sqliteConnectionString);
+
+
+                // 2. Запускаем наш "тупой" сборщик на чистом "new"
+                _compositionRoot = AvaloniaUiBootstrapper.BuildAvaloniaContainer(currentMode, apiBaseUrl, sqliteConnectionString);
+
+
+
 
                 // 🔥 ШАГ 3: НАМЕРТВО ИНИЦИАЛИЗИРУЕМ ОКНО И ДАЁМ ЕМУ ВЬЮМОДЕЛЬ НАПРЯМУЮ!
                 if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)

@@ -4,11 +4,8 @@ using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Models;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Interfaces.Builders;
-using System;
-using System.Collections.Generic;
 using System.Data.Common;
-using System.Threading.Tasks;
-using HomeNetOrm.Interfaces.Sinc;
+using HomeNetCore.Interfaces.Sinc;
 
 namespace HomeNetOrm.Repositories
 {

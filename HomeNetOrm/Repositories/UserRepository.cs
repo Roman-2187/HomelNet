@@ -2,10 +2,10 @@
 using HomeNetCore.Exeptions;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Events;
+using HomeNetCore.Interfaces.Sinc;
 using HomeNetCore.Models;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetOrm.Interfaces.Generators;
-using HomeNetOrm.Interfaces.Sinc;
 using System.Data.Common;
 
 namespace HomeNetOrm.Repositories
