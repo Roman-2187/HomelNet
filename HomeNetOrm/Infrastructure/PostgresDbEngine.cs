@@ -1,10 +1,11 @@
-﻿using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Models;
+﻿using HomeNetCore.Interfaces;
+using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetCore.Interfaces.Repositories;
 using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.DBProviders.Postgres;
 using HomeNetOrm.DbTableInitializer;
-using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Interfaces.Builders;
+using HomeNetOrm.Repositories; 
 using System.Data.Common;
 
 namespace HomeNetOrm.Infrastructure
@@ -13,7 +14,7 @@ namespace HomeNetOrm.Infrastructure
     {
         private readonly Npgsql.NpgsqlConnection _connection;
         private readonly ILogger _logger;
-        private readonly Dictionary<Type, object> _generators = new();
+        private readonly GenericSchemaAdapter _postgresAdapter;
 
         public DbConnection Connection => _connection;
 
@@ -22,13 +23,21 @@ namespace HomeNetOrm.Infrastructure
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _connection = new Npgsql.NpgsqlConnection(connectionString);
 
-            // Настраиваем Postgres диалект внутри движка
             var postgresSpec = new PostgresProviderSpecification();
-            var postgresAdapter = new GenericSchemaAdapter(postgresSpec);
+            _postgresAdapter = new GenericSchemaAdapter(postgresSpec);
+        }
 
-            _generators[typeof(UserEntity)] = new PostgresUserSqlGenerator(postgresAdapter,logger);
-            _generators[typeof(MessageEntity)] = new PostgresMessageSqlGenerator(postgresAdapter, logger);
-            _generators[typeof(FriendEntity)] = new PostgresFriendSqlGenerator(postgresAdapter, logger);
+        // 🔥 ФАБРИКА ДЛЯ СЕРВЕРА: Создает репозитории без автобуса событий (вызовется конструктор №2)
+        public IUserRepository CreateUserRepository()
+        {
+            var generator = new PostgresUserSqlGenerator(_postgresAdapter, _logger);
+            return new UserRepository(_connection, generator);
+        }
+
+        public IMessageRepository CreateMessageRepository()
+        {
+            var generator = new PostgresMessageSqlGenerator(_postgresAdapter, _logger);
+            return new MessageRepository(_connection, generator);
         }
 
         public async Task InitializeChannelAsync()
@@ -39,21 +48,11 @@ namespace HomeNetOrm.Infrastructure
             }
 
             var postgresSpec = new PostgresProviderSpecification();
-            var postgresAdapter = new GenericSchemaAdapter(postgresSpec);
-            var postgresSchemaInit = new PostgresSchemaInitializer(postgresAdapter, _logger);
+            var postgresSchemaInit = new PostgresSchemaInitializer(_postgresAdapter, _logger);
             var postgresProvider = new GenericSchemaProvider(postgresSchemaInit, _connection, postgresSpec, _logger);
 
-            var tableInitializer = new DBInitializer(_connection, postgresProvider, postgresAdapter, postgresSchemaInit, _logger);
+            var tableInitializer = new DBInitializer(_connection, postgresProvider, _postgresAdapter, postgresSchemaInit, _logger);
             await tableInitializer.InitializeAsync();
-        }
-
-        public ISqlGenerator<T> GetGenerator<T>() where T : class
-        {
-            if (_generators.TryGetValue(typeof(T), out var gen))
-                return (ISqlGenerator<T>)gen;
-
-            throw new KeyNotFoundException($"Postgres генератор для {typeof(T).Name} не найден.");
         }
     }
 }
-

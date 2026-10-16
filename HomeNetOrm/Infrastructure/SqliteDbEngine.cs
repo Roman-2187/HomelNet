@@ -1,10 +1,12 @@
-﻿using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Models;
+﻿using HomeNetCore.Interfaces;
+using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetCore.Interfaces.Events;
+using HomeNetCore.Interfaces.Repositories;
 using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.DBProviders.Sqlite;
 using HomeNetOrm.DbTableInitializer;
 using HomeNetOrm.Interfaces.Builders;
-using HomeNetOrm.Interfaces.Generators;
+using HomeNetOrm.Repositories;
 using System.Data.Common;
 
 namespace HomeNetOrm.Infrastructure
@@ -13,7 +15,7 @@ namespace HomeNetOrm.Infrastructure
     {
         private readonly Microsoft.Data.Sqlite.SqliteConnection _connection;
         private readonly ILogger _logger;
-        private readonly Dictionary<Type, object> _generators = new();
+        private readonly GenericSchemaAdapter _sqliteAdapter;
 
         public DbConnection Connection => _connection;
 
@@ -22,13 +24,22 @@ namespace HomeNetOrm.Infrastructure
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _connection = new Microsoft.Data.Sqlite.SqliteConnection(connectionString);
 
-            // Скрываем кишки генераторов прямо в конструкторе движка
             var sqliteSpec = new SqliteProviderSpecification();
-            var sqliteAdapter = new GenericSchemaAdapter(sqliteSpec);
+            _sqliteAdapter = new GenericSchemaAdapter(sqliteSpec);
+        }
 
-            _generators[typeof(UserEntity)] = new SqliteUserSqlGenerator(sqliteAdapter,logger);
-            _generators[typeof(MessageEntity)] = new SqliteMessageSqlGenerator(sqliteAdapter, logger);
-            _generators[typeof(FriendEntity)] = new SqliteFriendSqlGenerator(sqliteAdapter, logger);
+        // 🔥 КРАСОТА: Фабричные методы, которые выдают клиенту готовые репозитории, 
+        // пряча внутренние генераторы под капотом движка!
+        public IUserRepository CreateUserRepository(IEventBus eventBus)
+        {
+            var generator = new SqliteUserSqlGenerator(_sqliteAdapter, _logger);
+            return new UserRepository(_connection, generator, eventBus);
+        }
+
+        public IMessageRepository CreateMessageRepository(IEventBus eventBus)
+        {
+            var generator = new SqliteMessageSqlGenerator(_sqliteAdapter, _logger);
+            return new MessageRepository(_connection, generator, eventBus);
         }
 
         public async Task InitializeChannelAsync()
@@ -39,20 +50,11 @@ namespace HomeNetOrm.Infrastructure
             }
 
             var sqliteSpec = new SqliteProviderSpecification();
-            var sqliteAdapter = new GenericSchemaAdapter(sqliteSpec);
-            var sqliteSchemaInit = new SqliteSchemaInitializer(sqliteAdapter, _logger);
+            var sqliteSchemaInit = new SqliteSchemaInitializer(_sqliteAdapter, _logger);
             var sqliteProvider = new GenericSchemaProvider(sqliteSchemaInit, _connection, sqliteSpec, _logger);
 
-            var tableInitializer = new DBInitializer(_connection, sqliteProvider, sqliteAdapter, sqliteSchemaInit, _logger);
+            var tableInitializer = new DBInitializer(_connection, sqliteProvider, _sqliteAdapter, sqliteSchemaInit, _logger);
             await tableInitializer.InitializeAsync();
-        }
-
-        public ISqlGenerator<T> GetGenerator<T>() where T : class
-        {
-            if (_generators.TryGetValue(typeof(T), out var gen))
-                return (ISqlGenerator<T>)gen;
-
-            throw new KeyNotFoundException($"SQLite генератор для {typeof(T).Name} не найден.");
         }
     }
 }

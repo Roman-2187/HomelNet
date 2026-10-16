@@ -45,5 +45,37 @@ namespace HomeNetOrm.DBProviders.Base
         public abstract string GenerateDelete();
         public abstract string GenerateSelectById();
         public abstract string GenerateSelectAll();
+
+
+        // ============================================================================
+        // 🎯 РЕАЛИЗАЦИЯ МЕТОДОВ СИНХРОНИЗАЦИИ SiberNet ДЛЯ ИНТЕРФЕЙСА ISqlGenerator
+        // ============================================================================
+
+        public virtual string GenerateSelectUnsynced()
+        {
+            throw new NotImplementedException($"Метод GenerateSelectUnsynced не переопределен в конкретном провайдере для класса {typeof(T).Name}");
+        }
+
+        public virtual string GenerateUpdateMarkAsSynced()
+        {
+            throw new NotImplementedException($"Метод GenerateUpdateMarkAsSynced не переопределен в конкретном провайдере для класса {typeof(T).Name}");
+        }
+
+        public virtual string GenerateCountById()
+        {
+            throw new NotImplementedException($"Метод GenerateCountById не переопределен в конкретном провайдере для класса {typeof(T).Name}");
+        }
+
+        public virtual string GenerateDeleteById()
+        {
+            throw new NotImplementedException($"Метод GenerateDeleteById не переопределен в конкретном провайдере для класса {typeof(T).Name}");
+        }
+
+        // 🔥 По умолчанию для базового генератора отдаем параметры сущности как есть
+        public virtual object PrepareParameters(T entity)
+        {
+            return entity;
+        }
+
     }
 }

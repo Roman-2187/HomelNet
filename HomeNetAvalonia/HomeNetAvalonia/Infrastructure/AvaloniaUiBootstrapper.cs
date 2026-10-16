@@ -17,8 +17,11 @@ namespace HomeNetAvalonia.Infrastructure
             // Обучаем Dapper парсить текстовые Guid из колонок SQLite в нормальные Guid-объекты C#
             SqlMapper.AddTypeHandler(new GuidTypeHandler());
 
-            // 🚀 Передаем URL-адрес сервера в твой главный корень композиции
-            AppCompositionRoot root = AppCompositionRoot.Initialize(mode, apiBaseUrl, sqliteConn);
+            // 🚀 1. Запускаем инициализацию корня композиции
+            AppCompositionRoot.Initialize(mode, apiBaseUrl, sqliteConn);
+
+            // 🚀 2. Вытаскиваем готовый экземпляр через статическое свойство (предполагаем, что оно есть в AppCompositionRoot)
+            AppCompositionRoot root = AppCompositionRoot.Instance;
 
             if (mode == BackendMode.Real || mode == BackendMode.Local)
             {

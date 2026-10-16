@@ -4,35 +4,37 @@ using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Sinc;
 using HomeNetCore.Models;
-using HomeNetOrm.Interfaces.Builders;
+using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
 using System.Data.Common;
 
 namespace HomeNetOrm.Repositories
 {
-    public class UserRepository : IUserRepository
+    /// <summary>
+    /// Автономный репозиторий пользователей SiberNet.
+    /// Полностью очищен от привязки к IDbEngine и использует дефолтную реализацию шины! 🦾
+    /// </summary>
+    public class UserRepository : IUserRepository, ISyncSupport<UserEntity>
     {
         private readonly DbConnection _connection;
-        private readonly IUserSqlGenerator _sqlGenerator; // Вернули специализированный тип!
+        private readonly IUserSqlGenerator _sqlGenerator;
         private readonly IEventBus _eventBus;
 
-        public UserRepository(IDbEngine dbEngine, IEventBus eventBus)
+        // Явная реализация интерфейса поддержки синхронизации для экстеншенов
+        DbConnection ISyncSupport<UserEntity>.Connection => _connection;
+        ISqlGenerator<UserEntity> ISyncSupport<UserEntity>.SqlGenerator => _sqlGenerator;
+
+        // 🔥 ЕДИНЫЙ УНИВЕРСАЛЬНЫЙ КОНСТРУКТОР ДЛЯ КЛИЕНТА И СЕРВЕРА
+        public UserRepository(DbConnection connection, IUserSqlGenerator sqlGenerator, IEventBus? eventBus = null)
         {
-            if (dbEngine == null) throw new ArgumentNullException(nameof(dbEngine));
-
-            _connection = dbEngine.Connection;
-            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-
-            // 🔥 Достаем базовый генератор и явно кастим его к интерфейсу пользователя!
-            _sqlGenerator = (IUserSqlGenerator)dbEngine.GetGenerator<UserEntity>();
+            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            _sqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));
+            _eventBus = eventBus ?? new NullEventProxy();
         }
 
         public async Task<UserEntity> InsertUserAsync(UserEntity user)
         {
-            if (user.Id == Guid.Empty)
-            {
-                user.Id = Guid.NewGuid();
-            }
+            if (user.Id == Guid.Empty) user.Id = Guid.NewGuid();
             user.UpdatedAt = DateTimeOffset.UtcNow;
             user.IsSynced = 0;
 
@@ -41,10 +43,7 @@ namespace HomeNetOrm.Repositories
             try
             {
                 await _connection.ExecuteAsync(sql, user);
-
-                // 🔥 ВЫСТРЕЛ В АВТОБУС: Координатор, пуши нового юзера в Postgres!
                 _eventBus.Publish(this, new ISiberNetSyncCoordinator.UserInserted(user));
-
                 return user;
             }
             catch (Exception ex)
@@ -53,14 +52,25 @@ namespace HomeNetOrm.Repositories
             }
         }
 
+        // Метод обновления статуса для локального SQLite-синхронизатора
+        public async Task MarkAsSyncedAsync(Guid id)
+        {
+            try
+            {
+                await _connection.ExecuteAsync("UPDATE users SET is_synced = 1 WHERE id = @id", new { id });
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Ошибка сброса флага синхронизации пользователя: {ex.Message}");
+            }
+        }
+
         public async Task DeleteByIdAsync(Guid id)
         {
             string sql = _sqlGenerator.GenerateDelete();
-
             try
             {
                 var affectedRows = await _connection.ExecuteAsync(sql, new { id = id });
-
                 if (affectedRows > 0)
                 {
                     _eventBus.Publish(this, new ISiberNetSyncCoordinator.UserDeleted(id));
@@ -75,11 +85,9 @@ namespace HomeNetOrm.Repositories
         public async Task<List<UserEntity>> GetAllAsync()
         {
             string sql = _sqlGenerator.GenerateSelectAll();
-
             try
             {
-                var users = (await _connection.QueryAsync<UserEntity>(sql)).ToList();
-                return users;
+                return (await _connection.QueryAsync<UserEntity>(sql)).ToList();
             }
             catch (Exception ex)
             {
@@ -105,7 +113,6 @@ namespace HomeNetOrm.Repositories
             user.IsSynced = 0;
 
             string sql = _sqlGenerator.GenerateUpdate();
-
             try
             {
                 await _connection.ExecuteAsync(sql, user);
@@ -122,9 +129,11 @@ namespace HomeNetOrm.Repositories
             if (string.IsNullOrWhiteSpace(email)) return false;
 
             string sql = _sqlGenerator.GenerateEmailExists();
-
             var count = await _connection.ExecuteScalarAsync<int>(sql, new { email = email });
             return count > 0;
         }
+
+        // Минимальный скрытый приватный прокси-класс
+        private class NullEventProxy : IEventBus { }
     }
 }

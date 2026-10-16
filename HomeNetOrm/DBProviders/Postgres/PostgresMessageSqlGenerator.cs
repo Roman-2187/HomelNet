@@ -59,5 +59,29 @@ namespace HomeNetOrm.DBProviders.Postgres
             $@"DELETE FROM ""{FormattedTable.TableName}"" 
                WHERE (sender_id = @SenderId AND receiver_id = @ReceiverId)
                   OR (sender_id = @ReceiverId AND receiver_id = @SenderId);";
+
+
+
+        // 🔥 ЯВНО ПЕРЕОПРЕДЕЛЯЕМ ПАРАМЕТРЫ ДЛЯ СЕРВЕРА POSTGRES
+        public override object PrepareParameters(MessageEntity msg)
+        {
+            // Заменяем только числовой IsSynced, а IsRead отдаем как есть, раз он bool!
+            return new
+            {
+                msg.Id,
+                msg.SenderId,
+                msg.ReceiverId,
+                msg.Text,
+                msg.MediaType,
+                msg.IsRead, // Просто отдаем напрямую, компилятор будет счастлив!
+                msg.CreatedAt,
+                IsSynced = true, // На сервере оно гарантированно сохранено в Postgres
+                msg.UpdatedAt
+            };
+        }
+
     }
+
+
+
 }

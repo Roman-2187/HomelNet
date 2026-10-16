@@ -1,17 +1,16 @@
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;
-using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Models;
 using HomeNetOrm.Infrastructure;
-using HomeNetOrm.Repositories;    // Для MessageRepository и UserRepository
+using HomeNetServices.Diagnostics;
 using Microsoft.AspNetCore.SignalR;
 using ILogger = HomeNetCore.Interfaces.Diagnostics.ILogger;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Поднимаем боевой логгер
-ILogger serverLogger = new HomeNetServices.Diagnostics.Logger((logEntry, level, detectedNamespace) =>
+ILogger serverLogger = new Logger((logEntry, level, detectedNamespace) =>
 {
     Console.ForegroundColor = level switch
     {
@@ -23,16 +22,16 @@ ILogger serverLogger = new HomeNetServices.Diagnostics.Logger((logEntry, level, 
     Console.ResetColor();
 });
 
-// 2. Строка подключения и серверный автобус (чтобы репозитории могли стрелять)
+// 2. Строка подключения к PostgreSQL
 string postgresConn = builder.Configuration.GetConnectionString("PostgresConnection")
     ?? "Server=127.0.0.1;Port=5432;Database=home_net_db;User Id=postgres;Password=05011987;";
 
-IEventBus serverEventBus = new MockServerEventBus(); // Для сервера события шины не критичны, даем заглушку
-
-// 3. 💥 ЧИСТАЯ СБОРКА ЧЕРЕЗ NEW: Поднимаем движок и репозитории
+// 3. 🦾 ЧИСТАЯ СБОРКА ЧЕРЕЗ ФАБРИКУ ДВИЖКА (без всяких фейковых автобусов!)
 var postgresEngine = new PostgresDbEngine(postgresConn, serverLogger);
-IMessageRepository messageRepository = new MessageRepository(postgresEngine, serverEventBus);
-IUserRepository userRepository = new UserRepository(postgresEngine, serverEventBus);
+
+// Движок сам знает, как собрать репозитории на базе своего DbConnection и internal-генераторов!
+IMessageRepository messageRepository = postgresEngine.CreateMessageRepository();
+IUserRepository userRepository = postgresEngine.CreateUserRepository();
 
 builder.Services.AddSignalR();
 var app = builder.Build();
@@ -48,11 +47,10 @@ app.MapPost("/api/messages", async (MessageEntity incomingMessage, IHubContext<S
     {
         serverLogger.LogInfo($"[API] Прилетел объект сообщения от {incomingMessage.SenderId}");
 
-        // 🦾 РАБОТАЕМ СТРОГО ЧЕРЕЗ РЕПОЗИТОРИЙ, КАК В СЕРВИСАХ!
-        // Никакого SQL, никаких генераторов наружу — чистый объект ложится в Postgres!
+        // Чистый объект ложится в Postgres через фабричный репозиторий движка!
         await messageRepository.SaveMessageAsync(incomingMessage);
 
-        // Мгновенно пушим получателю по сети
+        // Мгновенно пушим получателю по сети через SignalR
         await hubContext.Clients.Group(incomingMessage.ReceiverId.ToString())
             .SendAsync("ReceiveMessage", incomingMessage);
 
@@ -65,32 +63,36 @@ app.MapPost("/api/messages", async (MessageEntity incomingMessage, IHubContext<S
     }
 });
 
+// ============================================================================
+// 🎯 ЭНДПОИНТ: ПРИЕМ ПОЛЬЗОВАТЕЛЕЙ ПРИ РЕГИСТРАЦИИ/ОБНОВЛЕНИИ
+// ============================================================================
+app.MapPost("/api/users", async (UserEntity incomingUser) =>
+{
+    try
+    {
+        serverLogger.LogInfo($"[API] Прилетел профиль пользователя '{incomingUser.FirstName}' (ID: {incomingUser.Id})");
+
+        // Клади честно в Postgres через серверный репозиторий
+        await userRepository.InsertUserAsync(incomingUser);
+
+        return Results.Ok(new { Success = true });
+    }
+    catch (Exception ex)
+    {
+        serverLogger.LogError($"[API Ошибка] Не удалось сохранить пользователя через репозиторий: {ex.Message}");
+        return Results.Problem("Ошибка сервера");
+    }
+});
+
+
+app.MapGet("/api/ping", () => Results.Ok("pong"));
+
+
 // Запускаем инициализацию Postgres на сервере
 serverLogger.LogInfo("=== [СУБД ХАБ СЕРВЕРА] ЗАПУСК ИНИЦИАЛИЗАЦИИ POSTGRES ===");
 await postgresEngine.InitializeChannelAsync(); // Это заставит ОРМ проверить таблицы по сети!
 
 app.Run();
-
-// Заглушка шины для серверных репозиториев
-// Заглушка шины для серверных репозиториев с явной реализацией интерфейса
-public class MockServerEventBus : IEventBus
-{
-    public void Subscribe<TMessage>(Action<TMessage> action)
-    {
-        // Пусто — на сервере подписки не нужны
-    }
-
-    public void Unsubscribe<TMessage>(Action<TMessage> action)
-    {
-        // Пусто
-    }
-
-    public void Publish<TMessage>(object sender, TMessage ev)
-    {
-        // Пусто
-    }
-}
-
 
 public class ServerChatHub : Hub
 {
@@ -101,4 +103,3 @@ public class ServerChatHub : Hub
         await base.OnConnectedAsync();
     }
 }
-

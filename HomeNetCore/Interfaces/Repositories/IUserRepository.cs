@@ -1,15 +1,15 @@
 ﻿using HomeNetCore.Models;
+using HomeNetCore.Interfaces.Repositories;
 
 namespace HomeNetCore.Interfaces
 {
-    public interface IUserRepository
+    // Наследуем IRepository<UserEntity>, убирая дубликаты GetAll, GetById и Update!
+    public interface IUserRepository : IRepository<UserEntity>
     {
         Task DeleteByIdAsync(Guid id);
         Task<bool> EmailExistsAsync(string email);
-        Task<List<UserEntity>> GetAllAsync();
         Task<UserEntity?> GetByEmailAsync(string email);
-        Task<UserEntity?> GetByIdAsync(Guid id);
         Task<UserEntity> InsertUserAsync(UserEntity user);
-        Task UpdateAsync(UserEntity user);
+        Task MarkAsSyncedAsync(Guid id);
     }
 }

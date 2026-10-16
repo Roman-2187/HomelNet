@@ -1,9 +1,11 @@
-﻿using HomeNetCore.Enums;
+﻿using HomeNet.DI.Modules; 
+using HomeNetCore.Enums;
+using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
+using HomeNetOrm.Interfaces.Builders;
 using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.AdminViews;
-using HomeNet.DI.Modules; 
 
 namespace HomeNet.DI
 {
@@ -34,10 +36,10 @@ namespace HomeNet.DI
                 _infrastructure.Logger, _infrastructure.EventBus);
 
             // 3. Модуль Сервисов Бизнес-Логики (Скармливаем Репозитории из Модуля 2)
-            _services = new BusinessServicesModule(
-                _dataAccess.UserRepository, _dataAccess.MessageRepository,
-                _dataAccess.FriendRepository, _infrastructure.Logger,
-                _infrastructure.EventBus);
+            _services = new BusinessServicesModule(_dataAccess.UserRepository,_dataAccess.MessageRepository, _infrastructure.Logger, _infrastructure.EventBus);
+                 
+                
+                
 
             // 4. Модуль Презентации / UI (Скармливаем Логику и Систему логов)
             _ui = new PresentationUiModule(
@@ -49,19 +51,29 @@ namespace HomeNet.DI
             );
         }
 
-        public static AppCompositionRoot Initialize(BackendMode mode, string postgresConn, string sqliteConn)
+        public static void Initialize(BackendMode mode, string postgresConn, string sqliteConn)
         {
             _instance = new AppCompositionRoot(mode, postgresConn, sqliteConn);
 
-            Task.Run(async () =>
+            // 1. Подписываемся на автобус готовности инфраструктуры
+            _instance._infrastructure.EventBus.Subscribe<IDbContextContainer.InfrastructureReady>(async ev =>
             {
-                // Инициализируем каналы движков и запускаем оффлайн-координатор
-                await _instance._dataAccess.DbContextContainer.InitializeAllDatabasesAsync();
-                await _instance._dataAccess.SyncCoordinator.StartAsync();
+                _instance._infrastructure.Logger.LogInfo("[App Старт] Базы и сеть прогреты. Запускаем репликацию данных...");
+
+                // Добавим микроскопическую задержку в 300 мс, чтобы дать веб-серверу окончательно "продышаться"
+                await Task.Delay(300);
+
+                // 🔥 ТЕПЕРЬ ЗАПУСК СТРОГО ВО ВРЕМЯ!
+                await _instance._dataAccess.OrmEngine.StartAsync();
             });
 
-            return _instance;
+            // 2. Только после подписки пинаем параллельный прогрев баз и пинг сервера
+            Task.Run(async () =>
+            {
+                await _instance._dataAccess.DbContextContainer.InitializeAllDatabasesAsync();
+            });
         }
+
 
         // Метод-заглушка для UI окон вытаскивает вьюмодели прямо из UI модуля
         public TGet GetViewModel<TGet>() where TGet : class

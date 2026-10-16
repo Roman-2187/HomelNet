@@ -3,7 +3,7 @@ using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Models;
 using HomeNetOrm.Interfaces.Generators;
-using HomeNetOrm.Interfaces.Builders;
+using HomeNetOrm.Interfaces.DbInfrastructure; // Наш внутренний интерфейс поддержки
 using System.Data.Common;
 using HomeNetCore.Interfaces.Sinc;
 
@@ -11,23 +11,25 @@ namespace HomeNetOrm.Repositories
 {
     /// <summary>
     /// Автономный репозиторий сообщений SiberNet.
-    /// Работает строго на базе Guid для обеспечения распределенной репликации! 🦾
+    /// Работает на базе Guid, изолирован от IDbEngine и использует дефолтную реализацию шины! 🦾
     /// </summary>
-    public class MessageRepository : IMessageRepository
+    public class MessageRepository : IMessageRepository, ISyncSupport<MessageEntity>
     {
         private readonly DbConnection _connection;
         private readonly IMessageSqlGenerator _sqlGenerator;
         private readonly IEventBus _eventBus;
 
-        public MessageRepository(IDbEngine dbEngine, IEventBus eventBus)
+        // Явная реализация инфраструктурных свойств для методов расширения синхронизации
+        DbConnection ISyncSupport<MessageEntity>.Connection => _connection;
+        ISqlGenerator<MessageEntity> ISyncSupport<MessageEntity>.SqlGenerator => _sqlGenerator;
+
+        // 🔥 ЕДИНЫЙ УНИВЕРСАЛЬНЫЙ КОНСТРУКТОР ДЛЯ КЛИЕНТА И СЕРВЕРА
+        // Если eventBus не передан (на сервере), создается пустой прокси, берущий пустые методы из интерфейса!
+        public MessageRepository(DbConnection connection, IMessageSqlGenerator sqlGenerator, IEventBus? eventBus = null)
         {
-            if (dbEngine == null) throw new ArgumentNullException(nameof(dbEngine));
-
-            _connection = dbEngine.Connection;
-            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-
-            // Вытаскиваем специализированный генератор для сообщений
-            _sqlGenerator = (IMessageSqlGenerator)dbEngine.GetGenerator<MessageEntity>();
+            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            _sqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));
+            _eventBus = eventBus ?? new NullEventProxy();
         }
 
         public async Task<bool> SaveMessageAsync(MessageEntity message)
@@ -39,22 +41,33 @@ namespace HomeNetOrm.Repositories
 
             try
             {
-                // Заменяем ExecuteScalar на обычный Execute. База просто сохранит твой Guid.NewGuid()
-                await _connection.ExecuteAsync(sql, message);
+                // Стало (генератор сам переведет IsSynced и IsRead в честные bool для Postgres):
+                object safeParameters = _sqlGenerator.PrepareParameters(message);
+                await _connection.ExecuteAsync(sql, safeParameters);
 
-                // Ничего не перезаписываем! Оригинальный Guid остается в message.Id
+                // На клиенте - вызовет реальную шину. На сервере - метод интерфейса выполнится вхолостую!
                 _eventBus.Publish(this, new ISiberNetSyncCoordinator.MessageInserted(message));
-
                 return true;
             }
-
             catch (Exception ex)
             {
                 throw new InvalidOperationException($"Ошибка сохранения сообщения через ОРМ: {ex.Message}");
             }
         }
 
-        // 🎯 ТЕПЕРЬ НА GUID: История чата
+        // Метод обновления статуса для локального SQLite-синхронизатора
+        public async Task MarkAsSyncedAsync(Guid id)
+        {
+            try
+            {
+                await _connection.ExecuteAsync("UPDATE messages SET is_synced = 1 WHERE id = @id", new { id });
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Ошибка сброса флага синхронизации сообщения: {ex.Message}");
+            }
+        }
+
         public async Task<IEnumerable<MessageEntity>> GetChatHistoryAsync(Guid senderId, Guid receiverId)
         {
             string sql = _sqlGenerator.GenerateSelectChatHistory();
@@ -68,11 +81,9 @@ namespace HomeNetOrm.Repositories
             }
         }
 
-        // 🎯 ТЕПЕРЬ НА GUID: Статус прочтения
         public async Task<bool> MarkAsReadAsync(Guid senderId, Guid receiverId)
         {
             string sql = _sqlGenerator.GenerateMarkAsRead();
-
             try
             {
                 int rowsAffected = await _connection.ExecuteAsync(sql, new { SenderId = senderId, ReceiverId = receiverId });
@@ -84,11 +95,9 @@ namespace HomeNetOrm.Repositories
             }
         }
 
-        // 🎯 ТЕПЕРЬ НА GUID: Подсчет непрочитанных
         public async Task<int> GetUnreadCountAsync(Guid currentUserId, Guid senderId)
         {
             string sql = _sqlGenerator.GenerateUnreadCount();
-
             try
             {
                 return await _connection.ExecuteScalarAsync<int>(sql, new { CurrentUserId = currentUserId, SenderId = senderId });
@@ -99,7 +108,6 @@ namespace HomeNetOrm.Repositories
             }
         }
 
-        // 🎯 ТЕПЕРЬ НА GUID: Удаление сообщения по его UUID
         public async Task<bool> RemoveMessageByIdAsync(Guid id)
         {
             var message = await _connection.QueryFirstOrDefaultAsync<MessageEntity>(
@@ -123,14 +131,11 @@ namespace HomeNetOrm.Repositories
             }
         }
 
-        // 🎯 ТЕПЕРЬ НА GUID: Полная очистка диалога
         public async Task<bool> ClearChatHistoryAsync(Guid senderId, Guid receiverId)
         {
             string sql = _sqlGenerator.GenerateClearChatHistory();
-
             try
             {
-                // Запросы возвращают UserEntity, где Id теперь гарантированно Guid
                 var sender = await _connection.QueryFirstOrDefaultAsync<UserEntity>("SELECT id FROM users WHERE id = @id", new { id = senderId });
                 var receiver = await _connection.QueryFirstOrDefaultAsync<UserEntity>("SELECT id FROM users WHERE id = @id", new { id = receiverId });
 
@@ -148,5 +153,8 @@ namespace HomeNetOrm.Repositories
                 throw new InvalidOperationException($"Ошибка при полной очистке чата через ОРМ: {ex.Message}");
             }
         }
+
+        // Минимальный скрытый приватный прокси-класс
+        private class NullEventProxy : IEventBus { }
     }
 }

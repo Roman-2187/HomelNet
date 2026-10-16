@@ -1,5 +1,4 @@
-﻿using HomeNetOrm.DBProviders.Extensions;
-using HomeNetOrm.Models;
+﻿using HomeNetOrm.Models;
 
 namespace HomeNetOrm.Interfaces
 {

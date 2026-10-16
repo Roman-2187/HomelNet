@@ -21,5 +21,6 @@ namespace HomeNetCore.Interfaces.Repositories
         Task<bool> RemoveMessageByIdAsync(Guid id);
 
         Task<bool> ClearChatHistoryAsync(Guid senderId, Guid receiverId);
+        Task MarkAsSyncedAsync(Guid id);
     }
 }

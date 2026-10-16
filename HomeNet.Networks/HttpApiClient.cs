@@ -1,10 +1,7 @@
 ﻿using HomeNetCore.Interfaces; // Убедись, что тут лежит твой интерфейс IApiClient
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Extensions;
-using System;
-using System.Net.Http;
 using System.Net.Http.Json; // Нужен для удобной отправки объектов как JSON
-using System.Threading.Tasks;
 
 namespace HomeNet.Network
 {
@@ -56,5 +53,29 @@ namespace HomeNet.Network
                 return false;
             }
         }
+
+
+        // 🔥 РЕАЛИЗАЦИЯ СВОЙСТВА ПРОВЕРКИ ДОСТУПНОСТИ СЕРВЕРА
+        public bool IsServerAvailable
+        {
+            get
+            {
+                try
+                {
+                    // Стучимся на выделенный эндпоинт проверки связи
+                    var response = _httpClient.GetAsync("api/ping").GetAwaiter().GetResult();
+                    return response.IsSuccessStatusCode;
+
+
+                    
+                }
+                catch
+                {
+                    // Если легли по таймауту или нет сети — сервер недоступен
+                    return false;
+                }
+            }
+        }
+
     }
 }

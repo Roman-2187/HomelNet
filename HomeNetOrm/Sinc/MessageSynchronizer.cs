@@ -1,21 +1,26 @@
-﻿using Dapper;
-using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces; // Для IApiClient
+﻿using HomeNetCore.Extensions;
+using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
+using HomeNetCore.Interfaces.Repositories; // Для IMessageRepository
 using HomeNetCore.Interfaces.Sinc;
 using HomeNetCore.Models;
-using HomeNetOrm.Interfaces.Builders;
-using System.Data.Common;
 
 namespace HomeNetOrm.Sinc
 {
     public class MessageSynchronizer : BaseSynchronizer<MessageEntity>
     {
+        private readonly IMessageRepository _messageRepository;
+
         public MessageSynchronizer(
-            IDbEngine localEngine, IApiClient apiClient, // Меняем тут тип
-            IDbContextContainer contextContainer, IEventBus eventBus, ILogger logger)
-            : base(localEngine, apiClient, contextContainer, eventBus, logger) { }
+            IMessageRepository messageRepository, // Питаемся чистым репозиторием!
+            IApiClient apiClient,
+            IEventBus eventBus,
+            ILogger logger)
+            : base(apiClient, eventBus, logger)
+        {
+            _messageRepository = messageRepository ?? throw new ArgumentNullException(nameof(messageRepository));
+        }
 
         protected override void SubscribeEvents()
         {
@@ -31,10 +36,9 @@ namespace HomeNetOrm.Sinc
             EventBus.Unsubscribe<ISiberNetSyncCoordinator.MessageDeleted>(OnMessageDeleted);
         }
 
-        protected override async Task ExecuteTableSyncInternalAsync(DbConnection local, IApiClient api)
+        protected override async Task ExecuteTableSyncInternalAsync(IApiClient api)
         {
-            // Пакетную сверку таблиц через HTTP запросы мы допишем чуть позже, 
-            // когда сделаем GET-эндпоинты на сервере для скачивания истории.
+            // Пакетная сверка через HTTP GET-запросы встанет сюда позже
             await Task.CompletedTask;
         }
 
@@ -48,18 +52,13 @@ namespace HomeNetOrm.Sinc
 
             Logger.LogInfo($"[MessageSync] Перехвачен пуш СМС от ID '{msg.Message.SenderId}' -> Текст: \"{preview}\"");
 
-            // Вместо генерации SQL-инсерта просто фигачим объект в API!
             ExecuteSyncTask(async (apiClient) =>
             {
                 bool success = await apiClient.PushMessageAsync(msg.Message);
                 if (success)
                 {
-                    // Проставляем IsSynced = 1 в локальной SQLite, чтобы больше не отправлять
-                    using (var localConn = LocalEngine.Connection)
-                    {
-                        if (localConn.State != System.Data.ConnectionState.Open) await localConn.OpenAsync();
-                        await localConn.ExecuteAsync("UPDATE messages SET is_synced = 1 WHERE id = @Id", new { msg.Message.Id });
-                    }
+                    // Чистота: командуем репозиторию обновить статус, никакого SQL!
+                    await _messageRepository.MarkAsSyncedAsync(msg.Message.Id);
                 }
             }, "Message Insert via API");
         }
@@ -67,8 +66,6 @@ namespace HomeNetOrm.Sinc
         private void OnMessageUpdated(ISiberNetSyncCoordinator.MessageUpdated msg)
         {
             if (msg?.Message == null || msg.Message.IsSynced == 1) return;
-
-            // Для прототипа апдейты можно пока пропустить или слать через тот же апи
             Logger.LogInfo($"[MessageSync] Перехвачено обновление СМС '{msg.Message.Id}'");
         }
 

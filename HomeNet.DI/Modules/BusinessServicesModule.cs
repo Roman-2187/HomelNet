@@ -15,12 +15,12 @@ namespace HomeNet.DI.Modules
         public IAuthenticateService AuthenticateService { get; }
         public IDeleteService DeleteService { get; }
         public IMessageService MessageService { get; }
-        public IFriendService FriendService { get; }
+       
 
         public BusinessServicesModule(
             IUserRepository userRepo,
             IMessageRepository msgRepo,
-            IFriendRepository friendRepo,
+           
             ILogger logger,
             IEventBus eventBus)
         {
@@ -29,7 +29,7 @@ namespace HomeNet.DI.Modules
             AuthenticateService = new AuthenticateService(UserService);
             DeleteService = new DeleteService( UserService,logger);
             MessageService = new MessageService(msgRepo, eventBus);
-            FriendService = new FriendService(friendRepo, logger);
+          
         }
     }
 }

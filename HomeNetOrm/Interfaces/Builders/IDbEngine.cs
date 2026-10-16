@@ -9,7 +9,5 @@ namespace HomeNetOrm.Interfaces.Builders
         DbConnection Connection { get; }
         Task InitializeChannelAsync();
 
-        // Из старого SqlProvider
-        ISqlGenerator<T> GetGenerator<T>() where T : class;
     }
 }
