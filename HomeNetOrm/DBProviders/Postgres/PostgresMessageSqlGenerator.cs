@@ -3,6 +3,7 @@ using HomeNetCore.Models;
 using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
+using HomeNetOrm.Models;
 
 namespace HomeNetOrm.DBProviders.Postgres
 {
@@ -10,9 +11,12 @@ namespace HomeNetOrm.DBProviders.Postgres
     /// Конкретный генератор ОРМ-запросов сообщений под диалект PostgreSQL.
     /// Строго экранирует регистры таблиц кавычками "" и реализует полный контракт чата.
     /// </summary>
-    public class PostgresMessageSqlGenerator : BaseSqlGenerator<MessageEntity>, IMessageSqlGenerator
+    internal class PostgresMessageSqlGenerator : BaseSqlGenerator<MessageEntity>, IMessageSqlGenerator
     {
-        public PostgresMessageSqlGenerator(ISchemaAdapter adapter, ILogger logger) : base(adapter, logger) { }
+        public PostgresMessageSqlGenerator(GenericSchemaAdapter adapter, IEnumerable<TableSchema> schemas, ILogger logger)
+            : base(adapter, schemas, logger)
+        {
+        }
 
         public override string GenerateInsert()
         {

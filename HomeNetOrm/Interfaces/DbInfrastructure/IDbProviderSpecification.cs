@@ -6,7 +6,7 @@ namespace HomeNetOrm.Interfaces.DbInfrastructure
     /// Внутренний паспорт СУБД. 
     /// Отвечает исключительно за взаимный перевод типов данных C# и конкретного диалекта базы.
     /// </summary>
-    public interface IDbProviderSpecification
+    internal interface IDbProviderSpecification
     {
         /// <summary>
         /// Переводит внутренний тип ORM в строковое представление типа конкретной СУБД для сборки CREATE TABLE.

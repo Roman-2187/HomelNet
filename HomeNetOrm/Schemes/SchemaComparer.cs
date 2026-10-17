@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace HomeNetOrm.Schemes
 {
-    public class SchemaComparer
+    internal class SchemaComparer
     {
         public SchemaDiff Compare(TableSchema expected, TableSchema actual)
         {

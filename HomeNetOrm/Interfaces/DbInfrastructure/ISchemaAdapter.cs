@@ -3,7 +3,7 @@ using HomeNetOrm.Models;
 
 namespace HomeNetOrm.Interfaces.DbInfrastructure
 {
-    public interface ISchemaAdapter
+   internal interface ISchemaAdapter
     {
 
         string ConvertTableName(string rawName, NameFormat format);

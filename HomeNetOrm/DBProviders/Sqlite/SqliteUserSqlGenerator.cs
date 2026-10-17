@@ -3,12 +3,15 @@ using HomeNetCore.Models;
 using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
+using HomeNetOrm.Models;
 
 namespace HomeNetOrm.DBProviders.Sqlite
 {
-    public class SqliteUserSqlGenerator : BaseSqlGenerator<UserEntity>, IUserSqlGenerator
+    internal class SqliteUserSqlGenerator : BaseSqlGenerator<UserEntity>, IUserSqlGenerator
     {
-        public SqliteUserSqlGenerator(ISchemaAdapter adapter, ILogger logger) : base(adapter, logger) { }
+        // Добавляем схемы вторым параметром и пуляем их в родительский base() 🎯
+        public SqliteUserSqlGenerator(GenericSchemaAdapter adapter, IEnumerable<TableSchema> schemas, ILogger logger)
+            : base(adapter, schemas, logger) { }
 
         public override string GenerateInsert() =>
             $@"INSERT INTO {FormattedTable.TableName} ({FormattedTable.InsertFields}) VALUES ({FormattedTable.InsertParameters});

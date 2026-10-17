@@ -6,7 +6,7 @@ namespace HomeNetOrm.DBProviders.Sqlite
     /// <summary>
     /// Спецификация типов данных для SQLite.
     /// </summary>
-    public class SqliteProviderSpecification : IDbProviderSpecification
+    internal class SqliteProviderSpecification : IDbProviderSpecification
     {
         public string MapToSqlType(ColumnType type, bool isPk, bool isAi, int? length) => type switch
         {

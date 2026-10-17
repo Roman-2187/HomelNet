@@ -14,15 +14,14 @@ namespace HomeNetOrm.DbTableInitializer
     /// Универсальный сверщик и создатель таблиц.
     /// Работает строго с одним инжектируемым шлейфом БД и его диалектным инициализатором.
     /// </summary>
-    public class DBInitializer
+    internal class DBInitializer
     {
         private readonly DbConnection _dbConnection;
         private readonly ISchemaSqlInitializer _schemaSqlInitializer;
         private readonly ISchemaProvider _schemaProvider;
         private readonly ISchemaAdapter _schemaAdapter;
+        private readonly IEnumerable<TableSchema> _tableSchemas; // 🎯 Локальное хранилище схем
         private readonly ILogger _logger;
-
-        // 🔥 Динамический маркер имени базы данных
         private readonly string _dbName;
 
         public DBInitializer(
@@ -30,15 +29,16 @@ namespace HomeNetOrm.DbTableInitializer
             ISchemaProvider schemaProvider,
             ISchemaAdapter schemaAdapter,
             ISchemaSqlInitializer schemaSqlInitializer,
+            IEnumerable<TableSchema> tableSchemas, // 🎯 Принимаем внешние схемы
             ILogger logger)
         {
             _dbConnection = connection ?? throw new ArgumentNullException(nameof(connection));
             _schemaProvider = schemaProvider ?? throw new ArgumentNullException(nameof(schemaProvider));
             _schemaAdapter = schemaAdapter ?? throw new ArgumentNullException(nameof(schemaAdapter));
             _schemaSqlInitializer = schemaSqlInitializer ?? throw new ArgumentNullException(nameof(schemaSqlInitializer));
+            _tableSchemas = tableSchemas ?? throw new ArgumentNullException(nameof(tableSchemas)); // Записываем
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            // 🎯 АВТООПРЕДЕЛЕНИЕ: вычисляем имя базы данных по типу класса подключения!
             _dbName = _dbConnection.GetType().Name switch
             {
                 "NpgsqlConnection" => "PostgreSQL",
@@ -51,9 +51,8 @@ namespace HomeNetOrm.DbTableInitializer
         {
             _logger.LogInfo($"=== СТАРТ ИНИЦИАЛИЗАЦИИ БАЗЫ ДАННЫХ [{_dbName}] ===");
 
-            var tableSchemas = SchemaRegistry.GetAllSchemas();
-
-            foreach (var schema in tableSchemas)
+            // 🦾 Теперь цикл крутится по внешним схемам, а не по SchemaRegistry!
+            foreach (var schema in _tableSchemas)
             {
                 var dbSchema = _schemaAdapter.ConvertToSnakeCaseSchema(schema);
                 string dbTableName = dbSchema?.TableName ?? schema.TableName ?? string.Empty;
@@ -85,7 +84,6 @@ namespace HomeNetOrm.DbTableInitializer
         private async Task<bool> TableExistsAsync(string tableName)
         {
             var cleanName = tableName.Trim('"', '\'').ToLower();
-
             string sql = _schemaSqlInitializer.GenerateTableExistsSql(tableName);
 
             try

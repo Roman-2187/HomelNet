@@ -21,6 +21,27 @@ namespace HomeNetServices.Diagnostics
         }
 
         /// <summary>
+        /// Создает готовый экземпляр логгера с настроенным цветным выводом в консоль.
+        /// </summary>
+        public static Logger CreateConsoleLogger()
+        {
+            return new Logger((logEntry, level, detectedNamespace) =>
+            {
+                Console.ForegroundColor = level switch
+                {
+                    LogLevel.Info => ConsoleColor.Green,
+                    LogLevel.Error => ConsoleColor.Red,
+                    _ => ConsoleColor.White
+                };
+                Console.WriteLine(logEntry);
+                Console.ResetColor();
+            });
+        }
+
+
+
+
+        /// <summary>
         /// Основной метод логирования. Сюда прилетают все вызовы LogInfo, LogError и т.д.
         /// </summary>
         public void Log(LogLevel level, string message, string memberName = "", string filePath = "", int lineNumber = 0, params object[] args)

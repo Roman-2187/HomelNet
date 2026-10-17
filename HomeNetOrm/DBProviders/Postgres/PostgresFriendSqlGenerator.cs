@@ -3,6 +3,7 @@ using HomeNetCore.Models;
 using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
+using HomeNetOrm.Models;
 
 namespace HomeNetOrm.DBProviders.Postgres
 {
@@ -10,10 +11,13 @@ namespace HomeNetOrm.DBProviders.Postgres
     /// ОРМ-генератор SQL-запросов таблицы друзей для центральной СУБД PostgreSQL.
     /// Учитывает экранирование двойными кавычками и специфику синтаксиса Postgres.
     /// </summary>
-    public class PostgresFriendSqlGenerator : BaseSqlGenerator<FriendEntity>, ISqlGenerator<FriendEntity>
+    internal class PostgresFriendSqlGenerator : BaseSqlGenerator<FriendEntity>, ISqlGenerator<FriendEntity>
     {
-        public PostgresFriendSqlGenerator(ISchemaAdapter adapter, ILogger logger) : base(adapter, logger) { }
-
+        // 🎯 Обновленный конструктор: принимает три параметра и отдает их в base()
+        public PostgresFriendSqlGenerator(GenericSchemaAdapter adapter, IEnumerable<TableSchema> schemas, ILogger logger)
+            : base(adapter, schemas, logger)
+        {
+        }
         public override string GenerateInsert()
         {
             string idColumn = FormattedTable.IdColumnName ?? "id";

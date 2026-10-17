@@ -4,7 +4,7 @@ using HomeNetOrm.Models;
 
 namespace HomeNetOrm.DBProviders.Sqlite
 {
-    public class SqliteSchemaInitializer : ISchemaSqlInitializer
+    internal class SqliteSchemaInitializer : ISchemaSqlInitializer
     {
         private readonly ISchemaAdapter _adapter;
         private readonly ILogger _logger;

@@ -3,7 +3,7 @@
 namespace HomeNetOrm.Interfaces
 {
     
-        public interface ISchemaProvider
+        internal interface ISchemaProvider
         {
             /// <summary>
             /// Извлекает актуальную схему таблицы напрямую из системных каталогов СУБД.

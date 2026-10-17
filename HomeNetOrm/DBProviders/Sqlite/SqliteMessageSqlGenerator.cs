@@ -1,15 +1,19 @@
 ﻿using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Models;
 using HomeNetOrm.DBProviders.Base;
-using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
+using HomeNetOrm.Models;
 
 namespace HomeNetOrm.DBProviders.Sqlite
 {
-    public class SqliteMessageSqlGenerator : BaseSqlGenerator<MessageEntity>, IMessageSqlGenerator
+    // Убедитесь, что интерфейс IMessageSqlGenerator тоже на месте! 🛡️
+    internal class SqliteMessageSqlGenerator : BaseSqlGenerator<MessageEntity>, IMessageSqlGenerator
     {
-        public SqliteMessageSqlGenerator(ISchemaAdapter adapter, ILogger logger) : base(adapter, logger) { }
-
+        // 🎯 Обновленный конструктор: принимает три параметра и отдает родителю
+        public SqliteMessageSqlGenerator(GenericSchemaAdapter adapter, IEnumerable<TableSchema> schemas, ILogger logger)
+            : base(adapter, schemas, logger)
+        {
+        }
         public override string GenerateInsert() =>
             $@"INSERT INTO {FormattedTable.TableName} ({FormattedTable.InsertFields}) VALUES ({FormattedTable.InsertParameters});
             SELECT last_insert_rowid() AS id;";

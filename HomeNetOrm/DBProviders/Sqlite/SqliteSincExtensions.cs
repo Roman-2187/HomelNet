@@ -3,7 +3,7 @@ using HomeNetCore.Models;
 
 namespace HomeNetOrm.DBProviders.Sqlite
 {
-    public static class SqliteSincExtensions
+    internal static class SqliteSincExtensions
     {
         // === МЕТОДЫ АДАПТАЦИИ ПАРАМЕТРОВ ДЛЯ SQLITE ===
 

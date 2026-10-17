@@ -1,13 +1,25 @@
-﻿using HomeNetCore.Models;
+﻿using System.Collections.Generic;
 using HomeNetOrm.Builders;
-using HomeNetOrm.Enums;
 using HomeNetOrm.Models;
+using HomeNetOrm.Enums;
+using HomeNetCore.Models;
 
-namespace HomeNetOrm.Schemes
+namespace HomeNet.DI.Modules
 {
-    public static class SchemaRegistry
+    /// <summary>
+    /// Внешний модуль сборки схем мессенджера. 
+    /// ОРМ теперь ничего не знает об этих таблицах до старта!
+    /// </summary>
+    public class MessengerSchemaModule
     {
-        public static IEnumerable<TableSchema> GetAllSchemas()
+        private readonly List<TableSchema> _schemas = new();
+
+        public MessengerSchemaModule()
+        {
+            BuildAllSchemas();
+        }
+
+        private void BuildAllSchemas()
         {
             // 1. СХЕМА ТАБЛИЦЫ ПОЛЬЗОВАТЕЛЕЙ (users)
             var users = new TableBuilder<UserEntity>("Users");
@@ -20,7 +32,7 @@ namespace HomeNetOrm.Schemes
             users.AddColumn(u => u.CreatedAt).IsTrackedTimestamp();
             users.AddColumn(u => u.IsSynced).HasDefault(1, ColumnType.Integer);
             users.AddColumn(u => u.UpdatedAt).IsUpdatedAtTimestamp();
-            yield return users.Generate();
+            _schemas.Add(users.Generate());
 
             // 2. ⚡ СХЕМА ТАБЛИЦЫ СООБЩЕНИЙ (messages)
             var messages = new TableBuilder<MessageEntity>("Messages");
@@ -29,34 +41,26 @@ namespace HomeNetOrm.Schemes
             messages.AddColumn(m => m.ReceiverId).IsRequired().HasForeignKey<UserEntity>();
             messages.AddColumn(m => m.Text).AsText();
             messages.AddColumn(m => m.MediaType).AsText();
-
-            // 🎯 МЕНЯЕМ НА BOOLEAN: По умолчанию false (не прочитано)
             messages.AddColumn(m => m.IsRead).HasDefault(false, ColumnType.Boolean);
-
             messages.AddColumn(m => m.CreatedAt).IsTrackedTimestamp();
-
-            // 🎯 МЕНЯЕМ НА BOOLEAN: По умолчанию false (оффлайн-сообщение, требует синхронизации)
             messages.AddColumn(m => m.IsSynced).HasDefault(false, ColumnType.Boolean);
-
             messages.AddColumn(m => m.UpdatedAt).IsUpdatedAtTimestamp();
-            yield return messages.Generate();
-
-
+            _schemas.Add(messages.Generate());
 
             // 3. ⚡ СХЕМА ТАБЛИЦЫ КОНТАКТОВ / ДРУЗЕЙ (friends)
             var friends = new TableBuilder<FriendEntity>("Friends");
-
-            // 🎯 ЖЕЛЕЗОБЕТОННО: Добавляем суррогатный ID для ОРМ-автопилота
             friends.AddColumn(f => f.Id).AsPrimaryKey();
-
             friends.AddColumn(f => f.UserId).IsRequired().HasForeignKey<UserEntity>();
             friends.AddColumn(f => f.FriendId).IsRequired().HasForeignKey<UserEntity>();
             friends.AddColumn(f => f.CreatedAt).IsTrackedTimestamp();
             friends.AddColumn(f => f.IsSynced).HasDefault(1, ColumnType.Integer);
             friends.AddColumn(f => f.UpdatedAt).IsUpdatedAtTimestamp();
-            yield return friends.Generate();
-
-
+            _schemas.Add(friends.Generate());
         }
+
+        /// <summary>
+        /// Метод для экспорта готовых чертежей таблиц наружу
+        /// </summary>
+        public IEnumerable<TableSchema> GetRegisteredSchemas() => _schemas;
     }
 }

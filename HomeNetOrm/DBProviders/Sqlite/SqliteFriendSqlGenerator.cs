@@ -3,15 +3,21 @@ using HomeNetCore.Models;
 using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
+using HomeNetOrm.Models;
 
 namespace HomeNetOrm.DBProviders.Sqlite
 {
     /// <summary>
     /// ОРМ-генератор SQL-запросов таблицы друзей для локальной СУБД SQLite.
     /// </summary>
-    public class SqliteFriendSqlGenerator : BaseSqlGenerator<FriendEntity>, ISqlGenerator<FriendEntity>
+    internal class SqliteFriendSqlGenerator : BaseSqlGenerator<FriendEntity>, ISqlGenerator<FriendEntity>
     {
-        public SqliteFriendSqlGenerator(ISchemaAdapter adapter, ILogger logger) : base(adapter, logger) { }
+        // Добавляем IEnumerable<TableSchema> schemas в параметры и пробрасываем в base()
+        public SqliteFriendSqlGenerator(GenericSchemaAdapter adapter, IEnumerable<TableSchema> schemas, ILogger logger)
+            : base(adapter, schemas, logger)
+        {
+        }
+
 
         public override string GenerateInsert()
         {

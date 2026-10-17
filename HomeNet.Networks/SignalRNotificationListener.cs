@@ -25,32 +25,35 @@ namespace HomeNet.Network
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task ConnectAsync(Guid userId)
+        // Меняем Guid на Guid? (делаем null-опциональным)
+        public async Task ConnectAsync(Guid? userId = null)
         {
             if (_connection != null) await _connection.DisposeAsync();
 
+            // Если userId передан, шлем его, если нет — подключаемся "гостем" для логов
+            string url = userId.HasValue
+                ? $"{_apiBaseUrl}/chatHub?userId={userId.Value}"
+                : $"{_apiBaseUrl}/chatHub";
+
             _connection = new HubConnectionBuilder()
-                .WithUrl($"{_apiBaseUrl}/chatHub?userId={userId}")
+                .WithUrl(url)
                 .WithAutomaticReconnect()
                 .Build();
-            // 🔥 КРАСОТА АРХИТЕКТУРЫ: Регистрируем обработчики на хабе сервера!
+
             foreach (var handler in _handlers)
             {
-                // Используем встроенную generic-перегрузку SignalR, которая принимает object
                 _connection.On<object>(handler.ServerMethodName, async (payload) =>
                 {
                     _logger.LogInfo($"[СЕТЬ] Поймали сетевое событие '{handler.ServerMethodName}' от сервера.");
-
-                    if (payload != null)
-                    {
-                        await handler.HandleAsync(payload);
-                    }
+                    if (payload != null) await handler.HandleAsync(payload);
                 });
             }
 
-
             await _connection.StartAsync();
-            _logger.LogInfo($"[СЕТЬ] Постоянное соединение SignalR успешно поднято для UserId '{userId}'.");
+            _logger.LogInfo(userId.HasValue
+                ? $"[СЕТЬ] Постоянное соединение SignalR успешно поднято для UserId '{userId}'."
+                : "[СЕТЬ] Постоянное соединение SignalR успешно поднято в режиме логирования.");
         }
+
     }
 }

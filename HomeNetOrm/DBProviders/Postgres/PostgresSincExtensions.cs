@@ -3,7 +3,7 @@ using HomeNetCore.Models;
 
 namespace HomeNetOrm.Extensions
 {
-    public static class PostgresSincExtensions
+    internal static class PostgresSincExtensions
     {
         // === НАШИ НОВЫЕ МЕТОДЫ АДАПТАЦИИ ПАРАМЕТРОВ ===
 

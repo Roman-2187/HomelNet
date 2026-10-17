@@ -4,17 +4,19 @@ using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Network;
+using HomeNetCore.Interfaces.OutputLogging;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Interfaces.Sinc;
 using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Interfaces.Builders;
+using HomeNetOrm.Models;
 using HomeNetOrm.Sinc;
 
 namespace HomeNet.DI.Modules
 {
     public class DataAccessModule
     {
-        public SqliteDbEngine SqliteEngine { get; } // Поменяли тип интерфейса на конкретный движок
+        public SqliteDbEngine SqliteEngine { get; }
         public IApiClient ApiClient { get; }
         public IDbContextContainer DbContextContainer { get; }
 
@@ -28,10 +30,11 @@ namespace HomeNet.DI.Modules
         // Сетевой слушатель SignalR
         public SignalRNotificationListener NotificationListener { get; }
 
-        public DataAccessModule(string sqliteConn, string apiBaseUrl, ILogger logger, IEventBus eventBus)
+        // 🎯 КОНСТРУКТОР ТЕПЕРЬ ТРЕТЬИМ ПАРАМЕТРОМ ПРИНИМАЕТ СХЕМЫ ТАБЛИЦ
+        public DataAccessModule(string sqliteConn, string apiBaseUrl, IEnumerable<TableSchema> appSchemas, ILogger logger, ILogQueueManager logQueue, IEventBus eventBus)
         {
-            // 1. Инициализируем локальный движок SQLite
-            SqliteEngine = new SqliteDbEngine(sqliteConn, logger);
+            // 1. Инициализируем локальный движок SQLite и скармливаем ему схемы! 🦾
+            SqliteEngine = new SqliteDbEngine(sqliteConn, appSchemas, logger);
 
             // 2. Инициализируем сетевой HttpClient
             ApiClient = new HttpApiClient(apiBaseUrl, logger);
@@ -43,8 +46,6 @@ namespace HomeNet.DI.Modules
             UserRepository = SqliteEngine.CreateUserRepository(eventBus);
             MessageRepository = SqliteEngine.CreateMessageRepository(eventBus);
 
-           
-
             // 5. 🔥 ФИКС: Синхронизаторы теперь питаются чистыми репозиториями, без движков и контейнеров!
             var userSync = new UserSynchronizer(UserRepository, ApiClient, eventBus, logger);
             var messageSync = new MessageSynchronizer(MessageRepository, ApiClient, eventBus, logger);
@@ -54,14 +55,14 @@ namespace HomeNet.DI.Modules
             // 6. 🔥 ФИКС: Закрываем всё это добро внутрь нашего единого SiberNetEngine движка ОРМ
             OrmEngine = new SiberNetEngine(UserRepository, MessageRepository, syncCoordinator, logger);
 
-            // 7. Собираем сетевые обработчики по SOLID
             var networkHandlers = new INetworkHandler[]
-            {
-                new MessageNetworkHandler(eventBus),
-                new UserNetworkHandler(eventBus)
-            };
+        {
+    new MessageNetworkHandler(eventBus),
+    new UserNetworkHandler(eventBus),
+    new ServerLogNetworkHandler(eventBus) // 🎯 Вернули автобус, компилятор счастлив!
+        };
 
-            // 8. Собираем универсальный листенер SignalR
+
             NotificationListener = new SignalRNotificationListener(apiBaseUrl, networkHandlers, logger);
         }
     }

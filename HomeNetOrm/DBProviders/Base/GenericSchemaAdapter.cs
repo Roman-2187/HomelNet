@@ -6,7 +6,7 @@ using HomeNetOrm.Models;
 
 namespace HomeNetOrm.DBProviders.Base
 {
-    public class GenericSchemaAdapter : ISchemaAdapter
+    internal class GenericSchemaAdapter : ISchemaAdapter
     {
         private const string DefaultCurrentTimestamp = "DEFAULT CURRENT_TIMESTAMP";
         private const string NotNull = "NOT NULL";

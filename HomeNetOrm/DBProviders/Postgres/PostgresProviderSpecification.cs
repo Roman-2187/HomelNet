@@ -6,7 +6,7 @@ namespace HomeNetOrm.DBProviders.Postgres
     /// <summary>
     /// Спецификация типов данных для PostgreSQL.
     /// </summary>
-    public class PostgresProviderSpecification : IDbProviderSpecification
+    internal class PostgresProviderSpecification : IDbProviderSpecification
     {
         public string MapToSqlType(ColumnType type, bool isPk, bool isAi, int? length) => type switch
         {

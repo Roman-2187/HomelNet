@@ -1,4 +1,4 @@
-﻿using HomeNet.DI.Modules; 
+﻿using HomeNet.DI.Modules;
 using HomeNetCore.Enums;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
@@ -30,21 +30,28 @@ namespace HomeNet.DI
             // 1. Модуль Системных Кишок
             _infrastructure = new CoreInfrastructureModule();
 
-            // 2. Модуль Базы Данных и ОРМ (Скармливаем зависимости из Модуля 1)
+            // 2. 🎯 СОБИРАЕМ СХЕМЫ СНАРУЖИ ЧЕРЕЗ НАШ НОВЫЙ DI-МОДУЛЬ
+            var schemaModule = new MessengerSchemaModule();
+            var registeredSchemas = schemaModule.GetRegisteredSchemas();
+
+            // 3. Модуль Базы Данных и ОРМ (Скармливаем зависимости, адрес сервера и готовые схемы!) 🦾
             _dataAccess = new DataAccessModule(
-                sqliteConn, postgresConn,
+                sqliteConn,
+                postgresConn, // В контексте клиента это базовый URL сервера (apiBaseUrl)
+                registeredSchemas, // 🔥 Вот они улетели в ОРМ-движок!
+                _infrastructure.Logger,_infrastructure.LogQueueManager
+                ,
+                _infrastructure.EventBus);
+
+            // 4. Модуль Сервисов Бизнес-Логики (Скармливаем Репозитории из Модуля 3)
+            _services = new BusinessServicesModule(
+                _dataAccess.UserRepository, _dataAccess.MessageRepository,
                 _infrastructure.Logger, _infrastructure.EventBus);
 
-            // 3. Модуль Сервисов Бизнес-Логики (Скармливаем Репозитории из Модуля 2)
-            _services = new BusinessServicesModule(_dataAccess.UserRepository,_dataAccess.MessageRepository, _infrastructure.Logger, _infrastructure.EventBus);
-                 
-                
-                
-
-            // 4. Модуль Презентации / UI (Скармливаем Логику и Систему логов)
+            // 5. Модуль Презентации / UI (Скармливаем Логику и Систему логов)
             _ui = new PresentationUiModule(
                 _infrastructure.EventBus, _infrastructure.Logger,
-                _infrastructure.LogQueueManager,_services.UserService,
+                _infrastructure.LogQueueManager, _services.UserService,
                 _services.RegistrationService, _services.AuthenticateService,
                 _services.DeleteService, _services.MessageService,
                 _infrastructure.EventBusInspector
@@ -59,6 +66,16 @@ namespace HomeNet.DI
             _instance._infrastructure.EventBus.Subscribe<IDbContextContainer.InfrastructureReady>(async ev =>
             {
                 _instance._infrastructure.Logger.LogInfo("[App Старт] Базы и сеть прогреты. Запускаем репликацию данных...");
+
+                // 🔥 ПОДКЛЮЧАЕМ ТРУБУ SIGNALR: Врубаем коннект гостем, чтобы забрать буфер серверных логов!
+                try
+                {
+                    await _instance._dataAccess.NotificationListener.ConnectAsync();
+                }
+                catch (Exception ex)
+                {
+                    _instance._infrastructure.Logger.LogError($"[App Старт] Не удалось подключить логи бэкенда: {ex.Message}");
+                }
 
                 // Добавим микроскопическую задержку в 300 мс, чтобы дать веб-серверу окончательно "продышаться"
                 await Task.Delay(300);
@@ -94,7 +111,7 @@ namespace HomeNet.DI
             if (typeof(TGet) == typeof(SeedUsersViewModel)) return (_ui.SeedUsersVM as TGet)!;
             if (typeof(TGet) == typeof(ContactsViewModel)) return (_ui.ContactsVM as TGet)!;
 
-            throw new ArgumentException($"Тип {typeof(TGet).Name} не найден в UI модуле.");
+            throw new ArgumentException($"Тип {typeof(TGet).Name} не найден в UI模块.");
         }
     }
 }

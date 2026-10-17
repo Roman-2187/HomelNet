@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\HomeNet.Networks\HomeNet.Network.csproj" />
     <ProjectReference Include="..\HomeNetCore\HomeNetCore.csproj" />
     <ProjectReference Include="..\HomeNetOrm\HomeNetOrm.csproj" />
   </ItemGroup>

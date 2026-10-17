@@ -14,7 +14,7 @@ namespace HomeNetOrm.DBProviders.Base
     /// Универсальный поставщик актуальных схем данных из СУБД.
     /// Оркеструет вычитку метаданных на основе чистых SQL-запросов и Dapper.
     /// </summary>
-    public class GenericSchemaProvider : ISchemaProvider
+    internal class GenericSchemaProvider : ISchemaProvider
     {
         private readonly ISchemaSqlInitializer _sqlInit;
         private readonly DbConnection _requiredConnection;

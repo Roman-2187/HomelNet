@@ -4,7 +4,7 @@ using HomeNetOrm.Models;
 
 namespace HomeNetOrm.DBProviders.Postgres
 {
-    public class PostgresSchemaInitializer : ISchemaSqlInitializer
+    internal class PostgresSchemaInitializer : ISchemaSqlInitializer
     {
         private readonly ISchemaAdapter _adapter;
         private readonly ILogger _logger;
