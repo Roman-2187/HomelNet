@@ -5,7 +5,7 @@ namespace HomeNetCore.Models
     public class DbSeedData
     {
         // Превратили свойство в метод с параметром по умолчанию (10 штук) 🛸🦾
-        public static List<UserEntity> GetGeneratedUsers(int count = 20)
+        public static List<UserEntity> GetGeneratedUsers(int count = 5)
         {
             var firstNames = new[]
             {
@@ -37,7 +37,7 @@ namespace HomeNetCore.Models
                     LastName = lName,
                     PhoneNumber = $"+7 916 {100 + i}-{23 + i:D2}-45",
                     // Используем латинский транслит или индекс, чтобы email не ломал СУБД из-за кириллицы
-                    Email = $"user_{i}@example.com",
+                    Email = $"user_{lName}@example.com",
                     Password = $"SecurePass{2025 + i}!"
                 });
             }

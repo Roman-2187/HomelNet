@@ -50,10 +50,6 @@ namespace HomeNetPresentation.ViewModels
             // 🔥 Пишем в генерируемое Toolkit-ом свойство (с большой буквы)
             ActiveTab = msg.ActiveTab;
 
-            if (ActiveTab == AdminSubTab.Logger)
-            {
-                _adminLogQueueManager.SetReady();
-            }
 
 
             bool shouldBeWide = (msg.ActiveTab == AdminSubTab.EventInspector ||

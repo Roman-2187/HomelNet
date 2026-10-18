@@ -10,7 +10,7 @@ namespace HomeNetServices.Diagnostics
         private readonly string _filePath;
         private readonly object _fileLock = new();
 
-        public AppFileLogger(string filePath = "crash_debug.txt")
+        public AppFileLogger(string filePath = "File_debug.txt")
         {
             _filePath = filePath;
 
@@ -30,7 +30,7 @@ namespace HomeNetServices.Diagnostics
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[FileCrashLogger] Ошибка очистки файла: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"[DebugFileLogger] Ошибка очистки файла: {ex.Message}");
                 }
             }
         }

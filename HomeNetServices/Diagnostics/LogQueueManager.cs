@@ -1,6 +1,6 @@
 ﻿using System.Threading.Channels;
 using HomeNetCore.Enums;
-using HomeNetCore.Interfaces.Events; // Подключаем твою шину событий
+using HomeNetCore.Interfaces.Events; 
 using HomeNetCore.Interfaces.OutputLogging;
 
 namespace HomeNetServices.Diagnostics
@@ -17,6 +17,9 @@ namespace HomeNetServices.Diagnostics
         {
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             _typingDelayMs = typingDelayMs >= 0 ? typingDelayMs : throw new ArgumentOutOfRangeException(nameof(typingDelayMs));
+
+
+            Task.Run(() => ProcessLogQueueAsync(_cts.Token));
 
             _channel = Channel.CreateUnbounded<(LogLevel, string, string)>(new UnboundedChannelOptions
             {

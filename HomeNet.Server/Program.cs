@@ -5,20 +5,18 @@ using HomeNetCore.Models;
 using HomeNetOrm.Infrastructure;
 using HomeNetServices.Diagnostics;
 using Microsoft.AspNetCore.SignalR;
-using System.Threading.Tasks;
-using System;
-using System.Collections.Generic; // 🎯 Обязательно для List<string>
+using System.Threading; // 🎯 Подключаем для семафора
 
 public partial class Program
 {
-    // 🔥 НАШ ЛОКАЛЬНЫЙ БУФЕР ДЛЯ СБОРКА СТАРТОВЫХ ЛОГОВ
-    public static readonly List<string> StartupLogs = new();
+    // 🎯 Единый турникет для защиты нашего persistent-подключения Postgres
+    private static readonly SemaphoreSlim _dbSemaphore = new SemaphoreSlim(1, 1);
 
     private static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // 1. Поднимаем боевой логгер
+        // 1. Поднимаем боевой логгер (работает строго с консолью)
         HomeNetCore.Interfaces.Diagnostics.ILogger serverLogger = Logger.CreateConsoleLogger();
 
         // 2. СОБИРАЕМ СХЕМЫ СНАРУЖИ ЧЕРЕЗ НАШ DI-МОДУЛЬ
@@ -45,18 +43,19 @@ public partial class Program
         // ============================================================================
         app.MapPost("/api/messages", async (MessageEntity incomingMessage, IHubContext<ServerChatHub> hubContext) =>
         {
+            await _dbSemaphore.WaitAsync();
             try
             {
-                serverLogger.LogInfo($"[API] Прилетел объект сообщения от {incomingMessage.SenderId}");
+                serverLogger.LogInfo($"[API] Прилетел объект сообщения от {incomingMessage.SenderId} для {incomingMessage.ReceiverId}");
 
                 await messageRepository.SaveMessageAsync(incomingMessage);
+
+                // 🎯 ДОБАВИЛИ ЛОГ УСПЕХА: Теперь видно, что СМС реально легло в Postgres
+                serverLogger.LogInfo($"[API Успех] Сообщение {incomingMessage.Id} успешно записано в PostgreSQL.");
 
                 // Мгновенно пушаем получателю по сети
                 await hubContext.Clients.Group(incomingMessage.ReceiverId.ToString())
                     .SendAsync("ReceiveMessage", incomingMessage);
-
-                // 🔥 ЖИВОЙ СТРИМ: Публикуем текущий лог в терминал клиента прямо из эндпоинта!
-                await hubContext.Clients.All.SendAsync("ReceiveServerLog", $"[SERVER] Успешно обработано СМС от {incomingMessage.SenderId}");
 
                 return Results.Ok(new { Success = true });
             }
@@ -65,6 +64,10 @@ public partial class Program
                 serverLogger.LogError($"[API Ошибка] Не удалось сохранить через репозиторий: {ex.Message}");
                 return Results.Problem("Ошибка сервера");
             }
+            finally
+            {
+                _dbSemaphore.Release();
+            }
         });
 
         // ============================================================================
@@ -72,14 +75,15 @@ public partial class Program
         // ============================================================================
         app.MapPost("/api/users", async (UserEntity incomingUser, IHubContext<ServerChatHub> hubContext) =>
         {
+            await _dbSemaphore.WaitAsync();
             try
             {
                 serverLogger.LogInfo($"[API] Прилетел профиль пользователя '{incomingUser.FirstName}' (ID: {incomingUser.Id})");
 
                 await userRepository.InsertUserAsync(incomingUser);
 
-                // 🔥 ЖИВОЙ СТРИМ: Отправляем лог регистрации в клиент
-                await hubContext.Clients.All.SendAsync("ReceiveServerLog", $"[SERVER] Профиль '{incomingUser.FirstName}' успешно заведен в Postgres.");
+                // 🎯 ДОБАВИЛИ ЛОГ УСПЕХА: Теперь в консоли четко будет видно, кто зашел
+                serverLogger.LogInfo($"[API Успех] Пользователь '{incomingUser.FirstName}' (ID: {incomingUser.Id}) успешно сохранен в PostgreSQL.");
 
                 return Results.Ok(new { Success = true });
             }
@@ -88,29 +92,59 @@ public partial class Program
                 serverLogger.LogError($"[API Ошибка] Не удалось сохранить пользователя через репозиторий: {ex.Message}");
                 return Results.Problem("Ошибка сервера");
             }
+            finally
+            {
+                _dbSemaphore.Release();
+            }
         });
+
+
 
         app.MapGet("/api/ping", () => Results.Ok("pong"));
 
         // ============================================================================
-        // 📦 ЗАПИСЬ ИНИЦИАЛИЗАЦИИ В ЛОКАЛЬНЫЙ БУФЕР СТАРТА
+        // 🎯 ЭНДПОИНТ: УДАЛЕНИЕ ПОЛЬЗОВАТЕЛЯ
+        // ============================================================================
+        app.MapDelete("/api/users/{id:guid}", async (Guid id, IHubContext<ServerChatHub> hubContext) =>
+        {
+            await _dbSemaphore.WaitAsync(); // 🎯 Встаем в очередь
+            try
+            {
+                serverLogger.LogInfo($"[API] Запрос на удаление пользователя (ID: {id})");
+
+                await userRepository.DeleteByIdAsync(id);
+
+                // Оповещаем клиентов об удалении
+                await hubContext.Clients.All.SendAsync("ReceiveUserDeleted", id);
+
+                return Results.Ok(new { Success = true });
+            }
+            catch (Exception ex)
+            {
+                serverLogger.LogError($"[API Ошибка] Не удалось удалить пользователя через репозиторий: {ex.Message}");
+                return Results.Problem("Ошибка сервера");
+            }
+            finally
+            {
+                _dbSemaphore.Release(); // 🎯 Освобождаем коннект
+            }
+        });
+
+        // ============================================================================
+        // 📦 ИНИЦИАЛИЗАЦИЯ И ЗАПУСК
         // ============================================================================
         serverLogger.LogInfo("=== [СУБД ХАБ СЕРВЕРА] ЗАПУСК ИНИЦИАЛИЗАЦИИ POSTGRES ===");
 
-        StartupLogs.Add("[SERVER START] === ЗАПУСК ИНИЦИАЛИЗАЦИИ POSTGRES ===");
-        StartupLogs.Add("[SERVER START] Сверяю структуру таблиц 'users', 'messages', 'friends' по внешним схемам...");
-
         await postgresEngine.InitializeChannelAsync(); // Запуск ОРМ-проверки
 
-        StartupLogs.Add("[SERVER START] ✅ База данных PostgreSQL успешно прогрета. Все таблицы соответствуют схемам.");
-        StartupLogs.Add("[SERVER START] Веб-сервер запущен и слушает порт.");
+        serverLogger.LogInfo("[SERVER START] Веб-сервер запущен и слушает порт.");
 
         app.Run();
     }
 }
+
 public class ServerChatHub : Hub
 {
-    // 🔥 ФИКС: Добавляем async перед Task в заголовке метода!
     public override async Task OnConnectedAsync()
     {
         string? userId = Context.GetHttpContext()?.Request.Query["userId"];
@@ -120,24 +154,6 @@ public class ServerChatHub : Hub
             await Groups.AddToGroupAsync(Context.ConnectionId, userId);
         }
 
-        // 🔥 МАГИЯ ТАЙМИНГА: Теперь никакого Task.Run! 
-        // Спокойно ждем 300 мс прямо тут, давая Авалонии повесить подписку на шину
-        await Task.Delay(300);
-
-        // И честно выгружаем накопленную пачку логов ОРМ-инициализации!
-        lock (Program.StartupLogs)
-        {
-            foreach (var startupLog in Program.StartupLogs)
-            {
-                // Отправляем точечно именно этому подключившемуся клиенту
-                _ = Clients.Caller.SendAsync("ReceiveServerLog", startupLog);
-            }
-        }
-
-        // 🔥 ФИКС: Обязательно добавляем await перед вызовом базового метода!
         await base.OnConnectedAsync();
     }
 }
-
-
-

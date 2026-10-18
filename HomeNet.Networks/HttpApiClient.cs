@@ -1,7 +1,7 @@
-﻿using HomeNetCore.Interfaces; // Убедись, что тут лежит твой интерфейс IApiClient
+﻿using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Extensions;
-using System.Net.Http.Json; // Нужен для удобной отправки объектов как JSON
+using System.Net.Http.Json;
 
 namespace HomeNet.Network
 {
@@ -25,12 +25,9 @@ namespace HomeNet.Network
         public async Task<bool> PushMessageAsync(object messageEntity)
         {
             try
-            {
-                // Метод .PostAsJsonAsync сам берет любой C# объект, 
-                // делает из него JSON-строку и шлет на сервер
+            {          
                 var response = await _httpClient.PostAsJsonAsync("/api/messages", messageEntity);
-
-                // Возвращаем true, если сервер ответил 200 OK
+               
                 return response.IsSuccessStatusCode;
             }
             catch (Exception ex)
@@ -54,24 +51,34 @@ namespace HomeNet.Network
             }
         }
 
+      
+        public async Task<bool> DeleteUserAsync(Guid userId)
+        {
+            try
+            {           
+                var response = await _httpClient.DeleteAsync($"/api/users/{userId}");
 
-        // 🔥 РЕАЛИЗАЦИЯ СВОЙСТВА ПРОВЕРКИ ДОСТУПНОСТИ СЕРВЕРА
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"[HttpApiClient] Ошибка при отправке запроса на удаление (ID: {userId}): {ex.Message}");
+                return false;
+            }
+        }
+
+   
         public bool IsServerAvailable
         {
             get
             {
                 try
-                {
-                    // Стучимся на выделенный эндпоинт проверки связи
+                {                
                     var response = _httpClient.GetAsync("api/ping").GetAwaiter().GetResult();
-                    return response.IsSuccessStatusCode;
-
-
-                    
+                    return response.IsSuccessStatusCode;                
                 }
                 catch
-                {
-                    // Если легли по таймауту или нет сети — сервер недоступен
+                {                
                     return false;
                 }
             }

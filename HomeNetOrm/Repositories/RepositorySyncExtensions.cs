@@ -101,9 +101,11 @@ namespace HomeNetOrm.Repositories
             // 2. Выкачиваем всё из локальной таблицы
             var localRecords = await localConn.QueryAsync<TEntity>(localGen.GenerateSelectAll());
 
-            string checkLocalSql = localGen.GenerateCountById();
-            string insertLocalSql = localGen.GenerateInsert();
-            string deleteLocalSql = localGen.GenerateDeleteById();
+           
+
+            string checkLocalSql = HomeNetOrm.DBProviders.Sqlite.SqliteSincExtensions.GenerateCountByIdSqlite(localGen);
+            string insertLocalSql = localGen.GenerateInsert(); // Если обычный инсерт работает, оставляем. Если нет — меняем на SQLite вариант.
+            string deleteLocalSql = HomeNetOrm.DBProviders.Sqlite.SqliteSincExtensions.GenerateDeleteByIdSqlite(localGen);
 
             // --- ШАГ А: Затягивание новых данных с сервера ---
             foreach (var record in remoteRecords)

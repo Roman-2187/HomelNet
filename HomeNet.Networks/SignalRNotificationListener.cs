@@ -1,36 +1,37 @@
-﻿using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Network;
-using Microsoft.AspNet.SignalR.Client;
+﻿using HomeNetCore.Interfaces.Diagnostics;
 using Microsoft.AspNetCore.SignalR.Client;
-
+using HomeNetCore.Extensions;
 
 
 namespace HomeNet.Network
 {
-    public class SignalRNotificationListener
+    public class SignalRNotificationListener : IDisposable
     {
         private readonly string _apiBaseUrl;
-        private readonly IEnumerable<INetworkHandler> _handlers;
         private readonly ILogger _logger;
-        private Microsoft.AspNetCore.SignalR.Client.HubConnection? _connection;
 
+        // Внедряем наши конкретные двусторонние хандлеры напрямую
+        private readonly MessageNetworkHandler _messageHandler;
+        private readonly UserNetworkHandler _userHandler;
 
+        private HubConnection? _connection;
 
-        // Принимает коллекцию обработчиков (массив из MessageNetworkHandler, UserNetworkHandler и т.д.)
-        public SignalRNotificationListener(string apiBaseUrl, IEnumerable<INetworkHandler> handlers, ILogger logger)
+        public SignalRNotificationListener(
+            string apiBaseUrl,
+            MessageNetworkHandler messageHandler,
+            UserNetworkHandler userHandler,
+            ILogger logger)
         {
             _apiBaseUrl = apiBaseUrl ?? throw new ArgumentNullException(nameof(apiBaseUrl));
-            _handlers = handlers ?? throw new ArgumentNullException(nameof(handlers));
+            _messageHandler = messageHandler ?? throw new ArgumentNullException(nameof(messageHandler));
+            _userHandler = userHandler ?? throw new ArgumentNullException(nameof(userHandler));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        // Меняем Guid на Guid? (делаем null-опциональным)
         public async Task ConnectAsync(Guid? userId = null)
         {
             if (_connection != null) await _connection.DisposeAsync();
 
-            // Если userId передан, шлем его, если нет — подключаемся "гостем" для логов
             string url = userId.HasValue
                 ? $"{_apiBaseUrl}/chatHub?userId={userId.Value}"
                 : $"{_apiBaseUrl}/chatHub";
@@ -40,14 +41,32 @@ namespace HomeNet.Network
                 .WithAutomaticReconnect()
                 .Build();
 
-            foreach (var handler in _handlers)
+            // =========================================================================
+            // КРАСИВАЯ СТРОГАЯ ПОДПИСКА НА МЕТОДЫ СЕРВЕРА
+            // =========================================================================
+
+            // 1. Слушаем входящие сообщения
+            _connection.On<HomeNetCore.Models.MessageEntity>(_messageHandler.ServerMethodName, async (message) =>
             {
-                _connection.On<object>(handler.ServerMethodName, async (payload) =>
-                {
-                    _logger.LogInfo($"[СЕТЬ] Поймали сетевое событие '{handler.ServerMethodName}' от сервера.");
-                    if (payload != null) await handler.HandleAsync(payload);
-                });
-            }
+                _logger.LogInfo($"[СЕТЬ] Поймали метод '{_messageHandler.ServerMethodName}' от сервера.");
+                await _messageHandler.HandleIncomingMessageAsync(message);
+            });
+
+            // 2. Слушаем входящие апдейты пользователей
+            _connection.On<HomeNetCore.Models.UserEntity>(_userHandler.ServerMethodName, async (user) =>
+            {
+                _logger.LogInfo($"[СЕТЬ] Поймали метод '{_userHandler.ServerMethodName}' от сервера.");
+                await _userHandler.HandleIncomingUserAsync(user);
+            });
+
+            // 3. Слушаем входящие удаления пользователей
+            _connection.On<Guid>("ReceiveUserDeleted", async (userIdDeleted) =>
+            {
+                _logger.LogWarning("[СЕТЬ] Поймали метод 'ReceiveUserDeleted' от сервера.");
+                await _userHandler.HandleIncomingUserDeletedAsync(userIdDeleted);
+            });
+
+            // =========================================================================
 
             await _connection.StartAsync();
             _logger.LogInfo(userId.HasValue
@@ -55,5 +74,10 @@ namespace HomeNet.Network
                 : "[СЕТЬ] Постоянное соединение SignalR успешно поднято в режиме логирования.");
         }
 
+        public void Dispose()
+        {
+            // Здесь можно неявно почистить ресурсы, если нужно, 
+            // но хандлеры живут в DI как синглтоны, так что пускай работают.
+        }
     }
 }

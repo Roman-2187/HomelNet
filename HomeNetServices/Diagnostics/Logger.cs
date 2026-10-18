@@ -76,13 +76,6 @@ namespace HomeNetServices.Diagnostics
             _output.Invoke(logEntry, level, detectedNamespace);
         }
 
-        /// <summary>
-        /// Реализация старого метода SetOutput для совместимости с интерфейсом ILogger.
-        /// Просто игнорируем его, так как мы передаем вывод через конструктор.
-        /// </summary>
-        public void SetOutput(Action<string, LogLevel, string> output)
-        {
-            // Больше не кидает NotImplementedException! Просто молча выходит.
-        }
+       
     }
 }

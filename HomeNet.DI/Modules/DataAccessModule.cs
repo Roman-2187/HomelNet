@@ -1,9 +1,7 @@
 ﻿using HomeNet.Network;
-using HomeNet.Network.HomeNet.Network;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
-using HomeNetCore.Interfaces.Network;
 using HomeNetCore.Interfaces.OutputLogging;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Interfaces.Sinc;
@@ -11,6 +9,9 @@ using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetOrm.Models;
 using HomeNetOrm.Sinc;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace HomeNet.DI.Modules
 {
@@ -30,40 +31,36 @@ namespace HomeNet.DI.Modules
         // Сетевой слушатель SignalR
         public SignalRNotificationListener NotificationListener { get; }
 
-        // 🎯 КОНСТРУКТОР ТЕПЕРЬ ТРЕТЬИМ ПАРАМЕТРОМ ПРИНИМАЕТ СХЕМЫ ТАБЛИЦ
         public DataAccessModule(string sqliteConn, string apiBaseUrl, IEnumerable<TableSchema> appSchemas, ILogger logger, ILogQueueManager logQueue, IEventBus eventBus)
         {
             // 1. Инициализируем локальный движок SQLite и скармливаем ему схемы! 🦾
             SqliteEngine = new SqliteDbEngine(sqliteConn, appSchemas, logger);
 
-            // 2. Инициализируем сетевой HttpClient
+            // 2. Инициализируем сетевой HttpClient (наш переводчик-курьер)
             ApiClient = new HttpApiClient(apiBaseUrl, logger);
 
             // 3. Контейнер занимается только инициализацией баз на старте
             DbContextContainer = new DbContextContainer(SqliteEngine, apiBaseUrl, eventBus, logger);
 
-            // 4. 🔥 ЧИСТОТА: Движок сам создаёт репозитории, скрывая internal-генераторы внутри себя!
+            // 4. Движок сам создаёт репозитории, скрывая internal-генераторы внутри себя!
             UserRepository = SqliteEngine.CreateUserRepository(eventBus);
             MessageRepository = SqliteEngine.CreateMessageRepository(eventBus);
 
-            // 5. 🔥 ФИКС: Синхронизаторы теперь питаются чистыми репозиториями, без движков и контейнеров!
-            var userSync = new UserSynchronizer(UserRepository, ApiClient, eventBus, logger);
-            var messageSync = new MessageSynchronizer(MessageRepository, ApiClient, eventBus, logger);
+            // 5. 🔥 КРИСТАЛЬНАЯ ЧИСТОТА: Синхронизаторы теперь питаются ТОЛЬКО репозиторием, шиной и логгером. Сеть ушла наружу!
+            var userSync = new UserSynchronizer(UserRepository, eventBus, logger);
+            var messageSync = new MessageSynchronizer(MessageRepository, eventBus, logger);
 
             var syncCoordinator = new CompositeSyncCoordinator(userSync, messageSync);
 
-            // 6. 🔥 ФИКС: Закрываем всё это добро внутрь нашего единого SiberNetEngine движка ОРМ
+            // 6. Закрываем это добро внутрь нашего единого SiberNetEngine движка ОРМ
             OrmEngine = new SiberNetEngine(UserRepository, MessageRepository, syncCoordinator, logger);
 
-            var networkHandlers = new INetworkHandler[]
-        {
-    new MessageNetworkHandler(eventBus),
-    new UserNetworkHandler(eventBus),
-    new ServerLogNetworkHandler(eventBus) // 🎯 Вернули автобус, компилятор счастлив!
-        };
+            // 7. 🔥 СБОРКА СЕТЕВОГО СЛОЯ: Создаем монолитные двусторонние хандлеры
+            var messageNetworkHandler = new MessageNetworkHandler(ApiClient, eventBus, logger);
+            var userNetworkHandler = new UserNetworkHandler(ApiClient, eventBus, logger);
 
-
-            NotificationListener = new SignalRNotificationListener(apiBaseUrl, networkHandlers, logger);
+            // 8. 🔥 НОВЫЙ КОММУТАТОР: Передаем хандлеры напрямую в листенер без всяких массивов и интерфейсов
+            NotificationListener = new SignalRNotificationListener(apiBaseUrl, messageNetworkHandler, userNetworkHandler, logger);
         }
     }
 
@@ -84,7 +81,7 @@ namespace HomeNet.DI.Modules
 
         public async Task StartAsync()
         {
-            // Запускаем пакетную сверку по обеим таблицам параллельно
+            // Запускаем локальную сверку по обеим таблицам параллельно
             await Task.WhenAll(_userSync.StartAsync(), _messageSync.StartAsync());
         }
     }

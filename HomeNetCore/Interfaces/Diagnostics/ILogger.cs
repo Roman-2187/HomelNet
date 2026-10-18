@@ -5,8 +5,7 @@ namespace HomeNetCore.Interfaces.Diagnostics
 {
     public interface ILogger
     {
-        // 🔥 Добавили третий параметр (namespace) в Action
-        void SetOutput(Action<string, LogLevel, string> output);
+      
 
         void Log(
             LogLevel level,

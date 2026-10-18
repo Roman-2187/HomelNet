@@ -6,6 +6,8 @@ namespace HomeNetCore.Interfaces
     {
         bool IsServerAvailable { get; }
 
+        Task<bool> DeleteUserAsync(Guid userId);
+
         Task<bool> PushMessageAsync(object messageEntity);
         Task<bool> PushUserAsync(object userEntity);
     }

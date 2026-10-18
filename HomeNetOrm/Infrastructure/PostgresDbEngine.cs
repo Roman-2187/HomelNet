@@ -7,10 +7,7 @@ using HomeNetOrm.DbTableInitializer;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetOrm.Repositories;
 using HomeNetOrm.Models; // 🎯 Подключаем пространство имен для TableSchema
-using System;
-using System.Collections.Generic;
 using System.Data.Common;
-using System.Threading.Tasks;
 
 namespace HomeNetOrm.Infrastructure
 {
