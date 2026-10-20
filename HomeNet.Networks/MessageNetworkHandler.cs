@@ -16,24 +16,20 @@ namespace HomeNet.Network
 
         protected override void SubscribeToEvents()
         {
-            // 1. ИСХОДЯЩИЕ: Слушаем, что синхронизатор просит отправить на сервер
+            // 1. ИСХОДЯЩИЕ (PUSH): Слушаем, что синхронизатор просит отправить на сервер
             EventBus.Subscribe<ISiberNetSyncCoordinator.MessagePendingSync>(OnMessagePendingSync);
+
+            // 2. ВХОДЯЩИЕ (PULL): Слушаем, когда синхронизатор просит затянуть новые СМС с сервера
+            EventBus.Subscribe<ISiberNetSyncCoordinator.MessagePullRequested>(OnMessagePullRequested);
         }
 
-        // =========================================================================
-        // НАПРАВЛЕНИЕ "НА СЕРВЕР": Забираем C#, IApiClient превратит в JSON и отправит
-        // =========================================================================
         private void OnMessagePendingSync(ISiberNetSyncCoordinator.MessagePendingSync @event)
         {
             var message = @event.Message;
-
             FireAndForget(async () =>
             {
-                Logger.LogInfo($"[MessageNet] Пушим сообщение {message.Id} на сервер...");
-
-                // ApiClient под капотом делает сериализацию в JSON и шлет HTTP POST
+                Logger.LogInfo($"[MessageNet] Пушим сообщение {message.Id} на server...");
                 bool success = await ApiClient.PushMessageAsync(message);
-
                 if (success)
                 {
                     Logger.LogInfo($"[MessageNet] Сервер принял сообщение {message.Id}. Уведомляем синхронизатор.");
@@ -42,10 +38,30 @@ namespace HomeNet.Network
             }, $"Push Message {message.Id}");
         }
 
-        // =========================================================================
-        // НАПРАВЛЕНИЕ "С СЕРВЕРА": Сервер прислал JSON, мы получили C# объект и пуляем в шину
-        // =========================================================================
-        // Этот метод дергается твоим SignalR/сетевым движком при получении "ReceiveMessage"
+        // 🔥 НАША НОВАЯ ЛОГИКА PULL:
+        private void OnMessagePullRequested(ISiberNetSyncCoordinator.MessagePullRequested @event)
+        {
+            FireAndForget(async () =>
+            {
+                Logger.LogInfo("[MessageNet] Сеть перехватила запрос PULL. Запрашиваем посылку у PostgreSQL склада...");
+
+                // TODO: Передаем в твой ApiClient данные текущей сессии девайса и чекпоинт времени
+                // Эти данные можно брать из SessionManager или твоего стейта авторизации.
+                Guid currentDeviceId = Guid.NewGuid(); // Временно, пока не прокинешь сюда SessionManager/контекст
+                DateTimeOffset lastSyncedAt = DateTimeOffset.MinValue;
+
+                var freshMessages = await ApiClient.FetchFreshMessagesAsync(currentDeviceId, lastSyncedAt);
+
+                Logger.LogInfo($"[MessageNet] Сервер выдал на блюдечке {freshMessages.Count} новых сообщений. Выгружаем в шину.");
+                foreach (var message in freshMessages)
+                {
+                    // Вызываем наш стандартный метод приема — он проставит IsSynced = 1
+                    // и закинет сообщение в локальный SQLite репозиторий через OnMessageInserted!
+                    await HandleIncomingMessageAsync(message);
+                }
+            }, "Pull Messages From Server");
+        }
+
         public Task HandleIncomingMessageAsync(MessageEntity message)
         {
             if (message == null) return Task.CompletedTask;
@@ -53,7 +69,6 @@ namespace HomeNet.Network
             Logger.LogInfo($"[MessageNet] Сервер прислал новое сообщение {message.Id}. Кидаем в синхронизатор.");
             message.IsSynced = 1; // Пометка, что это готовые данные с сервера
 
-            // Швыряем в автобус — синхронизатор перехватит и запишет в базу
             EventBus.Publish(this, new ISiberNetSyncCoordinator.MessageInserted(message));
             return Task.CompletedTask;
         }
@@ -61,6 +76,7 @@ namespace HomeNet.Network
         public override void Dispose()
         {
             EventBus.Unsubscribe<ISiberNetSyncCoordinator.MessagePendingSync>(OnMessagePendingSync);
+            EventBus.Unsubscribe<ISiberNetSyncCoordinator.MessagePullRequested>(OnMessagePullRequested); // Не забываем отписаться!
         }
     }
 }

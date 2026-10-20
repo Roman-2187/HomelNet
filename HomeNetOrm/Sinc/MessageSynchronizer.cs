@@ -1,10 +1,11 @@
-﻿using Dapper;
-using HomeNetCore.Extensions;
+﻿using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Interfaces.Sinc;
 using HomeNetCore.Models;
+using HomeNetOrm.Interfaces.DbInfrastructure;
+using HomeNetOrm.Repositories;
 
 namespace HomeNetOrm.Sinc
 {
@@ -12,10 +13,7 @@ namespace HomeNetOrm.Sinc
     {
         private readonly IMessageRepository _messageRepository;
 
-        public MessageSynchronizer(
-            IMessageRepository messageRepository,
-            IEventBus eventBus,
-            ILogger logger)
+        public MessageSynchronizer(IMessageRepository messageRepository, IEventBus eventBus, ILogger logger)
             : base(eventBus, logger)
         {
             _messageRepository = messageRepository ?? throw new ArgumentNullException(nameof(messageRepository));
@@ -23,12 +21,9 @@ namespace HomeNetOrm.Sinc
 
         protected override void SubscribeEvents()
         {
-            // Локальные события изменений
             EventBus.Subscribe<ISiberNetSyncCoordinator.MessageInserted>(OnMessageInserted);
             EventBus.Subscribe<ISiberNetSyncCoordinator.MessageUpdated>(OnMessageUpdated);
             EventBus.Subscribe<ISiberNetSyncCoordinator.MessageDeleted>(OnMessageDeleted);
-
-            // Ответ от сетевого слоя об успешной отправке на сервер
             EventBus.Subscribe<ISiberNetSyncCoordinator.MessageSyncedOnServer>(OnMessageSyncedOnServer);
         }
 
@@ -44,78 +39,74 @@ namespace HomeNetOrm.Sinc
         {
             try
             {
-                Logger.LogInfo($"[{GetType().Name}] Инициация пакетной сверки СМС через ОРМ...");
+                Logger.LogInfo($"[{GetType().Name}] Инициация синхронизации СМС...");
 
-                var syncSupport = _messageRepository as HomeNetOrm.Interfaces.DbInfrastructure.ISyncSupport<MessageEntity>;
+                var syncSupport = _messageRepository as ISyncSupport<MessageEntity>;
                 if (syncSupport == null) return;
 
-                var localConn = syncSupport.Connection;
-                var localGen = syncSupport.SqlGenerator;
+                // ============================================================================
+                // 📥 НАПРАВЛЕНИЕ PULL: Просим сеть скачать свежие сообщения
+                // ============================================================================
+                Logger.LogInfo($"[{GetType().Name}] Запрашиваем у автобуса новые сообщения с бэкенда...");
 
-                // 🎯 ХАК: Вызываем твой рабочий SQLite генератор запросов для СМС!
-                string sql = HomeNetOrm.DBProviders.Sqlite.SqliteSincExtensions.GenerateSelectUnsyncedSqlite(localGen);
+                EventBus.Publish(this, new ISiberNetSyncCoordinator.MessagePullRequested());
 
-                var unsyncedMessages = await localConn.QueryAsync<MessageEntity>(sql);
-                var pendingList = unsyncedMessages.ToList();
+                // ============================================================================
+                // 📤 НАПРАВЛЕНИЕ PUSH: Локальные оффлайн-хвосты СМС на отправку
+                // ============================================================================
+                var pendingSyncList = await syncSupport.GetUnsyncedRecordsAsync();
+                var pendingList = pendingSyncList.ToList();
 
-                if (pendingList.Count == 0)
+                if (pendingList.Count > 0)
                 {
-                    Logger.LogInfo($"[{GetType().Name}] Сверка завершена. Оффлайн-хвостов СМС не обнаружено.");
-                    return;
-                }
-
-                Logger.LogWarning($"[{GetType().Name}] ОРМ обнаружила {pendingList.Count} неотправленных СМС. Инициируем веерную отправку в сеть.");
-
-                foreach (var message in pendingList)
-                {
-                    EventBus.Publish(this, new ISiberNetSyncCoordinator.MessagePendingSync(message));
+                    Logger.LogWarning($"[{GetType().Name}] Обнаружено {pendingList.Count} неотправленных СМС. Пушим в автобус.");
+                    foreach (var message in pendingList)
+                    {
+                        EventBus.Publish(this, new ISiberNetSyncCoordinator.MessagePendingSync(message));
+                    }
                 }
             }
             catch (Exception ex)
             {
-                Logger.LogError($"[{GetType().Name}] Сбой при инициации сверки СМС: {ex.Message}");
+                Logger.LogError($"[{GetType().Name}] Сбой при синхронизации СМС: {ex.Message}");
             }
         }
 
-
-
-        private void OnMessageInserted(ISiberNetSyncCoordinator.MessageInserted msg)
+        private async void OnMessageInserted(ISiberNetSyncCoordinator.MessageInserted msg)
         {
-            if (msg?.Message == null || msg.Message.IsSynced == 1) return;
+            if (msg?.Message == null) return;
 
-            string preview = msg.Message.Text != null && msg.Message.Text.Length > 20
-                ? msg.Message.Text.Substring(0, 20) + "..."
-                : msg.Message.Text ?? string.Empty;
+            // Если прилетело из сети готовое сообщение (IsSynced == 1), просто накатываем его в SQLite
+            if (msg.Message.IsSynced == 1)
+            {
+                var syncSupport = _messageRepository as ISyncSupport<MessageEntity>;
+                if (syncSupport != null)
+                {
+                    // === СТАЛО (Добавляем EventBus и Logger) 🎯 ===
+                    await syncSupport.MergePulledRecordsAsync(new[] { msg.Message }, EventBus, Logger);
+                }
+                return;
+            }
 
-            Logger.LogInfo($"[MessageSync] Локальный пуш СМС от ID '{msg.Message.SenderId}'. Публикуем запрос на синхронизацию.");
-
-            // Просто уведомляем шину, что сообщение ждет отправки в сеть
+            // Локальное оффлайн-сообщение
             EventBus.Publish(this, new ISiberNetSyncCoordinator.MessagePendingSync(msg.Message));
         }
 
         private async void OnMessageSyncedOnServer(ISiberNetSyncCoordinator.MessageSyncedOnServer msg)
         {
             if (msg == null) return;
-
             Logger.LogInfo($"[MessageSync] Сервер подтвердил СМС '{msg.MessageId}'. Обновляем статус в SQLite.");
+            // Приводим репозиторий сообщений к интерфейсу поддержки синхронизации ОРМ 🎯
+            var syncSupport = _messageRepository as ISyncSupport<MessageEntity>;
 
-            // Чистое обновление базы на основе подтверждения из шины
-            await _messageRepository.MarkAsSyncedAsync(msg.MessageId);
+            if (syncSupport != null)
+            {
+                // Теперь экстеншен отработает идеально и без лишних параметров типа!
+                await syncSupport.MarkAsSyncedAsync(msg.MessageId);
+            }
         }
 
-        private void OnMessageUpdated(ISiberNetSyncCoordinator.MessageUpdated msg)
-        {
-            if (msg?.Message == null || msg.Message.IsSynced == 1) return;
-            Logger.LogInfo($"[MessageSync] Перехвачено обновление СМС '{msg.Message.Id}'");
-        }
-
-        private void OnMessageDeleted(ISiberNetSyncCoordinator.MessageDeleted msg)
-        {
-            Logger.LogWarning($"[MessageSync] Перехвачено удаление СМС с ID '{msg.MessageId}'");
-        }
-
-
+        private void OnMessageUpdated(ISiberNetSyncCoordinator.MessageUpdated msg) { }
+        private void OnMessageDeleted(ISiberNetSyncCoordinator.MessageDeleted msg) { }
     }
-
-
 }

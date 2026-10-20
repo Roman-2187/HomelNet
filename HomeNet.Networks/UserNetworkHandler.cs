@@ -16,14 +16,14 @@ namespace HomeNet.Network
 
         protected override void SubscribeToEvents()
         {
-            // 1. ИСХОДЯЩИЕ: Слушаем запросы на синхронизацию и удаление от UserSynchronizer
+            // 1. ИСХОДЯЩИЕ (PUSH): Слушаем запросы на отправку и удаление от UserSynchronizer
             EventBus.Subscribe<ISiberNetSyncCoordinator.UserPendingSync>(OnUserPendingSync);
             EventBus.Subscribe<ISiberNetSyncCoordinator.UserPendingDelete>(OnUserPendingDelete);
+
+            // 2. ВХОДЯЩИЕ (PULL): Слушаем, когда синхронизатор просит скачать новые профили
+            EventBus.Subscribe<ISiberNetSyncCoordinator.UserPullRequested>(OnUserPullRequested);
         }
 
-        // =========================================================================
-        // НАПРАВЛЕНИЕ "НА СЕРВЕР": Отправка и удаление данных на бэкенде
-        // =========================================================================
         private void OnUserPendingSync(ISiberNetSyncCoordinator.UserPendingSync @event)
         {
             var user = @event.User;
@@ -50,10 +50,26 @@ namespace HomeNet.Network
             }, $"Delete User {userId}");
         }
 
-        // =========================================================================
-        // НАПРАВЛЕНИЕ "С СЕРВЕРА": Прием данных профиля и команд удаления от бэкенда
-        // =========================================================================
-        // Дергается сетью при наступлении "ReceiveUserSync"
+        // 🔥 НАША НОВАЯ ЛОГИКА PULL:
+        private void OnUserPullRequested(ISiberNetSyncCoordinator.UserPullRequested @event)
+        {
+            FireAndForget(async () =>
+            {
+                Logger.LogInfo("[UserNet] Сеть перехватила запрос PULL. Просим бэкенд выдать новых пользователей...");
+
+                Guid currentDeviceId = Guid.NewGuid(); // Твой сохраненный паспорт девайса
+                DateTimeOffset lastSyncedAt = DateTimeOffset.MinValue; // Твой временной чекпоинт
+
+                var freshUsers = await ApiClient.FetchFreshUsersAsync(currentDeviceId, lastSyncedAt);
+
+                foreach (var user in freshUsers)
+                {
+                    // Метод проставит IsSynced = 1 и выбросит UserInserted в автобус!
+                    await HandleIncomingUserAsync(user);
+                }
+            }, "Pull Users From Server");
+        }
+
         public Task HandleIncomingUserAsync(UserEntity user)
         {
             if (user == null) return Task.CompletedTask;
@@ -65,21 +81,18 @@ namespace HomeNet.Network
             return Task.CompletedTask;
         }
 
-        // НАПРАВЛЕНИЕ "С СЕРВЕРА": Сервер прислал команду удаления юзера
         public Task HandleIncomingUserDeletedAsync(Guid userId)
         {
             Logger.LogWarning($"[UserNet] Сервер прислал команду удаления юзера {userId}. Передаем подтверждение в шину.");
-
-            // ВМЕСТО ЕВЕНТА УДАЛЕНИЯ ШЛЕМ ЕВЕНТ ПОДТВЕРЖДЕНИЯ! 🎯
             EventBus.Publish(this, new ISiberNetSyncCoordinator.UserDeleteConfirmedByServer(userId));
             return Task.CompletedTask;
         }
-
 
         public override void Dispose()
         {
             EventBus.Unsubscribe<ISiberNetSyncCoordinator.UserPendingSync>(OnUserPendingSync);
             EventBus.Unsubscribe<ISiberNetSyncCoordinator.UserPendingDelete>(OnUserPendingDelete);
+            EventBus.Unsubscribe<ISiberNetSyncCoordinator.UserPullRequested>(OnUserPullRequested); // Чистим за собой
         }
     }
 }

@@ -3,7 +3,7 @@ using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Models;
 using HomeNetOrm.Interfaces.Generators;
-using HomeNetOrm.Interfaces.DbInfrastructure; // Наш внутренний интерфейс поддержки
+using HomeNetOrm.Interfaces.DbInfrastructure;
 using System.Data.Common;
 using HomeNetCore.Interfaces.Sinc;
 
@@ -55,18 +55,6 @@ namespace HomeNetOrm.Repositories
             }
         }
 
-        // Метод обновления статуса для локального SQLite-синхронизатора
-        public async Task MarkAsSyncedAsync(Guid id)
-        {
-            try
-            {
-                await _connection.ExecuteAsync("UPDATE messages SET is_synced = 1 WHERE id = @id", new { id });
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"Ошибка сброса флага синхронизации сообщения: {ex.Message}");
-            }
-        }
 
         public async Task<IEnumerable<MessageEntity>> GetChatHistoryAsync(Guid senderId, Guid receiverId)
         {
@@ -153,6 +141,38 @@ namespace HomeNetOrm.Repositories
                 throw new InvalidOperationException($"Ошибка при полной очистке чата через ОРМ: {ex.Message}");
             }
         }
+
+
+
+        // =========================================================================
+        // 🦾 ИСПРАВЛЕННАЯ РЕАЛИЗАЦИЯ МЕТОДОВ ИНТЕРФЕЙСА IRepository<MessageEntity>
+        // =========================================================================
+
+        public async Task<MessageEntity?> GetByIdAsync(Guid id)
+        {
+            string sql = _sqlGenerator.GenerateSelectById();
+            return await _connection.QueryFirstOrDefaultAsync<MessageEntity>(sql, new { Id = id });
+        }
+
+        public async Task<IEnumerable<MessageEntity>> GetAllAsync()
+        {
+            string sql = _sqlGenerator.GenerateSelectAll();
+            return await _connection.QueryAsync<MessageEntity>(sql);
+        }
+
+        public async Task UpdateAsync(MessageEntity entity)
+        {
+            string sql = _sqlGenerator.GenerateUpdate();
+            object parameters = _sqlGenerator.PrepareParameters(entity);
+            await _connection.ExecuteAsync(sql, parameters);
+        }
+
+        Task<List<MessageEntity>> IRepository<MessageEntity>.GetAllAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+
 
         // Минимальный скрытый приватный прокси-класс
         private class NullEventProxy : IEventBus { }

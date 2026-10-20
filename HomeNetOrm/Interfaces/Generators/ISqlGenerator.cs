@@ -1,19 +1,15 @@
 ﻿namespace HomeNetOrm.Interfaces.Generators
 {
-    public interface ISqlGenerator<TEntity> where TEntity : class
-    {
-        string GenerateInsert();
-        string GenerateUpdate();
-        string GenerateDelete();
-        string GenerateSelectAll();
-        string GenerateSelectById();
+    
+        public interface ISqlGenerator<TEntity> where TEntity : class
+        {
+            string GenerateInsert();
+            string GenerateUpdate();
+            string GenerateDelete(); // Удаление по сущности
+            string GenerateSelectAll();
+            string GenerateSelectById();
+            object PrepareParameters(TEntity entity);
+        }
+    
 
-        // 🎯 ДОБАВЛЯЕМ СЮДА КОНТРАКТЫ ДЛЯ СИНХРОНИЗАЦИИ:
-        string GenerateSelectUnsynced();
-        string GenerateUpdateMarkAsSynced();
-        string GenerateCountById();
-        string GenerateDeleteById();
-
-        object PrepareParameters(TEntity entity);
-    }
 }

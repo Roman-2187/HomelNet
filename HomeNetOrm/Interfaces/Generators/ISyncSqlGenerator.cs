@@ -6,8 +6,10 @@
     /// </summary>
     public interface ISyncSqlGenerator<TEntity> : ISqlGenerator<TEntity> where TEntity : class
     {
+       
         string GenerateCountById();
         string GenerateSelectUnsynced();
-        string GenerateUpdateMarkAsSynced();
+        string GenerateUpdateMarkAsSynced(); 
+        
     }
 }

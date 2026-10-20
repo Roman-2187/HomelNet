@@ -31,8 +31,8 @@ namespace HomeNet.DI
             _infrastructure = new CoreInfrastructureModule();
 
             // 2. 🎯 СОБИРАЕМ СХЕМЫ СНАРУЖИ ЧЕРЕЗ НАШ НОВЫЙ DI-МОДУЛЬ
-            var schemaModule = new MessengerSchemaModule();
-            var registeredSchemas = schemaModule.GetRegisteredSchemas();
+            var schemaModule = new LocalMessengerSchemaModule();
+            var registeredSchemas = schemaModule.GetSchemas(); // Получит 4 таблицы (общие + DeviceSettings)
 
             // 3. Модуль Базы Данных и ОРМ (Скармливаем зависимости, адрес сервера и готовые схемы!) 🦾
             _dataAccess = new DataAccessModule(
@@ -67,6 +67,17 @@ namespace HomeNet.DI
             {
                 _instance._infrastructure.Logger.LogInfo("[App Старт] Базы и сеть прогреты. Запускаем репликацию данных...");
 
+                // 🔥 ВОТ ОНО! ВЫЗЫВАЕМ ТУТ: Таблицы созданы, безопасно пишем/читаем DeviceID из SQLite!
+                try
+                {
+                    await _instance._dataAccess.InitializeDeviceSessionAsync();
+                    _instance._infrastructure.Logger.LogInfo($"[App Старт] Успешно инициализирован Device ID: {_instance._dataAccess.CurrentDeviceId}");
+                }
+                catch (Exception ex)
+                {
+                    _instance._infrastructure.Logger.LogError($"[App Старт] Критическая ошибка генерации Device ID: {ex.Message}");
+                }
+
                 // 🔥 ПОДКЛЮЧАЕМ ТРУБУ SIGNALR: Врубаем коннект гостем, чтобы забрать буфер серверных логов!
                 try
                 {
@@ -90,6 +101,7 @@ namespace HomeNet.DI
                 await _instance._dataAccess.DbContextContainer.InitializeAllDatabasesAsync();
             });
         }
+
 
 
         // Метод-заглушка для UI окон вытаскивает вьюмодели прямо из UI модуля

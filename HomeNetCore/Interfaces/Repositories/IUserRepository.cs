@@ -10,6 +10,6 @@ namespace HomeNetCore.Interfaces
         Task<bool> EmailExistsAsync(string email);
         Task<UserEntity?> GetByEmailAsync(string email);
         Task<UserEntity> InsertUserAsync(UserEntity user);
-        Task MarkAsSyncedAsync(Guid id);
-    }
+     
+   }
 }

@@ -54,5 +54,16 @@ namespace HomeNetCore.Interfaces.Sinc
 
         /// <summary> Сервер подтвердил удаление пользователя на своей стороне </summary>
         public record UserDeleteConfirmedByServer(Guid UserId);
+
+
+        /// <summary>
+        /// 📥 Сигнал от синхронизатора: Нужно запросить у сервера новые профили пользователей
+        /// </summary>
+        public record UserPullRequested;
+
+        /// <summary>
+        /// 📥 Сигнал от синхронизатора: Нужно запросить у сервера новые сообщения
+        /// </summary>
+        public record MessagePullRequested;
     }
 }

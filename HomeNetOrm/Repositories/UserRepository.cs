@@ -52,18 +52,7 @@ namespace HomeNetOrm.Repositories
             }
         }
 
-        // Метод обновления статуса для локального SQLite-синхронизатора
-        public async Task MarkAsSyncedAsync(Guid id)
-        {
-            try
-            {
-                await _connection.ExecuteAsync("UPDATE users SET is_synced = 1 WHERE id = @id", new { id });
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"Ошибка сброса флага синхронизации пользователя: {ex.Message}");
-            }
-        }
+       
 
         public async Task DeleteByIdAsync(Guid id)
         {

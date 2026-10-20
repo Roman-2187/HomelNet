@@ -27,7 +27,7 @@ public class CoreInfrastructureModule
         Logger = new Logger((msg, level, ns) =>
         {
             AppFileLogger.WriteImmediately(msg, level);
-            LogQueueManager.WriteLog(msg, level, ns);
+           // LogQueueManager.WriteLog(msg, level, ns);
         });
 
         LogQueueManager.SetReady();

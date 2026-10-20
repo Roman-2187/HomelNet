@@ -6,7 +6,7 @@ using HomeNetCore.Interfaces.Sinc;
 namespace HomeNetOrm.Sinc
 {
     /// <summary>
-    /// Базовый диспетчер синхронизации. Теперь реально отвязан от сети! 🦾
+    /// Базовый диспетчер синхронизации. Теперь реально отвязан от сети и полностью безопасен! 🦾
     /// </summary>
     public abstract class BaseSynchronizer<TEntity> : ISiberNetSyncCoordinator, IDisposable
         where TEntity : class
@@ -30,23 +30,31 @@ namespace HomeNetOrm.Sinc
         // Потомок сам решит, как запустить локальную сверку и выкинуть неотправленное в шину
         protected abstract Task ExecuteTableSyncInternalAsync();
 
+        // === ИСПРАВЛЕНИЕ: Единая безопасная точка вызова для любых фоновых задач синхронизации ===
+        protected async Task SafeExecuteTableSyncAsync()
+        {
+            try
+            {
+                await ExecuteTableSyncInternalAsync();
+            }
+            catch (Exception ex)
+            {
+                // Ошибка перехвачена, записана в лог как [ERROR], но приложение НЕ падает
+                Logger.LogError($"[{GetType().Name}] Критическая ошибка в фоновом потоке синхронизации: {ex.Message}");
+            }
+        }
+
         public async Task StartAsync()
         {
             if (_isInitialSyncExecuted) return;
             _isInitialSyncExecuted = true;
 
-            try
-            {
-                Logger.LogInfo($"=== [{GetType().Name}] ЗАПУСК ЛОКАЛЬНОЙ СВЕРКИ ===");
+            Logger.LogInfo($"=== [{GetType().Name}] ЗАПУСК ЛОКАЛЬНОЙ СВЕРКИ ===");
 
-                await ExecuteTableSyncInternalAsync();
+            // Используем безопасный метод вместо прямого вызова
+            await SafeExecuteTableSyncAsync();
 
-                Logger.LogInfo($"=== [{GetType().Name}] ЛОКАЛЬНАЯ СВЕРКА ЗАВЕРШЕНА ===");
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"[{GetType().Name}] Ошибка при запуске сверки: {ex.Message}");
-            }
+            Logger.LogInfo($"=== [{GetType().Name}] ЛОКАЛЬНАЯ СВЕРКА ЗАВЕРШЕНА ===");
         }
 
         public virtual void Dispose()

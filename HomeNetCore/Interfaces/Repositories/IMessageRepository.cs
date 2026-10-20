@@ -1,11 +1,8 @@
 ﻿using HomeNetCore.Models;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace HomeNetCore.Interfaces.Repositories
 {
-    public interface IMessageRepository
+    public interface IMessageRepository : IRepository<MessageEntity>
     {
         Task<bool> SaveMessageAsync(MessageEntity message);
 
@@ -20,7 +17,6 @@ namespace HomeNetCore.Interfaces.Repositories
         // Идентификатор самого сообщения тоже переводим на Guid
         Task<bool> RemoveMessageByIdAsync(Guid id);
 
-        Task<bool> ClearChatHistoryAsync(Guid senderId, Guid receiverId);
-        Task MarkAsSyncedAsync(Guid id);
+        Task<bool> ClearChatHistoryAsync(Guid senderId, Guid receiverId);  
     }
 }

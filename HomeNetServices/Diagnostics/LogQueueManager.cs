@@ -42,10 +42,19 @@ namespace HomeNetServices.Diagnostics
 
         private async Task ProcessLogQueueAsync(CancellationToken token)
         {
+            // 🔥 МАГИЧЕСКИЙ ЩИТ: Если фоновый таск проснулся раньше, чем создался канал,
+            // мы просто мягко ждем в фоне по 10 мс, пока _channel перестанет быть null.
+            // Это предотвращает NullReferenceException и вылет Авалонии!
+            while (_channel == null)
+            {
+                if (token.IsCancellationRequested) return;
+                await Task.Delay(10, token);
+            }
+
             try
             {
-                while (await _channel.Reader.WaitToReadAsync(token))
-                {
+               
+               
                     while (_channel.Reader.TryRead(out var logEntry))
                     {
                         // Убираем \r и \n с концов прилетевшего сообщения
@@ -67,13 +76,11 @@ namespace HomeNetServices.Diagnostics
                                 await Task.Delay(_typingDelayMs, token);
                         }
 
-
-
                         // 🔥 ОРЁТ В АВТОБУС ФИНАЛОМ СТРОКИ:
                         // Посылаем сигнал закрытия строки (false = закрыть параграф)
                         _eventBus.Publish(this, new ILogQueueManager.LogMessageReceived(Environment.NewLine, logEntry.level, logEntry.ns, false));
                     }
-                }
+                
             }
             catch (OperationCanceledException) { }
             catch (Exception ex)
@@ -81,6 +88,7 @@ namespace HomeNetServices.Diagnostics
                 System.Diagnostics.Debug.WriteLine($"Ошибка в лог-канале: {ex.Message}");
             }
         }
+
 
         public void Dispose()
         {

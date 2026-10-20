@@ -8,16 +8,15 @@ using HomeNetCore.Interfaces.Sinc;
 using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetOrm.Models;
+using HomeNetOrm.Repositories;
 using HomeNetOrm.Sinc;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace HomeNet.DI.Modules
 {
+
     public class DataAccessModule
     {
-        public SqliteDbEngine SqliteEngine { get; }
+        public SincedSqliteDbEngine SqliteEngine { get; }
         public IApiClient ApiClient { get; }
         public IDbContextContainer DbContextContainer { get; }
 
@@ -25,8 +24,14 @@ namespace HomeNet.DI.Modules
         public IUserRepository UserRepository { get; }
         public IMessageRepository MessageRepository { get; }
 
+        // 🔥 ДОБАВИЛИ: Публичный репозиторий настроек девайса
+        public ClientDeviceSettingsRepository DeviceSettingsRepository { get; }
+
+        // 🔥 ДОБАВИЛИ: Железный ID девайса, который мы вытащим из SQLite при старте сессии
+        public Guid CurrentDeviceId { get; private set; }
+
         // Наш главный собранный движок ОРМ наружу
-        public SiberNetEngine OrmEngine { get; }
+        public SincEngine OrmEngine { get; }
 
         // Сетевой слушатель SignalR
         public SignalRNotificationListener NotificationListener { get; }
@@ -34,7 +39,7 @@ namespace HomeNet.DI.Modules
         public DataAccessModule(string sqliteConn, string apiBaseUrl, IEnumerable<TableSchema> appSchemas, ILogger logger, ILogQueueManager logQueue, IEventBus eventBus)
         {
             // 1. Инициализируем локальный движок SQLite и скармливаем ему схемы! 🦾
-            SqliteEngine = new SqliteDbEngine(sqliteConn, appSchemas, logger);
+            SqliteEngine = new SincedSqliteDbEngine(sqliteConn, appSchemas, logger);
 
             // 2. Инициализируем сетевой HttpClient (наш переводчик-курьер)
             ApiClient = new HttpApiClient(apiBaseUrl, logger);
@@ -46,14 +51,18 @@ namespace HomeNet.DI.Modules
             UserRepository = SqliteEngine.CreateUserRepository(eventBus);
             MessageRepository = SqliteEngine.CreateMessageRepository(eventBus);
 
+            // 🔥 ШАГ 4.1: Чистое создание репозитория настроек СТРОГО через фабрику движка! 
+            // Никаких генераторов в этом модуле нет, инкапсуляция соблюдена на все 100%.
+            DeviceSettingsRepository = SqliteEngine.CreateDeviceSettingsRepository();
+
             // 5. 🔥 КРИСТАЛЬНАЯ ЧИСТОТА: Синхронизаторы теперь питаются ТОЛЬКО репозиторием, шиной и логгером. Сеть ушла наружу!
             var userSync = new UserSynchronizer(UserRepository, eventBus, logger);
             var messageSync = new MessageSynchronizer(MessageRepository, eventBus, logger);
 
             var syncCoordinator = new CompositeSyncCoordinator(userSync, messageSync);
 
-            // 6. Закрываем это добро внутрь нашего единого SiberNetEngine движка ОРМ
-            OrmEngine = new SiberNetEngine(UserRepository, MessageRepository, syncCoordinator, logger);
+            // 6. Закрываем это добро внутрь нашего единого SincEngine движка ОРМ
+            OrmEngine = new SincEngine(UserRepository, MessageRepository, syncCoordinator, logger);
 
             // 7. 🔥 СБОРКА СЕТЕВОГО СЛОЯ: Создаем монолитные двусторонние хандлеры
             var messageNetworkHandler = new MessageNetworkHandler(ApiClient, eventBus, logger);
@@ -62,6 +71,19 @@ namespace HomeNet.DI.Modules
             // 8. 🔥 НОВЫЙ КОММУТАТОР: Передаем хандлеры напрямую в листенер без всяких массивов и интерфейсов
             NotificationListener = new SignalRNotificationListener(apiBaseUrl, messageNetworkHandler, userNetworkHandler, logger);
         }
+
+        /// <summary>
+        /// 🔥 НОВЫЙ АСИНХРОННЫЙ МЕТОД: Инициализация сессии устройства
+        /// Вызывать строго после того, как в бутстраппере отработает DbContextContainer.InitializeAsync()!
+        /// </summary>
+        public async Task InitializeDeviceSessionAsync()
+        {
+            // Репозиторий залезет в SQLite, заберет старый ID или сгенерирует новый без сырого SQL
+            CurrentDeviceId = await DeviceSettingsRepository.GetOrCreateDeviceIdAsync();
+        }
+
+
+
     }
 
     /// <summary>
