@@ -9,15 +9,9 @@ using HomeNetOrm.Repositories;
 
 namespace HomeNetOrm.Sinc
 {
-    public class MessageSynchronizer : BaseSynchronizer<MessageEntity>
+    public class MessageSynchronizer(IMessageRepository messageRepository, IEventBus eventBus, ILogger logger) : BaseSynchronizer<MessageEntity>(eventBus, logger)
     {
-        private readonly IMessageRepository _messageRepository;
-
-        public MessageSynchronizer(IMessageRepository messageRepository, IEventBus eventBus, ILogger logger)
-            : base(eventBus, logger)
-        {
-            _messageRepository = messageRepository ?? throw new ArgumentNullException(nameof(messageRepository));
-        }
+        private readonly IMessageRepository _messageRepository = messageRepository ?? throw new ArgumentNullException(nameof(messageRepository));
 
         protected override void SubscribeEvents()
         {

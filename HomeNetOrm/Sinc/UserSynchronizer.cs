@@ -89,6 +89,9 @@ namespace HomeNetOrm.Sinc
                 var syncSupport = _userRepository as ISyncSupport<UserEntity>;
                 if (syncSupport != null)
                 {
+                    // 🎯 Добавляем информативный лог перед записью в SQLite
+                    Logger.LogDebug($"[UserSync] Передаем {msg.User.Id} в ORM для сверки.");
+
                     // Передаем и EventBus, и наш Logger 🎯
                     await syncSupport.MergePulledRecordsAsync([msg.User], EventBus, Logger);
                 }
@@ -99,6 +102,7 @@ namespace HomeNetOrm.Sinc
             Logger.LogInfo($"[UserSync] Локальный профиль '{msg.User.FirstName}'. Отправляем запрос на синхронизацию.");
             EventBus.Publish(this, new ISiberNetSyncCoordinator.UserPendingSync(msg.User));
         }
+
 
         private async void OnUserSyncedOnServer(ISiberNetSyncCoordinator.UserSyncedOnServer msg)
         {

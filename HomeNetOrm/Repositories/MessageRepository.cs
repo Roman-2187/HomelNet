@@ -30,11 +30,13 @@ namespace HomeNetOrm.Repositories
 
         // 🔥 ЕДИНЫЙ УНИВЕРСАЛЬНЫЙ КОНСТРУКТОР ДЛЯ КЛИЕНТА И СЕРВЕРА
         // Если eventBus не передан (на сервере), создается пустой прокси, берущий пустые методы из интерфейса!
-        public MessageRepository(DbConnection connection, IMessageSqlGenerator sqlGenerator, IEventBus? eventBus = null)
+        public MessageRepository(DbConnection connection, IMessageSqlGenerator sqlGenerator,ILogger logger ,IEventBus? eventBus = null)
         {
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
             _sqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));
             _eventBus = eventBus ?? new NullEventProxy();
+
+         _logger=logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<bool> SaveMessageAsync(MessageEntity message)

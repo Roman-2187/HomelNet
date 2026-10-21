@@ -2,7 +2,6 @@
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Repositories;
-using HomeNetCore.Interfaces.Sinc;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
 using HomeNetOrm.Interfaces.DbInfrastructure;
@@ -29,8 +28,11 @@ namespace HomeNetOrm.Repositories
             string sql = syncGen.GenerateSelectUnsynced(); // Безопасный вызов из syncGen
             return await localConn.QueryAsync<TEntity>(sql);
         }
-        public static async Task MarkAsSyncedAsync<TEntity>(
-       this ISyncSupport<TEntity> localRepository, Guid id) where TEntity : class
+
+
+
+        public static async Task MarkAsSyncedAsync<TEntity>( this ISyncSupport<TEntity> localRepository, Guid id) where TEntity : class
+       
         {
             if (localRepository.SqlGenerator is not ISyncSqlGenerator<TEntity> syncGen) return;
 
@@ -44,7 +46,7 @@ namespace HomeNetOrm.Repositories
                 string sql = syncGen.GenerateUpdateMarkAsSynced();
 
                 // 🎯 ВОЗВРАЩАЕМ БОЕВОЙ ВАРИАНТ: Передаем оба регистра, чтобы Dapper всегда находил параметр
-                await localConn.ExecuteAsync(sql, new { id = id, Id = id });
+                await localConn.ExecuteAsync(sql, new { id, Id = id });
             }
             catch (Exception ex)
             {
@@ -52,7 +54,6 @@ namespace HomeNetOrm.Repositories
                 logger.LogWarning($"[ОРМ МАРКЕР] [WARN] Споткнулись на фиксации IsSynced для {typeof(TEntity).Name} (ID: {id}). Текст ошибки: {ex.Message}");
             }
         }
-
 
 
 
@@ -80,7 +81,9 @@ namespace HomeNetOrm.Repositories
 
             if (localConn.State != ConnectionState.Open) await localConn.OpenAsync();
 
-            int mergedCount = 0;
+            int insertedCount = 0;
+            int skippedCount = 0;
+            int totalCount = 0;
 
             string checkLocalSql = syncGen.GenerateCountById();
             string insertLocalSql = localGen.GenerateInsert();
@@ -90,7 +93,9 @@ namespace HomeNetOrm.Repositories
             {
                 foreach (var record in remoteRecords)
                 {
+                    totalCount++;
                     var exists = await localConn.ExecuteScalarAsync<bool>(checkLocalSql, new { id = record.Id }, transaction);
+
                     if (!exists)
                     {
                         record.IsSynced = 1; // Скачанное изначально синхронизировано
@@ -99,17 +104,27 @@ namespace HomeNetOrm.Repositories
                         object localParameters = localGen.PrepareParameters(record);
 
                         await localConn.ExecuteAsync(insertLocalSql, localParameters, transaction);
-                        mergedCount++;
+                        insertedCount++;
+
+                        // Дебаг-лог на каждую вставку (можно поменять на LogInfo, если нужно видеть всегда)
+                        logger.LogDebug($"[ОРМ МЕРЖ -> {typeof(TEntity).Name}] ➕ Вставлена новая запись. ID: {record.Id}");
+                    }
+                    else
+                    {
+                        skippedCount++;
+                        // Четко пишем в дебаг, что запись уже на месте и мы её не трогали
+                        logger.LogDebug($"[ОРМ МЕРЖ -> {typeof(TEntity).Name}] 💤 Запись уже существует в SQLite, пропуск. ID: {record.Id}");
                     }
                 }
 
                 await transaction.CommitAsync();
 
-                // === ЛОГИРОВАНИЕ И ПИНОК ДЛЯ АВАЛОНИИ ===
-                if (mergedCount > 0)
-                {
-                    logger.LogInfo($"[ОРМ МЕРЖ] Успешно синхронизировано и записано в локальную БД записей: {mergedCount} (Таблица: {typeof(TEntity).Name})");
+                // === ИТОГОВОЕ ЛОГИРОВАНИЕ ===
+                logger.LogInfo($"[ОРМ МЕРЖ] Обработка таблицы {typeof(TEntity).Name} завершена. Всего в пакете: {totalCount} | Добавлено: {insertedCount} | Пропущено (уже есть): {skippedCount}");
 
+                // === ПИНОК ДЛЯ АВАЛОНИИ ===
+                if (insertedCount > 0)
+                {
                     if (typeof(TEntity) == typeof(UserEntity))
                     {
                         logger.LogInfo($"[ОРМ МЕРЖ] Публикуем RefreshRequest для авто-обновления таблицы пользователей в UI.");
@@ -125,8 +140,9 @@ namespace HomeNetOrm.Repositories
                 throw;
             }
 
-            return mergedCount;
+            return insertedCount;
         }
+
 
     }
 }

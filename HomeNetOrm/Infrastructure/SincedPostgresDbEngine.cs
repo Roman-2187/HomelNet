@@ -42,7 +42,7 @@ namespace HomeNetOrm.Infrastructure
         {
             // 🔥 ПОДМЕНА: Создаем синхронизированного наследника для сообщений
             var generator = new SyncedPostgresMessageSqlGenerator(_postgresAdapter, _schemas, _logger);
-            return new MessageRepository(_connection, generator);
+            return new MessageRepository(_connection, generator,_logger);
         }
 
         public IDeviceSyncRepository CreateDeviceSyncRepository()

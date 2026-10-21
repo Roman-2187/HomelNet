@@ -50,7 +50,7 @@ namespace HomeNetOrm.Infrastructure
         {
             // 🔥 ПОДМЕНА: Включаем синхронизацию сообщений "из коробки" через Synced-наследника!
             var generator = new SyncedSqliteMessageSqlGenerator(_sqliteAdapter, _schemas, _logger);
-            return new MessageRepository(_connection, generator, eventBus);
+            return new MessageRepository(_connection, generator,_logger, eventBus);
         }
 
         public ClientDeviceSettingsRepository CreateDeviceSettingsRepository()
