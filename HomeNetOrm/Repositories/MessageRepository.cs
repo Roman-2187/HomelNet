@@ -6,6 +6,7 @@ using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using System.Data.Common;
 using HomeNetCore.Interfaces.Sinc;
+using HomeNetCore.Interfaces.Diagnostics;
 
 namespace HomeNetOrm.Repositories
 {
@@ -18,6 +19,10 @@ namespace HomeNetOrm.Repositories
         private readonly DbConnection _connection;
         private readonly IMessageSqlGenerator _sqlGenerator;
         private readonly IEventBus _eventBus;
+
+        private readonly ILogger _logger; // Внедряем поле логгера напрямую
+
+        ILogger ISyncSupport<MessageEntity>.Logger => _logger; 
 
         // Явная реализация инфраструктурных свойств для методов расширения синхронизации
         DbConnection ISyncSupport<MessageEntity>.Connection => _connection;

@@ -35,7 +35,7 @@ namespace HomeNetOrm.Infrastructure
         {
             // 🔥 ПОДМЕНА: Создаем синхронизированного наследника вместо стерильной базы
             var generator = new SyncedPostgresUserSqlGenerator(_postgresAdapter, _schemas, _logger);
-            return new UserRepository(_connection, generator);
+            return new UserRepository(_connection, generator,_logger);
         }
 
         public IMessageRepository CreateMessageRepository()

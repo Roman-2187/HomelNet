@@ -20,5 +20,9 @@ namespace HomeNet.DI.Modules
 
             _schemas.Add(deviceSync.Generate());
         }
+
+
+
+
     }
 }

@@ -146,7 +146,7 @@ namespace HomeNetServices.Diagnostics
 
             lines.Add(new IEventInspector.Line("\n======= ⏱️ ПОСЛЕДНИЕ СИГНАЛЫ (ЛЕНТА СОБЫТИЙ) =======", MessageState.None));
 
-            var recentSignals = _signalTimeline.AsEnumerable().Reverse().Take(20);
+            var recentSignals = _signalTimeline.AsEnumerable().Reverse();
             foreach (var signal in recentSignals)
             {
                 lines.Add(new IEventInspector.  Line($"[{signal.Time:HH:mm:ss.fff}] {signal.Source} пустил {signal.MessageType.Name}", MessageState.None));

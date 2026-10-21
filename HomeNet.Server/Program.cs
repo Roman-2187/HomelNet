@@ -138,7 +138,7 @@ namespace HomeNet.Server
             });
 
             // ============================================================================
-            // 📤 ЭНДПОИНТ: ПРИЕМ ПОЛЬЗОВАТЕЛЕЙ ПРИ РЕГИСТРАЦИИ (Твой старый метод PUSH)
+            // 📤 ЭНДПОИНТ: ПРИЕМ ПОЛЬЗОВАТЕЛЕЙ ПРИ РЕГИСТРАЦИИ (Корректный логгинг)
             // ============================================================================
             app.MapPost("/api/users", async (UserEntity incomingUser, IHubContext<ServerChatHub> hubContext) =>
             {
@@ -146,8 +146,26 @@ namespace HomeNet.Server
                 try
                 {
                     serverLogger.LogInfo($"[API] Прилетел профиль пользователя '{incomingUser.FirstName}' (ID: {incomingUser.Id})");
-                    await userRepository.InsertUserAsync(incomingUser);
-                    serverLogger.LogInfo($"[API Успех] Пользователь '{incomingUser.FirstName}' (ID: {incomingUser.Id}) успешно сохранен в PostgreSQL.");
+
+                    // 🎯 Получаем РЕАЛЬНЫЙ результат из репозитория
+                    var resultUser = await userRepository.InsertUserAsync(incomingUser);
+
+                    // Проверяем, совпадает ли то, что мы пытались вставить, с тем, что отдала СУБД
+                    if (resultUser.Id == incomingUser.Id && resultUser.Email == incomingUser.Email)
+                    {
+                        // Если это реально новый объект, которого не было в базе
+                        // (Так как при дубликате репозиторий возвращает старого существующего юзера)
+                        if (resultUser.UpdatedAt == incomingUser.UpdatedAt)
+                        {
+                            serverLogger.LogInfo($"[API Успех] Пользователь '{incomingUser.FirstName}' (ID: {incomingUser.Id}) успешно физически создан в PostgreSQL.");
+                        }
+                        else
+                        {
+                            // Если репозиторий вернул существующего Ивана, сервер пишет ПРАВДУ:
+                            serverLogger.LogWarning($"[API Чек] Пользователь '{incomingUser.FirstName}' уже был в системе. Повторный PUSH обработан без создания дубликата.");
+                        }
+                    }
+
                     return Results.Ok(new { Success = true });
                 }
                 catch (Exception ex)
@@ -160,6 +178,7 @@ namespace HomeNet.Server
                     _dbSemaphore.Release();
                 }
             });
+
 
             app.MapGet("/api/ping", () => Results.Ok("pong"));
 

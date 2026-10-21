@@ -29,26 +29,33 @@ namespace HomeNetOrm.Repositories
             string sql = syncGen.GenerateSelectUnsynced(); // Безопасный вызов из syncGen
             return await localConn.QueryAsync<TEntity>(sql);
         }
-
-
-        /// <summary>
-        /// ⚡ УНИВЕРСАЛЬНЫЙ метод отметки записи как синхронизированной. 
-        /// Никакого сырого SQL в репозиториях! 🦾
-        /// </summary>
         public static async Task MarkAsSyncedAsync<TEntity>(
-            this ISyncSupport<TEntity> localRepository, Guid id) where TEntity : class
+       this ISyncSupport<TEntity> localRepository, Guid id) where TEntity : class
         {
-            // Если генератор не поддерживает синхронизацию — просто выходим
             if (localRepository.SqlGenerator is not ISyncSqlGenerator<TEntity> syncGen) return;
 
-            DbConnection localConn = localRepository.Connection;
-            if (localConn.State != ConnectionState.Open) await localConn.OpenAsync();
+            var logger = localRepository.Logger; // Тянем логгер из репозитория!
 
-            // Генератор сам вернет: "SET is_synced = 1" для SQLite или "SET is_synced = TRUE" для Postgres!
-            string sql = syncGen.GenerateUpdateMarkAsSynced();
+            try
+            {
+                DbConnection localConn = localRepository.Connection;
+                if (localConn.State != ConnectionState.Open) await localConn.OpenAsync();
 
-            await localConn.ExecuteAsync(sql, new { Id = id });
+                string sql = syncGen.GenerateUpdateMarkAsSynced();
+
+                // 🎯 ВОЗВРАЩАЕМ БОЕВОЙ ВАРИАНТ: Передаем оба регистра, чтобы Dapper всегда находил параметр
+                await localConn.ExecuteAsync(sql, new { id = id, Id = id });
+            }
+            catch (Exception ex)
+            {
+                // Оставляем логирование на турникете для контроля
+                logger.LogWarning($"[ОРМ МАРКЕР] [WARN] Споткнулись на фиксации IsSynced для {typeof(TEntity).Name} (ID: {id}). Текст ошибки: {ex.Message}");
+            }
         }
+
+
+
+
 
         /// <summary>
         /// 📥 Накатывает в локальную базу готовую пачку данных, которую выдал сервер (PULL)

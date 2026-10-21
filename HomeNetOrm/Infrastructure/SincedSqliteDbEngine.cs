@@ -42,7 +42,7 @@ namespace HomeNetOrm.Infrastructure
             // Вместо SqliteUserSqlGenerator ставим SyncedSqliteUserSqlGenerator
             var generator = new SyncedSqliteUserSqlGenerator(_sqliteAdapter, _schemas, _logger);
 
-            return new UserRepository(_connection, generator, eventBus);
+            return new UserRepository(_connection, generator,_logger, eventBus);
         }
 
 
