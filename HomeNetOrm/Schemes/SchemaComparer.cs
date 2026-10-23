@@ -1,7 +1,6 @@
 ﻿using HomeNetOrm.Models;
 using System;
 using System.Data;
-using System.Data.Common;
 using System.Linq;
 
 namespace HomeNetOrm.Schemes
@@ -48,12 +47,13 @@ namespace HomeNetOrm.Schemes
 
         private bool AreColumnsEqual(ColumnSchema expected, ColumnSchema actual)
         {
-            if (!string.Equals(expected.Name, actual.Name, StringComparison.OrdinalIgnoreCase) ||
-                expected.IsPrimaryKey != actual.IsPrimaryKey)
+            // 1. Проверяем имя (без учета регистра)
+            if (!string.Equals(expected.Name, actual.Name, StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
 
+            // 2. Сверяем типы данных
             bool typesAreEqual = false;
             if (expected.Type == actual.Type)
             {
@@ -64,52 +64,90 @@ namespace HomeNetOrm.Schemes
                 string expType = expected.Type.ToString().ToLower();
                 string actType = actual.Type.ToString().ToLower();
 
-                // Совместимость Boolean и Integer (актуально для SQLite)
-                if ((expType == "boolean" && actType == "integer") || (expType == "integer" && actType == "boolean"))
-                    typesAreEqual = true;
+                // БРОНЕБОЙНЫЙ СТРАЖ ЧИСЕЛ И БУЛЕЙ (Для SQLite)
+                bool isExpNumericOrBool = expType.Contains("int") || expType == "boolean" || expType == "bit";
+                bool isActNumericOrBool = actType.Contains("int") || actType == "boolean" || actType == "bit";
 
-                // 🔥 СТРАЖ СДВИГА GUID ТИПОВ:
-                // Обучаем компаратор понимать, что Guid/Uuid в кодовой схеме и Varchar/Text/String/Character Varying в базах — это одно и то же!
+                if (isExpNumericOrBool && isActNumericOrBool)
+                {
+                    typesAreEqual = true;
+                    actual.Type = expected.Type; // Синхронизируем для лога
+                }
+
+                // СТРАЖ СДВИГА GUID И СТРОК
                 if ((expType == "varchar" || expType == "text" || expType == "string" || expType == "character varying" || expType == "guid" || expType == "uuid") &&
                     (actType == "varchar" || actType == "text" || actType == "string" || actType == "character varying" || actType == "guid" || actType == "uuid"))
                 {
                     typesAreEqual = true;
+                    actual.Type = expected.Type;
                 }
 
-                // Совместимость типов даты-времени (DateTime, Timestamp)
-                if ((expType == "datetime" || expType == "timestamp") && (actType == "datetime" || actType == "timestamp"))
+                // Совместимость типов даты-времени
+                if ((expType == "datetime" || expType == "timestamp" || expType.Contains("date")) &&
+                    (actType == "datetime" || actType == "timestamp" || actType.Contains("date")))
+                {
                     typesAreEqual = true;
+                    actual.Type = expected.Type;
+                }
             }
 
             if (!typesAreEqual) return false;
 
+            // 3. Сверяем флаг первичного ключа
+            if (expected.IsPrimaryKey != actual.IsPrimaryKey)
+            {
+                return false;
+            }
+
+            // 🎯 ФИКС: Если типы совместимы (числа/були), выравниваем флаг Nullable для SQLite,
+            // чтобы разница в метаданных СУБД не плодила ложные варнинги!
+            if (expected.Type == actual.Type)
+            {
+                actual.IsNullable = expected.IsNullable;
+            }
+
+            // 4. Сверяем дефолтные значения
             if (!AreDefaultValuesEqual(expected.DefaultValue, actual.DefaultValue, expected.IsCreatedAt))
             {
-                return true;
+                return false;
             }
 
             return true;
         }
 
+
+
         private bool AreDefaultValuesEqual(object? expected, object? actual, bool isCreatedAt)
         {
-            if (expected == null && actual == null) return true;
+            // Приводим оба значения к чистым, нормализованным строкам
+            string expStr = expected?.ToString()?.Trim() ?? string.Empty;
+            string actStr = actual?.ToString()?.Trim() ?? string.Empty;
 
-            string expRaw = expected?.ToString() ?? string.Empty;
-            string actRaw = actual?.ToString() ?? string.Empty;
+            // Очищаем от системных скобок и кавычек SQLite (например, '0', (0), ((0)))
+            expStr = expStr.Trim('\'', '(', ')');
+            actStr = actStr.Trim('\'', '(', ')');
 
+            // 🎯 ЖЕЛЕЗОБЕТОННАЯ СИНХРОНИЗАЦИЯ ДЕФОЛТНЫХ НУЛЕЙ И ПУСТОТЫ:
+            // Если одно значение null/empty, а второе "0" или "false" — это один и тот же дефолт!
+            if (string.IsNullOrEmpty(expStr) || expStr == "0" || expStr.ToLower() == "false") expStr = "0";
+            if (string.IsNullOrEmpty(actStr) || actStr == "0" || actStr.ToLower() == "false") actStr = "0";
+
+            // Если оба значения свелись к общему дефолту (например, к "0"), они равны!
+            if (expStr == actStr) return true;
+
+            // Проверка для колонок автоматического времени создания
             if (isCreatedAt)
             {
-                string lowerAct = actRaw.ToLower();
+                string lowerAct = actStr.ToLower();
                 if (lowerAct.Contains("now") || lowerAct.Contains("current_timestamp")) return true;
             }
 
-            if (expected == null || actual == null) return false;
-
-            string expStr = expRaw.Trim('\'', '(', ')').Split(new[] { "::" }, StringSplitOptions.None)[0];
-            string actStr = actRaw.Trim('\'', '(', ')').Split(new[] { "::" }, StringSplitOptions.None)[0];
+            // Если это сложные дефолты (со спецсимволами Postgres типа ::varchar), чистим хвосты
+            if (expStr.Contains("::")) expStr = expStr.Split(new[] { "::" }, StringSplitOptions.None)[0].Trim('\'');
+            if (actStr.Contains("::")) actStr = actStr.Split(new[] { "::" }, StringSplitOptions.None)[0].Trim('\'');
 
             return expStr.Equals(actStr, StringComparison.OrdinalIgnoreCase);
         }
+
     }
 }

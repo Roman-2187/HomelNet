@@ -1,5 +1,4 @@
-﻿using HomeNetCore.Models;
-using System.Threading.Tasks;
+﻿using HomeNetCore.Models.Entity;
 
 namespace HomeNetCore.Interfaces
 {

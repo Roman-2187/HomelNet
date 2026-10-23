@@ -1,12 +1,12 @@
 ﻿using Dapper;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Repositories;
-using HomeNetCore.Models;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using System.Data.Common;
 using HomeNetCore.Interfaces.Sinc;
 using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetCore.Models.Entity;
 
 namespace HomeNetOrm.Repositories
 {

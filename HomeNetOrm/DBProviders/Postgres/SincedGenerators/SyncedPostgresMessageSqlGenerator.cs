@@ -1,5 +1,6 @@
 ﻿using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Models;
+using HomeNetCore.Models.Entity;
 using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.DBProviders.Postgres.Generators;
 using HomeNetOrm.Interfaces.Generators;

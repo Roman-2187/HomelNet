@@ -3,17 +3,20 @@ using HomeNetOrm.Models;
 
 namespace HomeNetOrm.Builders
 {
-    // 1. Добавляем <TEntity>, чтобы билдер знал, для какого класса (модели) строится таблица
+    /// <summary>
+    /// Билдер схемы таблицы для конкретного класса сущности
+    /// </summary>
     public class TableBuilder<TEntity> where TEntity : class
     {
         private readonly string _tableName;
-
-        // 2. Исправляем List<Tab> на список билдеров колонок для нашей сущности
         private readonly List<ColumnBuilder<TEntity>> _columnBuilders = new();
+        private bool _useVersionTrigger = false;
 
         public TableBuilder(string tableName) => _tableName = tableName;
 
-        // 3. Вместо строки name принимаем C#-выражение (например: x => x.Id)
+        /// <summary>
+        /// Принимает C#-выражение свойства модели (например: x => x.DeviceId)
+        /// </summary>
         public ColumnBuilder<TEntity> AddColumn(Expression<Func<TEntity, object?>> propertyExpression)
         {
             var builder = new ColumnBuilder<TEntity>(propertyExpression);
@@ -21,29 +24,38 @@ namespace HomeNetOrm.Builders
             return builder;
         }
 
-        // 4. Финализируем сборку схемы таблицы
+        /// <summary>
+        /// Включает для таблицы автоматическое версионирование через Postgres-триггер
+        /// </summary>
+        public TableBuilder<TEntity> WithVersionTracking()
+        {
+            _useVersionTrigger = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Финализирует сборку схемы таблицы
+        /// </summary>
         public TableSchema Generate()
         {
             var columns = _columnBuilders
-                .Select(builder => builder.Build()) // Сначала собираем все колонки
+                .Select(builder => builder.Build())
                 .ToList();
 
-            // Считаем, сколько колонок помечено как Primary Key
             var primaryKeysCount = columns.Count(c => c.IsPrimaryKey);
 
             var schema = new TableSchema
             {
                 TableName = _tableName,
-                Columns = columns
+                Columns = columns,
+                UseVersionTrigger = _useVersionTrigger // Пробрасываем флаг триггера в схему
             };
 
-            // Автоматически запускаем логику формирования SQL-кусков (AllFields, SetClause и т.д.)
+            // Запускаем сборку строк AllFields, SetClause, InsertFields
             schema.Initialize();
 
-            // 🛡️ Защита от составного ключа: 
-            // Если ключ один — записываем его имя (как обычно). 
-            // Если ключей больше одного (как в Friends) — ставим null, чтобы генератор не сошел с ума, 
-            // пытаясь сгенерировать UPDATE/DELETE по одиночному ID.
+            // 🛡️ Защита от составного ключа:
+            // Если ключ один — пишем его имя. Если ключей больше (как в DeviceSync) — ставим null.
             schema.IdColumnName = primaryKeysCount == 1
                 ? columns.FirstOrDefault(c => c.IsPrimaryKey)?.Name
                 : null;
@@ -51,6 +63,4 @@ namespace HomeNetOrm.Builders
             return schema;
         }
     }
-    }
-
-
+}

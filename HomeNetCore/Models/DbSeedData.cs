@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using HomeNetCore.Models.Entity;
+using System.Collections.Generic;
 
 namespace HomeNetCore.Models
 {

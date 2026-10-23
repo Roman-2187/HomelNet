@@ -42,6 +42,9 @@ namespace HomeNetOrm.DBProviders.Base
 
         public List<string> GetColumnDefinitions(TableSchema schema)
         {
+            // 🎯 Считаем, сколько всего колонок входят в первичный ключ таблицы
+            int primaryKeysCount = schema.Columns.Count(c => c.IsPrimaryKey);
+
             return schema.Columns.Select(col =>
             {
                 if (col.Type == ColumnType.Unspecified)
@@ -69,7 +72,11 @@ namespace HomeNetOrm.DBProviders.Base
                 }
 
                 if (!col.IsNullable) constraints.Add(NotNull);
-                if (col.IsPrimaryKey) constraints.Add(PrimaryKey);
+
+                // 🔥 ЖЕЛЕЗОБЕТОННЫЙ ИСПРАВЛЕННЫЙ МАРКЕР:
+                // Добавляем инлайновый PRIMARY KEY только если он ОДИН на всю таблицу!
+                if (col.IsPrimaryKey && primaryKeysCount == 1)
+                    constraints.Add(PrimaryKey);
 
                 // Специфика SQLite для автоинкремента:
                 if (col.IsPrimaryKey && col.IsAutoIncrement && sqlType.Equals("INTEGER", StringComparison.OrdinalIgnoreCase))
@@ -85,5 +92,6 @@ namespace HomeNetOrm.DBProviders.Base
                 return string.Join(" ", parts);
             }).ToList();
         }
+
     }
 }

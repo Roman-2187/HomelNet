@@ -33,29 +33,25 @@ namespace HomeNetOrm.Infrastructure
             _sqliteAdapter = new GenericSchemaAdapter(sqliteSpec);
         }
 
-       
-
-
         public IUserRepository CreateUserRepository(IEventBus eventBus)
         {
             // 🔥 ПОДМЕНЯЕМ СТЕРИЛЬНЫЙ НА СИНХРОНИЗИРОВАННЫЙ! 🔥
-            // Вместо SqliteUserSqlGenerator ставим SyncedSqliteUserSqlGenerator
             var generator = new SyncedSqliteUserSqlGenerator(_sqliteAdapter, _schemas, _logger);
-
-            return new UserRepository(_connection, generator,_logger, eventBus);
+            return new UserRepository(_connection, generator, _logger, eventBus);
         }
-
 
         public IMessageRepository CreateMessageRepository(IEventBus eventBus)
         {
             // 🔥 ПОДМЕНА: Включаем синхронизацию сообщений "из коробки" через Synced-наследника!
             var generator = new SyncedSqliteMessageSqlGenerator(_sqliteAdapter, _schemas, _logger);
-            return new MessageRepository(_connection, generator,_logger, eventBus);
+            return new MessageRepository(_connection, generator, _logger, eventBus);
         }
 
         public ClientDeviceSettingsRepository CreateDeviceSettingsRepository()
         {
-            var generator = new SqliteDeviceSettingsSqlGenerator();
+            // 🎯 ФИКС: Внедряем адаптер, схемы и логгер в наш новый генератор сетингов!
+            // Теперь ядро CoreSqlGenerator получит всё необходимое для автопилота snake_case.
+            var generator = new SqliteDeviceSettingsSqlGenerator(_sqliteAdapter, _schemas, _logger);
             return new ClientDeviceSettingsRepository(_connection, generator);
         }
 

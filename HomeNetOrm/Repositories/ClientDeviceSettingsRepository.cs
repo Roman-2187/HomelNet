@@ -20,31 +20,32 @@ namespace HomeNetOrm.Repositories
             _sqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));
         }
 
-        /// <summary>
-        /// Безопасно вытягивает существующий или генерирует новый Device ID в SQLite
-        /// </summary>
         public async Task<Guid> GetOrCreateDeviceIdAsync()
         {
-            // 1. Запрашиваем SQL-строку селекта у локального генератора
             string selectSql = _sqlGenerator.GenerateSelectByKey();
 
             string? savedIdStr = await _connection.QueryFirstOrDefaultAsync<string>(selectSql, new { Key = "DeviceId" });
 
-            // Если в базе уже лежит готовый ID девайса — парсим его из строки и отдаем
             if (!string.IsNullOrEmpty(savedIdStr) && Guid.TryParse(savedIdStr, out Guid savedGuid))
             {
                 return savedGuid;
             }
 
-            // 2. Если запустились первый раз и ID нет — генерируем новый Guid
             Guid newDeviceId = Guid.NewGuid();
-
-            // Запрашиваем SQL-строку вставки/апдейта у локального генератора
             string insertSql = _sqlGenerator.GenerateInsertOrUpdate();
 
-            await _connection.ExecuteAsync(insertSql, new { Key = "DeviceId", Value = newDeviceId.ToString() });
+            // 🎯 ДОБАВЛЯЕМ ПАРАМЕТРЫ ДЛЯ ОБХОДА NOT NULL НА УРОВНЕ C#
+            await _connection.ExecuteAsync(insertSql, new
+            {
+                Key = "DeviceId",
+                Value = newDeviceId.ToString(),
+                UserId = Guid.Empty,          // Передаем пустой Guid
+                Email = string.Empty,        // Пустая строка
+                Password = string.Empty      // Пустая строка
+            });
 
             return newDeviceId;
         }
+
     }
 }

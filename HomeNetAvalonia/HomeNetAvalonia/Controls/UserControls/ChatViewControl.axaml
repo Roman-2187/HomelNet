@@ -3,7 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
               xmlns:vm="using:HomeNetPresentation.ViewModels"
-             xmlns:models="using:HomeNetCore.Models"
+             xmlns:models="using:HomeNetCore.Models.Entity"
              mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="500"
              x:Class="HomeNetAvalonia.Controls.ChatViewControl"
              x:DataType="vm:ChatViewModel">

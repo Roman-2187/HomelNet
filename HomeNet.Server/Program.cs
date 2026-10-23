@@ -3,6 +3,7 @@ using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Models;
+using HomeNetCore.Models.Entity;
 using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Repositories;
 using HomeNetServices.Diagnostics;

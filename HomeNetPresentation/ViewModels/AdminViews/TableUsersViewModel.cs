@@ -3,6 +3,7 @@ using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
+using HomeNetCore.Models.Entity;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetPresentation.Services;
 using System.Collections.ObjectModel;

@@ -97,7 +97,7 @@ namespace HomeNetOrm.DBProviders.Base
             }
             else
             {
-                _logger.LogDebug($"Получено имен колонок таблицы {tableName} : {getSchema.columnNames}");
+                _logger.LogDebug($"Получено имен колонок таблицы {tableName} : {getSchema.ColumnNames}");
             }
 
             return getSchema;

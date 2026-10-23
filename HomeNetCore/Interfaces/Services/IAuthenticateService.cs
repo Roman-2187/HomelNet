@@ -1,4 +1,5 @@
 ﻿using HomeNetCore.Models;
+using HomeNetCore.Models.Entity;
 using HomeNetCore.Models.Validation;
 
 

@@ -49,7 +49,7 @@ namespace HomeNetOrm.DbTableInitializer
 
         public async Task InitializeAsync()
         {
-            _logger.LogInfo($"=== СТАРТ ИНИЦИАЛИЗАЦИИ БАЗЫ ДАННЫХ [{_dbName}] ===");
+            _logger.LogInfo($"=== 🚀 СТАРТ ИНИЦИАЛИЗАЦИИ БАЗЫ ДАННЫХ [{_dbName}] ===");
 
             // 🦾 Теперь цикл крутится по внешним схемам, а не по SchemaRegistry!
             foreach (var schema in _tableSchemas)
@@ -59,7 +59,7 @@ namespace HomeNetOrm.DbTableInitializer
 
                 try
                 {
-                    _logger.LogInfo($"[{_dbName}] Проверка таблицы: {dbTableName}...");
+                    _logger.LogInfo($"[{_dbName}] 🔍 Проверка таблицы: {dbTableName}...");
 
                     if (!await TableExistsAsync(dbTableName))
                     {
@@ -73,12 +73,12 @@ namespace HomeNetOrm.DbTableInitializer
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"[{_dbName} КРИТ] Сбой при обработке таблицы {dbTableName}: {ex.Message}");
+                    _logger.LogError($"[{_dbName} ❌ КРИТ] Сбой при обработке таблицы {dbTableName}: {ex.Message}");
                     throw;
                 }
             }
 
-            _logger.LogInfo($"=== ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ [{_dbName}] ЗАВЕРШЕНА ===");
+            _logger.LogInfo($"=== ✨ ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ [{_dbName}] ЗАВЕРШЕНА ===");
         }
 
         private async Task<bool> TableExistsAsync(string tableName)
@@ -93,7 +93,7 @@ namespace HomeNetOrm.DbTableInitializer
             }
             catch (Exception ex)
             {
-                _logger.LogError($"[{_dbName}] Ошибка проверки существования {tableName}: {ex.Message}");
+                _logger.LogError($"[{_dbName} ❌] Ошибка проверки существования {tableName}: {ex.Message}");
                 return false;
             }
         }
@@ -101,7 +101,7 @@ namespace HomeNetOrm.DbTableInitializer
         private async Task CreateTableAsync(TableSchema dbSchema)
         {
             string targetName = dbSchema.TableName ?? string.Empty;
-            _logger.LogWarning($"[{_dbName}] Таблица {targetName} не обнаружена. Запуск генерации...");
+            _logger.LogWarning($"[{_dbName} ⚠️] Таблица {targetName} не обнаружена. Запуск генерации...");
 
             if (_dbConnection.State != ConnectionState.Open)
             {
@@ -112,7 +112,7 @@ namespace HomeNetOrm.DbTableInitializer
             await _dbConnection.ExecuteAsync(createTableSql);
 
             if (await TableExistsAsync(targetName))
-                _logger.LogInfo($"[{_dbName}] ✅ Таблица {targetName} успешно создана в БД.");
+                _logger.LogInfo($"[{_dbName}] ✅ Таблица {targetName} успешно создана в БД и готова к работе.");
             else
             {
                 _logger.LogError($"[{_dbName}] ❌ Ошибка создания! Таблица {targetName} отсутствует после выполнения скрипта.");
@@ -132,9 +132,13 @@ namespace HomeNetOrm.DbTableInitializer
             string dbTableName = actualAdaptedSchema.TableName ?? string.Empty;
             var expectedSchema = await _schemaProvider.GetActualTableSchemaAsync(dbTableName);
 
-            if (expectedSchema.Columns.Count == 0 || string.IsNullOrEmpty(expectedSchema.IdColumnName))
+            // 🎯 ЖЕЛЕЗОБЕТОННЫЙ ФИКС ДЛЯ СОСТАВНЫХ КЛЮЧЕЙ:
+            // Вместо проверки одиночного IdColumnName, проверяем, есть ли вообще в схеме из БД хоть один первичный ключ!
+            bool hasPrimaryKey = expectedSchema.Columns.Any(c => c.IsPrimaryKey);
+
+            if (expectedSchema.Columns.Count == 0 || !hasPrimaryKey)
             {
-                _logger.LogError($"[{_dbName} ИНИЦИАЛИЗАТОР] Сверка структуры для таблицы '{dbTableName}' пропущена, так как схема в БД повреждена, пуста или не имеет Primary Key.");
+                _logger.LogError($"[{_dbName} ❌ ИНИЦИАЛИЗАТОР] Сверка структуры для таблицы '{dbTableName}' пропущена, так как схема в БД повреждена, пуста или вообще не имеет первичных ключей.");
                 return;
             }
 
@@ -146,20 +150,32 @@ namespace HomeNetOrm.DbTableInitializer
 
             if (diff.IsIdentical)
             {
-                _logger.LogInfo($"  -> [{_dbName}] Структура таблицы {dbTableName} в порядке.");
+                // 🎯 КРАСИВАЯ ЖИРНАЯ ГАЛОЧКА: Сразу видно успешный статус в консоли
+                _logger.LogInfo($"[{_dbName}] ✅ Структура таблицы '{dbTableName}' в полном порядке.");
             }
             else
             {
-                _logger.LogWarning($"⚠️ [{_dbName}] Обнаружены расхождения в структуре {dbTableName}:");
+                _logger.LogWarning($"[{_dbName} ⚠️] ВНИМАНИЕ: Обнаружены расхождения в структуре '{dbTableName}':");
 
                 foreach (var missing in diff.MissingColumns)
-                    _logger.LogWarning($"   [-] Отсутствует колонка: {missing.Name}");
+                    _logger.LogWarning($"   [-] ❌ Отсутствует колонка: {missing.Name}");
 
                 foreach (var extra in diff.ExtraColumns)
-                    _logger.LogWarning($"   [+] Обнаружена лишняя колонка: {extra.Name}");
+                    _logger.LogWarning($"   [+] 🛑 Обнаружена лишняя колонка: {extra.Name}");
 
                 foreach (var mismatch in diff.MismatchedColumns)
-                    _logger.LogWarning($"   [*] Сдвиг типа в '{mismatch.ColumnName}': ожидалось {mismatch.Expected}, прилетело {mismatch.Actual}");
+                {
+                    // Подтягиваем информативный вывод из нашей прошлой доработки
+                    string reason = $"ожидалось {mismatch.Expected.Type}, прилетело {mismatch.Actual.Type}";
+
+                    if (mismatch.Expected.IsNullable != mismatch.Actual.IsNullable)
+                        reason += $" [Nullable: {mismatch.Expected.IsNullable} vs {mismatch.Actual.IsNullable}]";
+
+                    if (mismatch.Expected.IsPrimaryKey != mismatch.Actual.IsPrimaryKey)
+                        reason += $" [PK: {mismatch.Expected.IsPrimaryKey} vs {mismatch.Actual.IsPrimaryKey}]";
+
+                    _logger.LogWarning($"   [*] 🔄 Расхождение в '{mismatch.ColumnName}': {reason}");
+                }
             }
         }
     }

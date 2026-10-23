@@ -6,6 +6,7 @@ using HomeNetCore.Interfaces.Diagnostics; // Твой логгер
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Sinc;
 using HomeNetCore.Models;
+using HomeNetCore.Models.Entity;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
 using System.Data.Common;

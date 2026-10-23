@@ -5,7 +5,8 @@ using System.Net.Http.Json;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System;
-using HomeNetCore.Models; // Твои MessageEntity и UserEntity
+using HomeNetCore.Models;
+using HomeNetCore.Models.Entity; // Твои MessageEntity и UserEntity
 
 namespace HomeNet.Network
 {

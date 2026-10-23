@@ -1,0 +1,86 @@
+[10/22 21:27:10.539] [INFO] [Modules -> CoreInfrastructureModule..ctor:35] | [Инфраструктура] Логгер успешно поднят и настроен.
+
+[10/22 21:27:10.591] [INFO] [HomeNetAvalonia -> axaml.OnFrameworkInitializationCompleted:65] | [App Старт] Двуствольный запуск СУБД движков и координатора репликации успешно запущен в фоне.
+
+[10/22 21:27:10.591] [INFO] [Infrastructure -> DbContextContainer.InitializeAllDatabasesAsync:42] | === [СУБД ХАБ] ЗАПУСК ПАРАЛЛЕЛЬНОЙ ИНИЦИАЛИЗАЦИИ ХРАНИЛИЩ ===
+
+[10/22 21:27:10.608] [INFO] [Base -> DbInitializer.InitializeAsync:52] | === СТАРТ ИНИЦИАЛИЗАЦИИ БАЗЫ ДАННЫХ [SQLite] ===
+
+[10/22 21:27:10.608] [INFO] [Base -> DbInitializer.InitializeAsync:62] | [SQLite] Проверка таблицы: users...
+
+[10/22 21:27:10.647] [DEBUG] [Base -> DbInitializer.InitializeAsync:70] | [SQLite] Таблица users существует, сверяю структуру...
+
+[10/22 21:27:10.670] [DEBUG] [Base -> GenericSchemaProvider.ProcessAndValidateSchema:84] | Получено 9 столбцов для таблицы users
+
+[10/22 21:27:10.670] [DEBUG] [Base -> GenericSchemaProvider.ProcessAndValidateSchema:100] | Получено имен колонок таблицы users : "id", "first_name", "last_name", "phone_number", "email", "password", "created_at", "is_synced", "updated_at"
+
+[10/22 21:27:10.673] [WARNING] [Base -> DbInitializer.CheckTableStructureAsync:153] | ⚠️ [SQLite] Обнаружены расхождения в структуре users:
+
+[10/22 21:27:10.674] [WARNING] [Base -> DbInitializer.CheckTableStructureAsync:159] |    [+] Обнаружена лишняя колонка: device_id
+
+[10/22 21:27:10.674] [INFO] [Base -> DbInitializer.InitializeAsync:62] | [SQLite] Проверка таблицы: messages...
+
+[10/22 21:27:10.675] [DEBUG] [Base -> DbInitializer.InitializeAsync:70] | [SQLite] Таблица messages существует, сверяю структуру...
+
+[10/22 21:27:10.676] [DEBUG] [Base -> GenericSchemaProvider.ProcessAndValidateSchema:84] | Получено 9 столбцов для таблицы messages
+
+[10/22 21:27:10.676] [DEBUG] [Base -> GenericSchemaProvider.ProcessAndValidateSchema:100] | Получено имен колонок таблицы messages : "id", "sender_id", "receiver_id", "text", "media_type", "is_read", "created_at", "is_synced", "updated_at"
+
+[10/22 21:27:10.677] [INFO] [Base -> DbInitializer.CheckTableStructureAsync:149] |   -> [SQLite] Структура таблицы messages в порядке.
+
+[10/22 21:27:10.678] [INFO] [Base -> DbInitializer.InitializeAsync:62] | [SQLite] Проверка таблицы: friends...
+
+[10/22 21:27:10.678] [DEBUG] [Base -> DbInitializer.InitializeAsync:70] | [SQLite] Таблица friends существует, сверяю структуру...
+
+[10/22 21:27:10.679] [DEBUG] [Base -> GenericSchemaProvider.ProcessAndValidateSchema:84] | Получено 6 столбцов для таблицы friends
+
+[10/22 21:27:10.679] [DEBUG] [Base -> GenericSchemaProvider.ProcessAndValidateSchema:100] | Получено имен колонок таблицы friends : "id", "user_id", "friend_id", "created_at", "is_synced", "updated_at"
+
+[10/22 21:27:10.680] [INFO] [Base -> DbInitializer.CheckTableStructureAsync:149] |   -> [SQLite] Структура таблицы friends в порядке.
+
+[10/22 21:27:10.680] [INFO] [Base -> DbInitializer.InitializeAsync:62] | [SQLite] Проверка таблицы: device_settings...
+
+[10/22 21:27:10.682] [WARNING] [Base -> DbInitializer.CreateTableAsync:104] | [SQLite] Таблица device_settings не обнаружена. Запуск генерации...
+
+[10/22 21:27:10.687] [ERROR] [Base -> DbInitializer.InitializeAsync:76] | [SQLite КРИТ] Сбой при обработке таблицы device_settings: SQLite Error 1: 'table "device_settings" has more than one primary key'.
+
+[10/22 21:27:10.687] [ERROR] [Infrastructure -> DbContextContainer.InitializeLocalChannelInternalAsync:65] | [СУБД СТАТУС] Локальный движок недоступен: SQLite Error 1: 'table "device_settings" has more than one primary key'.
+
+[10/22 21:27:13.695] [ERROR] [Infrastructure -> DbContextContainer.CheckRemoteServerAvailabilityInternalAsync:81] | [СЕТЬ СТАТУС] Удаленный сервер недоступен: The request was canceled due to the configured HttpClient.Timeout of 3 seconds elapsing.
+
+[10/22 21:27:13.695] [INFO] [Infrastructure -> DbContextContainer.InitializeAllDatabasesAsync:50] | === [СУБД ХАБ] ИНИЦИАЛИЗАЦИЯ ХРАНИЛИЩ ЗАВЕРШЕНА ===
+
+[10/22 21:27:13.699] [DEBUG] [Identity -> UserService.GetAllAsync:32] | Запрос списка пользователей напрямую из СУБД...
+
+[10/22 21:27:13.701] [ERROR] [Identity -> UserService.Не удалось выполнить запрос получения пользователей через ОРМ: SQLite Error 1: 'no such column: "device id" - should this be a string literal in single-quotes?'.:40] | Ошибка при получении пользователей из БД
+
+[10/22 21:27:13.703] [INFO] [HomeNet.DI -> AppCompositionRoot.Initialize:68] | [App Старт] Базы и сеть прогреты. Запускаем репликацию данных...
+
+[10/22 21:27:13.707] [ERROR] [HomeNet.DI -> AppCompositionRoot.Initialize:78] | [App Старт] Критическая ошибка генерации Device ID: SQLite Error 1: 'no such table: device_settings'.
+
+[10/22 21:27:17.815] [ERROR] [HomeNet.DI -> AppCompositionRoot.Initialize:88] | [App Старт] Не удалось подключить логи бэкенда: No connection could be made because the target machine actively refused it. (localhost:5210)
+
+[10/22 21:27:18.123] [INFO] [Infrastructure -> SincEngine.StartAsync:38] | === [SiberNet Engine] ЗАПУСК СИСТЕМЫ СИНХРОНИЗАЦИИ ===
+
+[10/22 21:27:18.127] [INFO] [Sinc -> BaseSynchronizer.StartAsync:52] | === [UserSynchronizer] ЗАПУСК ЛОКАЛЬНОЙ СВЕРКИ ===
+
+[10/22 21:27:18.129] [INFO] [Sinc -> UserSynchronizer.ExecuteTableSyncInternalAsync:48] | [UserSynchronizer] Запуск синхронизации профилей...
+
+[10/22 21:27:18.130] [INFO] [Sinc -> UserSynchronizer.ExecuteTableSyncInternalAsync:56] | [UserSynchronizer] Кричим в автобус запрос на скачивание обновлений юзеров...
+
+[10/22 21:27:18.132] [ERROR] [Sinc -> UserSynchronizer.ExecuteTableSyncInternalAsync:79] | [UserSynchronizer] Сбой при синхронизации пользователей: SQLite Error 1: 'no such column: "device_id" - should this be a string literal in single-quotes?'.
+
+[10/22 21:27:18.133] [INFO] [Sinc -> BaseSynchronizer.StartAsync:57] | === [UserSynchronizer] ЛОКАЛЬНАЯ СВЕРКА ЗАВЕРШЕНА ===
+
+[10/22 21:27:18.133] [INFO] [Sinc -> BaseSynchronizer.StartAsync:52] | === [MessageSynchronizer] ЗАПУСК ЛОКАЛЬНОЙ СВЕРКИ ===
+
+[10/22 21:27:18.134] [INFO] [Sinc -> MessageSynchronizer.ExecuteTableSyncInternalAsync:36] | [MessageSynchronizer] Инициация синхронизации СМС...
+
+[10/22 21:27:18.135] [INFO] [Sinc -> MessageSynchronizer.ExecuteTableSyncInternalAsync:44] | [MessageSynchronizer] Запрашиваем у автобуса новые сообщения с бэкенда...
+
+[10/22 21:27:18.137] [INFO] [Sinc -> BaseSynchronizer.StartAsync:57] | === [MessageSynchronizer] ЛОКАЛЬНАЯ СВЕРКА ЗАВЕРШЕНА ===
+
+[10/22 21:27:22.175] [WARNING] [HomeNet.Networks -> BaseNetworkHandler.FireAndForget:44] | [MessageNetworkHandler] Сервер недоступен. Операция 'Pull Messages From Server' отменена.
+
+[10/22 21:27:22.175] [WARNING] [HomeNet.Networks -> BaseNetworkHandler.FireAndForget:44] | [UserNetworkHandler] Сервер недоступен. Операция 'Pull Users From Server' отменена.
+

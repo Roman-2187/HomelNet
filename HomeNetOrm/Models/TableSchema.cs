@@ -1,100 +1,79 @@
 ﻿namespace HomeNetOrm.Models
 {
-    // TableSchema с улучшенной логикой
     public class TableSchema
-    { 
-        
+    {
         public string TableName { get; set; } = string.Empty;
         public List<ColumnSchema> Columns { get; set; } = new();
 
-        // Все поля для общих операций с алиасами
+        // Все поля для SELECT-операций с алиасами
         public string? AllFields { get; set; }
         public string? AllParameters { get; set; }
 
-        //
-        /// <summary>
-        ///  Поля для INSERT (без ID)
-        /// </summary>
+        // Поля и параметры для INSERT (исключая автоинкремент)
         public string? InsertFields { get; set; }
-
-        /// <summary>
-        /// параметры для INSERT (без ID)
-        /// </summary>
         public string? InsertParameters { get; set; }
 
-        
-        /// <summary>
-        /// SET clause для UPDATE
-        /// </summary>
+        // SET clause для UPDATE (исключает ВСЕ колонки первичного ключа)
         public string? SetClause { get; set; }
 
-        /// <summary>
-        /// Находим ID-колонку автоматически по IsPrimaryKey в методе Initialize();
-        /// </summary>
+        // Для обратной совместимости: имя одиночного ПК (null, если ключ составной)
         public string? IdColumnName { get; set; }
 
-        public string? columnNames { get; set; }
+        // Имена колонок через запятую (чистые, без алиасов)
+        public string? ColumnNames { get; set; }
+
+        // 🔥 ДОБАВЛЯЕМ: Флаг для серверного триггера авто-инкремента версий
+        public bool UseVersionTrigger { get; set; } = false;
 
         public bool Initialize()
         {
-            var pkColumn = Columns.FirstOrDefault(c => c.IsPrimaryKey);
-            if (pkColumn == null)
+            // Находим все колонки, помеченные как Primary Key
+            var pkColumns = Columns.Where(c => c.IsPrimaryKey).ToList();
+            if (!pkColumns.Any())
             {
-                return false; // Фейсконтроль по PK не пройден
+                return false; // Таблица без PK — это не по правилам распределенных баз
             }
 
-            string idColumn = pkColumn.Name ?? "Null";
-            IdColumnName = idColumn;
+            // Записываем одиночный ID (только если он один, иначе null для защиты)
+            IdColumnName = pkColumns.Count == 1 ? pkColumns.First().Name : null;
 
-            columnNames = string.Join(", ", Columns.Select(c => $"{c.OriginalName}"));
+            // Чистый список колонок базы данных
+            ColumnNames = string.Join(", ", Columns.Select(c => $"\"{c.Name}\""));
 
-            // Для выборки (SELECT) подтягиваем все поля с алиасами
+            // Для выборки (SELECT) подтягиваем все поля с алиасами под C#-свойства
             AllFields = string.Join(", ", Columns.Select(c => $"\"{c.Name}\" AS {c.OriginalName}"));
             AllParameters = string.Join(", ", Columns.Select(c => $"@{c.OriginalName}"));
 
-            // 🎯 ЖЕЛЕЗОБЕТОННЫЙ ФИКС ДЛЯ GUID ИНСЕРТОВ:
-            // Исключаем колонку из INSERT только если для нее включен автоинкремент базы!
-            // Наш C#-овский Guid (у которого IsAutoIncrement = false) теперь честно попадет в запрос.
+            // Исключаем из INSERT только автоинкрементные поля. Guid и обычные типы летят в запрос
             var insertColumns = Columns.Where(c => !c.IsAutoIncrement).ToList();
-
             InsertFields = string.Join(", ", insertColumns.Select(c => $"\"{c.Name}\""));
             InsertParameters = string.Join(", ", insertColumns.Select(c => $"@{c.OriginalName}"));
 
-            // Для UPDATE блок SET по-прежнему должен исключать первичный ключ (его менять нельзя)
+            // 🎯 СВЕРХНАДЕЖНЫЙ ФИКС ДЛЯ СОСТАВНЫХ КЛЮЧЕЙ:
+            // В блоке SET для UPDATE мы полностью исключаем абсолютно ВСЕ колонки, входящие в PK!
             SetClause = string.Join(", ", Columns
-                .Where(c => !string.Equals(c.Name, idColumn, StringComparison.OrdinalIgnoreCase))
+                .Where(c => !c.IsPrimaryKey)
                 .Select(c => $"\"{c.Name}\" = @{c.OriginalName}"));
 
             return true;
         }
 
-
-
-
-
         /// <summary>
-        /// Полностью переводит всю таблицу и её колонки под правила конкретной СУБД
+        /// Полностью переводит всю таблицу и её колонки под правила конкретной СУБД (Postgres/SQLite)
         /// </summary>
         public TableSchema CloneWithTransform(Func<string?, string?> nameTransformer)
         {
             var transformedTable = new TableSchema
             {
-                // 1. Берем имя (если null, то пустую строку) и ставим "!" в конце, чтобы компилятор не ворчал
                 TableName = nameTransformer(this.TableName ?? string.Empty)!,
+                Columns = this.Columns?.Select(c => c.CloneWithTransform(nameTransformer)).ToList() ?? new List<ColumnSchema>(),
+                UseVersionTrigger = this.UseVersionTrigger // Не теряем флаг при клонировании!
+            };
 
-                // 2. Добавляем проверку на null для коллекции Columns на всякий случай
-                Columns = this.Columns?.Select(c => c.CloneWithTransform(nameTransformer)).ToList() ?? []};
-        
-            
-
-            // Сразу запускаем пересчёт AllFields, InsertFields на новых именах
+            // Пересчитываем SQL-блоки на трансформированных (например, нижнерегистровых) именах
             transformedTable.Initialize();
-            transformedTable.IdColumnName = transformedTable.Columns.FirstOrDefault(c => c.IsPrimaryKey)?.Name;
 
             return transformedTable;
         }
-
-
-
     }
 }

@@ -1,7 +1,6 @@
 ﻿using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Models;
+using HomeNetCore.Models.Entity;
 using HomeNetOrm.DBProviders.Base;
-using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
 

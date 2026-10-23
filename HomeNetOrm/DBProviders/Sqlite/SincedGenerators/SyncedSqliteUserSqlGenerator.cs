@@ -1,5 +1,5 @@
 ﻿using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Models;
+using HomeNetCore.Models.Entity;
 using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.DBProviders.Sqlite.Generators;
 using HomeNetOrm.Interfaces.Generators;

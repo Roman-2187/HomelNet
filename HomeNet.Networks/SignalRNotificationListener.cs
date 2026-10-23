@@ -46,14 +46,14 @@ namespace HomeNet.Network
             // =========================================================================
 
             // 1. Слушаем входящие сообщения
-            _connection.On<HomeNetCore.Models.MessageEntity>(_messageHandler.ServerMethodName, async (message) =>
+            _connection.On<HomeNetCore.Models.Entity.MessageEntity>(_messageHandler.ServerMethodName, async (message) =>
             {
                 _logger.LogInfo($"[СЕТЬ] Поймали метод '{_messageHandler.ServerMethodName}' от сервера.");
                 await _messageHandler.HandleIncomingMessageAsync(message);
             });
 
             // 2. Слушаем входящие апдейты пользователей
-            _connection.On<HomeNetCore.Models.UserEntity>(_userHandler.ServerMethodName, async (user) =>
+            _connection.On<HomeNetCore.Models.Entity.UserEntity>(_userHandler.ServerMethodName, async (user) =>
             {
                 _logger.LogInfo($"[СЕТЬ] Поймали метод '{_userHandler.ServerMethodName}' от сервера.");
                 await _userHandler.HandleIncomingUserAsync(user);

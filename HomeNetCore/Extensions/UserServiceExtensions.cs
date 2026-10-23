@@ -1,6 +1,7 @@
 ﻿using HomeNetCore.Exeptions;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Models;
+using HomeNetCore.Models.Entity;
 
 namespace HomeNetCore.Extensions
 {

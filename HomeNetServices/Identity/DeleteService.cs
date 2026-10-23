@@ -4,6 +4,7 @@ using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Models;
+using HomeNetCore.Models.Entity;
 using HomeNetCore.Models.Validation;
 
 namespace HomeNetServices.Services.Identity

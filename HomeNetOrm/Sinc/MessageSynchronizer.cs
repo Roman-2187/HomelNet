@@ -3,7 +3,7 @@ using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Interfaces.Sinc;
-using HomeNetCore.Models;
+using HomeNetCore.Models.Entity;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Repositories;
 

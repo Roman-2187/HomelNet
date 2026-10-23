@@ -1,7 +1,4 @@
-﻿using HomeNetCore.Models;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using HomeNetCore.Models.Entity;
 
 namespace HomeNetCore.Interfaces.ViewModels
 {

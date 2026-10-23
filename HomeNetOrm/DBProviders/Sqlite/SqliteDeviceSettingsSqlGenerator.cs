@@ -1,24 +1,45 @@
-﻿using HomeNetOrm.Interfaces.Generators;
+﻿using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetCore.Models.Entity;
+using HomeNetOrm.DBProviders.Base;
+using HomeNetOrm.Interfaces.DbInfrastructure;
+using HomeNetOrm.Interfaces.Generators;
+using HomeNetOrm.Models;
 
-namespace HomeNetOrm.DBProviders.Sqlite
+namespace HomeNetOrm.DBProviders.Sqlite.Generators
 {
     /// <summary>
-    /// 🔒 СКРЫТАЯ РЕАЛИЗАЦИЯ: Чистый SQLite для локальных настроек девайса
+    /// 🎯 ЧИСТЫЙ ГЕНЕРАТОР СЕТТИНГОВ: Взяли только конструктор ядра! 
+    /// Нет завязки на CRUD, пишем только то, что нужно.
     /// </summary>
-    internal class SqliteDeviceSettingsSqlGenerator : ILocalDeviceSettingsSqlGenerator
+    internal class SqliteDeviceSettingsSqlGenerator : CoreSqlGenerator<DeviceSettingsEntity>, ILocalDeviceSettingsSqlGenerator
     {
+        public SqliteDeviceSettingsSqlGenerator(ISchemaAdapter adapter, IEnumerable<TableSchema> schemas, ILogger logger)
+            : base(adapter, schemas, logger) { }
+
         public string GenerateSelectByKey()
         {
-            // Берем значение из колонки "id" (куда маппится значение) по ключу в "device_id"
-            return @"SELECT ""id"" FROM ""device_settings"" WHERE ""device_id"" = @Key LIMIT 1;";
+            return $@"SELECT ""id"" FROM ""{FormattedTable.TableName}"" WHERE ""device_id"" = @Key LIMIT 1;";
         }
 
         public string GenerateInsertOrUpdate()
         {
-            // Пишем: device_id — это наш строковый ключ, id — это наш сгенерированный GUID
-            return @"INSERT INTO ""device_settings"" (""device_id"", ""id"") 
-                     VALUES (@Key, @Value) 
-                     ON CONFLICT(""device_id"") DO UPDATE SET ""id"" = EXCLUDED.""id"";";
+            // Запрос чистый, без хардкода значений. Все данные заедут через параметры Dapper!
+            return $@"
+        INSERT INTO ""{FormattedTable.TableName}"" 
+        (""device_id"", ""id"", ""user_id"", ""email"", ""password"", ""updated_at"") 
+        VALUES ( 
+            @Key, 
+            @Value, 
+            @UserId, 
+            @Email, 
+            @Password, 
+            CURRENT_TIMESTAMP 
+        ) 
+        ON CONFLICT(""device_id"", ""id"") 
+        DO UPDATE SET 
+            ""updated_at"" = CURRENT_TIMESTAMP;";
         }
+
     }
 }
+

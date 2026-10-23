@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Models;
+using HomeNetCore.Models.Entity;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators; // 🎯 Контракт синхронизации
 using System.Data;

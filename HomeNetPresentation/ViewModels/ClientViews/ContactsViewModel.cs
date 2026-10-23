@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models;
+using HomeNetCore.Models.Entity;
 using System.Collections.ObjectModel;
 
 namespace HomeNetPresentation.ViewModels

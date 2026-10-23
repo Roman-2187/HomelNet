@@ -1,5 +1,6 @@
 ﻿using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Models;
+using HomeNetCore.Models.Entity;
 
 namespace HomeNetCore.Interfaces.ViewModels
 {

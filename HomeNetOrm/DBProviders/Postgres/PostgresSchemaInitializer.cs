@@ -1,6 +1,7 @@
 ﻿using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
+using System.Text;
 
 namespace HomeNetOrm.DBProviders.Postgres
 {
@@ -15,13 +16,63 @@ namespace HomeNetOrm.DBProviders.Postgres
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+      
+
+
+
         public string GenerateCreateTableSql(TableSchema schema)
         {
             if (schema == null) throw new ArgumentNullException(nameof(schema));
             string tableName = schema.TableName ?? throw new InvalidOperationException("Имя таблицы отсутствует.");
+
+            // Получаем чистые дефиниции колонок (БЕЗ слов PRIMARY KEY внутри колонок, если ключ составной)
             List<string> columnDefinitions = _adapter.GetColumnDefinitions(schema);
-            return $@"CREATE TABLE IF NOT EXISTS ""{tableName}"" ({string.Join(", ", columnDefinitions)});";
+
+            // Находим все колонки первичного ключа
+            var pkColumns = schema.Columns.Where(c => c.IsPrimaryKey).ToList();
+
+            var sb = new StringBuilder();
+            sb.Append($@"CREATE TABLE IF NOT EXISTS ""{tableName}"" (");
+            sb.Append(string.Join(", ", columnDefinitions));
+
+            // 🔥 ЕСЛИ КЛЮЧ СОСТАВНОЙ — ДОБАВЛЯЕМ ЕГО ПРАВИЛЬНЫМ СИНТАКСИСОМ В КОНЕЦ
+            if (pkColumns.Count > 1)
+            {
+                string pkFieldNames = string.Join(", ", pkColumns.Select(c => $"\"{c.Name}\""));
+                sb.Append($@", PRIMARY KEY ({pkFieldNames})"); // Дописываем отдельное ограничение таблицы
+            }
+
+            sb.AppendLine(");");
+
+            // Твоя логика триггеров версионирования (оставляем без изменений)
+            if (schema.UseVersionTrigger)
+            {
+                string sequenceName = $"seq_{tableName}_version";
+                string triggerName = $"trg_{tableName}_update_version";
+
+                sb.AppendLine($@"
+        CREATE SEQUENCE IF NOT EXISTS ""{sequenceName}"" START WITH 1;
+
+        CREATE OR REPLACE FUNCTION fn_update_version_column()
+        RETURNS TRIGGER AS $$
+        BEGIN
+            NEW.""Version"" := nextval('seq_' || TG_TABLE_NAME || '_version');
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+
+        DROP TRIGGER IF EXISTS ""{triggerName}"" ON ""{tableName}"";
+
+        CREATE TRIGGER ""{triggerName}""
+        BEFORE INSERT OR UPDATE ON ""{tableName}""
+        FOR EACH ROW
+        EXECUTE FUNCTION fn_update_version_column();
+        ");
+            }
+
+            return sb.ToString();
         }
+
 
         public string GenerateTableExistsSql(string tableName)
         {

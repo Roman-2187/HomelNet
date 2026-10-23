@@ -1,4 +1,5 @@
 ﻿using HomeNetCore.Models;
+using HomeNetCore.Models.Entity;
 
 namespace HomeNetCore.Interfaces.Repositories
 {
