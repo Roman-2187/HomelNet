@@ -14,7 +14,7 @@ namespace HomeNet.DI.Modules
             // Добавляем таблицу настроек сессии автовхода (В LocalMessengerSchemaModule.cs)
             var deviceSettings = new TableBuilder<DeviceSettingsEntity>("DeviceSettings");
             deviceSettings.AddColumn(s => s.DeviceId).AsPrimaryKey();
-            deviceSettings.AddColumn(s => s.Id).AsPrimaryKey();
+           
 
             // 🔥 УБРАЛИ .IsRequired()! Теперь SQLite разрешит этим полям быть пустыми при первом старте девайса
             deviceSettings.AddColumn(s => s.UserId);

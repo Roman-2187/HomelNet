@@ -2,11 +2,10 @@
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
-using HomeNetCore.Models;
+using HomeNetCore.Models.Entity;
 using HomeNetPresentation.Services;
 using HomeNetPresentation.ViewModels;
 using Moq;
-using NUnit.Framework;
 using Assert = Xunit.Assert;
 
 namespace HomeNetTests

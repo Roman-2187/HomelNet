@@ -1,7 +1,7 @@
-﻿using HomeNetOrm.Enums;
+﻿using HomeNetOrm.DBProviders.Extensions;
+using HomeNetOrm.Enums;
 using HomeNetOrm.Models;
 using System.Linq.Expressions;
-using HomeNetOrm.DBProviders.Extensions;
 
 namespace HomeNetOrm.Builders
 {

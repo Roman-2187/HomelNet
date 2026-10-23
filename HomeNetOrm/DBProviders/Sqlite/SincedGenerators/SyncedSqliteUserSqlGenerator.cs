@@ -4,26 +4,35 @@ using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.DBProviders.Sqlite.Generators;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
+using HomeNetOrm.Enums;
+using System.Collections.Generic;
 
 namespace HomeNetOrm.DBProviders.Sqlite.SyncedGenerators
 {
     // Наследуем базовый SQLite генератор и заявляем контракт синхронизации 🦾
     internal class SyncedSqliteUserSqlGenerator : SqliteUserSqlGenerator, ISyncSqlGenerator<UserEntity>
     {
-        public SyncedSqliteUserSqlGenerator(GenericSchemaAdapter adapter, IEnumerable<TableSchema> schemas, ILogger logger)
-            : base(adapter, schemas, logger)
+        private readonly string _tableName;
+        private readonly string _idColumn;
+
+        // 🔥 ЧИСТЫЙ КОНСТРУКТОР: Никаких прослоек адаптеров, строго 2 параметра!
+        public SyncedSqliteUserSqlGenerator(IEnumerable<TableSchema> schemas, ILogger logger)
+            : base(schemas, logger)
         {
+            _tableName = Schema.TableName.ConvertTableName(NameFormat.CamelCase);
+            _idColumn = (Schema.SinglePrimaryKey?.Name ?? "Id").ConvertColumnName(NameFormat.CamelCase);
         }
 
-        // === ИНКАПСУЛИРОВАННАЯ СИНХРОНИЗАЦИЯ (Диалект SQLite) ===
+        // === ИНКАПСУЛИРОВАННАЯ СИНХРОНИЗАЦИЯ (Полный статический автомат без хардкода) ===
 
         public string GenerateCountById() =>
-            $"SELECT COUNT(1) FROM {FormattedTable.TableName} WHERE {FormattedTable.IdColumnName ?? "id"} = @id;";
+            $"SELECT COUNT(1) FROM \"{_tableName}\" WHERE \"{_idColumn}\" = {DapperParams[nameof(UserEntity.Id)]};";
 
         public string GenerateSelectUnsynced() =>
-            $"SELECT {FormattedTable.AllFields} FROM \"{FormattedTable.TableName}\" WHERE is_synced = 0 OR is_synced = '0' OR is_synced = 'false' OR is_synced IS NULL;";
+            $"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, NameFormat.CamelCase)} FROM \"{_tableName}\" " +
+            $"WHERE \"{DbColumns[nameof(UserEntity.IsSynced)]}\" = 0 OR \"{DbColumns[nameof(UserEntity.IsSynced)]}\" IS NULL;";
 
         public string GenerateUpdateMarkAsSynced() =>
-            $"UPDATE {FormattedTable.TableName} SET is_synced = 1 WHERE {FormattedTable.IdColumnName ?? "id"} = @id;";
+            $"UPDATE \"{_tableName}\" SET \"{DbColumns[nameof(UserEntity.IsSynced)]}\" = 1 WHERE \"{_idColumn}\" = {DapperParams[nameof(UserEntity.Id)]};";
     }
 }

@@ -7,9 +7,9 @@
         public interface IRemoteDeviceSyncSqlGenerator
         {
             // Добавляем параметр строки во все контракты 🎯
-            string GenerateDeviceSyncUpsert(string tableName);
-            string GenerateSelectUpdatesByTimestamp(string tableName);
-            string GenerateSelectUserIdByDevice(string tableName);
+            string GenerateDeviceSyncUpsert();
+            string GenerateSelectUpdatesByTimestamp();
+            string GenerateSelectUserIdByDevice();
         }
     }
 

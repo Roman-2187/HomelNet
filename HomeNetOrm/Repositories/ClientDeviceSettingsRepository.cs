@@ -2,13 +2,11 @@
 using System.Data.Common;
 using System.Threading.Tasks;
 using Dapper;
+using HomeNetCore.Models.Entity;
 using HomeNetOrm.Interfaces.Generators;
 
 namespace HomeNetOrm.Repositories
 {
-    /// <summary>
-    /// 📱 ЛОКАЛЬНЫЙ ПУБЛИЧНЫЙ РЕПОЗИТОРИЙ НАСТРОЕК ДЕВАЙСА (ДЛЯ КЛИЕНТА АВАЛОНИИ)
-    /// </summary>
     public class ClientDeviceSettingsRepository
     {
         private readonly DbConnection _connection;
@@ -24,7 +22,10 @@ namespace HomeNetOrm.Repositories
         {
             string selectSql = _sqlGenerator.GenerateSelectByKey();
 
-            string? savedIdStr = await _connection.QueryFirstOrDefaultAsync<string>(selectSql, new { Key = "DeviceId" });
+            var querySettings = new DeviceSettingsEntity();
+
+            // Передаем объект-пустышку, Dapper сам сопоставит свойства
+            string? savedIdStr = await _connection.QueryFirstOrDefaultAsync<string>(selectSql, querySettings);
 
             if (!string.IsNullOrEmpty(savedIdStr) && Guid.TryParse(savedIdStr, out Guid savedGuid))
             {
@@ -34,18 +35,22 @@ namespace HomeNetOrm.Repositories
             Guid newDeviceId = Guid.NewGuid();
             string insertSql = _sqlGenerator.GenerateInsertOrUpdate();
 
-            // 🎯 ДОБАВЛЯЕМ ПАРАМЕТРЫ ДЛЯ ОБХОДА NOT NULL НА УРОВНЕ C#
-            await _connection.ExecuteAsync(insertSql, new
+            // 🎯 Чистая сущность, никаких текстовых Id и .ToString()!
+            var newSettings = new DeviceSettingsEntity
             {
-                Key = "DeviceId",
-                Value = newDeviceId.ToString(),
-                UserId = Guid.Empty,          // Передаем пустой Guid
-                Email = string.Empty,        // Пустая строка
-                Password = string.Empty      // Пустая строка
-            });
+                DeviceId = newDeviceId,
+                UserId = Guid.Empty, // Спокойно пишем Guid.Empty, так как в сущности это Guid?
+                Email = string.Empty,
+                Password = string.Empty,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+
+            // Просто отдаем генератору готовую модель
+            await _connection.ExecuteAsync(insertSql, newSettings);
 
             return newDeviceId;
         }
+
 
     }
 }

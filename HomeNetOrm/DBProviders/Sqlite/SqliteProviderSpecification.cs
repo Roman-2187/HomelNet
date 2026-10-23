@@ -1,5 +1,7 @@
 ﻿using HomeNetOrm.Enums;
 using HomeNetOrm.Interfaces.DbInfrastructure;
+using System;
+using System.Collections.Generic;
 
 namespace HomeNetOrm.DBProviders.Sqlite
 {
@@ -8,6 +10,9 @@ namespace HomeNetOrm.DBProviders.Sqlite
     /// </summary>
     internal class SqliteProviderSpecification : IDbProviderSpecification
     {
+        // 🔥 Указываем формат именования для SQLite
+        public NameFormat TableFormat => NameFormat.CamelCase;
+
         public string MapToSqlType(ColumnType type, bool isPk, bool isAi, int? length) => type switch
         {
             ColumnType.Integer => "INTEGER",
@@ -26,5 +31,29 @@ namespace HomeNetOrm.DBProviders.Sqlite
             "datetime" or "datetimeoffset" or "timestamp" => ColumnType.DateTimeOffset,
             _ => ColumnType.Unknown
         };
+
+        public string? GetColumnFeatures(ColumnType type, bool isPk, bool isAi, object? defaultValue, bool isCreatedAt)
+        {
+            var features = new List<string>();
+
+            if (defaultValue != null)
+            {
+                string valueStr = (type == ColumnType.Varchar || type == ColumnType.DateTimeOffset) ? $"'{defaultValue}'" : defaultValue.ToString()!;
+                features.Add($"DEFAULT {valueStr}");
+            }
+            else if (isCreatedAt)
+            {
+                features.Add("DEFAULT CURRENT_TIMESTAMP");
+            }
+
+            // SQLite требует слово AUTOINCREMENT строго инлайново для INTEGER PRIMARY KEY
+            if (isPk && isAi && type == ColumnType.Integer)
+            {
+                features.Add("AUTOINCREMENT");
+            }
+
+            return features.Any() ? string.Join(" ", features) : null;
+        }
+
     }
 }

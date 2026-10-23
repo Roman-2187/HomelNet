@@ -1,4 +1,6 @@
-﻿namespace HomeNetOrm.Interfaces.Generators
+﻿using System.Collections.Generic;
+
+namespace HomeNetOrm.Interfaces.Generators
 {
     /// <summary>
     /// ⚙️ ЛОКАЛЬНЫЙ интерфейс генератора для настроек приложения на стороне клиента
@@ -7,5 +9,7 @@
     {
         string GenerateSelectByKey();
         string GenerateInsertOrUpdate();
+
+      
     }
 }

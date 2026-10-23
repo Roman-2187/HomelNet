@@ -1,48 +1,41 @@
-﻿using HomeNetCore.Extensions;
-using HomeNetOrm.DBProviders.Extensions;
+﻿using System.Text;
+using System.Text.RegularExpressions;
 using HomeNetOrm.Enums;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
 
 namespace HomeNetOrm.DBProviders.Base
 {
-    internal class GenericSchemaAdapter : ISchemaAdapter
+    /// <summary>
+    /// 🛠️ Статический адаптер схем.
+    /// Отвечает за маппинг типов и имен колонок без выделения лишней памяти и конструкторов.
+    /// </summary>
+    internal static class GenericSchemaAdapter
     {
         private const string DefaultCurrentTimestamp = "DEFAULT CURRENT_TIMESTAMP";
         private const string NotNull = "NOT NULL";
         private const string PrimaryKey = "PRIMARY KEY";
         private const string Unique = "UNIQUE";
 
-        // 🔥 СТАЛО ЧИСТО: Перешли на строгий контракт интерфейса спецификации!
-        public IDbProviderSpecification Spec { get; }
+        // --- ПУБЛИЧНЫЕ (INTERNAL) МЕТОДЫ РАСШИРЕНИЯ ДЛЯ ВНЕШНЕГО КОДА ---
 
-        public GenericSchemaAdapter(IDbProviderSpecification spec)
-        {
-            Spec = spec ?? throw new ArgumentNullException(nameof(spec));
-        }
-
-        public string ConvertTableName(string? rawName, NameFormat format)
+        public static string ConvertTableName(this string? rawName, NameFormat format)
         {
             if (string.IsNullOrEmpty(rawName)) throw new ArgumentException("Имя таблицы не может быть пустым");
-            return format == NameFormat.SnakeCase ? rawName.ToSnakeCase()! : rawName.ToCamelCase()!;
+            return format == NameFormat.SnakeCase ? ToSnakeCase(rawName)! : ToCamelCase(rawName)!;
         }
 
-        public string ConvertColumnName(string? rawName, NameFormat format)
+        public static string ConvertColumnName(this string? rawName, NameFormat format)
         {
             if (string.IsNullOrEmpty(rawName)) throw new ArgumentException("Имя колонки не может быть пустым");
-            return format == NameFormat.SnakeCase ? rawName.ToSnakeCase()! : rawName.ToCamelCase()!;
+            return format == NameFormat.SnakeCase ? ToSnakeCase(rawName)! : ToCamelCase(rawName)!;
         }
 
-        public TableSchema ConvertToSnakeCaseSchema(TableSchema originalSchema)
+        /// <summary>
+        /// Формирует дефиниции колонок для конкретной спецификации СУБД.
+        /// </summary>
+        public static List<string> GetColumnDefinitions(IDbProviderSpecification spec, TableSchema schema)
         {
-            return originalSchema.CloneWithTransform(name => name.ToSnakeCase());
-        }
-
-        public ColumnType MapDbSpecificationType(string dbType) => Spec.ParsePropertyType(dbType);
-
-        public List<string> GetColumnDefinitions(TableSchema schema)
-        {
-            // 🎯 Считаем, сколько всего колонок входят в первичный ключ таблицы
             int primaryKeysCount = schema.Columns.Count(c => c.IsPrimaryKey);
 
             return schema.Columns.Select(col =>
@@ -50,11 +43,11 @@ namespace HomeNetOrm.DBProviders.Base
                 if (col.Type == ColumnType.Unspecified)
                     throw new InvalidOperationException($"Колонка '{col.Name}' не имеет заданного типа.");
 
-                var name = $"\"{col.Name}\"";
+                // Трансформируем имя прямо на месте через наши внутренние методы
+                string dbColumnName = col.Name.ConvertColumnName(spec.TableFormat);
+                var name = $"\"{dbColumnName}\"";
 
-                // Извлекаем правильный SQL-тип через спецификацию диалекта
-                string sqlType = Spec.MapToSqlType(col.Type, col.IsPrimaryKey, col.IsAutoIncrement, col.Length);
-
+                string sqlType = spec.MapToSqlType(col.Type, col.IsPrimaryKey, col.IsAutoIncrement, col.Length);
                 var constraints = new List<string>();
 
                 if (col.DefaultValue != null)
@@ -73,12 +66,9 @@ namespace HomeNetOrm.DBProviders.Base
 
                 if (!col.IsNullable) constraints.Add(NotNull);
 
-                // 🔥 ЖЕЛЕЗОБЕТОННЫЙ ИСПРАВЛЕННЫЙ МАРКЕР:
-                // Добавляем инлайновый PRIMARY KEY только если он ОДИН на всю таблицу!
                 if (col.IsPrimaryKey && primaryKeysCount == 1)
                     constraints.Add(PrimaryKey);
 
-                // Специфика SQLite для автоинкремента:
                 if (col.IsPrimaryKey && col.IsAutoIncrement && sqlType.Equals("INTEGER", StringComparison.OrdinalIgnoreCase))
                 {
                     constraints.Add("AUTOINCREMENT");
@@ -93,5 +83,44 @@ namespace HomeNetOrm.DBProviders.Base
             }).ToList();
         }
 
+
+        // --- 🔥 ЗАКРЫТЫЕ ВНУТРЕННИЕ КИШКИ ТРАНСФОРМАЦИИ СТРОК ---
+
+        private static string? ToSnakeCase(string? name)
+        {
+            if (string.IsNullOrEmpty(name)) return name;
+
+            var builder = new StringBuilder();
+            for (int i = 0; i < name.Length; i++)
+            {
+                char c = name[i];
+                if (char.IsUpper(c))
+                {
+                    if (i > 0) builder.Append('_');
+                    builder.Append(char.ToLower(c));
+                }
+                else
+                {
+                    builder.Append(c);
+                }
+            }
+            return builder.ToString();
+        }
+
+        private static string? ToCamelCase(string? name)
+        {
+            if (string.IsNullOrEmpty(name)) return name;
+
+            if (!name.Contains('_') && char.IsUpper(name[0]))
+                return name;
+
+            string safeName = char.ToUpper(name[0]) + name.Substring(1);
+
+            return Regex.Replace(
+                safeName,
+                @"_([a-zA-Z])",
+                match => match.Groups[1].Value.ToUpper()
+            ).Replace("_", "");
+        }
     }
 }

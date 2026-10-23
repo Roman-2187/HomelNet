@@ -18,13 +18,13 @@ namespace HomeNetOrm.DBProviders.Base
     {
         private readonly ISchemaSqlInitializer _sqlInit;
         private readonly DbConnection _requiredConnection;
-        private readonly IDbProviderSpecification _spec; // Наш новый изолированный контракт
+        private readonly IDbProviderSpecification _spec;
         private readonly ILogger _logger;
 
         public GenericSchemaProvider(
             ISchemaSqlInitializer sqlInit,
             DbConnection connection,
-            IDbProviderSpecification spec, // Инжектируем новый чистый интерфейс
+            IDbProviderSpecification spec,
             ILogger logger)
         {
             _requiredConnection = connection ?? throw new ArgumentNullException(nameof(connection));
@@ -45,11 +45,9 @@ namespace HomeNetOrm.DBProviders.Base
 
             try
             {
-                // 1. Быстро забираем слепок метаданных из системных таблиц одной строчкой через Dapper!
                 string sql = _sqlInit.GenerateGetTableStructureSql(tableName);
                 var rawColumnsData = await _requiredConnection.QueryAsync<RawColumnMetadata>(sql, new { TableName = tableName });
 
-                // 2. Трансформируем в C# модели и валидируем структуру
                 return ProcessAndValidateSchema(tableName, rawColumnsData);
             }
             catch (Exception ex)
@@ -61,25 +59,11 @@ namespace HomeNetOrm.DBProviders.Base
 
         private TableSchema ProcessAndValidateSchema(string tableName, IEnumerable<RawColumnMetadata> rawRows)
         {
-            var columns = new List<ColumnSchema>();
-
-            foreach (var row in rawRows)
-            {
-                // Собираем ColumnSchema
-                columns.Add(new ColumnSchema
-                {
-                    Name = row.Name,
-                    OriginalName = row.Name,
-                    Type = _spec.ParsePropertyType(row.DataType),
-
-                    // ⚡ ПРОСТО ПОДСТАВЛЯЕМ: Раз row.IsNullable уже булево, никакой string.Equals не нужен!
-                    IsNullable = row.IsNullable,
-
-                    // Тут проверяем, как у тебя объявлен KeyType в рекорде (если строка, оставляем так)
-                    IsPrimaryKey = string.Equals(row.KeyType, "YES", StringComparison.OrdinalIgnoreCase) || row.KeyType == "1"
-                });
-            }
-
+            // 🔥 ФИКС: Используем наш чистый кастомный конструктор!
+            // Он сам забирает типы, Nullable и PK из метаданных на лету, убирая кашу
+            var columns = rawRows
+                .Select(row => new ColumnSchema(row, dbType => _spec.ParsePropertyType(dbType)))
+                .ToList();
 
             _logger.LogDebug($"Получено {columns.Count} столбцов для таблицы {tableName}");
 
@@ -89,15 +73,18 @@ namespace HomeNetOrm.DBProviders.Base
                 return new TableSchema { TableName = tableName };
             }
 
+            // Нам больше не нужно запускать .Initialize(), так как схема иммутабельна
             var getSchema = new TableSchema { TableName = tableName, Columns = columns };
 
-            if (!getSchema.Initialize())
+            // Вместо чтения удалённого свойства .ColumnNames склеиваем имена для лога прямо на месте
+            if (!columns.Any(c => c.IsPrimaryKey))
             {
                 _logger.LogWarning($"[ПРЕДУПРЕЖДЕНИЕ] В таблице '{tableName}' найдено {columns.Count} колонок, но не удалось распознать Primary Key (ID). Проверьте маппинг типов!");
             }
             else
             {
-                _logger.LogDebug($"Получено имен колонок таблицы {tableName} : {getSchema.ColumnNames}");
+                string columnNamesLog = string.Join(", ", columns.Select(c => c.Name));
+                _logger.LogDebug($"Получено имен колонок таблицы {tableName} : {columnNamesLog}");
             }
 
             return getSchema;

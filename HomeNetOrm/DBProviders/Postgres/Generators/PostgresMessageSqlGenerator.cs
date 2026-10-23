@@ -1,61 +1,67 @@
 ﻿using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Models;
 using HomeNetCore.Models.Entity;
 using HomeNetOrm.DBProviders.Base;
-using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
+using HomeNetOrm.Enums;
 
 namespace HomeNetOrm.DBProviders.Postgres.Generators
 {
     internal class PostgresMessageSqlGenerator : BaseSqlGenerator<MessageEntity>, IMessageSqlGenerator
     {
-        public PostgresMessageSqlGenerator(GenericSchemaAdapter adapter, IEnumerable<TableSchema> schemas, ILogger logger)
-            : base(adapter, schemas, logger)
+        private readonly string _tableName;
+        private readonly string _idColumn;
+
+        public PostgresMessageSqlGenerator(IEnumerable<TableSchema> schemas, ILogger logger)
+            : base(schemas, NameFormat.SnakeCase, logger) // Ядро само находит схему по типу T и кэширует поля в snake_case
         {
+            _tableName = Schema.TableName.ConvertTableName(NameFormat.SnakeCase);
+            _idColumn = (Schema.SinglePrimaryKey?.Name ?? "Id").ConvertColumnName(NameFormat.SnakeCase);
         }
 
-        // --- БАЗОВЫЙ CRUD ОРМ ---
-        public override string GenerateInsert()
-        {
-            string idColumn = FormattedTable.IdColumnName ?? "id";
-            return $@"INSERT INTO ""{FormattedTable.TableName}"" ({FormattedTable.InsertFields}) VALUES ({FormattedTable.InsertParameters}) RETURNING {idColumn};";
-        }
+        // --- БАЗОВЫЙ CRUD ОРМ (Параметры СУБД и Dapper берем строго из словарей ядра) ---
+
+        public override string GenerateInsert() =>
+            $@"INSERT INTO ""{_tableName}"" ({SqlQueryBuilder.BuildInsertFields(Schema, NameFormat.SnakeCase)}) 
+               VALUES ({SqlQueryBuilder.BuildInsertParameters(Schema)}) RETURNING ""{_idColumn}"";";
 
         public override string GenerateUpdate() =>
-            $"UPDATE \"{FormattedTable.TableName}\" SET {FormattedTable.SetClause} WHERE {FormattedTable.IdColumnName} = @{FormattedTable.IdColumnName};";
+            $"UPDATE \"{_tableName}\" SET {SqlQueryBuilder.BuildSetClause(Schema, NameFormat.SnakeCase)} WHERE \"{_idColumn}\" = {DapperParams[nameof(MessageEntity.Id)]};";
 
-        public override string GenerateDelete()
-        {
-            string idColumn = FormattedTable.IdColumnName ?? "id";
-            return $"DELETE FROM \"{FormattedTable.TableName}\" WHERE {idColumn}::text = @{idColumn}::text;";
-        }
+        public override string GenerateDelete() =>
+            $"DELETE FROM \"{_tableName}\" WHERE \"{_idColumn}\"::text = {DapperParams[nameof(MessageEntity.Id)]}::text;";
 
         public override string GenerateSelectById() =>
-            $"SELECT {FormattedTable.AllFields} FROM \"{FormattedTable.TableName}\" WHERE {FormattedTable.IdColumnName} = @{FormattedTable.IdColumnName};";
+            $"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, NameFormat.SnakeCase)} FROM \"{_tableName}\" WHERE \"{_idColumn}\" = {DapperParams[nameof(MessageEntity.Id)]};";
 
         public override string GenerateSelectAll() =>
-            $"SELECT {FormattedTable.AllFields} FROM \"{FormattedTable.TableName}\";";
+            $"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, NameFormat.SnakeCase)} FROM \"{_tableName}\";";
 
-        // --- СПЕЦИФИКА СООБЩЕНИЙ ---
+
+        // --- 🔥 СПЕЦИФИКА СООБЩЕНИЙ БЕЗ ЕДИНОЙ СТРОКИ ХАРДКОДА ---
+
         public string GenerateSelectChatHistory() =>
-            $@"SELECT * FROM ""{FormattedTable.TableName}"" 
-               WHERE (sender_id = @userId AND receiver_id = @friendId) 
-                  OR (sender_id = @friendId AND receiver_id = @userId)
-               ORDER BY created_at ASC;";
+            $@"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, NameFormat.SnakeCase)} FROM ""{_tableName}"" 
+               WHERE ({DbColumns[nameof(MessageEntity.SenderId)]} = {DapperParams[nameof(MessageEntity.SenderId)]} AND {DbColumns[nameof(MessageEntity.ReceiverId)]} = {DapperParams[nameof(MessageEntity.ReceiverId)]}) 
+                  OR ({DbColumns[nameof(MessageEntity.SenderId)]} = {DapperParams[nameof(MessageEntity.ReceiverId)]} AND {DbColumns[nameof(MessageEntity.ReceiverId)]} = {DapperParams[nameof(MessageEntity.SenderId)]})
+               ORDER BY {DbColumns[nameof(MessageEntity.CreatedAt)]} ASC;";
 
         public string GenerateMarkAsRead() =>
-            $@"UPDATE ""{FormattedTable.TableName}"" SET is_read = TRUE 
-               WHERE sender_id = @SenderId AND receiver_id = @ReceiverId AND is_read = FALSE;";
+            $@"UPDATE ""{_tableName}"" SET {DbColumns[nameof(MessageEntity.IsRead)]} = TRUE 
+               WHERE {DbColumns[nameof(MessageEntity.SenderId)]} = {DapperParams[nameof(MessageEntity.SenderId)]} 
+                 AND {DbColumns[nameof(MessageEntity.ReceiverId)]} = {DapperParams[nameof(MessageEntity.ReceiverId)]} 
+                 AND {DbColumns[nameof(MessageEntity.IsRead)]} = FALSE;";
 
         public string GenerateUnreadCount() =>
-            $@"SELECT COUNT(*) FROM ""{FormattedTable.TableName}"" 
-               WHERE receiver_id = @CurrentUserId AND sender_id = @SenderId AND is_read = FALSE;";
+            $@"SELECT COUNT(*) FROM ""{_tableName}"" 
+               WHERE {DbColumns[nameof(MessageEntity.ReceiverId)]} = {DapperParams[nameof(MessageEntity.ReceiverId)]} 
+                 AND {DbColumns[nameof(MessageEntity.SenderId)]} = {DapperParams[nameof(MessageEntity.SenderId)]} 
+                 AND {DbColumns[nameof(MessageEntity.IsRead)]} = FALSE;";
 
         public string GenerateClearChatHistory() =>
-            $@"DELETE FROM ""{FormattedTable.TableName}"" 
-               WHERE (sender_id = @SenderId AND receiver_id = @ReceiverId)
-                  OR (sender_id = @ReceiverId AND receiver_id = @SenderId);";
+            $@"DELETE FROM ""{_tableName}"" 
+               WHERE ({DbColumns[nameof(MessageEntity.SenderId)]} = {DapperParams[nameof(MessageEntity.SenderId)]} AND {DbColumns[nameof(MessageEntity.ReceiverId)]} = {DapperParams[nameof(MessageEntity.ReceiverId)]})
+                  OR ({DbColumns[nameof(MessageEntity.SenderId)]} = {DapperParams[nameof(MessageEntity.ReceiverId)]} AND {DbColumns[nameof(MessageEntity.ReceiverId)]} = {DapperParams[nameof(MessageEntity.SenderId)]});";
 
         public override object PrepareParameters(MessageEntity msg) => msg;
     }

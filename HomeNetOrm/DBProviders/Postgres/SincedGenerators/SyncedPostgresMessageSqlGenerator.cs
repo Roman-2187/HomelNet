@@ -1,43 +1,47 @@
 ﻿using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Models;
 using HomeNetCore.Models.Entity;
 using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.DBProviders.Postgres.Generators;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
+using HomeNetOrm.Enums;
 
 namespace HomeNetOrm.DBProviders.Postgres.SyncedGenerators
 {
-    // Наследуем базовый Postgres-генератор сообщений и заявляем интерфейс синхронизации 🦾
     internal class SyncedPostgresMessageSqlGenerator : PostgresMessageSqlGenerator, ISyncSqlGenerator<MessageEntity>
     {
-        public SyncedPostgresMessageSqlGenerator(GenericSchemaAdapter adapter, IEnumerable<TableSchema> schemas, ILogger logger)
-            : base(adapter, schemas, logger)
+        private readonly string _tableName;
+        private readonly string _idColumn;
+
+        public SyncedPostgresMessageSqlGenerator(IEnumerable<TableSchema> schemas, ILogger logger)
+            : base(schemas, logger)
         {
+            _tableName = Schema.TableName.ConvertTableName(NameFormat.SnakeCase);
+            _idColumn = (Schema.SinglePrimaryKey?.Name ?? "Id").ConvertColumnName(NameFormat.SnakeCase);
         }
 
-        // === ИНКАПСУЛИРОВАННАЯ ЛОГИКА СИНХРОНИЗАЦИИ СООБЩЕНИЙ ===
+        // --- ИНКАПСУЛИРОВАННАЯ ЛОГИКА СИНХРОНИЗАЦИИ ---
 
         public string GenerateCountById() =>
-            $"SELECT COUNT(1) FROM \"{FormattedTable.TableName}\" WHERE {FormattedTable.IdColumnName ?? "id"} = @Id;";
+            $"SELECT COUNT(1) FROM \"{_tableName}\" WHERE \"{_idColumn}\" = {DapperParams[nameof(MessageEntity.Id)]};";
 
         public string GenerateSelectUnsynced() =>
-            $"SELECT {FormattedTable.AllFields} FROM \"{FormattedTable.TableName}\" WHERE is_synced = FALSE OR is_synced IS NULL;";
+            $"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, NameFormat.SnakeCase)} FROM \"{_tableName}\" " +
+            $"WHERE \"{DbColumns[nameof(MessageEntity.IsSynced)]}\" = FALSE OR \"{DbColumns[nameof(MessageEntity.IsSynced)]}\" IS NULL;";
 
         public string GenerateUpdateMarkAsSynced() =>
-            $"UPDATE \"{FormattedTable.TableName}\" SET is_synced = TRUE WHERE {FormattedTable.IdColumnName ?? "id"} = @Id;";
+            $"UPDATE \"{_tableName}\" SET \"{DbColumns[nameof(MessageEntity.IsSynced)]}\" = TRUE WHERE \"{_idColumn}\" = {DapperParams[nameof(MessageEntity.Id)]};";
 
-        // Уникальный сложный запрос для выгребания сообщений конкретного чата ПОСЛЕ чекпоинта
+        // 🔥 СМОТРИ, ВОТ ОН — ТРИУМФ ЕДИНСТВЕННОЙ ПРАВДЫ СУЩНОСТИ:
+        // Репозиторий просто передает в Dapper объект сообщения, где:
+        // msg.SenderId — это ID пользователя, а msg.UpdatedAt — это время чекпоинта!
         public string GenerateSelectMessagesForSync() =>
-            $@"SELECT id AS Id, sender_id AS SenderId, receiver_id AS ReceiverId, 
-                      text AS Text, media_type AS MediaType, is_read AS IsRead, 
-                      created_at AS CreatedAt, updated_at AS UpdatedAt
-               FROM ""{FormattedTable.TableName}""
-               WHERE (sender_id = @userId OR receiver_id = @userId)
-                 AND updated_at > @clientCheckpoint
-               ORDER BY updated_at ASC;";
+            $@"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, NameFormat.SnakeCase)}
+               FROM ""{_tableName}""
+               WHERE (""{DbColumns[nameof(MessageEntity.SenderId)]}"" = {DapperParams[nameof(MessageEntity.SenderId)]} OR ""{DbColumns[nameof(MessageEntity.ReceiverId)]}"" = {DapperParams[nameof(MessageEntity.SenderId)]})
+                 AND ""{DbColumns[nameof(MessageEntity.UpdatedAt)]}"" > {DapperParams[nameof(MessageEntity.UpdatedAt)]}
+               ORDER BY ""{DbColumns[nameof(MessageEntity.UpdatedAt)]}"" ASC;";
 
-        // Параметры для репликации сообщений на стороне сервера Postgres
         public override object PrepareParameters(MessageEntity msg)
         {
             return new
@@ -49,7 +53,7 @@ namespace HomeNetOrm.DBProviders.Postgres.SyncedGenerators
                 msg.MediaType,
                 msg.IsRead,
                 msg.CreatedAt,
-                IsSynced = true, // На сервере принудительно флаг репликации в TRUE
+                IsSynced = true,
                 msg.UpdatedAt
             };
         }

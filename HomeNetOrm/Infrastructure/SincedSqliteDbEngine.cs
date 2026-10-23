@@ -5,8 +5,8 @@ using HomeNetCore.Interfaces.Repositories;
 using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.DBProviders.Sqlite;
 using HomeNetOrm.DBProviders.Sqlite.Generators;
+using HomeNetOrm.DBProviders.Sqlite.SincedGenerators;
 using HomeNetOrm.DBProviders.Sqlite.SyncedGenerators;
-using HomeNetOrm.DbTableInitializer;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetOrm.Models;
 using HomeNetOrm.Repositories;
@@ -18,7 +18,6 @@ namespace HomeNetOrm.Infrastructure
     {
         private readonly Microsoft.Data.Sqlite.SqliteConnection _connection;
         private readonly ILogger _logger;
-        private readonly GenericSchemaAdapter _sqliteAdapter;
         private readonly IEnumerable<TableSchema> _schemas;
 
         public DbConnection Connection => _connection;
@@ -29,29 +28,27 @@ namespace HomeNetOrm.Infrastructure
             _schemas = schemas ?? throw new ArgumentNullException(nameof(schemas));
             _connection = new Microsoft.Data.Sqlite.SqliteConnection(connectionString);
 
-            var sqliteSpec = new SqliteProviderSpecification();
-            _sqliteAdapter = new GenericSchemaAdapter(sqliteSpec);
+            // 🔥 АДАПТЕР ТУТ БОЛЬШЕ НЕ НУЖЕН, ОН СТАЛ ПОЛНОСТЬЮ СТАТИЧЕСКИМ
         }
 
         public IUserRepository CreateUserRepository(IEventBus eventBus)
         {
-            // 🔥 ПОДМЕНЯЕМ СТЕРИЛЬНЫЙ НА СИНХРОНИЗИРОВАННЫЙ! 🔥
-            var generator = new SyncedSqliteUserSqlGenerator(_sqliteAdapter, _schemas, _logger);
+            // 🔥 ФИКС: Генераторы больше не принимают адаптер!
+            var generator = new SyncedSqliteUserSqlGenerator(_schemas, _logger);
             return new UserRepository(_connection, generator, _logger, eventBus);
         }
 
         public IMessageRepository CreateMessageRepository(IEventBus eventBus)
         {
-            // 🔥 ПОДМЕНА: Включаем синхронизацию сообщений "из коробки" через Synced-наследника!
-            var generator = new SyncedSqliteMessageSqlGenerator(_sqliteAdapter, _schemas, _logger);
+            // 🔥 ФИКС: Очистили конструктор
+            var generator = new SyncedSqliteMessageSqlGenerator(_schemas, _logger);
             return new MessageRepository(_connection, generator, _logger, eventBus);
         }
 
         public ClientDeviceSettingsRepository CreateDeviceSettingsRepository()
         {
-            // 🎯 ФИКС: Внедряем адаптер, схемы и логгер в наш новый генератор сетингов!
-            // Теперь ядро CoreSqlGenerator получит всё необходимое для автопилота snake_case.
-            var generator = new SqliteDeviceSettingsSqlGenerator(_sqliteAdapter, _schemas, _logger);
+            // 🔥 ФИКС: Убрали адаптер из параметров
+            var generator = new SqliteDeviceSettingsSqlGenerator(_schemas, _logger);
             return new ClientDeviceSettingsRepository(_connection, generator);
         }
 
@@ -63,10 +60,12 @@ namespace HomeNetOrm.Infrastructure
             }
 
             var sqliteSpec = new SqliteProviderSpecification();
-            var sqliteSchemaInit = new SqliteSchemaInitializer(_sqliteAdapter, _logger);
+
+            // 🔥 ФИКС: Инициализатор и провайдер принимают спецификацию напрямую без адаптеров!
+            var sqliteSchemaInit = new SqliteSchemaInitializer(sqliteSpec, _logger);
             var sqliteProvider = new GenericSchemaProvider(sqliteSchemaInit, _connection, sqliteSpec, _logger);
 
-            var tableInitializer = new DBInitializer(_connection, sqliteProvider, _sqliteAdapter, sqliteSchemaInit, _schemas, _logger);
+            var tableInitializer = new DBInitializer(_connection, sqliteProvider, sqliteSchemaInit, _schemas, _logger);
             await tableInitializer.InitializeAsync();
         }
     }

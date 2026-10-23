@@ -2,7 +2,6 @@ using HomeNet.DI.Modules;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Repositories;
-using HomeNetCore.Models;
 using HomeNetCore.Models.Entity;
 using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Repositories;
@@ -18,6 +17,7 @@ namespace HomeNet.Server
         private static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            AppFileLogger AppFileLogger = new AppFileLogger("App_debug.txt");
 
             HomeNetCore.Interfaces.Diagnostics.ILogger serverLogger = Logger.CreateConsoleLogger();
 

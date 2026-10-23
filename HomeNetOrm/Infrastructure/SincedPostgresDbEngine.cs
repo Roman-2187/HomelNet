@@ -1,14 +1,17 @@
-﻿using System.Data.Common;
-using HomeNetCore.Interfaces;
+﻿using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.DBProviders.Postgres;
-using HomeNetOrm.DbTableInitializer;
-using HomeNetOrm.Interfaces.Builders;
-using HomeNetOrm.Repositories;
-using HomeNetOrm.Models;
+using HomeNetOrm.DBProviders.Postgres.SincedGenerators;
 using HomeNetOrm.DBProviders.Postgres.SyncedGenerators;
+using HomeNetOrm.Interfaces.Builders;
+using HomeNetOrm.Models;
+using HomeNetOrm.Repositories;
+using System;
+using System.Collections.Generic;
+using System.Data.Common;
+using System.Threading.Tasks;
 
 namespace HomeNetOrm.Infrastructure
 {
@@ -16,7 +19,6 @@ namespace HomeNetOrm.Infrastructure
     {
         private readonly Npgsql.NpgsqlConnection _connection;
         private readonly ILogger _logger;
-        private readonly GenericSchemaAdapter _postgresAdapter;
         private readonly IEnumerable<TableSchema> _schemas;
 
         public DbConnection Connection => _connection;
@@ -27,32 +29,30 @@ namespace HomeNetOrm.Infrastructure
             _schemas = schemas ?? throw new ArgumentNullException(nameof(schemas));
             _connection = new Npgsql.NpgsqlConnection(connectionString);
 
-            var postgresSpec = new PostgresProviderSpecification();
-            _postgresAdapter = new GenericSchemaAdapter(postgresSpec);
+            // 🔥 УБРАЛИ СОЗДАНИЕ КЛАССА АДАПТЕРА ИЗ КОНСТРУКТОРА НАХЕР
         }
 
         public IUserRepository CreateUserRepository()
         {
-            // 🔥 ПОДМЕНА: Создаем синхронизированного наследника вместо стерильной базы
-            var generator = new SyncedPostgresUserSqlGenerator(_postgresAdapter, _schemas, _logger);
-            return new UserRepository(_connection, generator,_logger);
+            // 🔥 ФИКС: Полный автомат без адаптеров
+            var generator = new SyncedPostgresUserSqlGenerator(_schemas, _logger);
+            return new UserRepository(_connection, generator, _logger);
         }
 
         public IMessageRepository CreateMessageRepository()
         {
-            // 🔥 ПОДМЕНА: Создаем синхронизированного наследника для сообщений
-            var generator = new SyncedPostgresMessageSqlGenerator(_postgresAdapter, _schemas, _logger);
-            return new MessageRepository(_connection, generator,_logger);
+            // 🔥 ФИКС: Полный автомат без адаптеров
+            var generator = new SyncedPostgresMessageSqlGenerator(_schemas, _logger);
+            return new MessageRepository(_connection, generator, _logger);
         }
 
         public IDeviceSyncRepository CreateDeviceSyncRepository()
         {
-            var generator = new PostgresDeviceSyncSqlGenerator();
-
-            // === ИСПРАВЛЕНИЕ: Передаем имя таблицы сверху из DI-движка! 🎯 ===
-            return new DeviceSyncRepository(_connection, generator, "device_sync");
+            // 🔥 ФИКС: Наш новый генератор теперь наследник ядра и требует _schemas и _logger!
+            // А хардкодная строка "device_sync" идет нахер, так как имя таблицы он найдет сам из Schema!
+            var generator = new PostgresDeviceSyncSqlGenerator(_schemas, _logger);
+            return new DeviceSyncRepository(_connection, generator);
         }
-
 
         public async Task InitializeChannelAsync()
         {
@@ -62,10 +62,12 @@ namespace HomeNetOrm.Infrastructure
             }
 
             var postgresSpec = new PostgresProviderSpecification();
-            var postgresSchemaInit = new PostgresSchemaInitializer(_postgresAdapter, _logger);
+
+            // 🔥 ФИКС: Убрали прослойки адаптеров
+            var postgresSchemaInit = new PostgresSchemaInitializer(postgresSpec, _logger);
             var postgresProvider = new GenericSchemaProvider(postgresSchemaInit, _connection, postgresSpec, _logger);
 
-            var tableInitializer = new DBInitializer(_connection, postgresProvider, _postgresAdapter, postgresSchemaInit, _schemas, _logger);
+            var tableInitializer = new DBInitializer(_connection, postgresProvider, postgresSchemaInit, _schemas, _logger);
             await tableInitializer.InitializeAsync();
         }
     }

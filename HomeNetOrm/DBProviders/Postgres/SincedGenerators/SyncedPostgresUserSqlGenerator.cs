@@ -4,30 +4,36 @@ using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.DBProviders.Postgres.Generators;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
+using HomeNetOrm.Enums;
 
-namespace HomeNetOrm.DBProviders.Postgres.SyncedGenerators
+namespace HomeNetOrm.DBProviders.Postgres.SincedGenerators
 {
-    // Наследуем базовый Postgres-генератор и явно заявляем интерфейс синхронизации 🦾
     internal class SyncedPostgresUserSqlGenerator : PostgresUserSqlGenerator, ISyncSqlGenerator<UserEntity>
     {
-        public SyncedPostgresUserSqlGenerator(GenericSchemaAdapter adapter, IEnumerable<TableSchema> schemas, ILogger logger)
-            : base(adapter, schemas, logger)
+        private readonly string _tableName;
+        private readonly string _idColumn;
+
+        public SyncedPostgresUserSqlGenerator(IEnumerable<TableSchema> schemas, ILogger logger)
+            : base(schemas, logger)
         {
+            _tableName = Schema.TableName.ConvertTableName(NameFormat.SnakeCase);
+            _idColumn = (Schema.SinglePrimaryKey?.Name ?? "Id").ConvertColumnName(NameFormat.SnakeCase);
         }
 
-        // === ИНКАПСУЛИРОВАННАЯ ЛОГИКА СИНХРОНИЗАЦИИ (Диалект Postgres) ===
-
         public string GenerateCountById() =>
-            $"SELECT COUNT(1) FROM \"{FormattedTable.TableName}\" WHERE {FormattedTable.IdColumnName ?? "id"} = @Id;";
+            $"SELECT COUNT(1) FROM \"{_tableName}\" WHERE \"{_idColumn}\" = {DapperParams[nameof(UserEntity.Id)]};";
 
         public string GenerateSelectUnsynced() =>
-            $"SELECT {FormattedTable.AllFields} FROM \"{FormattedTable.TableName}\" WHERE is_synced = FALSE OR is_synced IS NULL;";
+            $"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, NameFormat.SnakeCase)} FROM \"{_tableName}\" " +
+            $"WHERE \"{DbColumns[nameof(UserEntity.IsSynced)]}\" = FALSE OR \"{DbColumns[nameof(UserEntity.IsSynced)]}\" IS NULL;";
 
         public string GenerateUpdateMarkAsSynced() =>
-            $"UPDATE \"{FormattedTable.TableName}\" SET is_synced = TRUE WHERE {FormattedTable.IdColumnName ?? "id"} = @Id;";
+            $"UPDATE \"{_tableName}\" SET \"{DbColumns[nameof(UserEntity.IsSynced)]}\" = TRUE WHERE \"{_idColumn}\" = {DapperParams[nameof(UserEntity.Id)]};";
 
-        // Метод для серверного PULL выгребания обновлений по таймстемпу чекпоинта
+        // 🔥 ИДЕАЛЬНО: Передаем в метод репликации юзеров пустой объект UserEntity, 
+        // где в поле UpdatedAt записано время чекпоинта клиента.
         public string GenerateSelectUpdatesByTimestamp() =>
-            $"SELECT * FROM \"{FormattedTable.TableName}\" WHERE updated_at > @clientCheckpoint;";
+            $"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, NameFormat.SnakeCase)} FROM \"{_tableName}\" " +
+            $"WHERE \"{DbColumns[nameof(UserEntity.UpdatedAt)]}\" > {DapperParams[nameof(UserEntity.UpdatedAt)]};";
     }
 }

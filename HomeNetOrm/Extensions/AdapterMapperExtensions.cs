@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using System;
+using System.Linq.Expressions;
 using System.Reflection;
 using HomeNetOrm.Enums;
 using HomeNetOrm.Models;
@@ -31,10 +32,10 @@ namespace HomeNetOrm.DBProviders.Extensions
                 throw new ArgumentException($"Выражение должно ссылаться на валидное свойство класса {typeof(TEntity).Name}.");
             }
 
+            // 🔥 ФИКС: Убираем затертый OriginalName. Оставляем только чистое C# имя поля
             var schema = new ColumnSchema
             {
-                OriginalName = propertyInfo.Name,
-                Name = propertyInfo.Name // Адаптер в слое конвертации позже переведет это в snake_case 🐍
+                Name = propertyInfo.Name // Адаптер в слое конвертации позже переведет это в нужный регистр на лету 🐍
             };
 
             // Распаковываем базовый тип, если свойство обернуто в Nullable<T>

@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetOrm.Enums;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
@@ -8,7 +9,7 @@ using HomeNetOrm.Schemes;
 using System.Data;
 using System.Data.Common;
 
-namespace HomeNetOrm.DbTableInitializer
+namespace HomeNetOrm.DBProviders.Base
 {
     /// <summary>
     /// Универсальный сверщик и создатель таблиц.
@@ -19,43 +20,47 @@ namespace HomeNetOrm.DbTableInitializer
         private readonly DbConnection _dbConnection;
         private readonly ISchemaSqlInitializer _schemaSqlInitializer;
         private readonly ISchemaProvider _schemaProvider;
-        private readonly ISchemaAdapter _schemaAdapter;
-        private readonly IEnumerable<TableSchema> _tableSchemas; // 🎯 Локальное хранилище схем
+        private readonly IEnumerable<TableSchema> _tableSchemas;
         private readonly ILogger _logger;
         private readonly string _dbName;
+        private readonly NameFormat _dbFormat; // 🔥 Запоминаем формат этой базы (SnakeCase или CamelCase)
 
         public DBInitializer(
             DbConnection connection,
             ISchemaProvider schemaProvider,
-            ISchemaAdapter schemaAdapter,
             ISchemaSqlInitializer schemaSqlInitializer,
-            IEnumerable<TableSchema> tableSchemas, // 🎯 Принимаем внешние схемы
+            IEnumerable<TableSchema> tableSchemas,
             ILogger logger)
         {
             _dbConnection = connection ?? throw new ArgumentNullException(nameof(connection));
             _schemaProvider = schemaProvider ?? throw new ArgumentNullException(nameof(schemaProvider));
-            _schemaAdapter = schemaAdapter ?? throw new ArgumentNullException(nameof(schemaAdapter));
             _schemaSqlInitializer = schemaSqlInitializer ?? throw new ArgumentNullException(nameof(schemaSqlInitializer));
-            _tableSchemas = tableSchemas ?? throw new ArgumentNullException(nameof(tableSchemas)); // Записываем
+            _tableSchemas = tableSchemas ?? throw new ArgumentNullException(nameof(tableSchemas));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            _dbName = _dbConnection.GetType().Name switch
+            // Автоматически определяем имя и нужный регистр по типу соединения
+            if (_dbConnection.GetType().Name.Contains("NpgsqlConnection"))
             {
-                "NpgsqlConnection" => "PostgreSQL",
-                "SqliteConnection" => "SQLite",
-                _ => "СУБД"
-            };
+                _dbName = "PostgreSQL";
+                _dbFormat = NameFormat.SnakeCase;
+            }
+            else
+            {
+                _dbName = "SQLite";
+                _dbFormat = NameFormat.CamelCase;
+            }
         }
 
         public async Task InitializeAsync()
         {
             _logger.LogInfo($"=== 🚀 СТАРТ ИНИЦИАЛИЗАЦИИ БАЗЫ ДАННЫХ [{_dbName}] ===");
 
-            // 🦾 Теперь цикл крутится по внешним схемам, а не по SchemaRegistry!
             foreach (var schema in _tableSchemas)
             {
-                var dbSchema = _schemaAdapter.ConvertToSnakeCaseSchema(schema);
-                string dbTableName = dbSchema?.TableName ?? schema.TableName ?? string.Empty;
+                if (string.IsNullOrEmpty(schema.TableName)) continue;
+
+                // 🎯 ФИКС: Переводим имя таблицы на лету под формат текущей базы без всяких мутаций схем!
+                string dbTableName = schema.TableName.ConvertTableName(_dbFormat);
 
                 try
                 {
@@ -63,12 +68,12 @@ namespace HomeNetOrm.DbTableInitializer
 
                     if (!await TableExistsAsync(dbTableName))
                     {
-                        await CreateTableAsync(dbSchema ?? schema);
+                        await CreateTableAsync(schema);
                     }
                     else
                     {
-                        _logger.LogDebug($"[{_dbName}] Таблица {dbTableName} существует, сверяю структуру...");
-                        await CheckTableStructureAsync(schema);
+                        _logger.LogInfo($"[{_dbName}] Таблица {dbTableName} существует, сверяю структуру...");
+                        await CheckTableStructureAsync(schema, dbTableName);
                     }
                 }
                 catch (Exception ex)
@@ -98,59 +103,53 @@ namespace HomeNetOrm.DbTableInitializer
             }
         }
 
-        private async Task CreateTableAsync(TableSchema dbSchema)
+        private async Task CreateTableAsync(TableSchema schema)
         {
-            string targetName = dbSchema.TableName ?? string.Empty;
-            _logger.LogWarning($"[{_dbName} ⚠️] Таблица {targetName} не обнаружена. Запуск генерации...");
+            string dbTableName = schema.TableName.ConvertTableName(_dbFormat);
+            _logger.LogWarning($"[{_dbName} ⚠️] Таблица {dbTableName} не обнаружена. Запуск генерации...");
 
             if (_dbConnection.State != ConnectionState.Open)
             {
                 await _dbConnection.OpenAsync();
             }
 
-            string createTableSql = _schemaSqlInitializer.GenerateCreateTableSql(dbSchema);
+            string createTableSql = _schemaSqlInitializer.GenerateCreateTableSql(schema);
             await _dbConnection.ExecuteAsync(createTableSql);
 
-            if (await TableExistsAsync(targetName))
-                _logger.LogInfo($"[{_dbName}] ✅ Таблица {targetName} успешно создана в БД и готова к работе.");
+            if (await TableExistsAsync(dbTableName))
+                _logger.LogInfo($"[{_dbName}] ✅ Таблица {dbTableName} успешно создана в БД и готова к работе.");
             else
             {
-                _logger.LogError($"[{_dbName}] ❌ Ошибка создания! Таблица {targetName} отсутствует после выполнения скрипта.");
+                _logger.LogError($"[{_dbName}] ❌ Ошибка создания! Таблица {dbTableName} отсутствует после выполнения скрипта.");
             }
         }
 
-        private async Task CheckTableStructureAsync(TableSchema actualSchema)
+        private async Task CheckTableStructureAsync(TableSchema actualSchema, string dbTableName)
         {
             if (_dbConnection.State != ConnectionState.Open)
             {
                 await _dbConnection.OpenAsync();
             }
 
-            var actualAdaptedSchema = _schemaAdapter.ConvertToSnakeCaseSchema(actualSchema) ??
-                throw new ArgumentNullException(nameof(actualSchema));
-
-            string dbTableName = actualAdaptedSchema.TableName ?? string.Empty;
+            // Получаем то, что реально лежит в физической базе данных прямо сейчас
             var expectedSchema = await _schemaProvider.GetActualTableSchemaAsync(dbTableName);
 
-            // 🎯 ЖЕЛЕЗОБЕТОННЫЙ ФИКС ДЛЯ СОСТАВНЫХ КЛЮЧЕЙ:
-            // Вместо проверки одиночного IdColumnName, проверяем, есть ли вообще в схеме из БД хоть один первичный ключ!
             bool hasPrimaryKey = expectedSchema.Columns.Any(c => c.IsPrimaryKey);
 
             if (expectedSchema.Columns.Count == 0 || !hasPrimaryKey)
             {
-                _logger.LogError($"[{_dbName} ❌ ИНИЦИАЛИЗАТОР] Сверка структуры для таблицы '{dbTableName}' пропущена, так как схема в БД повреждена, пуста или вообще не имеет первичных ключей.");
+                _logger.LogError($"[{_dbName} ❌ ИНИЦИАЛИЗАТОР] Сверка структуры для таблицы '{dbTableName}' пропущена," +
+                    $" так как схема в БД повреждена, пуста или вообще не имеет первичных ключей.");
                 return;
             }
 
-            var expectedAdaptedSchema = _schemaAdapter.ConvertToSnakeCaseSchema(expectedSchema) ??
-                throw new ArgumentNullException(nameof(expectedSchema));
-
+            // 🎯 СБРИЛИ ВСЕ КОПИИ ТАБЛИЦ И СТАРЫЕ КОМПАРАТОРЫ:
+            // Сверяем структуры на лету с учетом регистра СУБД прямо здесь, лениво и надежно!
             var comparer = new SchemaComparer();
-            var diff = comparer.Compare(expectedAdaptedSchema, actualAdaptedSchema);
+            var diff = comparer.Compare(expectedSchema, actualSchema, _dbFormat);
 
             if (diff.IsIdentical)
             {
-                // 🎯 КРАСИВАЯ ЖИРНАЯ ГАЛОЧКА: Сразу видно успешный статус в консоли
                 _logger.LogInfo($"[{_dbName}] ✅ Структура таблицы '{dbTableName}' в полном порядке.");
             }
             else
@@ -165,17 +164,22 @@ namespace HomeNetOrm.DbTableInitializer
 
                 foreach (var mismatch in diff.MismatchedColumns)
                 {
-                    // Подтягиваем информативный вывод из нашей прошлой доработки
-                    string reason = $"ожидалось {mismatch.Expected.Type}, прилетело {mismatch.Actual.Type}";
+                    // 🔥 ФИКС 1: Добавляем восклицательный знак после Expected и Actual
+                    string reason = $"ожидалось {mismatch.Expected!.Type}, прилетело {mismatch.Actual!.Type}";
 
-                    if (mismatch.Expected.IsNullable != mismatch.Actual.IsNullable)
-                        reason += $" [Nullable: {mismatch.Expected.IsNullable} vs {mismatch.Actual.IsNullable}]";
+                    if (mismatch.Expected!.IsNullable != mismatch.Actual!.IsNullable)
+                    {
+                        reason += $" [Nullable: {mismatch.Expected!.IsNullable} vs {mismatch.Actual!.IsNullable}]";
+                    }
 
-                    if (mismatch.Expected.IsPrimaryKey != mismatch.Actual.IsPrimaryKey)
-                        reason += $" [PK: {mismatch.Expected.IsPrimaryKey} vs {mismatch.Actual.IsPrimaryKey}]";
+                    if (mismatch.Expected!.IsPrimaryKey != mismatch.Actual!.IsPrimaryKey)
+                    {
+                        reason += $" [PK: {mismatch.Expected!.IsPrimaryKey} vs {mismatch.Actual!.IsPrimaryKey}]";
+                    }
 
-                    _logger.LogWarning($"   [*] 🔄 Расхождение в '{mismatch.ColumnName}': {reason}");
+                    _logger.LogWarning($"[{_dbName}]    [*] 🔄 Расхождение в '{mismatch.ColumnName}': {reason}");
                 }
+
             }
         }
     }

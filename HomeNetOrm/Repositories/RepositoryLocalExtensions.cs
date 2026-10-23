@@ -2,15 +2,11 @@
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
-using HomeNetCore.Models; // 🎯 Подключаем пространство имен, где лежит BaseEntity и UserEntity
 using HomeNetCore.Models.Entity;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Threading.Tasks;
 
 namespace HomeNetOrm.Repositories
 {

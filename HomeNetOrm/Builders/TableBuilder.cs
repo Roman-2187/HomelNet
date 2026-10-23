@@ -4,7 +4,8 @@ using HomeNetOrm.Models;
 namespace HomeNetOrm.Builders
 {
     /// <summary>
-    /// Билдер схемы таблицы для конкретного класса сущности
+    /// Билдер схемы таблицы для конкретного класса сущности.
+    /// На полном автопилоте собирает структуру без ООП-каши и кэширования строк.
     /// </summary>
     public class TableBuilder<TEntity> where TEntity : class
     {
@@ -42,25 +43,13 @@ namespace HomeNetOrm.Builders
                 .Select(builder => builder.Build())
                 .ToList();
 
-            var primaryKeysCount = columns.Count(c => c.IsPrimaryKey);
-
-            var schema = new TableSchema
+            // 🔥 ЧИСТЫЙ АВТОПИЛОТ: Схема получает только сухие данные структуры
+            return new TableSchema
             {
                 TableName = _tableName,
                 Columns = columns,
-                UseVersionTrigger = _useVersionTrigger // Пробрасываем флаг триггера в схему
+                UseVersionTrigger = _useVersionTrigger
             };
-
-            // Запускаем сборку строк AllFields, SetClause, InsertFields
-            schema.Initialize();
-
-            // 🛡️ Защита от составного ключа:
-            // Если ключ один — пишем его имя. Если ключей больше (как в DeviceSync) — ставим null.
-            schema.IdColumnName = primaryKeysCount == 1
-                ? columns.FirstOrDefault(c => c.IsPrimaryKey)?.Name
-                : null;
-
-            return schema;
         }
     }
 }
