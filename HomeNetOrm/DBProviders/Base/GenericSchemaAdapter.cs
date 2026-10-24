@@ -8,7 +8,7 @@ namespace HomeNetOrm.DBProviders.Base
 {
     /// <summary>
     /// 🛠️ Статический адаптер схем.
-    /// Отвечает за маппинг типов и имен колонок без выделения лишней памяти и конструкторов.
+    /// Единственный турникет системы. За один проход штампует иммутабельный пакет схем и собирает дефиниции.
     /// </summary>
     internal static class GenericSchemaAdapter
     {
@@ -17,22 +17,47 @@ namespace HomeNetOrm.DBProviders.Base
         private const string PrimaryKey = "PRIMARY KEY";
         private const string Unique = "UNIQUE";
 
-        // --- ПУБЛИЧНЫЕ (INTERNAL) МЕТОДЫ РАСШИРЕНИЯ ДЛЯ ВНЕШНЕГО КОДА ---
+        // --- 🎯 ГЛАВНЫЙ ТУРНИКЕТ ДЛЯ ТРАНСФОРМАЦИИ СХЕМЫ ---
 
-        public static string ConvertTableName(this string? rawName, NameFormat format)
+        /// <summary>
+        /// Превращает сырую схему в пакет из Camel и Snake версий за один проход.
+        /// </summary>
+        public static AdaptedSchemas ToAdaptedSchemas(this TableSchema source)
         {
-            if (string.IsNullOrEmpty(rawName)) throw new ArgumentException("Имя таблицы не может быть пустым");
-            return format == NameFormat.SnakeCase ? ToSnakeCase(rawName)! : ToCamelCase(rawName)!;
+            ArgumentNullException.ThrowIfNull(source);
+
+            return new AdaptedSchemas
+            {
+                Camel = Transform(source, useSnake: false),
+                Snake = Transform(source, useSnake: true)
+            };
         }
 
-        public static string ConvertColumnName(this string? rawName, NameFormat format)
+        private static TableSchema Transform(TableSchema source, bool useSnake)
         {
-            if (string.IsNullOrEmpty(rawName)) throw new ArgumentException("Имя колонки не может быть пустым");
-            return format == NameFormat.SnakeCase ? ToSnakeCase(rawName)! : ToCamelCase(rawName)!;
+            return new TableSchema
+            {
+                TableName = useSnake ? ToSnakeCase(source.TableName)! : ToCamelCase(source.TableName)!,
+                Columns = source.Columns.Select(col => new ColumnSchema
+                {
+                    Name = useSnake ? ToSnakeCase(col.Name)! : ToCamelCase(col.Name)!,
+                    Type = col.Type,
+                    IsPrimaryKey = col.IsPrimaryKey,
+                    IsNullable = col.IsNullable,
+                    IsAutoIncrement = col.IsAutoIncrement,
+                    IsUnique = col.IsUnique,
+                    IsCreatedAt = col.IsCreatedAt,
+                    Length = col.Length,
+                    DefaultValue = col.DefaultValue
+                }).ToList()
+            };
         }
+
+        // --- 🛠️ МЕТОДЫ СБОРКИ ДЕФИНИЦИЙ ДЛЯ ИНИЦИАЛИЗАТОРА ---
 
         /// <summary>
         /// Формирует дефиниции колонок для конкретной спецификации СУБД.
+        /// Доверяет регистру переданной схемы (передавать строго адаптированную схему под СУБД).
         /// </summary>
         public static List<string> GetColumnDefinitions(IDbProviderSpecification spec, TableSchema schema)
         {
@@ -43,9 +68,9 @@ namespace HomeNetOrm.DBProviders.Base
                 if (col.Type == ColumnType.Unspecified)
                     throw new InvalidOperationException($"Колонка '{col.Name}' не имеет заданного типа.");
 
-                // Трансформируем имя прямо на месте через наши внутренние методы
-                string dbColumnName = col.Name.ConvertColumnName(spec.TableFormat);
-                var name = $"\"{dbColumnName}\"";
+                // 🔥 ФИКС: Больше никакой самодеятельности с конвертацией регистров на лету!
+                // Имя берется "как есть" из схемы, потому что схема уже прошла через ToAdaptedSchemas()
+                var name = $"\"{col.Name}\"";
 
                 string sqlType = spec.MapToSqlType(col.Type, col.IsPrimaryKey, col.IsAutoIncrement, col.Length);
                 var constraints = new List<string>();
@@ -83,8 +108,7 @@ namespace HomeNetOrm.DBProviders.Base
             }).ToList();
         }
 
-
-        // --- 🔥 ЗАКРЫТЫЕ ВНУТРЕННИЕ КИШКИ ТРАНСФОРМАЦИИ СТРОК ---
+        // --- ВНУТРЕННИЕ ПРИВАТНЫЕ КИШКИ ТРАНСФОРМАЦИИ СТРОК ---
 
         private static string? ToSnakeCase(string? name)
         {

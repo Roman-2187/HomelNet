@@ -1,7 +1,5 @@
 ﻿using HomeNetOrm.Enums;
 using HomeNetOrm.Interfaces.DbInfrastructure;
-using System;
-using System.Collections.Generic;
 
 namespace HomeNetOrm.DBProviders.Sqlite
 {

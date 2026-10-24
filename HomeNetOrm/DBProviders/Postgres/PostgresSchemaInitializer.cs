@@ -2,8 +2,8 @@
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
 using HomeNetOrm.DBProviders.Base;
-using HomeNetOrm.Enums;
 using System.Text;
+using Dapper;
 
 namespace HomeNetOrm.DBProviders.Postgres
 {
@@ -12,7 +12,6 @@ namespace HomeNetOrm.DBProviders.Postgres
         private readonly IDbProviderSpecification _spec;
         private readonly ILogger _logger;
 
-        // 🔥 Вместо адаптера принимаем чистую спецификацию СУБД
         public PostgresSchemaInitializer(IDbProviderSpecification spec, ILogger logger)
         {
             _spec = spec ?? throw new ArgumentNullException(nameof(spec));
@@ -22,21 +21,20 @@ namespace HomeNetOrm.DBProviders.Postgres
         public string GenerateCreateTableSql(TableSchema schema)
         {
             if (schema == null) throw new ArgumentNullException(nameof(schema));
+            if (string.IsNullOrEmpty(schema.TableName) || schema.Columns == null)
+                return string.Empty;
 
-            // 🎯 ФИКС: Переводим имя таблицы через статический метод расширения строки!
-            string tableName = schema.TableName.ConvertTableName(NameFormat.SnakeCase);
-            var pkColumns = schema.Columns.Where(c => c.IsPrimaryKey).ToList();
+            string tableName = schema.TableName;
+            var pkColumns = schema.Columns.Where(c => c != null && c.IsPrimaryKey).ToList();
 
             var sb = new StringBuilder();
             sb.Append($@"CREATE TABLE IF NOT EXISTS ""{tableName}"" (");
 
-            // 🔥 ФИКС: Прокидываем спецификацию в статический билдер колонок без адаптеров
             sb.Append(SqlQueryBuilder.BuildCreateTableColumns(_spec, schema));
 
-            // 🔥 ФИКС: Вызов статика для составного ключа в snake_case без адаптера
             if (pkColumns.Count > 1)
             {
-                string pkFieldNames = SqlQueryBuilder.BuildCompositePrimaryKeyFields(schema, NameFormat.SnakeCase);
+                string pkFieldNames = SqlQueryBuilder.BuildCompositePrimaryKeyFields(schema);
                 sb.Append($@", PRIMARY KEY ({pkFieldNames})");
             }
 
@@ -52,7 +50,7 @@ namespace HomeNetOrm.DBProviders.Postgres
                 CREATE OR REPLACE FUNCTION fn_update_version_column()
                 RETURNS TRIGGER AS $$
                 BEGIN
-                NEW.""Version"" := nextval('seq_' || TG_TABLE_NAME || '_version');
+                NEW.""version"" := nextval('seq_' || TG_TABLE_NAME || '_version');
                 RETURN NEW;
                 END;
                 $$ LANGUAGE plpgsql;
@@ -67,17 +65,23 @@ namespace HomeNetOrm.DBProviders.Postgres
             return sb.ToString();
         }
 
-        public string GenerateTableExistsSql(string tableName)
+        public SqlQueryCommand GenerateTableExistsSql(string tableName)
         {
             if (string.IsNullOrWhiteSpace(tableName)) throw new ArgumentException("Имя таблицы пустое", nameof(tableName));
-            return $@"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = @CleanName;";
+
+            var p = new DynamicParameters();
+            p.Add("CleanName", tableName.Trim('"', '\'').ToLower());
+
+            return new SqlQueryCommand(
+                $@"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = @CleanName;",
+                p
+            );
         }
 
-        public string GenerateGetTableStructureSql(string tableName)
+        public SqlQueryCommand GenerateGetTableStructureSql(string tableName)
         {
             if (string.IsNullOrWhiteSpace(tableName)) throw new ArgumentException("Имя таблицы пустое", nameof(tableName));
-
-            return $@"
+            return new SqlQueryCommand($@"
                 SELECT 
                 c.column_name AS Name, 
                 c.data_type AS DataType, 
@@ -89,7 +93,8 @@ namespace HomeNetOrm.DBProviders.Postgres
                 ON c.table_schema = kcu.table_schema AND c.table_name = kcu.table_name AND c.column_name = kcu.column_name
                 LEFT JOIN information_schema.table_constraints tc 
                 ON kcu.table_schema = tc.table_schema AND kcu.table_name = tc.table_name AND kcu.constraint_name = tc.constraint_name AND tc.constraint_type = 'PRIMARY KEY'
-                WHERE c.table_schema = 'public' AND c.table_name = @TableName;";
+                WHERE c.table_schema = 'public' AND c.table_name = '{tableName}';"
+            );
         }
     }
 }

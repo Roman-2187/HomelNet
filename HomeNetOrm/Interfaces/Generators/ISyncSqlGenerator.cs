@@ -1,15 +1,17 @@
-﻿namespace HomeNetOrm.Interfaces.Generators
+﻿using HomeNetOrm.Models;
+
+namespace HomeNetOrm.Interfaces.Generators
 {
     /// <summary>
     /// Подключаемый интерфейс-модуль для генераторов, поддерживающих репликацию SiberNet.
-    /// Расширяет базовый CRUD-интерфейс ОРМ.
+    /// Полностью переведен на Command Object под вызовы через точку! 🦾
     /// </summary>
-    public interface ISyncSqlGenerator<TEntity> : ISqlGenerator<TEntity> where TEntity : class
+    internal interface ISyncSqlGenerator<TEntity> : ISqlGenerator<TEntity> where TEntity : class
     {
-       
-        string GenerateCountById();
-        string GenerateSelectUnsynced();
-        string GenerateUpdateMarkAsSynced(); 
-        
+        SqlQueryCommand GenerateCountById(Guid id);
+        SqlQueryCommand GenerateSelectUnsynced();
+        SqlQueryCommand GenerateUpdateMarkAsSynced(Guid id);
+
+     
     }
 }

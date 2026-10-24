@@ -17,11 +17,42 @@ namespace HomeNet.Server
         private static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            AppFileLogger AppFileLogger = new AppFileLogger("App_debug.txt");
 
-            HomeNetCore.Interfaces.Diagnostics.ILogger serverLogger = Logger.CreateConsoleLogger();
+            // 🎯 1. Настраиваем гарантированный путь к файлу на Рабочем столе
+            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            string debugFolderPath = Path.Combine(desktopPath, "debug");
 
-           
+            if (!Directory.Exists(debugFolderPath))
+            {
+                Directory.CreateDirectory(debugFolderPath);
+            }
+
+            string serverLogPath = Path.Combine(debugFolderPath, "server_debug.txt");
+            AppFileLogger fileLogger = new AppFileLogger(serverLogPath);
+
+
+            // 🎯 2. Объединяем вывод в КОНСОЛЬ и ФАЙЛ внутри одного общего логгера!
+            HomeNetCore.Interfaces.Diagnostics.ILogger serverLogger = new Logger((logEntry, level, detectedNamespace) =>
+            {
+                // Пишем цветной лог в консоль сервера
+                Console.ForegroundColor = level switch
+                {
+                    HomeNetCore.Enums.LogLevel.Info => ConsoleColor.Green,
+                    HomeNetCore.Enums.LogLevel.Error => ConsoleColor.Red,
+                    _ => ConsoleColor.White
+                };
+                Console.WriteLine(logEntry);
+                Console.ResetColor();
+
+                // Параллельно пишем этот же самый лог в файл на Рабочем столе!
+                // Приводим твой внутренний Enum уровня к строке ("INFO", "ERROR" и т.д.)
+                // 🎯 Явно кастим прилетающий уровень к енаму, который ждет файловый логгер
+                fileLogger.WriteImmediately(logEntry, (HomeNetCore.Enums.LogLevel)level);
+
+            });
+
+            // Тестовый приветственный лог — улетит и в консоль, и в файл
+            serverLogger.LogInfo("=== [СУБД ХАБ СЕРВЕРА] СИСТЕМА ДВОЙНОГО ЛОГИРОВАНИЯ ИНИЦИАЛИЗИРОВАНА ===");
 
             var schemaModule = new RemoteMessengerSchemaModule();
             var serverSchemas = schemaModule.GetSchemas();

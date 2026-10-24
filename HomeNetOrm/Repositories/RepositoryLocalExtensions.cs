@@ -5,6 +5,7 @@ using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models.Entity;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
+using HomeNetOrm.Models;
 using System.Data;
 using System.Data.Common;
 
@@ -13,7 +14,7 @@ namespace HomeNetOrm.Repositories
     internal static class RepositoryLocalExtensions
     {
         public static async Task<IEnumerable<TEntity>> GetUnsyncedRecordsAsync<TEntity>(
-            this ISyncSupport<TEntity> localRepository) where TEntity : BaseEntity // 🔥 Заменили class на BaseEntity
+            this ISyncSupport<TEntity> localRepository) where TEntity : BaseEntity
         {
             if (localRepository.SqlGenerator is not ISyncSqlGenerator<TEntity> syncGen)
             {
@@ -23,12 +24,12 @@ namespace HomeNetOrm.Repositories
             DbConnection localConn = localRepository.Connection;
             if (localConn.State != ConnectionState.Open) await localConn.OpenAsync();
 
-            string sql = syncGen.GenerateSelectUnsynced();
-            return await localConn.QueryAsync<TEntity>(sql);
+            SqlQueryCommand cmd = syncGen.GenerateSelectUnsynced();
+            return await localConn.QueryAsync<TEntity>(cmd.Sql, cmd.Params);
         }
 
         public static async Task MarkAsSyncedAsync<TEntity>(
-            this ISyncSupport<TEntity> localRepository, Guid id) where TEntity : BaseEntity // 🔥 Заменили class на BaseEntity
+            this ISyncSupport<TEntity> localRepository, Guid id) where TEntity : BaseEntity
         {
             if (localRepository.SqlGenerator is not ISyncSqlGenerator<TEntity> syncGen) return;
 
@@ -39,9 +40,10 @@ namespace HomeNetOrm.Repositories
                 DbConnection localConn = localRepository.Connection;
                 if (localConn.State != ConnectionState.Open) await localConn.OpenAsync();
 
-                string sql = syncGen.GenerateUpdateMarkAsSynced();
+                // 🎯 АВТОПИЛОТ: Передаем id в метод. Генератор сам упакует правильный параметр по словарю
+                SqlQueryCommand cmd = syncGen.GenerateUpdateMarkAsSynced(id);
 
-                await localConn.ExecuteAsync(sql, new { id, Id = id });
+                await localConn.ExecuteAsync(cmd.Sql, cmd.Params);
             }
             catch (Exception ex)
             {
@@ -49,14 +51,11 @@ namespace HomeNetOrm.Repositories
             }
         }
 
-        /// <summary>
-        /// 📥 Накатывает в локальную базу готовую пачку данных, которую выдал сервер (PULL)
-        /// </summary>
         public static async Task<int> MergePulledRecordsAsync<TEntity>(
             this ISyncSupport<TEntity> localRepository,
             IEnumerable<TEntity> remoteRecords,
             IEventBus eventBus,
-            HomeNetCore.Interfaces.Diagnostics.ILogger logger) where TEntity : BaseEntity // 🔥 ЖЕЛЕЗОБЕТОННОЕ ОГРАНИЧЕНИЕ: Теперь компилятор знает про Id и IsSynced!
+            HomeNetCore.Interfaces.Diagnostics.ILogger logger) where TEntity : BaseEntity
         {
             if (remoteRecords == null) return 0;
 
@@ -75,25 +74,29 @@ namespace HomeNetOrm.Repositories
             int skippedCount = 0;
             int totalCount = 0;
 
-            string checkLocalSql = syncGen.GenerateCountById();
-            string insertLocalSql = localGen.GenerateInsert();
+            // 🎯 Забираем базовый SQL для вставки (параметры пойдут через record)
+            SqlQueryCommand insertCmd = localGen.GenerateInsert();
 
             using var transaction = await localConn.BeginTransactionAsync();
             try
             {
                 foreach (var record in remoteRecords)
                 {
+                    if (record == null) continue;
                     totalCount++;
-                    // Компилятор счастлив: record.Id легитимен!
-                    var exists = await localConn.ExecuteScalarAsync<bool>(checkLocalSql, new { id = record.Id }, transaction);
+
+                    // 🎯 АВТОПИЛОТ: Каждая итерация запрашивает команду проверки по конкретному record.Id
+                    SqlQueryCommand checkCmd = syncGen.GenerateCountById(record.Id);
+
+                    var exists = await localConn.ExecuteScalarAsync<bool>(checkCmd.Sql, checkCmd.Params, transaction);
 
                     if (!exists)
                     {
-                        record.IsSynced = 1; // Скачанное изначально синхронизировано. Компилятор снова доволен!
+                        record.IsSynced = 1;
 
                         object localParameters = localGen.PrepareParameters(record);
 
-                        await localConn.ExecuteAsync(insertLocalSql, localParameters, transaction);
+                        await localConn.ExecuteAsync(insertCmd.Sql, localParameters, transaction);
                         insertedCount++;
 
                         logger.LogDebug($"[ОРМ МЕРЖ -> {typeof(TEntity).Name}] ➕ Вставлена новая запись. ID: {record.Id}");
@@ -109,13 +112,10 @@ namespace HomeNetOrm.Repositories
 
                 logger.LogInfo($"[ОРМ МЕРЖ] Обработка таблицы {typeof(TEntity).Name} завершена. Всего в пакете: {totalCount} | Добавлено: {insertedCount} | Пропущено (уже есть): {skippedCount}");
 
-                if (insertedCount > 0)
+                if (insertedCount > 0 && typeof(TEntity) == typeof(UserEntity))
                 {
-                    if (typeof(TEntity) == typeof(UserEntity))
-                    {
-                        logger.LogInfo($"[ОРМ МЕРЖ] Публикуем RefreshRequest для авто-обновления таблицы пользователей в UI.");
-                        eventBus.Publish(localRepository, new IUsersTableVm.RefreshRequest());
-                    }
+                    logger.LogInfo($"[ОРМ МЕРЖ] Публикуем RefreshRequest для авто-обновления таблицы пользователей в UI.");
+                    eventBus.Publish(localRepository, new IUsersTableVm.RefreshRequest());
                 }
             }
             catch (Exception ex)

@@ -1,15 +1,16 @@
-﻿namespace HomeNetOrm.Interfaces.Generators
+﻿using System;
+using HomeNetOrm.Models;
+
+namespace HomeNetOrm.Interfaces.Generators
 {
     /// <summary>
-    /// 🌐 УДАЛЕННЫЙ интерфейс генератора для ведения учета синхронизации на сервере
+    /// Интерфейс генератора синхронизации устройств на сервере.
+    /// Полностью переведен на Command Object. 🦾
     /// </summary>
-   
-        public interface IRemoteDeviceSyncSqlGenerator
-        {
-            // Добавляем параметр строки во все контракты 🎯
-            string GenerateDeviceSyncUpsert();
-            string GenerateSelectUpdatesByTimestamp();
-            string GenerateSelectUserIdByDevice();
-        }
+    internal interface IRemoteDeviceSyncSqlGenerator
+    {
+        SqlQueryCommand GenerateDeviceSyncUpsert();
+        SqlQueryCommand GenerateSelectUpdatesByTimestamp(DateTimeOffset timestamp);
+        SqlQueryCommand GenerateSelectUserIdByDevice(Guid deviceId);
     }
-
+}

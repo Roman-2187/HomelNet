@@ -45,8 +45,11 @@ namespace HomeNetOrm.DBProviders.Base
 
             try
             {
-                string sql = _sqlInit.GenerateGetTableStructureSql(tableName);
-                var rawColumnsData = await _requiredConnection.QueryAsync<RawColumnMetadata>(sql, new { TableName = tableName });
+                // 🎯 ЧИСТЫЙ ВЫЗОВ ЧЕРЕЗ ТОЧКУ: Получаем готовый объект команды из инициализатора
+                var cmd = _sqlInit.GenerateGetTableStructureSql(tableName);
+
+                // Передаем в Dapper скомпилированную строку и параметры прямо из команды
+                var rawColumnsData = await _requiredConnection.QueryAsync<RawColumnMetadata>(cmd.Sql, cmd.Params);
 
                 return ProcessAndValidateSchema(tableName, rawColumnsData);
             }
@@ -56,6 +59,7 @@ namespace HomeNetOrm.DBProviders.Base
                     $"Ошибка при получении схемы для таблицы {tableName}: {ex.Message}", ex);
             }
         }
+
 
         private TableSchema ProcessAndValidateSchema(string tableName, IEnumerable<RawColumnMetadata> rawRows)
         {

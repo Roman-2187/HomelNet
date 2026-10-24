@@ -4,37 +4,30 @@ using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.DBProviders.Sqlite.Generators;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
-using HomeNetOrm.Enums;
 
 namespace HomeNetOrm.DBProviders.Sqlite.SincedGenerators
 {
-    // Наследуем базовый SQLite генератор сообщений и подцепляем синхронизацию 🦾
     internal class SyncedSqliteMessageSqlGenerator : SqliteMessageSqlGenerator, ISyncSqlGenerator<MessageEntity>
     {
-        private readonly string _tableName;
-        private readonly string _idColumn;
-
-        // 🔥 ФИКС: Вырезали адаптер, инициализируем ядро в CamelCase под SQLite
         public SyncedSqliteMessageSqlGenerator(IEnumerable<TableSchema> schemas, ILogger logger)
-            : base(schemas, logger)
-        {
-            _tableName = Schema.TableName.ConvertTableName(NameFormat.CamelCase);
-            _idColumn = (Schema.SinglePrimaryKey?.Name ?? "Id").ConvertColumnName(NameFormat.CamelCase);
-        }
+            : base(schemas, logger) { }
 
-        // === ИНКАПСУЛИРОВАННАЯ СИНХРОНИЗАЦИЯ СООБЩЕНИЙ БЕЗ ЕДИНОЙ СТРОКИ ХАРДКОДА ===
+        // === 🎯 ИНКАПСУЛИРОВАННАЯ СИНХРОНИЗАЦИЯ СООБЩЕНИЙ С УЧЕТОМ GUID PARAMETERS ===
 
-        public string GenerateCountById() =>
-            $"SELECT COUNT(1) FROM \"{_tableName}\" WHERE \"{_idColumn}\" = {DapperParams[nameof(MessageEntity.Id)]};";
+        // 🔥 ФИКС: Добавляем Guid id на входе и прокидываем в фабрику параметров
+        public SqlQueryCommand GenerateCountById(Guid id) =>
+            Command($"SELECT COUNT(1) FROM \"{TableName}\" WHERE \"{IdColumn}\" = {DapperParams[nameof(MessageEntity.Id)]};",
+                    nameof(MessageEntity.Id), id);
 
-        public string GenerateSelectUnsynced() =>
-            $"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, NameFormat.CamelCase)} FROM \"{_tableName}\" " +
-            $"WHERE \"{DbColumns[nameof(MessageEntity.IsSynced)]}\" = 0 OR \"{DbColumns[nameof(MessageEntity.IsSynced)]}\" IS NULL;";
+        public SqlQueryCommand GenerateSelectUnsynced() =>
+            Command($"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, CamelSchema)} FROM \"{TableName}\" " +
+                    $"WHERE \"{DbColumns[nameof(MessageEntity.IsSynced)]}\" = 0 OR \"{DbColumns[nameof(MessageEntity.IsSynced)]}\" IS NULL;");
 
-        public string GenerateUpdateMarkAsSynced() =>
-            $"UPDATE \"{_tableName}\" SET \"{DbColumns[nameof(MessageEntity.IsSynced)]}\" = 1 WHERE \"{_idColumn}\" = {DapperParams[nameof(MessageEntity.Id)]};";
+        // 🔥 ФИКС: Добавляем Guid id и сюда тоже
+        public SqlQueryCommand GenerateUpdateMarkAsSynced(Guid id) =>
+            Command($"UPDATE \"{TableName}\" SET \"{DbColumns[nameof(MessageEntity.IsSynced)]}\" = 1 WHERE \"{IdColumn}\" = {DapperParams[nameof(MessageEntity.Id)]};",
+                    nameof(MessageEntity.Id), id);
 
-        // Перехватываем маппинг параметров: переводим флаги в 0/1 строго перед отправкой в СУБД SQLite 🎯
         public override object PrepareParameters(MessageEntity msg)
         {
             return new
@@ -46,7 +39,7 @@ namespace HomeNetOrm.DBProviders.Sqlite.SincedGenerators
                 msg.MediaType,
                 IsRead = msg.IsRead ? 1 : 0,
                 msg.CreatedAt,
-                IsSynced = 1, // Локально помечаем, что готово к сверке
+                IsSynced = 1,
                 msg.UpdatedAt
             };
         }

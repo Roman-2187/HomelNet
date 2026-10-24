@@ -4,36 +4,29 @@ using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.DBProviders.Postgres.Generators;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
-using HomeNetOrm.Enums;
 
 namespace HomeNetOrm.DBProviders.Postgres.SincedGenerators
 {
     internal class SyncedPostgresUserSqlGenerator : PostgresUserSqlGenerator, ISyncSqlGenerator<UserEntity>
     {
-        private readonly string _tableName;
-        private readonly string _idColumn;
-
         public SyncedPostgresUserSqlGenerator(IEnumerable<TableSchema> schemas, ILogger logger)
-            : base(schemas, logger)
-        {
-            _tableName = Schema.TableName.ConvertTableName(NameFormat.SnakeCase);
-            _idColumn = (Schema.SinglePrimaryKey?.Name ?? "Id").ConvertColumnName(NameFormat.SnakeCase);
-        }
+            : base(schemas, logger) { }
 
-        public string GenerateCountById() =>
-            $"SELECT COUNT(1) FROM \"{_tableName}\" WHERE \"{_idColumn}\" = {DapperParams[nameof(UserEntity.Id)]};";
+        public SqlQueryCommand GenerateCountById(Guid id) =>
+            Command($"SELECT COUNT(1) FROM \"{TableName}\" WHERE \"{IdColumn}\" = {DapperParams[nameof(UserEntity.Id)]};",
+                    nameof(UserEntity.Id), id);
 
-        public string GenerateSelectUnsynced() =>
-            $"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, NameFormat.SnakeCase)} FROM \"{_tableName}\" " +
-            $"WHERE \"{DbColumns[nameof(UserEntity.IsSynced)]}\" = FALSE OR \"{DbColumns[nameof(UserEntity.IsSynced)]}\" IS NULL;";
+        public SqlQueryCommand GenerateSelectUnsynced() =>
+            Command($"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, CamelSchema)} FROM \"{TableName}\" " +
+                    $"WHERE \"{DbColumns[nameof(UserEntity.IsSynced)]}\" = FALSE OR \"{DbColumns[nameof(UserEntity.IsSynced)]}\" IS NULL;");
 
-        public string GenerateUpdateMarkAsSynced() =>
-            $"UPDATE \"{_tableName}\" SET \"{DbColumns[nameof(UserEntity.IsSynced)]}\" = TRUE WHERE \"{_idColumn}\" = {DapperParams[nameof(UserEntity.Id)]};";
+        public SqlQueryCommand GenerateUpdateMarkAsSynced(Guid id) =>
+            Command($"UPDATE \"{TableName}\" SET \"{DbColumns[nameof(UserEntity.IsSynced)]}\" = TRUE WHERE \"{IdColumn}\" = {DapperParams[nameof(UserEntity.Id)]};",
+                    nameof(UserEntity.Id), id);
 
-        // 🔥 ИДЕАЛЬНО: Передаем в метод репликации юзеров пустой объект UserEntity, 
-        // где в поле UpdatedAt записано время чекпоинта клиента.
-        public string GenerateSelectUpdatesByTimestamp() =>
-            $"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, NameFormat.SnakeCase)} FROM \"{_tableName}\" " +
-            $"WHERE \"{DbColumns[nameof(UserEntity.UpdatedAt)]}\" > {DapperParams[nameof(UserEntity.UpdatedAt)]};";
+        public SqlQueryCommand GenerateSelectUpdatesByTimestamp(DateTimeOffset timestamp) =>
+            Command($"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, CamelSchema)} FROM \"{TableName}\" " +
+                    $"WHERE \"{DbColumns[nameof(UserEntity.UpdatedAt)]}\" > {DapperParams[nameof(UserEntity.UpdatedAt)]};",
+                    nameof(UserEntity.UpdatedAt), timestamp);
     }
 }

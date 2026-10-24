@@ -1,13 +1,13 @@
-﻿using HomeNetCore.Models;
-using HomeNetCore.Models.Entity;
+﻿using HomeNetCore.Models.Entity;
+using HomeNetOrm.Models;
 
 namespace HomeNetOrm.Interfaces.Generators
 {
-    public interface IMessageSqlGenerator : ISqlGenerator<MessageEntity>
+    internal interface IMessageSqlGenerator : ISqlGenerator<MessageEntity>
     {
-        string GenerateSelectChatHistory();
-        string GenerateMarkAsRead();
-        string GenerateUnreadCount();
-        string GenerateClearChatHistory();
+        SqlQueryCommand GenerateSelectChatHistory(Guid senderId, Guid receiverId);
+        SqlQueryCommand GenerateMarkAsRead(Guid senderId, Guid receiverId);
+        SqlQueryCommand GenerateUnreadCount(Guid currentUserId, Guid friendId);
+        SqlQueryCommand GenerateClearChatHistory(Guid senderId, Guid receiverId);
     }
 }

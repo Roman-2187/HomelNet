@@ -7,6 +7,11 @@ using System.Data.Common;
 using HomeNetCore.Interfaces.Sinc;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Models.Entity;
+using System.Collections.Generic;
+using System;
+using System.Threading.Tasks;
+using System.Linq;
+using HomeNetOrm.Models;
 
 namespace HomeNetOrm.Repositories
 {
@@ -19,24 +24,19 @@ namespace HomeNetOrm.Repositories
         private readonly DbConnection _connection;
         private readonly IMessageSqlGenerator _sqlGenerator;
         private readonly IEventBus _eventBus;
+        private readonly ILogger _logger;
 
-        private readonly ILogger _logger; // Внедряем поле логгера напрямую
-
-        ILogger ISyncSupport<MessageEntity>.Logger => _logger; 
-
-        // Явная реализация инфраструктурных свойств для методов расширения синхронизации
+        ILogger ISyncSupport<MessageEntity>.Logger => _logger;
         DbConnection ISyncSupport<MessageEntity>.Connection => _connection;
         ISqlGenerator<MessageEntity> ISyncSupport<MessageEntity>.SqlGenerator => _sqlGenerator;
 
-        // 🔥 ЕДИНЫЙ УНИВЕРСАЛЬНЫЙ КОНСТРУКТОР ДЛЯ КЛИЕНТА И СЕРВЕРА
-        // Если eventBus не передан (на сервере), создается пустой прокси, берущий пустые методы из интерфейса!
-        public MessageRepository(DbConnection connection, IMessageSqlGenerator sqlGenerator,ILogger logger ,IEventBus? eventBus = null)
+        // 🔥 ФИКС ВИЗИМОСТИ: Конструктор становится internal, чтобы сохранить инкапсуляцию генератора!
+        internal MessageRepository(DbConnection connection, IMessageSqlGenerator sqlGenerator, ILogger logger, IEventBus? eventBus = null)
         {
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
             _sqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));
             _eventBus = eventBus ?? new NullEventProxy();
-
-         _logger=logger ?? throw new ArgumentNullException(nameof(logger));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<bool> SaveMessageAsync(MessageEntity message)
@@ -44,15 +44,13 @@ namespace HomeNetOrm.Repositories
             message.CreatedAt = DateTime.UtcNow;
             message.IsSynced = 0;
 
-            string sql = _sqlGenerator.GenerateInsert();
+            SqlQueryCommand cmd = _sqlGenerator.GenerateInsert();
 
             try
             {
-                // Стало (генератор сам переведет IsSynced и IsRead в честные bool для Postgres):
                 object safeParameters = _sqlGenerator.PrepareParameters(message);
-                await _connection.ExecuteAsync(sql, safeParameters);
+                await _connection.ExecuteAsync(cmd.Sql, safeParameters);
 
-                // На клиенте - вызовет реальную шину. На сервере - метод интерфейса выполнится вхолостую!
                 _eventBus.Publish(this, new ISiberNetSyncCoordinator.MessageInserted(message));
                 return true;
             }
@@ -62,13 +60,13 @@ namespace HomeNetOrm.Repositories
             }
         }
 
-
         public async Task<IEnumerable<MessageEntity>> GetChatHistoryAsync(Guid senderId, Guid receiverId)
         {
-            string sql = _sqlGenerator.GenerateSelectChatHistory();
+            // 🎯 ЧИСТЫЙ ВЫЗОВ ЧЕРЕЗ ТОЧКУ: Передаем параметры в аргументы генератора
+            SqlQueryCommand cmd = _sqlGenerator.GenerateSelectChatHistory(senderId, receiverId);
             try
             {
-                return await _connection.QueryAsync<MessageEntity>(sql, new { userId = senderId, friendId = receiverId });
+                return await _connection.QueryAsync<MessageEntity>(cmd.Sql, cmd.Params);
             }
             catch (Exception ex)
             {
@@ -78,10 +76,10 @@ namespace HomeNetOrm.Repositories
 
         public async Task<bool> MarkAsReadAsync(Guid senderId, Guid receiverId)
         {
-            string sql = _sqlGenerator.GenerateMarkAsRead();
+            SqlQueryCommand cmd = _sqlGenerator.GenerateMarkAsRead(senderId, receiverId);
             try
             {
-                int rowsAffected = await _connection.ExecuteAsync(sql, new { SenderId = senderId, ReceiverId = receiverId });
+                int rowsAffected = await _connection.ExecuteAsync(cmd.Sql, cmd.Params);
                 return rowsAffected > 0;
             }
             catch (Exception ex)
@@ -92,10 +90,10 @@ namespace HomeNetOrm.Repositories
 
         public async Task<int> GetUnreadCountAsync(Guid currentUserId, Guid senderId)
         {
-            string sql = _sqlGenerator.GenerateUnreadCount();
+            SqlQueryCommand cmd = _sqlGenerator.GenerateUnreadCount(currentUserId, senderId);
             try
             {
-                return await _connection.ExecuteScalarAsync<int>(sql, new { CurrentUserId = currentUserId, SenderId = senderId });
+                return await _connection.ExecuteScalarAsync<int>(cmd.Sql, cmd.Params);
             }
             catch (Exception ex)
             {
@@ -105,13 +103,14 @@ namespace HomeNetOrm.Repositories
 
         public async Task<bool> RemoveMessageByIdAsync(Guid id)
         {
-            var message = await _connection.QueryFirstOrDefaultAsync<MessageEntity>(
-                _sqlGenerator.GenerateSelectById(), new { id = id });
+            // Получаем сообщение по ID через автопилот команд
+            var selectCmd = _sqlGenerator.GenerateSelectById(id);
+            var message = await _connection.QueryFirstOrDefaultAsync<MessageEntity>(selectCmd.Sql, selectCmd.Params);
 
-            string sql = _sqlGenerator.GenerateDelete();
+            SqlQueryCommand deleteCmd = _sqlGenerator.GenerateDelete(id);
             try
             {
-                int rowsAffected = await _connection.ExecuteAsync(sql, new { id = id });
+                int rowsAffected = await _connection.ExecuteAsync(deleteCmd.Sql, deleteCmd.Params);
 
                 if (rowsAffected > 0 && message != null)
                 {
@@ -128,17 +127,14 @@ namespace HomeNetOrm.Repositories
 
         public async Task<bool> ClearChatHistoryAsync(Guid senderId, Guid receiverId)
         {
-            string sql = _sqlGenerator.GenerateClearChatHistory();
+            SqlQueryCommand cmd = _sqlGenerator.GenerateClearChatHistory(senderId, receiverId);
             try
             {
-                var sender = await _connection.QueryFirstOrDefaultAsync<UserEntity>("SELECT id FROM users WHERE id = @id", new { id = senderId });
-                var receiver = await _connection.QueryFirstOrDefaultAsync<UserEntity>("SELECT id FROM users WHERE id = @id", new { id = receiverId });
+                int rowsAffected = await _connection.ExecuteAsync(cmd.Sql, cmd.Params);
 
-                int rowsAffected = await _connection.ExecuteAsync(sql, new { SenderId = senderId, ReceiverId = receiverId });
-
-                if (rowsAffected > 0 && sender != null && receiver != null)
+                if (rowsAffected > 0)
                 {
-                    _eventBus.Publish(this, new ISiberNetSyncCoordinator.ChatCleared(sender.Id, receiver.Id));
+                    _eventBus.Publish(this, new ISiberNetSyncCoordinator.ChatCleared(senderId, receiverId));
                 }
 
                 return rowsAffected > 0;
@@ -149,29 +145,23 @@ namespace HomeNetOrm.Repositories
             }
         }
 
-
-
-        // =========================================================================
-        // 🦾 ИСПРАВЛЕННАЯ РЕАЛИЗАЦИЯ МЕТОДОВ ИНТЕРФЕЙСА IRepository<MessageEntity>
-        // =========================================================================
-
         public async Task<MessageEntity?> GetByIdAsync(Guid id)
         {
-            string sql = _sqlGenerator.GenerateSelectById();
-            return await _connection.QueryFirstOrDefaultAsync<MessageEntity>(sql, new { Id = id });
+            SqlQueryCommand cmd = _sqlGenerator.GenerateSelectById(id);
+            return await _connection.QueryFirstOrDefaultAsync<MessageEntity>(cmd.Sql, cmd.Params);
         }
 
         public async Task<IEnumerable<MessageEntity>> GetAllAsync()
         {
-            string sql = _sqlGenerator.GenerateSelectAll();
-            return await _connection.QueryAsync<MessageEntity>(sql);
+            SqlQueryCommand cmd = _sqlGenerator.GenerateSelectAll();
+            return await _connection.QueryAsync<MessageEntity>(cmd.Sql, cmd.Params);
         }
 
         public async Task UpdateAsync(MessageEntity entity)
         {
-            string sql = _sqlGenerator.GenerateUpdate();
+            SqlQueryCommand cmd = _sqlGenerator.GenerateUpdate();
             object parameters = _sqlGenerator.PrepareParameters(entity);
-            await _connection.ExecuteAsync(sql, parameters);
+            await _connection.ExecuteAsync(cmd.Sql, parameters);
         }
 
         Task<List<MessageEntity>> IRepository<MessageEntity>.GetAllAsync()
@@ -179,9 +169,6 @@ namespace HomeNetOrm.Repositories
             throw new NotImplementedException();
         }
 
-
-
-        // Минимальный скрытый приватный прокси-класс
         private class NullEventProxy : IEventBus { }
     }
 }

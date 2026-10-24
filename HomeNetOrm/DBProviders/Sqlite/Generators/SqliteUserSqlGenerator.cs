@@ -3,47 +3,50 @@ using HomeNetCore.Models.Entity;
 using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
-using HomeNetOrm.Enums;
 
 namespace HomeNetOrm.DBProviders.Sqlite.Generators
 {
     internal class SqliteUserSqlGenerator : BaseSqlGenerator<UserEntity>, IUserSqlGenerator
     {
-        private readonly string _tableName;
-        private readonly string _idColumn;
+        protected readonly string TableName;
+        protected readonly string IdColumn;
 
         public SqliteUserSqlGenerator(IEnumerable<TableSchema> schemas, ILogger logger)
-            : base(schemas, NameFormat.CamelCase, logger) // Ядро само находит схему по типу T и кэширует полей в CamelCase
+            : base(schemas, logger)
         {
-            _tableName = Schema.TableName.ConvertTableName(NameFormat.CamelCase);
-            _idColumn = (Schema.SinglePrimaryKey?.Name).ConvertColumnName(NameFormat.CamelCase);
+            TableName = Schema.TableName;
+            IdColumn = Schema.SinglePrimaryKey?.Name ?? "id";
         }
 
-        // --- БАЗОВЫЙ CRUD ОРМ ---
+        // --- БАЗОВЫЙ CRUD ОРМ (Заворачиваем в команды) ---
 
-        public override string GenerateInsert() =>
-           $@"INSERT INTO ""{_tableName}"" ({SqlQueryBuilder.BuildInsertFields(Schema, NameFormat.CamelCase)}) 
-           VALUES ({SqlQueryBuilder.BuildInsertParameters(Schema)});";
+        public override SqlQueryCommand GenerateInsert() =>
+            Command($@"INSERT INTO ""{TableName}"" ({SqlQueryBuilder.BuildInsertFields(Schema)}) 
+                       VALUES ({SqlQueryBuilder.BuildInsertParameters(CamelSchema)});");
 
-        public override string GenerateUpdate() =>
-            $"UPDATE \"{_tableName}\" SET {SqlQueryBuilder.BuildSetClause(Schema, NameFormat.CamelCase)} WHERE \"{_idColumn}\" = {DapperParams[nameof(UserEntity.Id)]};";
+        public override SqlQueryCommand GenerateUpdate() =>
+            Command($"UPDATE \"{TableName}\" SET {SqlQueryBuilder.BuildSetClause(Schema, CamelSchema)} WHERE \"{IdColumn}\" = {DapperParams[nameof(UserEntity.Id)]};");
 
-        public override string GenerateDelete() =>
-            $"DELETE FROM \"{_tableName}\" WHERE \"{_idColumn}\" = {DapperParams[nameof(UserEntity.Id)]};";
+        public override SqlQueryCommand GenerateDelete(Guid id) =>
+            Command($"DELETE FROM \"{TableName}\" WHERE \"{IdColumn}\" = {DapperParams[nameof(UserEntity.Id)]};",
+                    nameof(UserEntity.Id), id);
 
-        public override string GenerateSelectById() =>
-            $"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, NameFormat.CamelCase)} FROM \"{_tableName}\" WHERE \"{_idColumn}\" = {DapperParams[nameof(UserEntity.Id)]};";
+        public override SqlQueryCommand GenerateSelectById(Guid id) =>
+            Command($"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, CamelSchema)} FROM \"{TableName}\" WHERE \"{IdColumn}\" = {DapperParams[nameof(UserEntity.Id)]};",
+                    nameof(UserEntity.Id), id);
 
-        public override string GenerateSelectAll() =>
-            $"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, NameFormat.CamelCase)} FROM \"{_tableName}\";";
+        public override SqlQueryCommand GenerateSelectAll() =>
+            Command($"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, CamelSchema)} FROM \"{TableName}\";");
 
 
         // --- 🔥 СПЕЦИФИКА ПОЛЬЗОВАТЕЛЕЙ БЕЗ ЕДИНОЙ СТРОКИ ХАРДКОДА ---
 
-        public string GenerateSelectByEmail() =>
-            $"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, NameFormat.CamelCase)} FROM \"{_tableName}\" WHERE \"{DbColumns[nameof(UserEntity.Email)]}\" = {DapperParams[nameof(UserEntity.Email)]};";
+        public SqlQueryCommand GenerateSelectByEmail(string email) =>
+            Command($"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, CamelSchema)} FROM \"{TableName}\" WHERE \"{DbColumns[nameof(UserEntity.Email)]}\" = {DapperParams[nameof(UserEntity.Email)]};",
+                    nameof(UserEntity.Email), email);
 
-        public string GenerateEmailExists() =>
-            $"SELECT COUNT(*) FROM \"{_tableName}\" WHERE \"{DbColumns[nameof(UserEntity.Email)]}\" = {DapperParams[nameof(UserEntity.Email)]};";
+        public SqlQueryCommand GenerateEmailExists(string email) =>
+            Command($"SELECT COUNT(*) FROM \"{TableName}\" WHERE \"{DbColumns[nameof(UserEntity.Email)]}\" = {DapperParams[nameof(UserEntity.Email)]};",
+                    nameof(UserEntity.Email), email);
     }
 }

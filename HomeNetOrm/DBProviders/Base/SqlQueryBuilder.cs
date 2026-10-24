@@ -1,5 +1,4 @@
-﻿using HomeNetOrm.Enums;
-using HomeNetOrm.Interfaces.DbInfrastructure;
+﻿using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
 
 namespace HomeNetOrm.DBProviders.Base
@@ -7,67 +6,80 @@ namespace HomeNetOrm.DBProviders.Base
     /// <summary>
     /// 🛠️ Статический класс-обслуживатель СУБД.
     /// Штампует любые строковые SQL-блоки для генераторов и инициализаторов без лишней каши.
+    /// Доверяет регистру пришедших из "турникета" схем TableSchema.
     /// </summary>
     internal static class SqlQueryBuilder
     {
-        // --- ОБСЛУЖИВАНИЕ ИНИЦИАЛИЗАТОРОВ (Убираем джойны из CREATE TABLE) ---
+        // --- ОБСЛУЖИВАНИЕ ИНИЦИАЛИЗАТОРОВ (Сборка структуры БД) ---
 
         /// <summary>
         /// Берет готовые дефиниции колонок из статического адаптера и склеивает их через запятую для CREATE TABLE.
         /// </summary>
         public static string BuildCreateTableColumns(IDbProviderSpecification spec, TableSchema schema)
         {
-            // 🔥 ФИКС: Вызываем GetColumnDefinitions напрямую через наш статический адаптер
+            // Передаем схему в адаптер, который сформирует дефиниции на основе ее текущего регистра
             List<string> definitions = GenericSchemaAdapter.GetColumnDefinitions(spec, schema);
             return string.Join(", ", definitions);
         }
 
         /// <summary>
-        /// Склеивает колонки составного первичного ключа через запятую: "id", "device_token"
+        /// Склеивает колонки составного первичного ключа через запятую для SQL: "id", "device_token"
         /// </summary>
-        public static string BuildCompositePrimaryKeyFields(TableSchema schema, NameFormat format)
+        public static string BuildCompositePrimaryKeyFields(TableSchema snakeSchema)
         {
-            var pkColumns = schema.Columns.Where(c => c.IsPrimaryKey);
-            // 🔥 ФИКС: ConvertColumnName теперь метод расширения для строк! Вызываем лаконично через точку
-            return string.Join(", ", pkColumns.Select(c => $"\"{c.Name.ConvertColumnName(format)}\""));
+            var pkColumns = snakeSchema.Columns.Where(c => c.IsPrimaryKey);
+            return string.Join(", ", pkColumns.Select(c => $"\"{(c.Name ?? throw new InvalidOperationException("Имя колонки пустое"))}\""));
         }
 
 
         // --- ОБСЛУЖИВАНИЕ ГЕНЕРАТОРОВ (Запросы Dapper) ---
 
-        // Выборка (SELECT "first_name" AS FirstName)
-        public static string BuildSelectFields(TableSchema schema, NameFormat format)
+        /// <summary>
+        /// Выборка полей с маппингом (SELECT "first_name" AS FirstName, "email" AS Email)
+        /// </summary>
+        public static string BuildSelectFields(TableSchema snakeSchema, TableSchema camelSchema)
         {
-            return string.Join(", ", schema.Columns.Select(c =>
-            {
-                // 🔥 ФИКС: Используем красивый метод расширения для имени колонки
-                string dbName = c.Name.ConvertColumnName(format);
-                return $"\"{dbName}\" AS {c.Name}";
-            }));
+            if (snakeSchema.Columns.Count != camelSchema.Columns.Count)
+                throw new InvalidOperationException("Асимметрия колонок в переданных схемах для BuildSelectFields");
+
+            return string.Join(", ", snakeSchema.Columns.Select((col, index) =>
+                $"\"{col.Name}\" AS {camelSchema.Columns[index].Name}"));
         }
 
-        // Поля для INSERT ("first_name", "last_name")
-        public static string BuildInsertFields(TableSchema schema, NameFormat format)
+        /// <summary>
+        /// Физические поля для INSERT ("first_name", "last_name")
+        /// </summary>
+        public static string BuildInsertFields(TableSchema snakeSchema)
         {
-            var insertable = schema.Columns.Where(c => !c.IsAutoIncrement);
-            // 🔥 ФИКС: И здесь бьем через расширение строки напрямую
-            return string.Join(", ", insertable.Select(c => $"\"{c.Name.ConvertColumnName(format)}\""));
+            var insertable = snakeSchema.Columns.Where(c => !c.IsAutoIncrement);
+            return string.Join(", ", insertable.Select(c => $"\"{c.Name}\""));
         }
 
-        // Параметры для INSERT (@FirstName, @LastName)
-        public static string BuildInsertParameters(TableSchema schema)
+        /// <summary>
+        /// Параметры Dapper для INSERT (@FirstName, @LastName)
+        /// </summary>
+        public static string BuildInsertParameters(TableSchema camelSchema)
         {
-            var insertable = schema.Columns.Where(c => !c.IsAutoIncrement);
+            var insertable = camelSchema.Columns.Where(c => !c.IsAutoIncrement);
             return string.Join(", ", insertable.Select(c => $"@{c.Name}"));
         }
 
-        // Блок SET для UPDATE ("first_name" = @FirstName)
-        public static string BuildSetClause(TableSchema schema, NameFormat format)
+        /// <summary>
+        /// Блок SET для UPDATE ("first_name" = @FirstName, "email" = @Email)
+        /// </summary>
+        public static string BuildSetClause(TableSchema snakeSchema, TableSchema camelSchema)
         {
-            var nonPkColumns = schema.Columns.Where(c => !c.IsPrimaryKey);
-            // 🔥 ФИКС: Вырезали прослойку адаптера из аргументов
-            return string.Join(", ", nonPkColumns.Select(c =>
-                $"\"{c.Name.ConvertColumnName(format)}\" = @{c.Name}"));
+            if (snakeSchema.Columns.Count != camelSchema.Columns.Count)
+                throw new InvalidOperationException("Асимметрия колонок в переданных схемах для BuildSetClause");
+
+            var nonPkSnake = snakeSchema.Columns.Select((c, i) => new { Col = c, Index = i }).Where(x => !x.Col.IsPrimaryKey).ToList();
+            var nonPkCamel = camelSchema.Columns.Select((c, i) => new { Col = c, Index = i }).Where(x => !x.Col.IsPrimaryKey).ToList();
+
+            if (nonPkSnake.Count != nonPkCamel.Count)
+                throw new InvalidOperationException("Асимметрия ключевых/неключевых колонок при формировании блока UPDATE");
+
+            return string.Join(", ", nonPkSnake.Select((item, idx) =>
+                $"\"{item.Col.Name}\" = @{nonPkCamel[idx].Col.Name}"));
         }
     }
 }
