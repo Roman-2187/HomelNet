@@ -1,7 +1,7 @@
 ﻿using HomeNetOrm.Enums;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 
-namespace HomeNetOrm.DBProviders.Sqlite
+namespace HomeNetOrm.DBProviders.Sqlite.Base
 {
     /// <summary>
     /// Спецификация типов данных для SQLite.

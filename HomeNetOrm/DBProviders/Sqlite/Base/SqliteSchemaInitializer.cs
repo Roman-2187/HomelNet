@@ -5,7 +5,7 @@ using HomeNetOrm.DBProviders.Base;
 using System.Text;
 using Dapper;
 
-namespace HomeNetOrm.DBProviders.Sqlite
+namespace HomeNetOrm.DBProviders.Sqlite.Base
 {
     internal class SqliteSchemaInitializer : ISchemaSqlInitializer
     {

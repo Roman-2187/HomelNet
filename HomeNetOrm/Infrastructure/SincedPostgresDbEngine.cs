@@ -2,16 +2,14 @@
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetOrm.DBProviders.Base;
-using HomeNetOrm.DBProviders.Postgres;
+using HomeNetOrm.DBProviders.Postgres.@base;
 using HomeNetOrm.DBProviders.Postgres.SincedGenerators;
 using HomeNetOrm.DBProviders.Postgres.SyncedGenerators;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetOrm.Models;
-using HomeNetOrm.Repositories;
-using System;
-using System.Collections.Generic;
+using HomeNetOrm.Repositories.Base;
+using HomeNetOrm.Repositories.Remote;
 using System.Data.Common;
-using System.Threading.Tasks;
 
 namespace HomeNetOrm.Infrastructure
 {

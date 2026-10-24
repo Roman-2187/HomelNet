@@ -4,7 +4,7 @@ using HomeNetCore.Models.Entity;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
 
-namespace HomeNetOrm.Repositories
+namespace HomeNetOrm.Repositories.Local
 {
     public class ClientDeviceSettingsRepository
     {

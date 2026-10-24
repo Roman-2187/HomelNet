@@ -5,7 +5,7 @@ using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Interfaces.Sinc;
 using HomeNetCore.Models.Entity;
 using HomeNetOrm.Interfaces.DbInfrastructure;
-using HomeNetOrm.Repositories;
+using HomeNetOrm.Repositories.Local;
 
 namespace HomeNetOrm.Sinc
 {

@@ -4,7 +4,7 @@ using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Models.Entity;
 using HomeNetOrm.Infrastructure;
-using HomeNetOrm.Repositories;
+using HomeNetOrm.Repositories.Remote;
 using HomeNetServices.Diagnostics;
 using Microsoft.AspNetCore.SignalR;
 

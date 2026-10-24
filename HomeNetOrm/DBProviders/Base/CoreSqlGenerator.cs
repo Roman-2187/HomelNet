@@ -17,7 +17,7 @@ namespace HomeNetOrm.DBProviders.Base
         protected CoreSqlGenerator(IEnumerable<TableSchema> availableSchemas, ILogger logger)
         {
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            if (availableSchemas == null) throw new ArgumentNullException(nameof(availableSchemas));
+            ArgumentNullException.ThrowIfNull(availableSchemas);
 
             string targetEntityName = typeof(T).Name;
             string cleanName = targetEntityName.Replace("Entity", "");

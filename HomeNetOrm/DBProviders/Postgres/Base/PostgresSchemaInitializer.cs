@@ -5,7 +5,7 @@ using HomeNetOrm.DBProviders.Base;
 using System.Text;
 using Dapper;
 
-namespace HomeNetOrm.DBProviders.Postgres
+namespace HomeNetOrm.DBProviders.Postgres.@base
 {
     internal class PostgresSchemaInitializer : ISchemaSqlInitializer
     {

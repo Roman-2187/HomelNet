@@ -8,7 +8,7 @@ using HomeNetCore.Interfaces.Sinc;
 using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetOrm.Models;
-using HomeNetOrm.Repositories;
+using HomeNetOrm.Repositories.Local;
 using HomeNetOrm.Sinc;
 
 namespace HomeNet.DI.Modules

@@ -9,7 +9,7 @@ using HomeNetOrm.Models;
 using System.Data;
 using System.Data.Common;
 
-namespace HomeNetOrm.Repositories
+namespace HomeNetOrm.Repositories.Local
 {
     internal static class RepositoryLocalExtensions
     {

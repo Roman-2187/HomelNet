@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-
-namespace HomeNetOrm.Models
+﻿namespace HomeNetOrm.Models
 {
     public class TableSchema
     {

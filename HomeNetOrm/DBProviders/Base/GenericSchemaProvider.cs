@@ -77,7 +77,7 @@ namespace HomeNetOrm.DBProviders.Base
                 return new TableSchema { TableName = tableName };
             }
 
-            // Нам больше не нужно запускать .Initialize(), так как схема иммутабельна
+            
             var getSchema = new TableSchema { TableName = tableName, Columns = columns };
 
             // Вместо чтения удалённого свойства .ColumnNames склеиваем имена для лога прямо на месте

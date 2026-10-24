@@ -38,7 +38,7 @@ namespace HomeNetOrm.DBProviders.Base
             return new TableSchema
             {
                 TableName = useSnake ? ToSnakeCase(source.TableName)! : ToCamelCase(source.TableName)!,
-                Columns = source.Columns.Select(col => new ColumnSchema
+                Columns = [.. source.Columns.Select(col => new ColumnSchema
                 {
                     Name = useSnake ? ToSnakeCase(col.Name)! : ToCamelCase(col.Name)!,
                     Type = col.Type,
@@ -49,7 +49,7 @@ namespace HomeNetOrm.DBProviders.Base
                     IsCreatedAt = col.IsCreatedAt,
                     Length = col.Length,
                     DefaultValue = col.DefaultValue
-                }).ToList()
+                })]
             };
         }
 

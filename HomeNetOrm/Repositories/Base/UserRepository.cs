@@ -10,7 +10,7 @@ using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
 using System.Data.Common;
 
-namespace HomeNetOrm.Repositories
+namespace HomeNetOrm.Repositories.Base
 {
     /// <summary>
     /// Автономный репозиторий пользователей SiberNet.

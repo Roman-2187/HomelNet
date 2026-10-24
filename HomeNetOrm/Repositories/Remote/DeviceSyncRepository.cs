@@ -5,7 +5,7 @@ using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
 using System.Data.Common;
 
-namespace HomeNetOrm.Repositories
+namespace HomeNetOrm.Repositories.Remote
 {
     /// <summary>
     /// 🌐 ПУБЛИЧНЫЙ УДАЛЕННЫЙ РЕПОЗИТОРИЙ СИНХРОНИЗАЦИИ ДЕВАЙСОВ ДЛЯ СЕРВЕРА.

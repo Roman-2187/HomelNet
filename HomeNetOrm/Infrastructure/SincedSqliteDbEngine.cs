@@ -3,13 +3,14 @@ using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetOrm.DBProviders.Base;
-using HomeNetOrm.DBProviders.Sqlite;
+using HomeNetOrm.DBProviders.Sqlite.Base;
 using HomeNetOrm.DBProviders.Sqlite.Generators;
 using HomeNetOrm.DBProviders.Sqlite.SincedGenerators;
 using HomeNetOrm.DBProviders.Sqlite.SyncedGenerators;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetOrm.Models;
-using HomeNetOrm.Repositories;
+using HomeNetOrm.Repositories.Base;
+using HomeNetOrm.Repositories.Local;
 using System.Data.Common;
 
 namespace HomeNetOrm.Infrastructure

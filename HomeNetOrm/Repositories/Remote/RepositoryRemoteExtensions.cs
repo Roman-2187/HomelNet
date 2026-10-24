@@ -1,18 +1,14 @@
 ﻿using Dapper;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Models.Entity;
-using HomeNetOrm.DBProviders.Base;
-using HomeNetOrm.DBProviders.Postgres.SyncedGenerators; // 🎯 Подтягиваем папки конкретных Postgres-генераторов
 using HomeNetOrm.DBProviders.Postgres.SincedGenerators;
+using HomeNetOrm.DBProviders.Postgres.SyncedGenerators;
 using HomeNetOrm.Interfaces.DbInfrastructure;
-using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 
-namespace HomeNetOrm.Repositories
+namespace HomeNetOrm.Repositories.Remote
 {
     public static class RepositoryRemoteExtensions
     {

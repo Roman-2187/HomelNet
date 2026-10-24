@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using HomeNetOrm.Models;
 
-namespace HomeNetOrm.Repositories
+namespace HomeNetOrm.Repositories.Base
 {
     /// <summary>
     /// Автономный репозиторий сообщений SiberNet.
