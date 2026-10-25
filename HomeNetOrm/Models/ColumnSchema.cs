@@ -5,20 +5,20 @@ namespace HomeNetOrm.Models
 {
     public class ColumnSchema
     {
-        public string? Name { get; set; }
+        public  string Name { get; set; } = string.Empty;
         public ColumnType Type { get; set; }
-        public int? Length { get; set; }
+        public int Length { get; set; }
         public bool IsNullable { get; set; }
         public bool IsPrimaryKey { get; set; }
         public bool IsUnique { get; set; }
         public bool IsAutoIncrement { get; set; }
         public DateTime? CreatedAt { get; set; }
         public bool IsCreatedAt { get; set; }
-        public string? Comment { get; internal set; }
-        public object? DefaultValue { get; set; }
+        public string Comment { get; set; } = string.Empty;
+        public object? DefaultValue { get; set; } 
         public bool IsForeignKey { get; set; }
-        public string? ReferencedTable { get; set; }
-        public string? ReferencedColumn { get; set; }
+        public  string ReferencedTable { get; set; } = string.Empty;
+        public string ReferencedColumn { get; set; } = string.Empty;
 
         public ColumnSchema() { }
 

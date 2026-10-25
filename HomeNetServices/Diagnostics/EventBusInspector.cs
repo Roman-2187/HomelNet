@@ -1,21 +1,27 @@
-﻿using HomeNetCore.Interfaces.Diagnostics;
+﻿using System.Text;
+using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Models.Diagnostics;
 
 namespace HomeNetServices.Diagnostics
 {
     public class EventBusInspector : IEventInspector
     {
-        private readonly Dictionary<string, ComponentNode> _nodes = new();
-        private readonly List<ComponentNode.SignalEvent> _signalTimeline = new();
+        private readonly Dictionary<string, ComponentNode> _nodes = [];
+        private readonly List<ComponentNode.SignalEvent> _signalTimeline = [];
 
         // 🔥 СВЕРХБЫСТРЫЙ РЕГИСТР: Хранит типы ивентов и их битовые маски в оперативной памяти
-        private readonly Dictionary<Type, MessageState> _registry = new();
+        private readonly Dictionary<Type, MessageState> _registry = [];
 
-        private readonly HashSet<string> _ignoredMessageTypes = new()
-        {
+        private readonly HashSet<string> _ignoredMessageTypes =
+        [
             "LogMessageReceived",
             "TextChanged"
-        };
+        ];
+
+        // Оставляем дефолтный конструктор пустым, чтобы CoreInfrastructureModule компилировался без правок!
+        public EventBusInspector()
+        {
+        }
 
         public void RecordPublish(object sender, Type messageType)
         {
@@ -149,10 +155,47 @@ namespace HomeNetServices.Diagnostics
             var recentSignals = _signalTimeline.AsEnumerable().Reverse();
             foreach (var signal in recentSignals)
             {
-                lines.Add(new IEventInspector.  Line($"[{signal.Time:HH:mm:ss.fff}] {signal.Source} пустил {signal.MessageType.Name}", MessageState.None));
+                lines.Add(new IEventInspector.Line($"[{signal.Time:HH:mm:ss.fff}] {signal.Source} пустил {signal.MessageType.Name}", MessageState.None));
             }
 
+            // 🔥 ЛЕНИВЫЙ АВТО-ДАМП: Срабатывает только тогда, когда реально запросили граф
+            DumpToFiles(lines);
+
             return lines;
+        }
+
+        /// <summary>
+        /// Внутренний приватный метод для разделения и записи данных в 2 файла.
+        /// Логика путей инкапсулирована здесь и не дергает диск при старте приложения.
+        /// </summary>
+        private void DumpToFiles(List<IEventInspector.Line> allLines)
+        {
+            try
+            {
+                string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                string debugFolderPath = Path.Combine(desktopPath, "debug");
+
+                if (!Directory.Exists(debugFolderPath))
+                {
+                    Directory.CreateDirectory(debugFolderPath);
+                }
+
+                // Разделяем граф на Связи и Ленту Событий
+                var relationsLines = allLines
+                    .TakeWhile(l => !l.Text.Contains("ПОСЛЕДНИЕ СИГНАЛЫ (ЛЕНТА СОБЫТИЙ)"))
+                    .Select(l => l.Text);
+
+                var timelineLines = allLines
+                    .SkipWhile(l => !l.Text.Contains("ПОСЛЕДНИЕ СИГНАЛЫ (ЛЕНТА СОБЫТИЙ)"))
+                    .Select(l => l.Text);
+
+                File.WriteAllLines(Path.Combine(debugFolderPath, "eventbus_relations.txt"), relationsLines, Encoding.UTF8);
+                File.WriteAllLines(Path.Combine(debugFolderPath, "eventbus_timeline.txt"), timelineLines, Encoding.UTF8);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[EventBusInspector] Ошибка авто-дампа графа: {ex.Message}");
+            }
         }
 
         public string GenerateReport() => string.Join("\n", GenerateObjectGraph().Select(l => l.Text));

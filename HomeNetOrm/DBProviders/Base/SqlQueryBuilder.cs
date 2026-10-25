@@ -81,5 +81,6 @@ namespace HomeNetOrm.DBProviders.Base
             return string.Join(", ", nonPkSnake.Select((item, idx) =>
                 $"\"{item.Col.Name}\" = @{nonPkCamel[idx].Col.Name}"));
         }
+
     }
 }

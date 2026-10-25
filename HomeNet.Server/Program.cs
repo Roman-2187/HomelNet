@@ -18,20 +18,10 @@ namespace HomeNet.Server
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // 🎯 1. Настраиваем гарантированный путь к файлу на Рабочем столе
-            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-            string debugFolderPath = Path.Combine(desktopPath, "debug");
+            // 🎯 Теперь тут идеальная чистота! Передаем только имя файла:
+            AppFileLogger fileLogger = new AppFileLogger("server_debug.txt");
 
-            if (!Directory.Exists(debugFolderPath))
-            {
-                Directory.CreateDirectory(debugFolderPath);
-            }
-
-            string serverLogPath = Path.Combine(debugFolderPath, "server_debug.txt");
-            AppFileLogger fileLogger = new AppFileLogger(serverLogPath);
-
-
-            // 🎯 2. Объединяем вывод в КОНСОЛЬ и ФАЙЛ внутри одного общего логгера!
+            // 🎯 Объединяем вывод в КОНСОЛЬ и ФАЙЛ внутри одного общего логгера
             HomeNetCore.Interfaces.Diagnostics.ILogger serverLogger = new Logger((logEntry, level, detectedNamespace) =>
             {
                 // Пишем цветной лог в консоль сервера
@@ -44,11 +34,8 @@ namespace HomeNet.Server
                 Console.WriteLine(logEntry);
                 Console.ResetColor();
 
-                // Параллельно пишем этот же самый лог в файл на Рабочем столе!
-                // Приводим твой внутренний Enum уровня к строке ("INFO", "ERROR" и т.д.)
-                // 🎯 Явно кастим прилетающий уровень к енаму, который ждет файловый логгер
+                // Параллельно пишем этот же самый лог в файл на Рабочем столе
                 fileLogger.WriteImmediately(logEntry, (HomeNetCore.Enums.LogLevel)level);
-
             });
 
             // Тестовый приветственный лог — улетит и в консоль, и в файл
@@ -170,39 +157,53 @@ namespace HomeNet.Server
             });
 
             // ============================================================================
-            // 📤 ЭНДПОИНТ: ПРИЕМ ПОЛЬЗОВАТЕЛЕЙ ПРИ РЕГИСТРАЦИИ (Корректный логгинг)
+            // 📤 ЭНДПОИНТ: ПРИЕМ ПОЛЬЗОВАТЕЛЕЙ ПРИ РЕГИСТРАЦИИ И СИНХРОНИЗАЦИИ (БИЗНЕС-UPSERT)
             // ============================================================================
             app.MapPost("/api/users", async (UserEntity incomingUser, IHubContext<ServerChatHub> hubContext) =>
             {
                 await _dbSemaphore.WaitAsync();
                 try
                 {
-                    serverLogger.LogInfo($"[API] Прилетел профиль пользователя '{incomingUser.FirstName}' (ID: {incomingUser.Id})");
+                    serverLogger.LogInfo($"[API PUSH] Прилетел профиль пользователя '{incomingUser.Email}' (ID: {incomingUser.Id})");
 
-                    // 🎯 Получаем РЕАЛЬНЫЙ результат из репозитория
-                    var resultUser = await userRepository.InsertUserAsync(incomingUser);
+                    // 1. Проверяем точечным запросом по GUID, есть ли уже этот юзер в PostgreSQL
+                    var existingServerUser = await userRepository.GetByIdAsync(incomingUser.Id);
 
-                    // Проверяем, совпадает ли то, что мы пытались вставить, с тем, что отдала СУБД
-                    if (resultUser.Id == incomingUser.Id && resultUser.Email == incomingUser.Email)
+                    if (existingServerUser == null)
                     {
-                        // Если это реально новый объект, которого не было в базе
-                        // (Так как при дубликате репозиторий возвращает старого существующего юзера)
-                        if (resultUser.UpdatedAt == incomingUser.UpdatedAt)
-                        {
-                            serverLogger.LogInfo($"[API Успех] Пользователь '{incomingUser.FirstName}' (ID: {incomingUser.Id}) успешно физически создан в PostgreSQL.");
-                        }
-                        else
-                        {
-                            // Если репозиторий вернул существующего Ивана, сервер пишет ПРАВДУ:
-                            serverLogger.LogWarning($"[API Чек] Пользователь '{incomingUser.FirstName}' уже был в системе. Повторный PUSH обработан без создания дубликата.");
-                        }
+                        // 🟢 ВЕТКА А: Пользователя нет в базе бэкенда. Это чистая регистрация!
+                        await userRepository.InsertUserAsync(incomingUser);
+                        serverLogger.LogInfo($"[API Успех] Новый пользователь '{incomingUser.FirstName}' успешно создан в PostgreSQL.");
                     }
+                    else
+                    {
+                        // 🟠 ВЕТКА Б: Юзер уже существует. Значит клиент прислал ОБНОВЛЕНИЕ (вшил DeviceId или сменил имя)
+                        serverLogger.LogInfo($"[API Чек] Пользователь '{incomingUser.Email}' найден. Обновляем поля сессии и привязываем Device ID...");
+
+                        // Переносим актуальные поля из прилетевшего пакета
+                        existingServerUser.DeviceId = incomingUser.DeviceId; // 🔥 ВЫЖИГАЕМ НУЛИ РЕАЛЬНЫМ ГУИДОМ ЖЕЛЕЗКИ КЛИЕНТА!
+                        existingServerUser.FirstName = incomingUser.FirstName;
+                        existingServerUser.LastName = incomingUser.LastName;
+                        existingServerUser.PhoneNumber = incomingUser.PhoneNumber;
+
+                        existingServerUser.UpdatedAt = DateTimeOffset.UtcNow;
+
+                        // Если у тебя на сервере включен трекинг версий (withVersionTracking):
+                        // existingServerUser.Version++; 
+
+                        // Вызываем метод обновления строки вместо тупой отмены вставки! 🦾
+                        await userRepository.UpdateAsync(existingServerUser);
+                        serverLogger.LogInfo($"[API Успех] Профиль '{incomingUser.Email}' успешно обновлен в PostgreSQL. Device ID зафиксирован: {incomingUser.DeviceId}");
+                    }
+
+                    // Оповещаем другие подключенные клиенты, если это необходимо
+                    // await hubContext.Clients.All.SendAsync("ReceiveUserSync", incomingUser);
 
                     return Results.Ok(new { Success = true });
                 }
                 catch (Exception ex)
                 {
-                    serverLogger.LogError($"[API Ошибка] Не удалось сохранить пользователя через репозиторий: {ex.Message}");
+                    serverLogger.LogError($"[API Ошибка] Не удалось обработать PUSH пользователя через репозиторий: {ex.Message}");
                     return Results.Problem("Ошибка сервера");
                 }
                 finally
@@ -210,6 +211,7 @@ namespace HomeNet.Server
                     _dbSemaphore.Release();
                 }
             });
+
 
 
             app.MapGet("/api/ping", () => Results.Ok("pong"));

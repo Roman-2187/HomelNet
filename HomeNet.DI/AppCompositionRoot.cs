@@ -6,6 +6,7 @@ using HomeNetCore.Interfaces.Events;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.AdminViews;
+using HomeNetPresentation.ViewModels.ClientViews;
 
 namespace HomeNet.DI
 {
@@ -39,21 +40,24 @@ namespace HomeNet.DI
                 sqliteConn,
                 postgresConn, // В контексте клиента это базовый URL сервера (apiBaseUrl)
                 registeredSchemas, // 🔥 Вот они улетели в ОРМ-движок!
-                _infrastructure.Logger,_infrastructure.LogQueueManager
-                ,
+                _infrastructure.Logger,
+                _infrastructure.LogQueueManager,
                 _infrastructure.EventBus);
 
-            // 4. Модуль Сервисов Бизнес-Логики (Скармливаем Репозитории из Модуля 3)
+            // 4. Модуль Сервисов Бизнес-Логики (Скармливаем Репозитории из Модуля 3 И репозиторий девайса)
             _services = new BusinessServicesModule(
-                _dataAccess.UserRepository, _dataAccess.MessageRepository,
-                _infrastructure.Logger, _infrastructure.EventBus);
+                _dataAccess.UserRepository,
+                _dataAccess.MessageRepository,
+                _dataAccess.DeviceSettingsRepository, // 🔥 Передали репозиторий настроек девайса
+                _infrastructure.Logger,
+                _infrastructure.EventBus);
 
-            // 5. Модуль Презентации / UI (Скармливаем Логику и Систему логов)
+            // 5. Модуль Презентации / UI — ТЕПЕРЬ ТУТ ЧИСТОТА, ПЕРЕДАЕМ ПАЧКУ СЕРВИСОВ ОДНИМ ОБЪЕКТОМ 🧼
             _ui = new PresentationUiModule(
-                _infrastructure.EventBus, _infrastructure.Logger,
-                _infrastructure.LogQueueManager, _services.UserService,
-                _services.RegistrationService, _services.AuthenticateService,
-                _services.DeleteService, _services.MessageService,
+                _infrastructure.EventBus,
+                _infrastructure.Logger,
+                _infrastructure.LogQueueManager,
+                _services, // 🔥 Схлопнули портянку параметров в чистый модуль бизнес-логики!
                 _infrastructure.EventBusInspector
             );
         }
@@ -65,18 +69,8 @@ namespace HomeNet.DI
             // 1. Подписываемся на автобус готовности инфраструктуры
             _instance._infrastructure.EventBus.Subscribe<IDbContextContainer.InfrastructureReady>(async ev =>
             {
+                // 🎯 ИДЕАЛЬНАЯ ЧИСТОТА: Никаких ручных асинхронных генераций Device ID и блоков try-catch здесь больше нет!
                 _instance._infrastructure.Logger.LogInfo("[App Старт] Базы и сеть прогреты. Запускаем репликацию данных...");
-
-                // 🔥 ВОТ ОНО! ВЫЗЫВАЕМ ТУТ: Таблицы созданы, безопасно пишем/читаем DeviceID из SQLite!
-                try
-                {
-                    await _instance._dataAccess.InitializeDeviceSessionAsync();
-                    _instance._infrastructure.Logger.LogInfo($"[App Старт] Успешно инициализирован Device ID: {_instance._dataAccess.CurrentDeviceId}");
-                }
-                catch (Exception ex)
-                {
-                    _instance._infrastructure.Logger.LogError($"[App Старт] Критическая ошибка генерации Device ID: {ex.Message}");
-                }
 
                 // 🔥 ПОДКЛЮЧАЕМ ТРУБУ SIGNALR: Врубаем коннект гостем, чтобы забрать буфер серверных логов!
                 try
@@ -102,8 +96,6 @@ namespace HomeNet.DI
             });
         }
 
-
-
         // Метод-заглушка для UI окон вытаскивает вьюмодели прямо из UI модуля
         public TGet GetViewModel<TGet>() where TGet : class
         {
@@ -122,6 +114,9 @@ namespace HomeNet.DI
             if (typeof(TGet) == typeof(TitleBarViewModel)) return (_ui.TitleBarVM as TGet)!;
             if (typeof(TGet) == typeof(SeedUsersViewModel)) return (_ui.SeedUsersVM as TGet)!;
             if (typeof(TGet) == typeof(ContactsViewModel)) return (_ui.ContactsVM as TGet)!;
+
+            // 🔥 РАЗРЕШАЕМ НАШУ НОВУЮ ВЬЮМОДЕЛЬ НАСТРОЕК
+            if (typeof(TGet) == typeof(DeviceSettingsViewModel)) return (_ui.DeviceSettingsVM as TGet)!;
 
             throw new ArgumentException($"Тип {typeof(TGet).Name} не найден в UI模块.");
         }

@@ -2,7 +2,8 @@
 {
     internal class AdaptedSchemas
     {
-        public TableSchema? Camel { get; init; }
-        public TableSchema? Snake { get; init; }
+        // Компилятор не даст скомпилировать код, если при создании забыли указать Camel или Snake
+        public required TableSchema Camel { get; init; }
+        public required TableSchema Snake { get; init; }
     }
 }

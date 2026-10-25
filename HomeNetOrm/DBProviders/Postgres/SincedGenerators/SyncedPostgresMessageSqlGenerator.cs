@@ -54,6 +54,7 @@ namespace HomeNetOrm.DBProviders.Postgres.SyncedGenerators
                 msg.IsRead,
                 msg.CreatedAt,
                 IsSynced = true,
+                msg.Version,
                 msg.UpdatedAt
             };
         }

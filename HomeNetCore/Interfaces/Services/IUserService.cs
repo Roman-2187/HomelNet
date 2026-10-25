@@ -8,17 +8,21 @@ namespace HomeNetCore.Interfaces
 {
     public interface IUserService
     {
-        // Только чистые базовые операции с базой/репозиторием
+        // Базовые операции с репозиторием
         Task InsertUserAsync(UserEntity user);
 
-        // 🎯 ТЕПЕРЬ ТУТ ЧЕСТНЫЙ Guid вместо int
+        // 🔥 НАШ ПОТЕРЯШКА: Метод обновления сущности пользователя в СУБД
+        Task UpdateUserAsync(UserEntity user);
+
         Task DeleteByIdAsync(Guid userId);
 
         Task<List<UserEntity>> GetAllAsync();
 
-        // 🎯 ТЕПЕРЬ ТУТ ЧЕСТНЫЙ Guid вместо int
         Task<UserEntity?> GetByIdAsync(Guid userId);
 
         Task<UserEntity?> GetByEmailAsync(string email);
+
+        Task<bool> CheckEmailExistsAsync(string email);
     }
 }
+

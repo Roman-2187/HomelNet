@@ -2,7 +2,6 @@
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Sinc;
-using HomeNetCore.Models;
 using HomeNetCore.Extensions;
 using HomeNetCore.Models.Entity;
 

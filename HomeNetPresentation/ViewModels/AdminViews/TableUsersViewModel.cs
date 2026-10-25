@@ -2,7 +2,6 @@
 using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
-using HomeNetCore.Models;
 using HomeNetCore.Models.Entity;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetPresentation.Services;
@@ -14,10 +13,13 @@ namespace HomeNetPresentation.ViewModels.AdminViews
     {
         private readonly IUserService _userService;
 
-        [ObservableProperty] private ObservableCollection<UserEntity> _users = new();
+        // 🔥 ВСТРОЕННЫЙ ОБЪЕКТ СИНХРОНИЗАЦИИ .NET: Гарантирует потокобезопасность коллекции
+        private readonly object _collectionLock = new();
+
+        [ObservableProperty] private ObservableCollection<UserEntity> _users = [];
 
         public TableUsersViewModel(IEventBus eventBus, IUserService userService, AdminNavigationManager navigation)
-    : base(eventBus, navigation)
+            : base(eventBus, navigation)
         {
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
 
@@ -28,21 +30,17 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         {
             _eventBus.Subscribe<IDeleteUserVm.Deleted>(OnUserDeletedFromDb);
             _eventBus.Subscribe<IUsersTableVm.Added>(OnUserAdded);
+            _eventBus.Subscribe<IUsersTableVm.Updated>(OnUserUpdated);
             _eventBus.Subscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
 
-            // 🔥 ДОБАВЛЯЕМ: Ждем, пока Хаб баз данных отмаринует и прогреет обе СУБД!
+            // Ждем, пока Хаб баз данных отмаринует и прогреет обе СУБД!
             _eventBus.Subscribe<IDbContextContainer.InfrastructureReady>(OnInfrastructureReady);
         }
 
         private async void OnInfrastructureReady(IDbContextContainer.InfrastructureReady msg)
         {
-            // Базы прогреты, схемы на месте — теперь загружать данные полностью БЕЗОПАСНО!
             await InitializeDataAsync();
         }
-
-
-
-
 
         private async Task InitializeDataAsync()
         {
@@ -50,8 +48,11 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             {
                 var list = await _userService.GetAllAsync();
 
-                // Прямая подмена ссылки для железного апдейта Avalonia
-                Users = new ObservableCollection<UserEntity>(list ?? Enumerable.Empty<UserEntity>());
+                // 🔥 ЗАЩИТА ИНИЦИАЛИЗАЦИИ: Блокируем гонки потоков при полной перезаписи коллекции
+                lock (_collectionLock)
+                {
+                    Users = new ObservableCollection<UserEntity>(list ?? Enumerable.Empty<UserEntity>());
+                }
 
                 BroadcastRefreshed();
             }
@@ -61,27 +62,54 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             }
         }
 
-        
+        #region 🎧 МЕТОДЫ ПОДПИСОК С ЖЕСТКОЙ СИНХРОНИЗАЦИЕЙ ПОТОКОВ 🧼
 
-        #region 🎧 МЕТОДЫ ПОДПИСОК 🧼
+        private void OnUserUpdated(IUsersTableVm.Updated msg)
+        {
+            if (msg?.User == null) return;
+
+            // 🔥 БЕЗОПАСНЫЙ АПДЕЙТ: Ни один фоновый поток не вобьет клин при замене объекта по индексу
+            lock (_collectionLock)
+            {
+                var existingUser = Users.FirstOrDefault(u => u.Id == msg.User.Id);
+                if (existingUser != null)
+                {
+                    int index = Users.IndexOf(existingUser);
+                    if (index >= 0)
+                    {
+                        Users[index] = msg.User;
+                        BroadcastRefreshed();
+                    }
+                }
+            }
+        }
 
         private void OnUserDeletedFromDb(IDeleteUserVm.Deleted msg)
         {
-            var uiUser = Users.FirstOrDefault(u => u.Id == msg.Id);
-            if (uiUser != null)
+            // 🔥 БЕЗОПАСНОЕ УДАЛЕНИЕ: Защита от выброса InvalidOperationException (коллекция была изменена)
+            lock (_collectionLock)
             {
-                Users.Remove(uiUser);
-                BroadcastRefreshed();
+                var uiUser = Users.FirstOrDefault(u => u.Id == msg.Id);
+                if (uiUser != null)
+                {
+                    Users.Remove(uiUser);
+                    BroadcastRefreshed();
+                }
             }
         }
 
         private void OnUserAdded(IUsersTableVm.Added msg)
         {
             if (msg.User == null) return;
-            if (!Users.Any(u => u.Id == msg.User.Id))
+
+            // 🔥 БЕЗОПАСНОЕ ДОБАВЛЕНИЕ: Потоки выстраиваются в очередь на запись
+            lock (_collectionLock)
             {
-                Users.Add(msg.User);
-                BroadcastRefreshed();
+                if (!Users.Any(u => u.Id == msg.User.Id))
+                {
+                    Users.Add(msg.User);
+                    BroadcastRefreshed();
+                }
             }
         }
 
@@ -94,7 +122,11 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 
         private void BroadcastRefreshed()
         {
-            _eventBus.Publish(this, new IUsersTableVm.Refreshed(Users.ToList()));
+            // Блокируем чтение при клонировании коллекции для отправки в шину
+            lock (_collectionLock)
+            {
+                _eventBus.Publish(this, new IUsersTableVm.Refreshed([.. Users]));
+            }
         }
 
         public override void Dispose()
@@ -102,6 +134,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             base.Dispose();
             _eventBus.Unsubscribe<IDeleteUserVm.Deleted>(OnUserDeletedFromDb);
             _eventBus.Unsubscribe<IUsersTableVm.Added>(OnUserAdded);
+            _eventBus.Unsubscribe<IUsersTableVm.Updated>(OnUserUpdated);
             _eventBus.Unsubscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
         }
     }

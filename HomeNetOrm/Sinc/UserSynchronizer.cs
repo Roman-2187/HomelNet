@@ -7,9 +7,12 @@ using HomeNetCore.Models.Entity;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Repositories.Local;
 
-
 namespace HomeNetOrm.Sinc
 {
+    /// <summary>
+    /// Автоматический фоновый конвейер репликации профилей пользователей.
+    /// Реагирует СТРОГО на неотправленные (Unsynced) локальные хвосты базы данных! 🧼
+    /// </summary>
     public class UserSynchronizer : BaseSynchronizer<UserEntity>
     {
         private readonly IUserRepository _userRepository;
@@ -27,7 +30,7 @@ namespace HomeNetOrm.Sinc
             EventBus.Subscribe<ISiberNetSyncCoordinator.UserUpdated>(OnUserUpdated);
             EventBus.Subscribe<ISiberNetSyncCoordinator.UserDeleted>(OnUserDeleted);
 
-            // Ответы от сетевого слоя (PUSH и PULL обрабатываются одинаково через вставку!)
+            // Ответы от сетевого слоя
             EventBus.Subscribe<ISiberNetSyncCoordinator.UserSyncedOnServer>(OnUserSyncedOnServer);
             EventBus.Subscribe<ISiberNetSyncCoordinator.UserDeleteConfirmedByServer>(OnUserDeleteConfirmedByServer);
         }
@@ -41,6 +44,9 @@ namespace HomeNetOrm.Sinc
             EventBus.Unsubscribe<ISiberNetSyncCoordinator.UserDeleteConfirmedByServer>(OnUserDeleteConfirmedByServer);
         }
 
+        /// <summary>
+        /// 🔥 ГЛАВНЫЙ СЕРДЦЕБИЕНИЕ ДВИЖКА: Опрашивает SQLite и пушит строго грязные данные
+        /// </summary>
         protected override async Task ExecuteTableSyncInternalAsync()
         {
             try
@@ -51,25 +57,23 @@ namespace HomeNetOrm.Sinc
                 if (syncSupport == null) return;
 
                 // ============================================================================
-                // 📥 НАПРАВЛЕНИЕ PULL: Просто просим автобус затянуть данные!
+                // 📥 НАПРАВЛЕНИЕ PULL: Затягиваем обновления с бэкенда
                 // ============================================================================
                 Logger.LogInfo($"[{GetType().Name}] Кричим в автобус запрос на скачивание обновлений юзеров...");
-
-                // Публикуем событие запроса. Хандлер его поймает, сходит на сервер, 
-                // получит пачку и вернет её обратно в этот же синхронизатор через OnUserInserted!
                 EventBus.Publish(this, new ISiberNetSyncCoordinator.UserPullRequested());
 
                 // ============================================================================
-                // 📤 НАПРАВЛЕНИЕ PUSH: Достаем локальные оффлайн-хвосты через наше чистое расширение
+                // 📤 НАПРАВЛЕНИЕ PUSH: Достаем локальные оффлайн-хвосты (IsSynced == 0)
                 // ============================================================================
                 var pendingSyncList = await syncSupport.GetUnsyncedRecordsAsync();
                 var pendingList = pendingSyncList.ToList();
 
                 if (pendingList.Count > 0)
                 {
-                    Logger.LogWarning($"[{GetType().Name}] Обнаружено {pendingList.Count} неотправленных юзеров. Инициируем PUSH.");
+                    Logger.LogWarning($"[{GetType().Name}] Обнаружено {pendingList.Count} неотправленных юзеров с IsSynced == 0. Инициируем PUSH.");
                     foreach (var user in pendingList)
                     {
+                        // Один контролируемый пуш на одну грязную запись!
                         EventBus.Publish(this, new ISiberNetSyncCoordinator.UserPendingSync(user));
                     }
                 }
@@ -84,37 +88,33 @@ namespace HomeNetOrm.Sinc
         {
             if (msg?.User == null) return;
 
+            // Если данные прилетели из сети (PULL) — у них IsSynced == 1. Молча мержим их в SQLite.
             if (msg.User.IsSynced == 1)
             {
                 var syncSupport = _userRepository as ISyncSupport<UserEntity>;
                 if (syncSupport != null)
                 {
-                    // 🎯 Добавляем информативный лог перед записью в SQLite
                     Logger.LogDebug($"[UserSync] Передаем {msg.User.Id} в ORM для сверки.");
-
-                    // Передаем и EventBus, и наш Logger 🎯
                     await syncSupport.MergePulledRecordsAsync([msg.User], EventBus, Logger);
                 }
                 return;
             }
 
-            // Если данные родились локально (IsSynced == 0), отправляем их в сеть
-            Logger.LogInfo($"[UserSync] Локальный профиль '{msg.User.FirstName}'. Отправляем запрос на синхронизацию.");
-            EventBus.Publish(this, new ISiberNetSyncCoordinator.UserPendingSync(msg.User));
+            // 🎯 САМОДЕЯТЕЛЬНОСТЬ ВЫРЕЗАНА! 
+            // Если кто-то локально сделал Insert с IsSynced == 0, мы больше не пушим пакет в сеть сломя голову.
+            // Мы даем транзакции спокойно лечь на диск. Конвейер ExecuteTableSyncInternalAsync 
+            // сам лениво подхватит эту запись при следующем тике таймера репликации!
         }
-
 
         private async void OnUserSyncedOnServer(ISiberNetSyncCoordinator.UserSyncedOnServer msg)
         {
             if (msg == null) return;
             Logger.LogInfo($"[UserSync] Сервер подтвердил профиль '{msg.UserId}'. Помечаем как синхронизированный.");
-            // === ЯВНО ПОДСКАЗЫВАЕМ ТИП КОМПИЛЯТОРУ 🎯 ===
-            // Приводим репозиторий к интерфейсу поддержки синхронизации ОРМ
-            var syncSupport = _userRepository as ISyncSupport<UserEntity>;
 
+            var syncSupport = _userRepository as ISyncSupport<UserEntity>;
             if (syncSupport != null)
             {
-                // Теперь компилятор видит нужный тип 'this' и метод расширения сработает как часы! 🎯
+                // Сбрасываем флаг грязной записи в базе данных клиента
                 await syncSupport.MarkAsSyncedAsync(msg.UserId);
             }
         }
@@ -132,6 +132,9 @@ namespace HomeNetOrm.Sinc
             await _userRepository.DeleteByIdAsync(msg.UserId);
         }
 
-        private void OnUserUpdated(ISiberNetSyncCoordinator.UserUpdated msg) { /* Логика апдейтов */ }
+        private void OnUserUpdated(ISiberNetSyncCoordinator.UserUpdated msg)
+        {
+            // Логика апдейтов будет аналогично подхватываться через общий пул Unsynced
+        }
     }
 }

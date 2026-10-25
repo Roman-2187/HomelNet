@@ -7,10 +7,6 @@ using System.Data.Common;
 using HomeNetCore.Interfaces.Sinc;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Models.Entity;
-using System.Collections.Generic;
-using System;
-using System.Threading.Tasks;
-using System.Linq;
 using HomeNetOrm.Models;
 
 namespace HomeNetOrm.Repositories.Base

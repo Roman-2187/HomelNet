@@ -5,38 +5,46 @@ using HomeNetCore.Enums;
 
 namespace HomeNetServices.Diagnostics
 {
-    public class AppFileLogger // Исправили опечатку в названии (был AppFileogger)
+    public class AppFileLogger
     {
         private readonly string _filePath;
         private readonly object _fileLock = new();
 
-        public AppFileLogger(string filePath = "File_debug.txt")
+        /// <summary>
+        /// Конструктор теперь принимает просто ИМЯ файла. 
+        /// Логгер сам положит его в папку 'debug' на Рабочем столе.
+        /// </summary>
+        public AppFileLogger(string fileName = "File_debug.txt")
         {
-            _filePath = filePath;
+            // Инкапсулируем логику формирования путей внутри класса
+            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            string debugFolderPath = Path.Combine(desktopPath, "debug");
+
+            _filePath = Path.Combine(debugFolderPath, fileName);
 
             lock (_fileLock)
             {
                 try
                 {
-                    var directory = Path.GetDirectoryName(_filePath);
-                    if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                    if (!Directory.Exists(debugFolderPath))
                     {
-                        Directory.CreateDirectory(directory);
+                        Directory.CreateDirectory(debugFolderPath);
                     }
 
+                    // Очищаем или создаем пустой файл при старте
                     using (new FileStream(_filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
                     {
                     }
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[DebugFileLogger] Ошибка очистки файла: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"[AppFileLogger] Ошибка инициализации файла лога: {ex.Message}");
                 }
             }
         }
 
         /// <summary>
-        /// 🔥 МЕТОД ДЛЯ СЕРВЕРНЫХ ЛОГОВ: Добавляет готовую строку БЕЗ ИЗМЕНЕНИЙ и мясорубок!
+        /// Метод для серверных логов: Добавляет готовую строку без изменений
         /// </summary>
         public void WriteRawImmediately(string rawLogMessage)
         {
@@ -44,22 +52,8 @@ namespace HomeNetServices.Diagnostics
 
             try
             {
-                // Просто берем прилетевший готовый лог бэкенда и добавляем отступы
                 string logLine = $"{rawLogMessage}{Environment.NewLine}{Environment.NewLine}";
-                byte[] bytes = Encoding.UTF8.GetBytes(logLine);
-
-                lock (_fileLock)
-                {
-                    using var stream = new FileStream(
-                        _filePath,
-                        FileMode.Append,
-                        FileAccess.Write,
-                        FileShare.ReadWrite,
-                        bufferSize: 4096,
-                        FileOptions.WriteThrough);
-
-                    stream.Write(bytes, 0, bytes.Length);
-                }
+                WriteToFile(logLine);
             }
             catch
             {
@@ -68,29 +62,41 @@ namespace HomeNetServices.Diagnostics
         }
 
         /// <summary>
-        /// Стандартный метод для локальных клиентских логов (с мясорубкой)
+        /// Стандартный метод для локальных клиентских логов
         /// </summary>
         public void WriteImmediately(string message, LogLevel level)
         {
             try
             {
+                // При желании сюда можно добавить префикс уровня лога: $"[{level}] {message}"
                 string logLine = $"{message}{Environment.NewLine}{Environment.NewLine}";
-                byte[] bytes = Encoding.UTF8.GetBytes(logLine);
-
-                lock (_fileLock)
-                {
-                    using var stream = new FileStream(
-                        _filePath,
-                        FileMode.Append,
-                        FileAccess.Write,
-                        FileShare.ReadWrite,
-                        bufferSize: 4096,
-                        FileOptions.WriteThrough);
-
-                    stream.Write(bytes, 0, bytes.Length);
-                }
+                WriteToFile(logLine);
             }
-            catch { }
+            catch
+            {
+                // Защита от сбоев диска
+            }
+        }
+
+        /// <summary>
+        /// Выделенный приватный метод записи, чтобы не дублировать код FileStream
+        /// </summary>
+        private void WriteToFile(string text)
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(text);
+
+            lock (_fileLock)
+            {
+                using var stream = new FileStream(
+                    _filePath,
+                    FileMode.Append,
+                    FileAccess.Write,
+                    FileShare.ReadWrite,
+                    bufferSize: 4096,
+                    FileOptions.WriteThrough);
+
+                stream.Write(bytes, 0, bytes.Length);
+            }
         }
     }
 }

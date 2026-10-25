@@ -6,6 +6,7 @@ using HomeNetCore.Interfaces.Services;
 using HomeNetPresentation.Services;
 using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.AdminViews;
+using HomeNetPresentation.ViewModels.ClientViews;
 
 namespace HomeNet.DI.Modules
 {
@@ -31,37 +32,44 @@ namespace HomeNet.DI.Modules
         public ContactsViewModel ContactsVM { get; }
         public MainViewModel MainVM { get; }
 
+        // 🔥 НАША НОВАЯ ВЬЮМОДЕЛЬ НАСТРОЕК ЖЕЛЕЗА
+        public DeviceSettingsViewModel DeviceSettingsVM { get; }
+
         public PresentationUiModule(
             IEventBus eventBus,
             ILogger logger,
             ILogQueueManager logQueue,
-            IUserService userService,
-            IRegistrationService regService,
-            IAuthenticateService authService,
-            IDeleteService delService,
-            IMessageService msgService,IEventInspector inspector)
+            BusinessServicesModule services, // 🔥 ОДИН ОБЪЕКТ Вместо 6 разрозненных сервисов!
+            IEventInspector inspector)
         {
             Navigation = new BaseNavigationState(eventBus);
             AdminNavigation = new AdminNavigationManager(eventBus);
             UserNavigation = new UserNavigationManager(eventBus, logger);
 
-            StatusBarVM = new StatusBarViewModel(eventBus,Navigation);
+            StatusBarVM = new StatusBarViewModel(eventBus, Navigation);
             SystemButtonsVM = new SystemButtonsViewModel(eventBus);
-            RegistrationVM = new RegistrationViewModel(regService,eventBus,logger,UserNavigation);
-            AuthenticationVM = new AuthenticationViewModel(authService,eventBus,logger,UserNavigation);
-            TerminalLogsVM = new TerminalLogsViewModel(eventBus);
-            InspectorVM = new InspectorViewModel(eventBus,inspector,AdminNavigation);
-            AdminVM = new AdminViewModel(logQueue,eventBus,AdminNavigation);
-            DeleteUsersVM = new DeleteUsersViewModel(delService,eventBus,logger,AdminNavigation);
-            ChatVM = new ChatViewModel(eventBus,msgService);
-            TitleBarVM = new TitleBarViewModel(eventBus,logger,Navigation);
-            SeedUsersVM = new SeedUsersViewModel(eventBus,userService,AdminNavigation);
 
-            TableUsersVM = new TableUsersViewModel(eventBus, userService, AdminNavigation);
+            // Вытаскиваем сервисы из контейнера через точку — строго, типизировано и красиво!
+            RegistrationVM = new RegistrationViewModel(services.RegistrationService, eventBus, logger, UserNavigation);
+            AuthenticationVM = new AuthenticationViewModel(services.AuthenticateService, eventBus, logger, UserNavigation);
+            TerminalLogsVM = new TerminalLogsViewModel(eventBus);
+            InspectorVM = new InspectorViewModel(eventBus, inspector, AdminNavigation);
+            AdminVM = new AdminViewModel(logQueue, eventBus, AdminNavigation);
+            DeleteUsersVM = new DeleteUsersViewModel(services.DeleteService, eventBus, logger, AdminNavigation);
+            ChatVM = new ChatViewModel(eventBus, services.MessageService);
+            TitleBarVM = new TitleBarViewModel(eventBus, logger, Navigation);
+            SeedUsersVM = new SeedUsersViewModel(eventBus, services.UserService, AdminNavigation);
+
+            TableUsersVM = new TableUsersViewModel(eventBus, services.UserService, AdminNavigation);
             UserVM = new UserViewModel(logger, eventBus, UserNavigation);
 
+            // 🔥 Рождаем вьюмодель настроек устройства, скармливая ей сервис из контейнера
+            // Передаем строго по подсказке: сервис девайса, сервис юзеров, автобус, логгер, навигатор
+            DeviceSettingsVM = new DeviceSettingsViewModel(services.DeviceSettingsService, services.UserService, eventBus, logger, UserNavigation);
+
+
             ContactsVM = new ContactsViewModel(eventBus);
-            MainVM = new MainViewModel(logger, eventBus,Navigation);
+            MainVM = new MainViewModel(logger, eventBus, Navigation);
         }
     }
 }

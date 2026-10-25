@@ -1,36 +1,25 @@
-﻿using HomeNetCore.Exeptions;
-using HomeNetCore.Interfaces;
-using HomeNetCore.Models;
+﻿using HomeNetCore.Interfaces;
 using HomeNetCore.Models.Entity;
 
 namespace HomeNetCore.Extensions
 {
     public static class UserServiceExtensions
     {
-        // 1. Удобная обертка для добавления с проверкой дубликата Email
+        /// <summary>
+        /// Безопасная отправка пользователя в сервис с валидацией входных аргументов на null.
+        /// Проверка на существование вырезана — делегирована репозиторию! 🧼
+        /// </summary>
         public static async Task AddUserSecureAsync(this IUserService userService, UserEntity user)
         {
             ArgumentNullException.ThrowIfNull(user);
             ArgumentNullException.ThrowIfNull(user.Email);
 
-            if (await userService.CheckEmailExistsAsync(user.Email))
-            {
-                throw new DuplicateEmailException(user.Email);
-            }
-
             await userService.InsertUserAsync(user);
         }
 
-        // 2. Быстрая проверка существования email
-        public static async Task<bool> CheckEmailExistsAsync(this IUserService userService, string? email)
-        {
-            if (string.IsNullOrWhiteSpace(email)) return false;
-
-            var user = await userService.GetByEmailAsync(email);
-            return user != null;
-        }
-
-        // 3. Безопасный поиск по Email с валидацией входной строки
+        /// <summary>
+        /// Безопасный поиск по Email с валидацией входной строки
+        /// </summary>
         public static async Task<UserEntity?> FindUserByEmailAsync(this IUserService userService, string email)
         {
             if (string.IsNullOrWhiteSpace(email))

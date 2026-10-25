@@ -16,12 +16,12 @@ namespace HomeNetOrm.Schemes
             var diff = new SchemaDiff { TableName = expected.TableName };
 
             // Прямой маппинг колонок из базы
-            var expectedMap = expected.Columns.ToDictionary(c => c.Name!, c => c, StringComparer.OrdinalIgnoreCase);
+            var expectedMap = expected.Columns.ToDictionary(c => c.Name, c => c, StringComparer.OrdinalIgnoreCase);
 
             // Идём по колонкам билдера без лишних проверок на null строк
             foreach (var actualCol in actual.Columns)
             {
-                if (!expectedMap.Remove(actualCol.Name!, out var expectedCol))
+                if (!expectedMap.Remove(actualCol.Name, out var expectedCol))
                 {
                     diff.MissingColumns.Add(actualCol);
                     continue;
@@ -75,8 +75,8 @@ namespace HomeNetOrm.Schemes
 
         private bool AreDefaultValuesEqual(object? expected, object? actual, bool isCreatedAt)
         {
-            string expStr = NormalizeDefaultValue(expected?.ToString());
-            string actStr = NormalizeDefaultValue(actual?.ToString());
+            string expStr = NormalizeDefaultValue(expected?.ToString() ?? string.Empty);
+            string actStr = NormalizeDefaultValue(actual?.ToString() ?? string.Empty);
 
             if (expStr == actStr) return true;
 
@@ -86,13 +86,13 @@ namespace HomeNetOrm.Schemes
             return CleanPostgresTypeCasting(expStr).Equals(CleanPostgresTypeCasting(actStr), StringComparison.OrdinalIgnoreCase);
         }
 
-        private string NormalizeDefaultValue(string? value)
+        private string NormalizeDefaultValue(string value)
         {
             string str = value?.Trim().Trim('\'', '(', ')') ?? string.Empty;
             return (string.IsNullOrEmpty(str) || str == "0" || str.ToLower() == "false") ? "0" : str;
         }
 
         private string CleanPostgresTypeCasting(string value) =>
-            value.Contains("::") ? value.Split(new[] { "::" }, StringSplitOptions.None)[0].Trim('\'') : value;
+            value.Contains("::") ? value.Split(["::"], StringSplitOptions.None)[0].Trim('\'') : value;
     }
 }

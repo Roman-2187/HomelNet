@@ -60,7 +60,29 @@ namespace HomeNetServices.Services.Identity
             }
         }
 
-        // 🎯 ТЕПЕРЬ ТУТ ЧЕСТНЫЙ Guid вместо int
+        /// <summary>
+        /// 🔥 НАШ КРАСАВЕЦ: Обновление сущности пользователя в СУБД и уведомление UI системы
+        /// </summary>
+        public async Task UpdateUserAsync(UserEntity user)
+        {
+            try
+            {
+                ArgumentNullException.ThrowIfNull(user);
+
+                // 1. Обновляем строку в локальном SQLite репозитории
+                await _repo.UpdateAsync(user);
+                _logger.LogDebug($"Профиль пользователя {user.Email} успешно обновлен в СУБД.");
+
+                // 2. Пинаем шину событий, чтобы таблицы и списки в UI перерисовали новые данные (например, DeviceId)
+                _eventBus.Publish(this, new IUsersTableVm.Updated(user));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Ошибка при обновлении пользователя в СУБД: {ex.Message}");
+                throw;
+            }
+        }
+
         public async Task DeleteByIdAsync(Guid userId)
         {
             try
@@ -84,7 +106,6 @@ namespace HomeNetServices.Services.Identity
             }
         }
 
-        // 🎯 ТЕПЕРЬ ТУТ ЧЕСТНЫЙ Guid вместо int
         public async Task<UserEntity?> GetByIdAsync(Guid userId)
         {
             _logger.LogDebug($"Точечный запрос пользователя по GUID {userId} напрямую из СУБД...");
@@ -93,8 +114,21 @@ namespace HomeNetServices.Services.Identity
 
         public async Task<UserEntity?> GetByEmailAsync(string email)
         {
-           
             return await _repo.GetByEmailAsync(email);
+        }
+
+
+
+        /// <summary>
+        /// 🔥 НАСТОЯЩАЯ РЕАЛИЗАЦИЯ В СЕРВИСЕ: Проверяет существование email через репозиторий
+        /// </summary>
+        public async Task<bool> CheckEmailExistsAsync(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email)) return false;
+
+            // Стучимся в репозиторий, который мы проверили в DBeaver
+            var user = await _repo.GetByEmailAsync(email);
+            return user != null;
         }
     }
 }
