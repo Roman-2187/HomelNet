@@ -11,6 +11,7 @@ namespace HomeNet.DI.Modules
     {
         public RemoteMessengerSchemaModule() : base()
         {
+
             // Добавляем таблицу синхронизации девайсов на составном ключе (Только на сервере!)
             var deviceSync = new TableBuilder<DeviceSyncEntity>("DeviceSync")
                 .WithVersionTracking(); // Включаем серверный триггер для этой таблицы!
@@ -18,6 +19,7 @@ namespace HomeNet.DI.Modules
             deviceSync.AddColumn(d => d.DeviceId).AsPrimaryKey();
             deviceSync.AddColumn(d => d.UserId).AsPrimaryKey();
             deviceSync.AddColumn(d => d.Version); // Поле для триггера
+            deviceSync.AddColumn(d => d.CreatedAt); // <-- ВОТ ОНА! Теперь ОРМ создаст эту колонку в PostgreSQL
             deviceSync.AddColumn(d => d.UpdatedAt);
 
             _schemas.Add(deviceSync.Generate());

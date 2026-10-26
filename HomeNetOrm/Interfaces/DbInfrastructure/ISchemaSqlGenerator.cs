@@ -2,7 +2,7 @@
 
 namespace HomeNetOrm.Interfaces.DbInfrastructure
 {
-    internal interface ISchemaSqlInitializer
+    internal interface ISchemaSqlGenerator
     {
         string GenerateCreateTableSql(TableSchema schema);
 

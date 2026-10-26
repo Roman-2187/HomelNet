@@ -66,7 +66,7 @@ namespace HomeNetOrm.Infrastructure
             var sqliteSchemaInit = new SqliteSchemaInitializer(sqliteSpec, _logger);
             var sqliteProvider = new GenericSchemaProvider(sqliteSchemaInit, _connection, sqliteSpec, _logger);
 
-            var tableInitializer = new DBInitializer(_connection, sqliteProvider, sqliteSchemaInit, _schemas, _logger);
+            var tableInitializer = new SchemaRepository(_connection, sqliteProvider, sqliteSchemaInit, _schemas, _logger);
             await tableInitializer.InitializeAsync();
         }
     }

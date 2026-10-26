@@ -18,6 +18,8 @@ namespace HomeNet.DI.Modules
     {
         public SincedSqliteDbEngine SqliteEngine { get; }
         public IApiClient ApiClient { get; }
+
+        public string ApiBaseUrl { get; }
         public IDbContextContainer DbContextContainer { get; }
 
         // Чистые интерфейсы репозиториев наружу для Avalonia
@@ -36,8 +38,10 @@ namespace HomeNet.DI.Modules
         // Сетевой слушатель SignalR
         public SignalRNotificationListener NotificationListener { get; }
 
+        // 2. Внутри конструктора DataAccessModule первой строчкой сохрани прилетевший параметр:
         public DataAccessModule(string sqliteConn, string apiBaseUrl, IEnumerable<TableSchema> appSchemas, ILogger logger, ILogQueueManager logQueue, IEventBus eventBus)
         {
+            ApiBaseUrl = apiBaseUrl; // 🔥 ФИКСИРУЕМ АДРЕС ДЛЯ ВНЕШНЕГО МИРА!
             // 1. Инициализируем локальный движок SQLite и скармливаем ему схемы! 🦾
             SqliteEngine = new SincedSqliteDbEngine(sqliteConn, appSchemas, logger);
 

@@ -2,23 +2,21 @@
 
 namespace HomeNetOrm.Schemes
 {
-    internal class SchemaComparer
+    internal static class SchemaComparer
     {
         private static readonly HashSet<string> NumericAndBoolTypes = new(StringComparer.OrdinalIgnoreCase) { "int", "integer", "bigint", "smallint", "boolean", "bit" };
         private static readonly HashSet<string> TextAndGuidTypes = new(StringComparer.OrdinalIgnoreCase) { "varchar", "text", "string", "character varying", "guid", "uuid" };
         private static readonly HashSet<string> DateTimeTypes = new(StringComparer.OrdinalIgnoreCase) { "datetime", "timestamp", "date" };
 
-        public SchemaDiff Compare(TableSchema expected, TableSchema actual)
+        public static SchemaDiff Compare(TableSchema expected, TableSchema actual)
         {
             if (!expected.TableName.Equals(actual.TableName, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException($"Нельзя сравнивать разные таблицы: '{expected.TableName}' и '{actual.TableName}'");
 
             var diff = new SchemaDiff { TableName = expected.TableName };
 
-            // Прямой маппинг колонок из базы
             var expectedMap = expected.Columns.ToDictionary(c => c.Name, c => c, StringComparer.OrdinalIgnoreCase);
 
-            // Идём по колонкам билдера без лишних проверок на null строк
             foreach (var actualCol in actual.Columns)
             {
                 if (!expectedMap.Remove(actualCol.Name, out var expectedCol))
@@ -42,7 +40,7 @@ namespace HomeNetOrm.Schemes
             return diff;
         }
 
-        private bool AreColumnsEqual(ColumnSchema expected, ColumnSchema actual)
+        private static bool AreColumnsEqual(ColumnSchema expected, ColumnSchema actual)
         {
             if (!string.Equals(expected.Name, actual.Name, StringComparison.OrdinalIgnoreCase))
                 return false;
@@ -63,7 +61,7 @@ namespace HomeNetOrm.Schemes
             return AreDefaultValuesEqual(expected.DefaultValue, actual.DefaultValue, expected.IsCreatedAt);
         }
 
-        private bool IsTypeCompatible(string typeA, string typeB)
+        private static bool IsTypeCompatible(string typeA, string typeB)
         {
             string a = typeA.ToLower();
             string b = typeB.ToLower();
@@ -73,7 +71,7 @@ namespace HomeNetOrm.Schemes
                    (DateTimeTypes.Any(t => a.Contains(t)) && DateTimeTypes.Any(t => b.Contains(t)));
         }
 
-        private bool AreDefaultValuesEqual(object? expected, object? actual, bool isCreatedAt)
+        private static bool AreDefaultValuesEqual(object? expected, object? actual, bool isCreatedAt)
         {
             string expStr = NormalizeDefaultValue(expected?.ToString() ?? string.Empty);
             string actStr = NormalizeDefaultValue(actual?.ToString() ?? string.Empty);
@@ -86,13 +84,13 @@ namespace HomeNetOrm.Schemes
             return CleanPostgresTypeCasting(expStr).Equals(CleanPostgresTypeCasting(actStr), StringComparison.OrdinalIgnoreCase);
         }
 
-        private string NormalizeDefaultValue(string value)
+        private static string NormalizeDefaultValue(string value)
         {
             string str = value?.Trim().Trim('\'', '(', ')') ?? string.Empty;
             return (string.IsNullOrEmpty(str) || str == "0" || str.ToLower() == "false") ? "0" : str;
         }
 
-        private string CleanPostgresTypeCasting(string value) =>
+        private static string CleanPostgresTypeCasting(string value) =>
             value.Contains("::") ? value.Split(["::"], StringSplitOptions.None)[0].Trim('\'') : value;
     }
 }

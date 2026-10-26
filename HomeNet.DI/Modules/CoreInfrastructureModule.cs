@@ -11,22 +11,22 @@ public class CoreInfrastructureModule
     public ILogger Logger { get; }
     public EventBusInspector EventBusInspector { get; }
     public IEventBus EventBus { get; }
-    public AppFileLogger AppFileLogger { get; }
     public ILogQueueManager LogQueueManager { get; }
 
     public CoreInfrastructureModule()
     {
+        // 🎯 Чистое имя лог-файла клиента без всяких .txt расширений
+        const string clientLogName = "client_debug";
+
         EventBusInspector = new EventBusInspector();
         EventBus = new EventBus(EventBusInspector);
 
-        // Передаем только имя файла. Логгер сам создаст его на Рабочем столе в папке debug
-        AppFileLogger = new AppFileLogger("client_debug.txt");
-
         LogQueueManager = new LogQueueManager(EventBus, 1);
 
+        // 🎯 Переводим клиентский логгер на глобальный статический HTML-хаб
         Logger = new Logger((msg, level, ns) =>
         {
-            AppFileLogger.WriteImmediately(msg, level);
+            DiagnosticHub.Log(msg, (HomeNetCore.Enums.LogLevel)level, clientLogName);
         });
 
         LogQueueManager.SetReady();

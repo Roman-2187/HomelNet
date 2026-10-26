@@ -5,14 +5,14 @@ using HomeNetOrm.DBProviders.Base;
 using System.Text;
 using Dapper;
 
-namespace HomeNetOrm.DBProviders.Postgres.@base
+namespace HomeNetOrm.DBProviders.Postgres.Base
 {
-    internal class PostgresSchemaInitializer : ISchemaSqlInitializer
+    internal class PostgresSchemaSqlGenerator : ISchemaSqlGenerator
     {
         private readonly IDbProviderSpecification _spec;
         private readonly ILogger _logger;
 
-        public PostgresSchemaInitializer(IDbProviderSpecification spec, ILogger logger)
+        public PostgresSchemaSqlGenerator(IDbProviderSpecification spec, ILogger logger)
         {
             _spec = spec ?? throw new ArgumentNullException(nameof(spec));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -20,7 +20,7 @@ namespace HomeNetOrm.DBProviders.Postgres.@base
 
         public string GenerateCreateTableSql(TableSchema schema)
         {
-            if (schema == null) throw new ArgumentNullException(nameof(schema));
+            ArgumentNullException.ThrowIfNull(schema);
             if (string.IsNullOrEmpty(schema.TableName) || schema.Columns == null)
                 return string.Empty;
 

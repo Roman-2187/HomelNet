@@ -7,6 +7,7 @@ using HomeNetOrm.Interfaces.Builders;
 using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.AdminViews;
 using HomeNetPresentation.ViewModels.ClientViews;
+using System.Net.Http; // Добавили для легкого пинга сервера
 
 namespace HomeNet.DI
 {
@@ -16,48 +17,41 @@ namespace HomeNet.DI
         public static AppCompositionRoot Instance => _instance
             ?? throw new InvalidOperationException("Композиция не собрана. Вызовите AppCompositionRoot.Initialize(...)");
 
-        // 🔥 ХРАНИМ ЧЕТЫРЕ МОДУЛЯ-КОНТЕЙНЕРА ВМЕСТО 50 РАЗРОЗНЕННЫХ ПОЛЕЙ
         private readonly CoreInfrastructureModule _infrastructure;
         private readonly DataAccessModule _dataAccess;
         private readonly BusinessServicesModule _services;
         private readonly PresentationUiModule _ui;
 
-        // Свойства-мосты наружу для совместимости бэкенда (если нужны)
         public ILogger Logger => _infrastructure.Logger;
         public IEventBus EventBus => _infrastructure.EventBus;
 
         private AppCompositionRoot(BackendMode mode, string postgresConn, string sqliteConn)
         {
-            // 1. Модуль Системных Кишок
             _infrastructure = new CoreInfrastructureModule();
 
-            // 2. 🎯 СОБИРАЕМ СХЕМЫ СНАРУЖИ ЧЕРЕЗ НАШ НОВЫЙ DI-МОДУЛЬ
             var schemaModule = new LocalMessengerSchemaModule();
-            var registeredSchemas = schemaModule.GetSchemas(); // Получит 4 таблицы (общие + DeviceSettings)
+            var registeredSchemas = schemaModule.GetSchemas();
 
-            // 3. Модуль Базы Данных и ОРМ (Скармливаем зависимости, адрес сервера и готовые схемы!) 🦾
             _dataAccess = new DataAccessModule(
                 sqliteConn,
-                postgresConn, // В контексте клиента это базовый URL сервера (apiBaseUrl)
-                registeredSchemas, // 🔥 Вот они улетели в ОРМ-движок!
+                postgresConn,
+                registeredSchemas,
                 _infrastructure.Logger,
                 _infrastructure.LogQueueManager,
                 _infrastructure.EventBus);
 
-            // 4. Модуль Сервисов Бизнес-Логики (Скармливаем Репозитории из Модуля 3 И репозиторий девайса)
             _services = new BusinessServicesModule(
                 _dataAccess.UserRepository,
                 _dataAccess.MessageRepository,
-                _dataAccess.DeviceSettingsRepository, // 🔥 Передали репозиторий настроек девайса
+                _dataAccess.DeviceSettingsRepository,
                 _infrastructure.Logger,
                 _infrastructure.EventBus);
 
-            // 5. Модуль Презентации / UI — ТЕПЕРЬ ТУТ ЧИСТОТА, ПЕРЕДАЕМ ПАЧКУ СЕРВИСОВ ОДНИМ ОБЪЕКТОМ 🧼
             _ui = new PresentationUiModule(
                 _infrastructure.EventBus,
                 _infrastructure.Logger,
                 _infrastructure.LogQueueManager,
-                _services, // 🔥 Схлопнули портянку параметров в чистый модуль бизнес-логики!
+                _services,
                 _infrastructure.EventBusInspector
             );
         }
@@ -66,37 +60,72 @@ namespace HomeNet.DI
         {
             _instance = new AppCompositionRoot(mode, postgresConn, sqliteConn);
 
-            // 1. Подписываемся на автобус готовности инфраструктуры
-            _instance._infrastructure.EventBus.Subscribe<IDbContextContainer.InfrastructureReady>(async ev =>
-            {
-                // 🎯 ИДЕАЛЬНАЯ ЧИСТОТА: Никаких ручных асинхронных генераций Device ID и блоков try-catch здесь больше нет!
-                _instance._infrastructure.Logger.LogInfo("[App Старт] Базы и сеть прогреты. Запускаем репликацию данных...");
+            _instance._infrastructure.EventBus.SubscribeAsync<IDbContextContainer.InfrastructureReady>(OnInfrastructureReady);
 
-                // 🔥 ПОДКЛЮЧАЕМ ТРУБУ SIGNALR: Врубаем коннект гостем, чтобы забрать буфер серверных логов!
-                try
-                {
-                    await _instance._dataAccess.NotificationListener.ConnectAsync();
-                }
-                catch (Exception ex)
-                {
-                    _instance._infrastructure.Logger.LogError($"[App Старт] Не удалось подключить логи бэкенда: {ex.Message}");
-                }
-
-                // Добавим микроскопическую задержку в 300 мс, чтобы дать веб-серверу окончательно "продышаться"
-                await Task.Delay(300);
-
-                // 🔥 ТЕПЕРЬ ЗАПУСК СТРОГО ВО ВРЕМЯ!
-                await _instance._dataAccess.OrmEngine.StartAsync();
-            });
-
-            // 2. Только после подписки пинаем параллельный прогрев баз и пинг сервера
             Task.Run(async () =>
             {
                 await _instance._dataAccess.DbContextContainer.InitializeAllDatabasesAsync();
             });
         }
 
-        // Метод-заглушка для UI окон вытаскивает вьюмодели прямо из UI модуля
+        // 🔥 МЕТОД СТАЛ УМНЫМ СТРАЖЕМ СИНХРОНИЗАЦИИ
+        private static async Task OnInfrastructureReady(IDbContextContainer.InfrastructureReady ev)
+        {
+            if (_instance == null) return;
+
+            var logger = _instance._infrastructure.Logger;
+            var dataAccess = _instance._dataAccess;
+
+            logger.LogInfo("[App Старт] Локальные хранилища готовы. Проверяем статус бэкенд сервера...");
+
+            // 🎯 УМНЫЙ ЦИКЛ ОЖИДАНИЯ: Стучимся в сервер, пока он не проснется
+            using (var client = new HttpClient { Timeout = TimeSpan.FromMilliseconds(800) })
+            {
+                // В DataAccessModule в качестве postgresConn на клиенте лежит URL бэкенда (например, http://localhost:5210)
+                string pingUrl = $"{dataAccess.ApiBaseUrl.TrimEnd('/')}/api/ping";
+                bool isServerUp = false;
+                int attempts = 0;
+
+                while (!isServerUp)
+                {
+                    attempts++;
+                    try
+                    {
+                        var response = await client.GetAsync(pingUrl);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            isServerUp = true;
+                            logger.LogInfo($"[App Старт] Бэкенд успешно ответил на {attempts}-й попытке. Сервер прогрет!");
+                        }
+                    }
+                    catch
+                    {
+                        // Сервер еще поднимает Kestrel или Postgres — мягко ждем и пробуем снова
+                        logger.LogWarning($"[App Старт] Сервер бэкенда еще занят инициализацией. Попытка {attempts}, ждем...");
+                        await Task.Delay(500); // Пауза в полсекунды между ударами в дверь
+                    }
+                }
+            }
+
+            logger.LogInfo("[App Старт] Запускаем репликацию данных и SignalR соединения...");
+
+            // 🔥 ТЕПЕРЬ ПОДКЛЮЧАЕМ СЕТЕВЫЕ ТРУБЫ БЕЗ СБОЕВ
+            try
+            {
+                await dataAccess.NotificationListener.ConnectAsync();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError($"[App Старт] Не удалось подключить логи бэкенда: {ex.Message}");
+            }
+
+            // На всякий случай даем микро-паузу на стабилизацию сокетов
+            await Task.Delay(200);
+
+            // 🔥 СИНХРОНИЗАЦИЯ СТАРТУЕТ С ГАРАНТИЕЙ ДОСТУПНОСТИ СЕРВЕРА
+            await dataAccess.OrmEngine.StartAsync();
+        }
+
         public TGet GetViewModel<TGet>() where TGet : class
         {
             if (typeof(TGet) == typeof(TableUsersViewModel)) return (_ui.TableUsersVM as TGet)!;
@@ -114,8 +143,6 @@ namespace HomeNet.DI
             if (typeof(TGet) == typeof(TitleBarViewModel)) return (_ui.TitleBarVM as TGet)!;
             if (typeof(TGet) == typeof(SeedUsersViewModel)) return (_ui.SeedUsersVM as TGet)!;
             if (typeof(TGet) == typeof(ContactsViewModel)) return (_ui.ContactsVM as TGet)!;
-
-            // 🔥 РАЗРЕШАЕМ НАШУ НОВУЮ ВЬЮМОДЕЛЬ НАСТРОЕК
             if (typeof(TGet) == typeof(DeviceSettingsViewModel)) return (_ui.DeviceSettingsVM as TGet)!;
 
             throw new ArgumentException($"Тип {typeof(TGet).Name} не найден в UI模块.");

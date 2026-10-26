@@ -10,19 +10,19 @@ using System.Data.Common;
 
 namespace HomeNetOrm.DBProviders.Base
 {
-    internal class DBInitializer
+    internal class SchemaRepository
     {
         private readonly DbConnection _dbConnection;
-        private readonly ISchemaSqlInitializer _schemaSqlInitializer;
+        private readonly ISchemaSqlGenerator _schemaSqlInitializer;
         private readonly ISchemaProvider _schemaProvider;
         private readonly IEnumerable<TableSchema> _tableSchemas;
         private readonly ILogger _logger;
         private readonly string _dbName;
 
-        public DBInitializer(
+        public SchemaRepository(
             DbConnection connection,
             ISchemaProvider schemaProvider,
-            ISchemaSqlInitializer schemaSqlInitializer,
+            ISchemaSqlGenerator schemaSqlInitializer,
             IEnumerable<TableSchema> tableSchemas,
             ILogger logger)
         {
@@ -114,61 +114,27 @@ namespace HomeNetOrm.DBProviders.Base
             if (_dbConnection.State != ConnectionState.Open) await _dbConnection.OpenAsync();
 
             var expectedSchemaRaw = await _schemaProvider.GetActualTableSchemaAsync(snakeSchema.TableName);
-            var expectedCamelCols = expectedSchemaRaw?.ToAdaptedSchemas()?.Camel?.Columns;
 
-            // 🌟 Guard Clause: Если схема пуста или в ней нет Primary Key — сразу выходим без глубокой вложенности
+            // Guard Clause: Проверка поврежденной или пустой схемы
             if (expectedSchemaRaw?.Columns == null || expectedSchemaRaw.Columns.Count == 0 || !expectedSchemaRaw.Columns.Any(c => c != null && c.IsPrimaryKey))
             {
                 _logger.LogError($"[{_dbName} ❌ ИНИЦИАЛИЗАТОР] Сверка структуры для таблицы '{camelTableName}' пропущена, так как схема в БД повреждена или пуста.");
                 return;
             }
 
-            var diff = new SchemaComparer().Compare(expectedSchemaRaw, snakeSchema);
+            // 1. Быстрый и чистый вызов статического компарера
+            var diff = SchemaComparer.Compare(expectedSchemaRaw, snakeSchema);
+
             if (diff == null || diff.IsIdentical)
             {
-                if (diff?.IsIdentical == true) _logger.LogInfo($"[{_dbName}] ✅ Структура таблицы '{camelTableName}' в полном порядке.");
+                _logger.LogInfo($"[{_dbName}] ✅ Структура таблицы '{camelTableName}' в полном порядке.");
                 return;
             }
 
-            _logger.LogWarning($"[{_dbName} ⚠️] ВНИМАНИЕ: Обнаружены расхождения в структуре '{camelTableName}':");
-
-            // Локальный хелпер, чтобы не дублировать сложный поиск имени по Camel-регистру в каждом цикле
-            string GetLogName(string fallbackName) => 
-                expectedCamelCols?.FirstOrDefault(c => c != null && fallbackName.Equals(c.Name, StringComparison.OrdinalIgnoreCase))?.Name ?? fallbackName;
-
-            // 🌟 Избавляемся от ручных null-проверок внутри циклов
-            if (diff.MissingColumns != null)
-            {
-                foreach (var missing in diff.MissingColumns.Where(m => m != null && !string.IsNullOrEmpty(m.Name)))
-                {
-                    _logger.LogWarning($"   [-] ❌ Отсутствует колонка: {GetLogName(missing.Name)}");
-                }
-            }
-
-            if (diff.ExtraColumns != null)
-            {
-                foreach (var extra in diff.ExtraColumns.Where(e => e != null && !string.IsNullOrEmpty(e.Name)))
-                {
-                    _logger.LogWarning($"   [+] 🛑 Обнаружена лишняя колонка: {GetLogName(extra.Name)}");
-                }
-            }
-
-            if (diff.MismatchedColumns != null)
-            {
-                var validMismatches = diff.MismatchedColumns.Where(m => m != null && !string.IsNullOrEmpty(m.ColumnName) && m.Expected != null && m.Actual != null);
-                foreach (var mismatch in validMismatches)
-                {
-                    string reason = $"ожидалось {mismatch.Expected.Type}, прилетело {mismatch.Actual.Type}";
-
-                    if (mismatch.Expected.IsNullable != mismatch.Actual.IsNullable)
-                        reason += $" [Nullable: {mismatch.Expected.IsNullable} vs {mismatch.Actual.IsNullable}]";
-
-                    if (mismatch.Expected.IsPrimaryKey != mismatch.Actual.IsPrimaryKey)
-                        reason += $" [PK: {mismatch.Expected.IsPrimaryKey} vs {mismatch.Actual.IsPrimaryKey}]";
-
-                    _logger.LogWarning($"[{_dbName}]    [*] 🔄 Расхождение в '{GetLogName(mismatch.ColumnName)}': {reason}");
-                }
-            }
+            // 2. Делегируем всю черновую работу по разбору логов нашему новому визуализатору
+            var expectedCamelCols = expectedSchemaRaw.ToAdaptedSchemas()?.Camel?.Columns;
+            SchemaDiffVisualizer.LogDifferences(_logger, _dbName, camelTableName, diff, expectedCamelCols);
         }
+
     }
 }

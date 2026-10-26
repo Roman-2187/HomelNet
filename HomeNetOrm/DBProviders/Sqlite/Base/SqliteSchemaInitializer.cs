@@ -7,7 +7,7 @@ using Dapper;
 
 namespace HomeNetOrm.DBProviders.Sqlite.Base
 {
-    internal class SqliteSchemaInitializer : ISchemaSqlInitializer
+    internal class SqliteSchemaInitializer : ISchemaSqlGenerator
     {
         private readonly IDbProviderSpecification _spec;
         private readonly ILogger _logger;

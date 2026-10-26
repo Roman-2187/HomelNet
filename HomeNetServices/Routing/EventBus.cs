@@ -5,6 +5,7 @@ namespace HomeNetServices.Routing
 {
     public class EventBus : IEventBus
     {
+        // Храним делегаты как есть (и Action<T>, и Func<T, Task>)
         private readonly Dictionary<Type, List<object>> _subscribers = new();
 
         // 🔥 ТЕПЕРЬ ЭТО ПРОСТО ССЫЛКА НА ИНЖЕКТИРОВАННЫЙ СИНГЛТОН
@@ -16,31 +17,43 @@ namespace HomeNetServices.Routing
             Inspector = inspector ?? throw new ArgumentNullException(nameof(inspector));
         }
 
+        // --- 1. СИНХРОННАЯ ПОДПИСКА (Для вкладок, кнопок и стейта) ---
         public void Subscribe<TMessage>(Action<TMessage> action)
         {
-            if (action == null) throw new ArgumentNullException(nameof(action));
+            RegisterSubscriber(typeof(TMessage), action, action.Target, action.Method);
+        }
 
-            var type = typeof(TMessage);
-            if (!_subscribers.ContainsKey(type))
+        // --- 2. АСИНХРОННАЯ ПОДПИСКА (Для тяжелых задач, ОРМ и сети) ---
+        public void SubscribeAsync<TMessage>(Func<TMessage, Task> asyncHandler)
+        {
+            RegisterSubscriber(typeof(TMessage), asyncHandler, asyncHandler.Target, asyncHandler.Method);
+        }
+
+        // Общий приватный метод регистрации для устранения дублирования кода
+        private void RegisterSubscriber(Type messageType, object handler, object? target, System.Reflection.MethodInfo method)
+        {
+            if (handler == null) throw new ArgumentNullException(nameof(handler));
+
+            if (!_subscribers.ContainsKey(messageType))
             {
-                _subscribers[type] = new List<object>();
+                _subscribers[messageType] = new List<object>();
             }
 
-            if (!_subscribers[type].Contains(action))
+            if (!_subscribers[messageType].Contains(handler))
             {
-                _subscribers[type].Add(action);
+                _subscribers[messageType].Add(handler);
             }
 
             try
             {
-                // 🔥 Находим тип самого класса-подписчика (например, DeleteUsersViewModel)
-                Type subscriberType = action.Target?.GetType() ?? action.Method.DeclaringType ?? typeof(object);
+                // Находим тип самого класса-подписчика
+                Type subscriberType = target?.GetType() ?? method.DeclaringType ?? typeof(object);
 
                 string controlName = subscriberType.Name;
-                string methodName = action.Method.Name;
+                string methodName = method.Name;
 
-                // 🔥 Передаем тип подписчика четвертым аргументом в зрячий инспектор!
-                Inspector.RecordSubscribe(controlName, type, methodName, subscriberType);
+                // Передаем в инспектор — теперь он увидит и асинхронные методы!
+                Inspector.RecordSubscribe(controlName, messageType, methodName, subscriberType);
             }
             catch (Exception ex)
             {
@@ -48,24 +61,15 @@ namespace HomeNetServices.Routing
             }
         }
 
-
-
-
-
-
-
-
-        public void Publish<TMessage>(object sender, TMessage message)
+        // --- 3. АСИНХРОННАЯ ПУБЛИКАЦИЯ (Умеет дожидаться Task) ---
+        public async Task PublishAsync<TMessage>(object sender, TMessage message)
         {
             if (message == null) return;
 
-            // Получаем точный тип сообщения в рантайме
             var type = message.GetType();
 
-            // 🛡️ Фиксируем публикацию в инспекторе
             try
             {
-                // Теперь инспектор ЖЕЛЕЗНО увидит твой UserService! 🧼
                 Inspector.RecordPublish(sender, type);
             }
             catch (Exception ex)
@@ -73,7 +77,6 @@ namespace HomeNetServices.Routing
                 System.Diagnostics.Debug.WriteLine($"[Profiler Error] Не удалось залогировать публикацию: {ex.Message}");
             }
 
-            // 🚀 ДИНАМИЧЕСКАЯ ДОСТАВКА СИГНАЛОВ
             if (_subscribers.TryGetValue(type, out var actions))
             {
                 var actionsCopy = new List<object>(actions);
@@ -81,11 +84,16 @@ namespace HomeNetServices.Routing
                 {
                     try
                     {
-                        // Используем DynamicInvoke вместо жесткого каста (Action<TMessage>)
-                        // Это спасет от коллизий интерфейсов и конкретных типов рекордов!
                         if (action is Delegate del)
                         {
-                            del.DynamicInvoke(message);
+                            // Вызываем метод динамически
+                            var result = del.DynamicInvoke(message);
+
+                            // 🔥 КЛЮЧЕВАЯ ФИШКА: Если метод вернул Task (был асинхронным), дожидаемся его!
+                            if (result is Task task)
+                            {
+                                await task;
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -96,31 +104,41 @@ namespace HomeNetServices.Routing
             }
         }
 
-        // Внутри твоего EventBus.cs [14]
+        // --- 4. СИНХРОННАЯ ПУБЛИКАЦИЯ (Для совместимости со старым кодом) ---
+        public void Publish<TMessage>(object sender, TMessage message)
+        {
+            // Запускаем асинхронную публикацию "пожар и забыл" для синхронного контекста
+            _ = PublishAsync(sender, message);
+        }
 
+        // --- 5. ОТПИСКА (Работает универсально для обоих типов) ---
         public void Unsubscribe<TMessage>(Action<TMessage> action)
         {
-            if (action == null) return;
+            UnsubscribeInternal(typeof(TMessage), action);
+        }
 
-            var type = typeof(TMessage);
+        public void UnsubscribeAsync<TMessage>(Func<TMessage, Task> asyncHandler)
+        {
+            UnsubscribeInternal(typeof(TMessage), asyncHandler);
+        }
 
-            if (_subscribers.TryGetValue(type, out var actions))
+        private void UnsubscribeInternal(Type messageType, object handler)
+        {
+            if (handler == null) return;
+
+            if (_subscribers.TryGetValue(messageType, out var actions))
             {
-                if (actions.Contains(action))
+                if (actions.Contains(handler))
                 {
-                    actions.Remove(action);
+                    actions.Remove(handler);
                 }
 
                 if (actions.Count == 0)
                 {
-                    _subscribers.Remove(type);
-
-                    // 🔥 ВЫКЛЮЧАЕМ ТУМБЛЕР: Подписчиков нет, гасим бит подписки в автомате!
-                    Inspector.RecordUnsubscribe(type);
+                    _subscribers.Remove(messageType);
+                    Inspector.RecordUnsubscribe(messageType);
                 }
             }
         }
-
-
     }
 }

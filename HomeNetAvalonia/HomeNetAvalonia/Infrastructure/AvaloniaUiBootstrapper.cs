@@ -37,7 +37,12 @@ namespace HomeNetAvalonia.Infrastructure
 
             if (mode == BackendMode.Real || mode == BackendMode.Local)
             {
+                // Старый аниматор закрытия окна
                 var animator = new CloseWindowAnimator(root.EventBus);
+
+                // 🔥 НАШ НОВЫЙ АНИМАТОР ШИРОКОФОРМАТНОГО РЕЖИМА
+                // Теперь он просыпается прямо при старте UI-слоя Авалонии!
+                var widescreenAnimator = new WidescreenWindowAnimator(root.EventBus);
             }
 
             return root;

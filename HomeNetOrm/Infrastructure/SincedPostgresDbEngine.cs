@@ -3,6 +3,7 @@ using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.DBProviders.Postgres.@base;
+using HomeNetOrm.DBProviders.Postgres.Base;
 using HomeNetOrm.DBProviders.Postgres.SincedGenerators;
 using HomeNetOrm.DBProviders.Postgres.SyncedGenerators;
 using HomeNetOrm.Interfaces.Builders;
@@ -62,10 +63,10 @@ namespace HomeNetOrm.Infrastructure
             var postgresSpec = new PostgresProviderSpecification();
 
             // 🔥 ФИКС: Убрали прослойки адаптеров
-            var postgresSchemaInit = new PostgresSchemaInitializer(postgresSpec, _logger);
+            var postgresSchemaInit = new PostgresSchemaSqlGenerator(postgresSpec, _logger);
             var postgresProvider = new GenericSchemaProvider(postgresSchemaInit, _connection, postgresSpec, _logger);
 
-            var tableInitializer = new DBInitializer(_connection, postgresProvider, postgresSchemaInit, _schemas, _logger);
+            var tableInitializer = new SchemaRepository(_connection, postgresProvider, postgresSchemaInit, _schemas, _logger);
             await tableInitializer.InitializeAsync();
         }
     }

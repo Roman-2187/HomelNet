@@ -16,50 +16,45 @@ namespace HomeNet.Network
 
         protected override void SubscribeToEvents()
         {
-            // 1. ИСХОДЯЩИЕ (PUSH): Слушаем, что синхронизатор просит отправить на сервер
             EventBus.Subscribe<ISiberNetSyncCoordinator.MessagePendingSync>(OnMessagePendingSync);
-
-            // 2. ВХОДЯЩИЕ (PULL): Слушаем, когда синхронизатор просит затянуть новые СМС с сервера
             EventBus.Subscribe<ISiberNetSyncCoordinator.MessagePullRequested>(OnMessagePullRequested);
         }
 
         private void OnMessagePendingSync(ISiberNetSyncCoordinator.MessagePendingSync @event)
         {
-            var message = @event.Message;
-            FireAndForget(async () =>
-            {
-                Logger.LogInfo($"[MessageNet] Пушим сообщение {message.Id} на server...");
-                bool success = await ApiClient.PushMessageAsync(message);
-                if (success)
-                {
-                    Logger.LogInfo($"[MessageNet] Сервер принял сообщение {message.Id}. Уведомляем синхронизатор.");
-                    EventBus.Publish(this, new ISiberNetSyncCoordinator.MessageSyncedOnServer(message.Id));
-                }
-            }, $"Push Message {message.Id}");
+            FireAndForget(() => PushMessageInternalAsync(@event.Message), $"Push Message {@event.Message.Id}");
         }
 
-        // 🔥 НАША НОВАЯ ЛОГИКА PULL:
+        private async Task PushMessageInternalAsync(MessageEntity message)
+        {
+            Logger.LogInfo($"[MessageNet] Пушим сообщение {message.Id} на server...");
+            bool success = await ApiClient.PushMessageAsync(message);
+            if (success)
+            {
+                Logger.LogInfo($"[MessageNet] Сервер принял сообщение {message.Id}. Уведомляем синхронизатор.");
+                EventBus.Publish(this, new ISiberNetSyncCoordinator.MessageSyncedOnServer(message.Id));
+            }
+        }
+
         private void OnMessagePullRequested(ISiberNetSyncCoordinator.MessagePullRequested @event)
         {
-            FireAndForget(async () =>
+            FireAndForget(PullMessagesInternalAsync, "Pull Messages From Server");
+        }
+
+        private async Task PullMessagesInternalAsync()
+        {
+            Logger.LogInfo("[MessageNet] Сеть перехватила запрос PULL. Запрашиваем посылку у PostgreSQL склада...");
+
+            Guid currentDeviceId = Guid.NewGuid();
+            DateTimeOffset lastSyncedAt = DateTimeOffset.MinValue;
+
+            var freshMessages = await ApiClient.FetchFreshMessagesAsync(currentDeviceId, lastSyncedAt);
+
+            Logger.LogInfo($"[MessageNet] Сервер выдал на блюдечке {freshMessages.Count} новых сообщений. Выгружаем в шину.");
+            foreach (var message in freshMessages)
             {
-                Logger.LogInfo("[MessageNet] Сеть перехватила запрос PULL. Запрашиваем посылку у PostgreSQL склада...");
-
-                // TODO: Передаем в твой ApiClient данные текущей сессии девайса и чекпоинт времени
-                // Эти данные можно брать из SessionManager или твоего стейта авторизации.
-                Guid currentDeviceId = Guid.NewGuid(); // Временно, пока не прокинешь сюда SessionManager/контекст
-                DateTimeOffset lastSyncedAt = DateTimeOffset.MinValue;
-
-                var freshMessages = await ApiClient.FetchFreshMessagesAsync(currentDeviceId, lastSyncedAt);
-
-                Logger.LogInfo($"[MessageNet] Сервер выдал на блюдечке {freshMessages.Count} новых сообщений. Выгружаем в шину.");
-                foreach (var message in freshMessages)
-                {
-                    // Вызываем наш стандартный метод приема — он проставит IsSynced = 1
-                    // и закинет сообщение в локальный SQLite репозиторий через OnMessageInserted!
-                    await HandleIncomingMessageAsync(message);
-                }
-            }, "Pull Messages From Server");
+                await HandleIncomingMessageAsync(message);
+            }
         }
 
         public Task HandleIncomingMessageAsync(MessageEntity message)
@@ -67,7 +62,7 @@ namespace HomeNet.Network
             if (message == null) return Task.CompletedTask;
 
             Logger.LogInfo($"[MessageNet] Сервер прислал новое сообщение {message.Id}. Кидаем в синхронизатор.");
-            message.IsSynced = 1; // Пометка, что это готовые данные с сервера
+            message.IsSynced = 1;
 
             EventBus.Publish(this, new ISiberNetSyncCoordinator.MessageInserted(message));
             return Task.CompletedTask;
@@ -76,7 +71,7 @@ namespace HomeNet.Network
         public override void Dispose()
         {
             EventBus.Unsubscribe<ISiberNetSyncCoordinator.MessagePendingSync>(OnMessagePendingSync);
-            EventBus.Unsubscribe<ISiberNetSyncCoordinator.MessagePullRequested>(OnMessagePullRequested); // Не забываем отписаться!
+            EventBus.Unsubscribe<ISiberNetSyncCoordinator.MessagePullRequested>(OnMessagePullRequested);
         }
     }
 }

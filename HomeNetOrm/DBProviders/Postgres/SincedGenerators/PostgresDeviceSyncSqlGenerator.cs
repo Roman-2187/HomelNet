@@ -24,16 +24,17 @@ namespace HomeNetOrm.DBProviders.Postgres.SyncedGenerators
             string conflictUser = DbColumns[nameof(DeviceSyncEntity.UserId)];
             string conflictDevice = DbColumns[nameof(DeviceSyncEntity.DeviceId)];
 
-            string lastSyncedCol = DbColumns[nameof(DeviceSyncEntity.UpdatedAt)];
+            // Берем колонку UpdatedAt из маппинга твоего ОРМ
             string updatedCol = DbColumns[nameof(DeviceSyncEntity.UpdatedAt)];
 
+            // При конфликте (девайс + юзер уже есть) мы НЕ трогаем CreatedAt.
+            // Мы обновляем только UpdatedAt, чтобы зафиксировать момент новой синхронизации.
             string sql = $@"
                 INSERT INTO ""{_tableName}"" ({fields})
                 VALUES ({values})
                 ON CONFLICT (""{conflictUser}"", ""{conflictDevice}"") 
                 DO UPDATE SET 
-                    ""{lastSyncedCol}"" = EXCLUDED.""{lastSyncedCol}"", 
-                    ""{updatedCol}"" = NOW();";
+                    ""{updatedCol}"" = NOW();"; // Или EXCLUDED.""{updatedCol}"" — смотря откуда хочешь брать время (из БД или из C#)
 
             return Command(sql);
         }

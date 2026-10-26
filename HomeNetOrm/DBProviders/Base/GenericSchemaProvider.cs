@@ -16,13 +16,13 @@ namespace HomeNetOrm.DBProviders.Base
     /// </summary>
     internal class GenericSchemaProvider : ISchemaProvider
     {
-        private readonly ISchemaSqlInitializer _sqlInit;
+        private readonly ISchemaSqlGenerator _sqlInit;
         private readonly DbConnection _requiredConnection;
         private readonly IDbProviderSpecification _spec;
         private readonly ILogger _logger;
 
         public GenericSchemaProvider(
-            ISchemaSqlInitializer sqlInit,
+            ISchemaSqlGenerator sqlInit,
             DbConnection connection,
             IDbProviderSpecification spec,
             ILogger logger)
