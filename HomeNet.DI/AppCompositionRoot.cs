@@ -7,7 +7,6 @@ using HomeNetOrm.Interfaces.Builders;
 using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.AdminViews;
 using HomeNetPresentation.ViewModels.ClientViews;
-using System.Net.Http; // Добавили для легкого пинга сервера
 
 namespace HomeNet.DI
 {
@@ -69,6 +68,7 @@ namespace HomeNet.DI
         }
 
         // 🔥 МЕТОД СТАЛ УМНЫМ СТРАЖЕМ СИНХРОНИЗАЦИИ
+        // 🔥 МЕТОД СТАЛ УМНЫМ СТРАЖЕМ СИНХРОНИЗАЦИИ (С ЛИМИТОМ В 4 ПОПЫТКИ)
         private static async Task OnInfrastructureReady(IDbContextContainer.InfrastructureReady ev)
         {
             if (_instance == null) return;
@@ -78,15 +78,14 @@ namespace HomeNet.DI
 
             logger.LogInfo("[App Старт] Локальные хранилища готовы. Проверяем статус бэкенд сервера...");
 
-            // 🎯 УМНЫЙ ЦИКЛ ОЖИДАНИЯ: Стучимся в сервер, пока он не проснется
             using (var client = new HttpClient { Timeout = TimeSpan.FromMilliseconds(800) })
             {
-                // В DataAccessModule в качестве postgresConn на клиенте лежит URL бэкенда (например, http://localhost:5210)
                 string pingUrl = $"{dataAccess.ApiBaseUrl.TrimEnd('/')}/api/ping";
                 bool isServerUp = false;
                 int attempts = 0;
+                const int maxAttempts = 4; // 🎯 Предел прочности
 
-                while (!isServerUp)
+                while (!isServerUp && attempts < maxAttempts)
                 {
                     attempts++;
                     try
@@ -100,31 +99,42 @@ namespace HomeNet.DI
                     }
                     catch
                     {
-                        // Сервер еще поднимает Kestrel или Postgres — мягко ждем и пробуем снова
-                        logger.LogWarning($"[App Старт] Сервер бэкенда еще занят инициализацией. Попытка {attempts}, ждем...");
-                        await Task.Delay(500); // Пауза в полсекунды между ударами в дверь
+                        logger.LogWarning($"[App Старт] Сервер бэкенда еще занят или недоступен. Попытка {attempts}/{maxAttempts}...");
+
+                        // Если это была не последняя попытка — даем паузу. На последней — выходим сразу
+                        if (attempts < maxAttempts)
+                        {
+                            await Task.Delay(500);
+                        }
                     }
+                }
+
+                if (!isServerUp)
+                {
+                    logger.LogWarning("[App Старт] Бэкенд не ответил за 4 попытки. Переходим в ОФЛАЙН режим работы.");
                 }
             }
 
-            logger.LogInfo("[App Старт] Запускаем репликацию данных и SignalR соединения...");
-
-            // 🔥 ТЕПЕРЬ ПОДКЛЮЧАЕМ СЕТЕВЫЕ ТРУБЫ БЕЗ СБОЕВ
-            try
+            // Подключаем сетевые трубы, только если сервер реально ожил
+            if (dataAccess.NotificationListener != null)
             {
-                await dataAccess.NotificationListener.ConnectAsync();
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"[App Старт] Не удалось подключить логи бэкенда: {ex.Message}");
+                try
+                {
+                    // Пытаемся подключить SignalR, но без фанатизма (если сервер лежит, метод сам упадет в catch)
+                    await dataAccess.NotificationListener.ConnectAsync();
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError($"[App Старт] Не удалось подключить логи бэкенда (офлайн): {ex.Message}");
+                }
             }
 
-            // На всякий случай даем микро-паузу на стабилизацию сокетов
             await Task.Delay(200);
 
-            // 🔥 СИНХРОНИЗАЦИЯ СТАРТУЕТ С ГАРАНТИЕЙ ДОСТУПНОСТИ СЕРВЕРА
+            // 🔥 ЗАПУСКАЕМ ОРМ ДВИЖОК В ЛЮБОМ СЛУЧАЕ: локальная SQLite должна шуршать!
             await dataAccess.OrmEngine.StartAsync();
         }
+
 
         public TGet GetViewModel<TGet>() where TGet : class
         {
