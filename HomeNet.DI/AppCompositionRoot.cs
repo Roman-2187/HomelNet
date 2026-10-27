@@ -67,7 +67,7 @@ namespace HomeNet.DI
             });
         }
 
-        // 🔥 МЕТОД СТАЛ УМНЫМ СТРАЖЕМ СИНХРОНИЗАЦИИ
+        
         // 🔥 МЕТОД СТАЛ УМНЫМ СТРАЖЕМ СИНХРОНИЗАЦИИ (С ЛИМИТОМ В 4 ПОПЫТКИ)
         private static async Task OnInfrastructureReady(IDbContextContainer.InfrastructureReady ev)
         {

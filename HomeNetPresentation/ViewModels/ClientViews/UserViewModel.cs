@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
@@ -32,6 +33,18 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Subscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
             _eventBus.Subscribe<IUserVm.ClientTabChanged>(OnClientTabChanged);       
         }
+
+
+        // Добавь CommunityToolkit.Mvvm.Input в юзинги
+        [RelayCommand]
+        private void LogoutDevice()
+        {
+            _logger.LogInfo("[UserVM] Пользователь инициировал глобальный выход из системы.");
+
+            // Просто стреляем в шину. Мы никого не ждем, вьюмодель пользователя чиста!
+            _eventBus.Publish(this, new IUserVm.LogoutClient());
+        }
+
 
         private void OnClientTabChanged(IUserVm.ClientTabChanged msg)
         {
