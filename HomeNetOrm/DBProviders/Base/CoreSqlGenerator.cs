@@ -1,6 +1,10 @@
-﻿using Dapper;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Dapper;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
 
 namespace HomeNetOrm.DBProviders.Base
@@ -10,12 +14,14 @@ namespace HomeNetOrm.DBProviders.Base
         protected readonly TableSchema Schema;
         protected readonly TableSchema CamelSchema;
         protected readonly ILogger Logger;
+        protected readonly ISqlDialectTranslator Translator;
 
         public IReadOnlyDictionary<string, string> DbColumns { get; }
         public IReadOnlyDictionary<string, string> DapperParams { get; }
 
-        protected CoreSqlGenerator(IEnumerable<TableSchema> availableSchemas, ILogger logger)
+        protected CoreSqlGenerator(IEnumerable<TableSchema> availableSchemas, ISqlDialectTranslator translator, ILogger logger)
         {
+            Translator = translator ?? throw new ArgumentNullException(nameof(translator));
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             ArgumentNullException.ThrowIfNull(availableSchemas);
 
@@ -53,16 +59,10 @@ namespace HomeNetOrm.DBProviders.Base
             DapperParams = validPairs.ToDictionary(p => p.Camel.Name!, p => $"@{p.Camel.Name!}", StringComparer.OrdinalIgnoreCase);
         }
 
-        // --- 🎯 БЛАТНЫЕ ФАБРИКИ КОМАНД ДЛЯ ВЫПИЛИВАНИЯ ХАРДКОДА ---
+        protected Builders.TokenQueryBuilder CreateQuery() => new(Translator, Schema, CamelSchema, DbColumns);
 
-        /// <summary>
-        /// Сборка команды без параметров (SelectAll)
-        /// </summary>
         protected SqlQueryCommand Command(string sql) => new(sql);
 
-        /// <summary>
-        /// Сборка команды с одним точечным параметром (Id, Email)
-        /// </summary>
         protected SqlQueryCommand Command(string sql, string propertyName, object? value)
         {
             var p = new DynamicParameters();

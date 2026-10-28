@@ -1,55 +1,59 @@
-﻿using HomeNetCore.Interfaces.Diagnostics;
+﻿using System;
+using System;
+using System.Collections.Generic;
+using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Models.Entity;
 using HomeNetOrm.DBProviders.Base;
+using HomeNetOrm.Enums;
+using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
 
-namespace HomeNetOrm.DBProviders.Postgres.SyncedGenerators
+namespace HomeNetOrm.DBProviders.Postgres.SincedGenerators
 {
     internal class PostgresDeviceSyncSqlGenerator : CoreSqlGenerator<DeviceSyncEntity>, IRemoteDeviceSyncSqlGenerator
     {
-        private readonly string _tableName;
-
-        public PostgresDeviceSyncSqlGenerator(IEnumerable<TableSchema> schemas, ILogger logger)
-            : base(schemas, logger)
-        {
-            _tableName = Schema.TableName;
-        }
+        public PostgresDeviceSyncSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ILogger logger)
+            : base(schemas, translator, logger) { }
 
         public SqlQueryCommand GenerateDeviceSyncUpsert()
         {
-            string fields = SqlQueryBuilder.BuildInsertFields(Schema);
-            string values = SqlQueryBuilder.BuildInsertParameters(CamelSchema);
+            // 🧙‍♂️ Сборка сложного UPSERT запроса без единой сырой строки и без ручных склеек .Build().Sql
+            return CreateQuery()
+                .Emit(Sql.Cmd.Insert).Emit(Sql.Phrase.Into).Table()
+                .InsertFields()
+                .Emit(Sql.Phrase.Values)
+                .InsertParameters()
 
-            string conflictUser = DbColumns[nameof(DeviceSyncEntity.UserId)];
-            string conflictDevice = DbColumns[nameof(DeviceSyncEntity.DeviceId)];
+                // ON CONFLICT ("user_id", "device_id")
+                .Emit(Sql.Phrase.On).Emit(Sql.Phrase.Conflict)
+                .Emit(Sql.Op.OpenBracket)
+                    .Col(nameof(DeviceSyncEntity.UserId))
+                    .Raw(",") // Для запятой между колонками можно использовать точечный Raw или добавить OpType.Comma
+                    .Col(nameof(DeviceSyncEntity.DeviceId))
+                .Emit(Sql.Op.CloseBracket)
 
-            // Берем колонку UpdatedAt из маппинга твоего ОРМ
-            string updatedCol = DbColumns[nameof(DeviceSyncEntity.UpdatedAt)];
-
-            // При конфликте (девайс + юзер уже есть) мы НЕ трогаем CreatedAt.
-            // Мы обновляем только UpdatedAt, чтобы зафиксировать момент новой синхронизации.
-            string sql = $@"
-                INSERT INTO ""{_tableName}"" ({fields})
-                VALUES ({values})
-                ON CONFLICT (""{conflictUser}"", ""{conflictDevice}"") 
-                DO UPDATE SET 
-                    ""{updatedCol}"" = NOW();"; // Или EXCLUDED.""{updatedCol}"" — смотря откуда хочешь брать время (из БД или из C#)
-
-            return Command(sql);
+                // DO UPDATE SET "updated_at" = NOW()
+                .Emit(Sql.Phrase.Do).Emit(Sql.Cmd.Update).Emit(Sql.Phrase.Set)
+                .Col(nameof(DeviceSyncEntity.UpdatedAt)).Emit(Sql.Op.Equal).Raw("NOW()")
+                .Build();
         }
 
         public SqlQueryCommand GenerateSelectUpdatesByTimestamp(DateTimeOffset timestamp) =>
-            Command($@"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, CamelSchema)} 
-                      FROM ""{_tableName}"" 
-                      WHERE ""{DbColumns[nameof(DeviceSyncEntity.UpdatedAt)]}"" > {DapperParams[nameof(DeviceSyncEntity.UpdatedAt)]};",
-                    nameof(DeviceSyncEntity.UpdatedAt), timestamp);
+            CreateQuery()
+                .Emit(Sql.Cmd.Select).Fields().Emit(Sql.Phrase.From).Table()
+                .Emit(Sql.Phrase.Where)
+                    .Col(nameof(DeviceSyncEntity.UpdatedAt)).Emit(Sql.Op.GreaterThan)
+                    .Param(nameof(DeviceSyncEntity.UpdatedAt), timestamp)
+                .Build();
 
         public SqlQueryCommand GenerateSelectUserIdByDevice(Guid deviceId) =>
-            Command($@"SELECT ""{DbColumns[nameof(DeviceSyncEntity.UserId)]}"" 
-                      FROM ""{_tableName}"" 
-                      WHERE ""{DbColumns[nameof(DeviceSyncEntity.DeviceId)]}"" = {DapperParams[nameof(DeviceSyncEntity.DeviceId)]} 
-                      LIMIT 1;",
-                    nameof(DeviceSyncEntity.DeviceId), deviceId);
+            CreateQuery()
+                .Emit(Sql.Cmd.Select).Col(nameof(DeviceSyncEntity.UserId)).Emit(Sql.Phrase.From).Table()
+                .Emit(Sql.Phrase.Where)
+                    .Col(nameof(DeviceSyncEntity.DeviceId)).Emit(Sql.Op.Equal)
+                    .Param(nameof(DeviceSyncEntity.DeviceId), deviceId)
+                .Raw(Translator.FormatLimit(1)) // Извлекаем чистый лимит из диалекта СУБД вместо строки "LIMIT 1"
+                .Build();
     }
 }

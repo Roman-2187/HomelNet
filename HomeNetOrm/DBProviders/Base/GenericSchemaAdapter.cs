@@ -110,7 +110,7 @@ namespace HomeNetOrm.DBProviders.Base
 
         // --- ВНУТРЕННИЕ ПРИВАТНЫЕ КИШКИ ТРАНСФОРМАЦИИ СТРОК ---
 
-        private static string? ToSnakeCase(string? name)
+        public static string? ToSnakeCase(string? name)
         {
             if (string.IsNullOrEmpty(name)) return name;
 

@@ -1,47 +1,39 @@
-﻿using HomeNetCore.Interfaces.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
+using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Models.Entity;
-using HomeNetOrm.DBProviders.Base;
-using HomeNetOrm.DBProviders.Sqlite.Generators;
+using HomeNetOrm.Enums;
+using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
 
 namespace HomeNetOrm.DBProviders.Sqlite.SincedGenerators
 {
-    internal class SyncedSqliteMessageSqlGenerator : SqliteMessageSqlGenerator, ISyncSqlGenerator<MessageEntity>
+    internal class SyncedSqliteMessageSqlGenerator : Generators.SqliteMessageSqlGenerator, ISyncSqlGenerator<MessageEntity>
     {
-        public SyncedSqliteMessageSqlGenerator(IEnumerable<TableSchema> schemas, ILogger logger)
-            : base(schemas, logger) { }
+        public SyncedSqliteMessageSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ILogger logger)
+            : base(schemas, translator, logger) { }
 
-        // === 🎯 ИНКАПСУЛИРОВАННАЯ СИНХРОНИЗАЦИЯ СООБЩЕНИЙ С УЧЕТОМ GUID PARAMETERS ===
-
-        // 🔥 ФИКС: Добавляем Guid id на входе и прокидываем в фабрику параметров
         public SqlQueryCommand GenerateCountById(Guid id) =>
-            Command($"SELECT COUNT(1) FROM \"{TableName}\" WHERE \"{IdColumn}\" = {DapperParams[nameof(MessageEntity.Id)]};",
-                    nameof(MessageEntity.Id), id);
+            CreateQuery()
+                .Emit(Sql.Cmd.Select).CountOne().Emit(Sql.Phrase.From).Table()
+                .Emit(Sql.Phrase.Where).Raw(IdColumn).Emit(Sql.Op.Equal).Param(nameof(MessageEntity.Id), id)
+                .Build();
 
         public SqlQueryCommand GenerateSelectUnsynced() =>
-            Command($"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, CamelSchema)} FROM \"{TableName}\" " +
-                    $"WHERE \"{DbColumns[nameof(MessageEntity.IsSynced)]}\" = 0 OR \"{DbColumns[nameof(MessageEntity.IsSynced)]}\" IS NULL;");
+            CreateQuery()
+                .Emit(Sql.Cmd.Select).Fields().Emit(Sql.Phrase.From).Table()
+                .Emit(Sql.Phrase.Where)
+                    .Col(nameof(MessageEntity.IsSynced)).Emit(Sql.Op.Equal).Emit(Sql.Op.False)
+                .Emit(Sql.Op.Or)
+                    .Col(nameof(MessageEntity.IsSynced)).Emit(Sql.Op.IsNull)
+                .Build();
 
-        // 🔥 ФИКС: Добавляем Guid id и сюда тоже
         public SqlQueryCommand GenerateUpdateMarkAsSynced(Guid id) =>
-            Command($"UPDATE \"{TableName}\" SET \"{DbColumns[nameof(MessageEntity.IsSynced)]}\" = 1 WHERE \"{IdColumn}\" = {DapperParams[nameof(MessageEntity.Id)]};",
-                    nameof(MessageEntity.Id), id);
-
-        public override object PrepareParameters(MessageEntity msg)
-        {
-            return new
-            {
-                msg.Id,
-                msg.SenderId,
-                msg.ReceiverId,
-                msg.Text,
-                msg.MediaType,
-                IsRead = msg.IsRead ? 1 : 0,
-                msg.CreatedAt,
-                IsSynced = 1,
-                msg.UpdatedAt
-            };
-        }
+            CreateQuery()
+                .Emit(Sql.Cmd.Update).Table()
+                .Emit(Sql.Phrase.Set).Col(nameof(MessageEntity.IsSynced)).Emit(Sql.Op.Equal).Emit(Sql.Op.True)
+                .Emit(Sql.Phrase.Where).Raw(IdColumn).Emit(Sql.Op.Equal).Param(nameof(MessageEntity.Id), id)
+                .Build();
     }
 }

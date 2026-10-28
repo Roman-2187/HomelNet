@@ -1,56 +1,47 @@
-﻿using HomeNetCore.Interfaces.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
+using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Models.Entity;
 using HomeNetOrm.DBProviders.Base;
+using HomeNetOrm.Enums;
+using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
-using System.Collections.Generic;
 
 namespace HomeNetOrm.DBProviders.Sqlite.Generators
 {
     internal class SqliteDeviceSettingsSqlGenerator : CoreSqlGenerator<DeviceSettingsEntity>, ILocalDeviceSettingsSqlGenerator
     {
-        private readonly string _tableName;
-        private readonly string _idColumn;
+        public SqliteDeviceSettingsSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ILogger logger)
+            : base(schemas, translator, logger) { }
 
-        public SqliteDeviceSettingsSqlGenerator(IEnumerable<TableSchema> schemas, ILogger logger)
-            : base(schemas, logger)
-        {
-            _tableName = Schema.TableName;
-            _idColumn = Schema.SinglePrimaryKey?.Name ?? "device_id";
-        }
-
-        // 🔥 ПОЧИНКА 1: Выбираем ВСЕ поля (*), чтобы Dapper мог полностью собрать сущность, а не только ID
         public SqlQueryCommand GenerateSelectByKey() =>
-            Command($@"SELECT * FROM ""{_tableName}"" LIMIT 1;");
+            CreateQuery()
+                .Emit(Sql.Cmd.Select).Raw("*").Emit(Sql.Phrase.From).Table()
+                .Raw("LIMIT 1")
+                .Build();
 
-        // 🔥 ПОЧИНКА 2: Добавляем обновление ВСЕХ полей сессии при конфликте
         public SqlQueryCommand GenerateInsertOrUpdate()
         {
-            string fields = SqlQueryBuilder.BuildInsertFields(Schema);
-            string values = SqlQueryBuilder.BuildInsertParameters(CamelSchema);
+            var userCol = DbColumns[nameof(DeviceSettingsEntity.UserId)];
+            var emailCol = DbColumns[nameof(DeviceSettingsEntity.Email)];
+            var passCol = DbColumns[nameof(DeviceSettingsEntity.Password)];
+            var updatedCol = DbColumns[nameof(DeviceSettingsEntity.UpdatedAt)];
 
-            string conflictDevice = DbColumns[nameof(DeviceSettingsEntity.DeviceId)];
+            // Специфичный блок EXCLUDED собираем через изолированный .Raw() без кавычек в теле метода
+            string updateSet = $"{Translator.FormatColumnName(userCol)} = EXCLUDED.{Translator.FormatColumnName(userCol)}, " +
+                               $"{Translator.FormatColumnName(emailCol)} = EXCLUDED.{Translator.FormatColumnName(emailCol)}, " +
+                               $"{Translator.FormatColumnName(passCol)} = EXCLUDED.{Translator.FormatColumnName(passCol)}, " +
+                               $"{Translator.FormatColumnName(updatedCol)} = EXCLUDED.{Translator.FormatColumnName(updatedCol)}";
 
-            // Вытаскиваем snake_case названия колонок из маппинга DbColumns
-            string userCol = DbColumns[nameof(DeviceSettingsEntity.UserId)];
-            string emailCol = DbColumns[nameof(DeviceSettingsEntity.Email)];
-            string passCol = DbColumns[nameof(DeviceSettingsEntity.Password)];
-            string updatedCol = DbColumns[nameof(DeviceSettingsEntity.UpdatedAt)];
-
-            // Формируем полноценный UPDATE SET для SQLite через EXCLUDED
-            string updateSet = $@"
-                ""{userCol}"" = EXCLUDED.""{userCol}"",
-                ""{emailCol}"" = EXCLUDED.""{emailCol}"",
-                ""{passCol}"" = EXCLUDED.""{passCol}"",
-                ""{updatedCol}"" = EXCLUDED.""{updatedCol}""";
-
-            string sql = $@"
-                INSERT INTO ""{_tableName}"" ({fields}) 
-                VALUES ({values}) 
-                ON CONFLICT(""{conflictDevice}"") 
-                DO UPDATE SET {updateSet};";
-
-            return Command(sql);
+            return CreateQuery()
+                .Emit(Sql.Cmd.Insert).Emit(Sql.Phrase.Into).Table()
+                .InsertFields()
+                .Emit(Sql.Phrase.Values)
+                .InsertParameters()
+                .Emit(Sql.Phrase.On).Emit(Sql.Phrase.Conflict).Emit(Sql.Op.OpenBracket).Col(nameof(DeviceSettingsEntity.DeviceId)).Emit(Sql.Op.CloseBracket)
+                .Emit(Sql.Phrase.Do).Emit(Sql.Cmd.Update).Emit(Sql.Phrase.Set).Raw(updateSet)
+                .Build();
         }
     }
 }

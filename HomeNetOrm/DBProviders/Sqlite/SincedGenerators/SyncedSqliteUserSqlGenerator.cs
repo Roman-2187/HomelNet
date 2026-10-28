@@ -1,31 +1,41 @@
-﻿using HomeNetCore.Interfaces.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
+using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Models.Entity;
-using HomeNetOrm.DBProviders.Base;
-using HomeNetOrm.DBProviders.Sqlite.Generators;
+using HomeNetOrm.Enums;
+using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
 
 namespace HomeNetOrm.DBProviders.Sqlite.SyncedGenerators
 {
-    internal class SyncedSqliteUserSqlGenerator : SqliteUserSqlGenerator, ISyncSqlGenerator<UserEntity>
+    internal class SyncedSqliteUserSqlGenerator : Generators.SqliteUserSqlGenerator, ISyncSqlGenerator<UserEntity>
     {
-        public SyncedSqliteUserSqlGenerator(IEnumerable<TableSchema> schemas, ILogger logger)
-            : base(schemas, logger) { }
+        public SyncedSqliteUserSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ILogger logger)
+            : base(schemas, translator, logger) { }
 
-        // === 🎯 ИНКАПСУЛИРОВАННАЯ СИНХРОНИЗАЦИЯ С УЧЕТОМ GUID PARAMETERS ===
-
-        // 🔥 ФИКС: Добавляем Guid id и прокидываем в фабрику Command
         public SqlQueryCommand GenerateCountById(Guid id) =>
-            Command($"SELECT COUNT(1) FROM \"{TableName}\" WHERE \"{IdColumn}\" = {DapperParams[nameof(UserEntity.Id)]};",
-                    nameof(UserEntity.Id), id);
+            CreateQuery()
+                .Emit(Sql.Cmd.Select).CountOne().Emit(Sql.Phrase.From).Table()
+                // 🧙‍♂️ Чистая замена: вместо .Raw(IdColumn) используем строгое имя свойства C# класса через .Col()
+                .Emit(Sql.Phrase.Where).Col(nameof(UserEntity.Id)).Emit(Sql.Op.Equal).Param(nameof(UserEntity.Id), id)
+                .Build();
 
         public SqlQueryCommand GenerateSelectUnsynced() =>
-            Command($"SELECT {SqlQueryBuilder.BuildSelectFields(Schema, CamelSchema)} FROM \"{TableName}\" " +
-                    $"WHERE \"{DbColumns[nameof(UserEntity.IsSynced)]}\" = 0 OR \"{DbColumns[nameof(UserEntity.IsSynced)]}\" IS NULL;");
+            CreateQuery()
+                .Emit(Sql.Cmd.Select).Fields().Emit(Sql.Phrase.From).Table()
+                .Emit(Sql.Phrase.Where)
+                    .Col(nameof(UserEntity.IsSynced)).Emit(Sql.Op.Equal).Emit(Sql.Op.False)
+                .Emit(Sql.Op.Or)
+                    .Col(nameof(UserEntity.IsSynced)).Emit(Sql.Op.IsNull)
+                .Build();
 
-        // 🔥 ФИКС: Добавляем Guid id и сюда тоже
         public SqlQueryCommand GenerateUpdateMarkAsSynced(Guid id) =>
-            Command($"UPDATE \"{TableName}\" SET \"{DbColumns[nameof(UserEntity.IsSynced)]}\" = 1 WHERE \"{IdColumn}\" = {DapperParams[nameof(UserEntity.Id)]};",
-                    nameof(UserEntity.Id), id);
+            CreateQuery()
+                .Emit(Sql.Cmd.Update).Table()
+                .Emit(Sql.Phrase.Set).Col(nameof(UserEntity.IsSynced)).Emit(Sql.Op.Equal).Emit(Sql.Op.True)
+                // 🧙‍♂️ И здесь тоже вычищаем ручной IdColumn на типизированное свойство
+                .Emit(Sql.Phrase.Where).Col(nameof(UserEntity.Id)).Emit(Sql.Op.Equal).Param(nameof(UserEntity.Id), id)
+                .Build();
     }
 }

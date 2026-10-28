@@ -1,21 +1,24 @@
-﻿using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetOrm.Interfaces.DbInfrastructure;
-using HomeNetOrm.Models;
-using HomeNetOrm.DBProviders.Base;
+﻿using System;
+using System.Linq;
 using System.Text;
 using Dapper;
+using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetOrm.DBProviders.Base;
+using HomeNetOrm.Enums;
+using HomeNetOrm.Interfaces.DbInfrastructure;
+using HomeNetOrm.Models;
 
 namespace HomeNetOrm.DBProviders.Sqlite.Base
 {
-    internal class SqliteSchemaInitializer : ISchemaSqlGenerator
+    internal class SqliteSchemaGenerator : ISchemaSqlGenerator
     {
         private readonly IDbProviderSpecification _spec;
-        private readonly ILogger _logger;
+        private readonly ISqlDialectTranslator _translator;
 
-        public SqliteSchemaInitializer(IDbProviderSpecification spec, ILogger logger)
+        public SqliteSchemaGenerator(IDbProviderSpecification spec, ISqlDialectTranslator translator)
         {
             _spec = spec ?? throw new ArgumentNullException(nameof(spec));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _translator = translator ?? throw new ArgumentNullException(nameof(translator));
         }
 
         public string GenerateCreateTableSql(TableSchema schema)
@@ -24,12 +27,10 @@ namespace HomeNetOrm.DBProviders.Sqlite.Base
             if (string.IsNullOrEmpty(schema.TableName) || schema.Columns == null)
                 return string.Empty;
 
-            string tableName = schema.TableName;
             var pkColumns = schema.Columns.Where(c => c != null && c.IsPrimaryKey).ToList();
-
             var sb = new StringBuilder();
-            sb.Append($@"CREATE TABLE IF NOT EXISTS ""{tableName}"" (");
 
+            sb.Append($"{_translator.Translate(Sql.Cmd.Create)} TABLE IF NOT EXISTS {_translator.FormatTable(schema)} (");
             sb.Append(SqlQueryBuilder.BuildCreateTableColumns(_spec, schema));
 
             if (pkColumns.Count > 1)
@@ -46,29 +47,29 @@ namespace HomeNetOrm.DBProviders.Sqlite.Base
         {
             if (string.IsNullOrWhiteSpace(tableName)) throw new ArgumentException("Имя таблицы пустое", nameof(tableName));
 
-            // Заворачиваем параметр чисто на автопилоте для Dapper
+            var sql = $"{_translator.Translate(Sql.Cmd.Select)} COUNT(*) " +
+                      $"{_translator.Translate(Sql.Phrase.From)} sqlite_master " +
+                      $"{_translator.Translate(Sql.Phrase.Where)} type='table' {_translator.Translate(Sql.Op.And)} name = @CleanName;";
+
             var p = new DynamicParameters();
             p.Add("CleanName", tableName.Trim('"', '\'').ToLower());
 
-            return new SqlQueryCommand(
-                $@"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name = @CleanName;",
-                p
-            );
+            return new SqlQueryCommand(sql, p);
         }
 
         public SqlQueryCommand GenerateGetTableStructureSql(string tableName)
         {
             if (string.IsNullOrWhiteSpace(tableName)) throw new ArgumentException("Имя таблицы пустое", nameof(tableName));
 
-            return new SqlQueryCommand($@"
-            SELECT 
-            name AS Name, 
-            type AS DataType, 
-            CASE WHEN [notnull] = 0 THEN 1 ELSE 0 END AS IsNullable,
-            CASE WHEN pk >= 1 THEN 'YES' ELSE 'NO' END AS KeyType,
-            dflt_value AS ExtraInfo
-            FROM pragma_table_info('{tableName}');"
-            );
+            var sql = $@"{_translator.Translate(Sql.Cmd.Select)} 
+                name AS Name, 
+                type AS DataType, 
+                CASE WHEN [notnull] = 0 THEN 1 ELSE 0 END AS IsNullable,
+                CASE WHEN pk >= 1 THEN 'YES' ELSE 'NO' END AS KeyType,
+                dflt_value AS ExtraInfo
+                {_translator.Translate(Sql.Phrase.From)} pragma_table_info('{tableName}');";
+
+            return new SqlQueryCommand(sql);
         }
     }
 }
