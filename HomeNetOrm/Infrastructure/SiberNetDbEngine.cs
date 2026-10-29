@@ -4,6 +4,7 @@ using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetOrm.DBProviders.Base;
+using HomeNetOrm.DBProviders.Postgres;
 using HomeNetOrm.Generators.Local;
 using HomeNetOrm.Generators.Remote;
 using HomeNetOrm.Generators.Sinc;
@@ -100,6 +101,7 @@ namespace HomeNetOrm.Infrastructure
         }
 
 
+        
         // --- ⚙️ Универсальный запуск инициализации таблиц и схем ---
         public async Task InitializeChannelAsync()
         {
@@ -114,13 +116,72 @@ namespace HomeNetOrm.Infrastructure
 
             await tableInitializer.InitializeAsync();
 
-            // Если это сервер — накатываем триггеры версионирования через методы расширения Postgres
+            // 🔥 АВТОМАТИЧЕСКИЙ НАКАТ ТРИГГЕРОВ ДЛЯ ПОСТГРЕСА
             if (_engineType == DbEngineType.RemoteServer)
             {
-                _logger.LogInfo("[SiberNet Engine] Накатываем серверные триггеры версионирования...");
-                // Здесь вызываешь твой PostgresSchemaExtensions, передавая туда _schemaGenerator и _translator
+                _logger.LogInfo("[SiberNet Engine] Серверный режим: Проверка системы версионирования Postgres...");
+
+                try
+                {
+                    // 1. Сначала накатываем/обновляем общую функцию инкремента (там внутри OR REPLACE, так что безопасно)
+                    string functionSql = _schemaGenerator.GenerateVersionFunctionSql(_translator);
+                    using (var cmdFunc = _connection.CreateCommand())
+                    {
+                        cmdFunc.CommandText = functionSql;
+                        await cmdFunc.ExecuteNonQueryAsync();
+                    }
+                    _logger.LogInfo("[SiberNet Engine] ✅ Глобальная функция инкремента 'update_version_func' проверена.");
+
+                    // 2. Бежим по всем зарегистрированным таблицам и проверяем триггеры
+                    foreach (var schema in _schemas)
+                    {
+                        if (string.IsNullOrEmpty(schema.TableName)) continue;
+
+                        string cleanTableName = schema.TableName.Replace("\"", "").ToLower();
+                        string triggerName = $"trg_{cleanTableName}_version";
+
+                        // 🔍 Проверяем, существует ли уже этот триггер в системном каталоге pg_trigger
+                        bool triggerExists = false;
+                        using (var checkCmd = _connection.CreateCommand())
+                        {
+                            checkCmd.CommandText = "SELECT COUNT(*) FROM pg_trigger WHERE tgname = @tgname;";
+                            var param = checkCmd.CreateParameter();
+                            param.ParameterName = "@tgname";
+                            param.Value = triggerName;
+                            checkCmd.Parameters.Add(param);
+
+                            var result = await checkCmd.ExecuteScalarAsync();
+                            triggerExists = Convert.ToInt32(result) > 0;
+                        }
+
+                        if (triggerExists)
+                        {
+                            _logger.LogInfo($"[SiberNet Engine] Лог: Триггер версионирования '{triggerName}' уже существует для таблицы '{schema.TableName}'. Пропуск.");
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"[SiberNet Engine] Лог: Триггер '{triggerName}' НЕ найден. Генерируем и накатываем...");
+
+                            // Генерируем SQL триггера через наш метод расширения
+                            string triggerSql = _schemaGenerator.GenerateVersionTriggerSql(schema, _translator);
+
+                            using (var runCmd = _connection.CreateCommand())
+                            {
+                                runCmd.CommandText = triggerSql;
+                                await runCmd.ExecuteNonQueryAsync();
+                            }
+                            _logger.LogInfo($"[SiberNet Engine] ✅ Триггер '{triggerName}' успешно привязан к таблице '{schema.TableName}'.");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogCritical($"[SiberNet Engine] ❌ КРИТИЧЕСКАЯ ОШИБКА инициализации триггеров версионирования: {ex.Message}");
+                    throw;
+                }
             }
         }
+
 
         public void Dispose()
         {

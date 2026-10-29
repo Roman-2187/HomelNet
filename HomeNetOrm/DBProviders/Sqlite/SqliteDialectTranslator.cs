@@ -1,6 +1,4 @@
-﻿using System;
-using HomeNetOrm.Enums;
-using HomeNetOrm.Interfaces.DbInfrastructure;
+﻿using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
 using static HomeNetOrm.Enums.Sql;
 

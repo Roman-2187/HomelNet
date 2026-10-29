@@ -3,6 +3,7 @@ using HomeNetCore.Enums;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
+using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.AdminViews;
@@ -24,9 +25,9 @@ namespace HomeNet.DI
         public ILogger Logger => _infrastructure.Logger;
         public IEventBus EventBus => _infrastructure.EventBus;
 
-       
+        // 🔥 Публичный доступ к конкретному синхро-движку без кривых интерфейсов
+        public SincEngine OrmEngine => _dataAccess.OrmEngine;
 
-        // Переименовали postgresConn в apiBaseUrl, чтобы код читал сам себя
         private AppCompositionRoot(BackendMode mode, string apiBaseUrl, string sqliteConn)
         {
             _infrastructure = new CoreInfrastructureModule();
@@ -36,7 +37,7 @@ namespace HomeNet.DI
 
             _dataAccess = new DataAccessModule(
                 sqliteConn,
-                apiBaseUrl, // 🔥 Теперь имя переменной на 100% совпадает с внутренностями модуля!
+                apiBaseUrl,
                 registeredSchemas,
                 _infrastructure.Logger,
                 _infrastructure.LogQueueManager,
@@ -58,7 +59,6 @@ namespace HomeNet.DI
             );
         }
 
-        // В точке входа тоже навели порядок в названиях аргументов
         public static void Initialize(BackendMode mode, string apiBaseUrl, string sqliteConn)
         {
             _instance = new AppCompositionRoot(mode, apiBaseUrl, sqliteConn);
@@ -71,9 +71,6 @@ namespace HomeNet.DI
             });
         }
 
-
-
-        // 🔥 МЕТОД СТАЛ УМНЫМ СТРАЖЕМ СИНХРОНИЗАЦИИ (С ЛИМИТОМ В 4 ПОПЫТКИ)
         private static async Task OnInfrastructureReady(IDbContextContainer.InfrastructureReady ev)
         {
             if (_instance == null) return;
@@ -88,7 +85,7 @@ namespace HomeNet.DI
                 string pingUrl = $"{dataAccess.ApiBaseUrl.TrimEnd('/')}/api/ping";
                 bool isServerUp = false;
                 int attempts = 0;
-                const int maxAttempts = 4; // 🎯 Предел прочности
+                const int maxAttempts = 4;
 
                 while (!isServerUp && attempts < maxAttempts)
                 {
@@ -106,7 +103,6 @@ namespace HomeNet.DI
                     {
                         logger.LogWarning($"[App Старт] Сервер бэкенда еще занят или недоступен. Попытка {attempts}/{maxAttempts}...");
 
-                        // Если это была не последняя попытка — даем паузу. На последней — выходим сразу
                         if (attempts < maxAttempts)
                         {
                             await Task.Delay(500);
@@ -120,12 +116,10 @@ namespace HomeNet.DI
                 }
             }
 
-            // Подключаем сетевые трубы, только если сервер реально ожил
             if (dataAccess.NotificationListener != null)
             {
                 try
                 {
-                    // Пытаемся подключить SignalR, но без фанатизма (если сервер лежит, метод сам упадет в catch)
                     await dataAccess.NotificationListener.ConnectAsync();
                 }
                 catch (Exception ex)
@@ -135,11 +129,8 @@ namespace HomeNet.DI
             }
 
             await Task.Delay(200);
-
-            // 🔥 ЗАПУСКАЕМ ОРМ ДВИЖОК В ЛЮБОМ СЛУЧАЕ: локальная SQLite должна шуршать!
-            await dataAccess.OrmEngine.StartAsync();
+            // 🔥 СТРОКА ХОЛОСТОГО ЗАПУСКА УДАЛЕНА ИЗ ПОДВАЛА. Теперь старт строго контролируемый!
         }
-
 
         public TGet GetViewModel<TGet>() where TGet : class
         {
@@ -160,7 +151,7 @@ namespace HomeNet.DI
             if (typeof(TGet) == typeof(ContactsViewModel)) return (_ui.ContactsVM as TGet)!;
             if (typeof(TGet) == typeof(DeviceSettingsViewModel)) return (_ui.DeviceSettingsVM as TGet)!;
 
-            throw new ArgumentException($"Тип {typeof(TGet).Name} не найден в UI模块.");
+            throw new ArgumentException($"Тип {typeof(TGet).Name} не найден в UI.");
         }
     }
 }

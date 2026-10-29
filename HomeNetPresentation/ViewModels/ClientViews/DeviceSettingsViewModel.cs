@@ -152,6 +152,8 @@ namespace HomeNetPresentation.ViewModels.ClientViews
 
                 _logger.LogInfo("[Сессия -> VM] Локальный SQLite обновлен. Синхронизатор подхватит апдейт автоматически.");
 
+
+
                 // Пинаем координатор фоновой синхронизации
                 _eventBus.Publish(this, new ISiberNetSyncCoordinator.UserPendingSync(user));
             }

@@ -1,51 +1,74 @@
-﻿using Dapper;
+﻿using System;
+using System.Threading.Tasks;
+using Dapper;
 using HomeNet.DI;
 using HomeNetAvalonia.Animators;
+using HomeNetCore.Extensions;
 using HomeNetCore.Enums;
 using HomeNetOrm.Helpers;
+using HomeNetPresentation.ViewModels;
+using HomeNetPresentation.ViewModels.ClientViews;
+using HomeNetCore.Interfaces.ViewModels;
 
 namespace HomeNetAvalonia.Infrastructure
 {
     public static class AvaloniaUiBootstrapper
     {
-        // 🔥 СТАТИЧЕСКИЙ ФЛАГ-ПРЕДОХРАНИТЕЛЯ ТЕПЕРЬ ЖИВЕТ ТУТ
         private static bool _isInitialized = false;
 
         public static AppCompositionRoot BuildAvaloniaContainer(BackendMode mode, string apiBaseUrl, string sqliteConn)
         {
-            // Если контейнер уже был успешно собран (например, при первом проходе),
-            // мы просто молча возвращаем готовый экземпляр и не устраиваем каскадный краш СУБД!
             if (_isInitialized)
             {
                 return AppCompositionRoot.Instance;
             }
 
-            // 🔨 Обучаем Dapper читать DateTimeOffset из строк SQLite
             SqlMapper.AddTypeHandler(new DateTimeOffsetHandler());
-
-            // Обучаем Dapper парсить текстовые Guid из колонок SQLite
             SqlMapper.AddTypeHandler(new GuidTypeHandler());
 
-            // 🚀 1. Запускаем инициализацию корня композиции (строго ОДИН раз за жизнь приложения!)
             AppCompositionRoot.Initialize(mode, apiBaseUrl, sqliteConn);
-
-            // Взводим флаг, блокируя повторные "холостые" выстрелы Avalonia
             _isInitialized = true;
 
-            // 🚀 2. Вытаскиваем готовый экземпляр через статическое свойство
             AppCompositionRoot root = AppCompositionRoot.Instance;
+
+            // ============================================================================
+            // 🚌 ЛОВИМ РОДНЫЕ АВТОБУСЫ ВЬЮМОДЕЛЕЙ
+            // Подписываемся на события, которые вьюмодели ПРЕКРАСНО знают и сами пускают в шину!
+            // ============================================================================
+            root.EventBus.SubscribeAsync<IUserVm.UserSignedIn>(OnUserSessionActivated);
+            root.EventBus.SubscribeAsync<IUserVm.UserSignedUp>(OnUserSessionActivated);
 
             if (mode == BackendMode.Real || mode == BackendMode.Local)
             {
-                // Старый аниматор закрытия окна
                 var animator = new CloseWindowAnimator(root.EventBus);
-
-                // 🔥 НАШ НОВЫЙ АНИМАТОР ШИРОКОФОРМАТНОГО РЕЖИМА
-                // Теперь он просыпается прямо при старте UI-слоя Авалонии!
                 var widescreenAnimator = new WidescreenWindowAnimator(root.EventBus);
             }
 
             return root;
+        }
+
+        // 🧙‍♂️ Диспетчер Авалонии ловит стандартный вход/регистрацию
+        private static async Task OnUserSessionActivated(object eventData)
+        {
+            AppCompositionRoot root = AppCompositionRoot.Instance;
+            root.Logger.LogInfo("[Avalonia Bootstrapper] Сигнал авторизации пойман. Будим OrmEngine...");
+
+            try
+            {
+                // 1. Включаем ОРМ-движок. Он мгновенно настраивает свои внутренние подписки
+                await root.OrmEngine.StartAsync();
+                root.Logger.LogInfo("[Avalonia Bootstrapper] ✅ Репликатор OrmEngine успешно разбужен.");
+
+                // 2. 🔥 ХИТРЫЙ ХОД: Даем микроскопическую паузу в 10 миллисекунд.
+                // Это нужно ТОЛЬКО для того, чтобы дать проснувшемуся синхронизатору ОРМ 
+                // время встать на свои посты в шине ДО того, как метод выйдет и долетит 
+                // тяжелый сигнал 'UserPendingSync' из недр DeviceSettingsViewModel.
+                await Task.Delay(10);
+            }
+            catch (Exception ex)
+            {
+                root.Logger.LogError($"[Avalonia Bootstrapper] ❌ Ошибка отложенного старта репликации: {ex.Message}");
+            }
         }
     }
 }
