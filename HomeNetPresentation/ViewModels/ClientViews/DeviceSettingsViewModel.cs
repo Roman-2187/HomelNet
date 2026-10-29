@@ -154,8 +154,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
 
 
 
-                // Пинаем координатор фоновой синхронизации
-                _eventBus.Publish(this, new ISiberNetSyncCoordinator.UserPendingSync(user));
+               
             }
             catch (Exception ex)
             {

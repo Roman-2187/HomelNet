@@ -101,7 +101,8 @@ namespace HomeNetOrm.Infrastructure
         }
 
 
-        
+
+        // --- ⚙️ Универсальный запуск инициализации таблиц и схем ---
         // --- ⚙️ Универсальный запуск инициализации таблиц и схем ---
         public async Task InitializeChannelAsync()
         {
@@ -132,12 +133,23 @@ namespace HomeNetOrm.Infrastructure
                     }
                     _logger.LogInfo("[SiberNet Engine] ✅ Глобальная функция инкремента 'update_version_func' проверена.");
 
+                    // 📋 Черный список таблиц, которым НЕ нужно серверное версионирование и триггеры
+                    var ignoreTablesForVersioning = new HashSet<string> { "device_sync", "devicesync" };
+
                     // 2. Бежим по всем зарегистрированным таблицам и проверяем триггеры
                     foreach (var schema in _schemas)
                     {
                         if (string.IsNullOrEmpty(schema.TableName)) continue;
 
                         string cleanTableName = schema.TableName.Replace("\"", "").ToLower();
+
+                        // 🛑 Проверяем, входит ли таблица в список исключений
+                        if (ignoreTablesForVersioning.Contains(cleanTableName))
+                        {
+                            _logger.LogInfo($"[SiberNet Engine] Игнор-лист: Таблица '{schema.TableName}' исключена из системы серверного версионирования.");
+                            continue;
+                        }
+
                         string triggerName = $"trg_{cleanTableName}_version";
 
                         // 🔍 Проверяем, существует ли уже этот триггер в системном каталоге pg_trigger
@@ -181,6 +193,7 @@ namespace HomeNetOrm.Infrastructure
                 }
             }
         }
+
 
 
         public void Dispose()

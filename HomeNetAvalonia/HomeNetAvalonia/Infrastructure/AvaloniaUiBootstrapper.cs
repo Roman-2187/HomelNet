@@ -6,8 +6,6 @@ using HomeNetAvalonia.Animators;
 using HomeNetCore.Extensions;
 using HomeNetCore.Enums;
 using HomeNetOrm.Helpers;
-using HomeNetPresentation.ViewModels;
-using HomeNetPresentation.ViewModels.ClientViews;
 using HomeNetCore.Interfaces.ViewModels;
 
 namespace HomeNetAvalonia.Infrastructure
@@ -47,7 +45,6 @@ namespace HomeNetAvalonia.Infrastructure
             return root;
         }
 
-        // 🧙‍♂️ Диспетчер Авалонии ловит стандартный вход/регистрацию
         private static async Task OnUserSessionActivated(object eventData)
         {
             AppCompositionRoot root = AppCompositionRoot.Instance;
@@ -55,20 +52,17 @@ namespace HomeNetAvalonia.Infrastructure
 
             try
             {
-                // 1. Включаем ОРМ-движок. Он мгновенно настраивает свои внутренние подписки
+                // 1. Включаем ОРМ-движок. Он мгновенно настраивает свои внутренние подписки и сам сканирует базу!
                 await root.OrmEngine.StartAsync();
                 root.Logger.LogInfo("[Avalonia Bootstrapper] ✅ Репликатор OrmEngine успешно разбужен.");
 
-                // 2. 🔥 ХИТРЫЙ ХОД: Даем микроскопическую паузу в 10 миллисекунд.
-                // Это нужно ТОЛЬКО для того, чтобы дать проснувшемуся синхронизатору ОРМ 
-                // время встать на свои посты в шине ДО того, как метод выйдет и долетит 
-                // тяжелый сигнал 'UserPendingSync' из недр DeviceSettingsViewModel.
-                await Task.Delay(10);
+                // ✂️ УДАЛЕНО: await Task.Delay(10); — костыль уничтожен за ненадобностью!
             }
             catch (Exception ex)
             {
                 root.Logger.LogError($"[Avalonia Bootstrapper] ❌ Ошибка отложенного старта репликации: {ex.Message}");
             }
         }
+
     }
 }
