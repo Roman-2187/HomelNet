@@ -1,12 +1,12 @@
-﻿using Dapper;
+﻿using System.Data;
+using System.Data.Common;
+using Dapper;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Models.Entity;
-using HomeNetOrm.DBProviders.Postgres.SincedGenerators;
-using HomeNetOrm.DBProviders.Postgres.SyncedGenerators;
 using HomeNetOrm.Interfaces.DbInfrastructure;
+using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
-using System.Data;
-using System.Data.Common;
+using HomeNetOrm.Generators.Sinc;
 
 namespace HomeNetOrm.Repositories.Remote
 {
@@ -20,14 +20,14 @@ namespace HomeNetOrm.Repositories.Remote
             var syncSupport = repository as ISyncSupport<MessageEntity>;
             if (syncSupport == null) return Array.Empty<MessageEntity>();
 
-            // 🎯 Кастуем строго к конкретному серверному Postgres-генератору сообщений!
-            if (syncSupport.SqlGenerator is not SyncedPostgresMessageSqlGenerator messageGen)
+            // 🎯 Кастуем строго к твоему готовому SyncedMessageSqlGenerator!
+            if (syncSupport.SqlGenerator is not SyncedMessageSqlGenerator messageGen)
                 return Array.Empty<MessageEntity>();
 
             DbConnection serverConn = syncSupport.Connection;
             if (serverConn.State != ConnectionState.Open) await serverConn.OpenAsync();
 
-            // Вызываем через точку родной метод класса. Никакого оверинжиниринга интерфейсов!
+            // Дергаем готовый рабочий метод класса
             SqlQueryCommand cmd = messageGen.GenerateSelectMessagesForSync(userId, checkpoint);
 
             return await serverConn.QueryAsync<MessageEntity>(cmd.Sql, cmd.Params);
@@ -45,16 +45,14 @@ namespace HomeNetOrm.Repositories.Remote
 
             SqlQueryCommand cmd;
 
-            // 🎯 Так как TEntity может быть либо UserEntity, либо другой сущностью репликации,
-            // мы проверяем тип и кастуем к конкретному серверному исполнителю:
+            // 🎯 Проверяем тип сущности и кастуем к твоему готовому SyncedUserSqlGenerator!
             if (typeof(TEntity) == typeof(UserEntity) &&
-                syncSupport.SqlGenerator is SyncedPostgresUserSqlGenerator userGen)
+                syncSupport.SqlGenerator is SyncedUserSqlGenerator userGen)
             {
                 cmd = userGen.GenerateSelectUpdatesByTimestamp(checkpoint);
             }
             else
             {
-                // Если прилетела другая сущность, которую сервер не реплицирует по датам — выходим
                 return Array.Empty<TEntity>();
             }
 
@@ -73,8 +71,8 @@ namespace HomeNetOrm.Repositories.Remote
             DbConnection serverConn = syncSupport.Connection;
             if (serverConn.State != ConnectionState.Open) await serverConn.OpenAsync();
 
-            // Кастуем к конкретному Postgres-генератору синхронизации девайсов
-            var deviceGen = syncSupport.SqlGenerator as PostgresDeviceSyncSqlGenerator;
+            // Кастуем к твоему универсальному генератору синхронизации девайсов
+            var deviceGen = syncSupport.SqlGenerator as IRemoteDeviceSyncSqlGenerator;
             if (deviceGen == null) return;
 
             SqlQueryCommand cmd = deviceGen.GenerateDeviceSyncUpsert();

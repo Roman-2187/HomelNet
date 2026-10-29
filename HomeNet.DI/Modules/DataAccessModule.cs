@@ -13,12 +13,11 @@ using HomeNetOrm.Sinc;
 
 namespace HomeNet.DI.Modules
 {
-
     public class DataAccessModule
     {
-        public SincedSqliteDbEngine SqliteEngine { get; }
+        // 🔥 Теперь здесь гордо трудится наша единая Царь-Машина!
+        public SiberNetDbEngine DbEngine { get; }
         public IApiClient ApiClient { get; }
-
         public string ApiBaseUrl { get; }
         public IDbContextContainer DbContextContainer { get; }
 
@@ -26,73 +25,58 @@ namespace HomeNet.DI.Modules
         public IUserRepository UserRepository { get; }
         public IMessageRepository MessageRepository { get; }
 
-        // 🔥 ДОБАВИЛИ: Публичный репозиторий настроек девайса
+        // Конкретный репозиторий настроек девайса без лишних интерфейсов-пустышек
         public ClientDeviceSettingsRepository DeviceSettingsRepository { get; }
 
-        // 🔥 ДОБАВИЛИ: Железный ID девайса, который мы вытащим из SQLite при старте сессии
+        // Железный ID девайса из SQLite сессии
         public Guid CurrentDeviceId { get; private set; }
 
-        // Наш главный собранный движок ОРМ наружу
+        // Наш главный синхро-движок ОРМ
         public SincEngine OrmEngine { get; }
 
         // Сетевой слушатель SignalR
         public SignalRNotificationListener NotificationListener { get; }
 
-        // 2. Внутри конструктора DataAccessModule первой строчкой сохрани прилетевший параметр:
         public DataAccessModule(string sqliteConn, string apiBaseUrl, IEnumerable<TableSchema> appSchemas, ILogger logger, ILogQueueManager logQueue, IEventBus eventBus)
         {
-            ApiBaseUrl = apiBaseUrl; // 🔥 ФИКСИРУЕМ АДРЕС ДЛЯ ВНЕШНЕГО МИРА!
-            // 1. Инициализируем локальный движок SQLite и скармливаем ему схемы! 🦾
-            SqliteEngine = new SincedSqliteDbEngine(sqliteConn, appSchemas, logger);
+            ApiBaseUrl = apiBaseUrl;
 
-            // 2. Инициализируем сетевой HttpClient (наш переводчик-курьер)
+            // 🎯 1. Запускаем SiberNetDbEngine в режиме локального клиента (SQLite)
+            DbEngine = new SiberNetDbEngine(DbEngineType.LocalClient, sqliteConn, appSchemas, logger);
+
+            // 2. Сетевой курьер API
             ApiClient = new HttpApiClient(apiBaseUrl, logger);
 
-            // 3. Контейнер занимается только инициализацией баз на старте
-            DbContextContainer = new DbContextContainer(SqliteEngine, apiBaseUrl, eventBus, logger);
+            // 3. Контейнер хаба инициализации (принимает наш универсальный движок)
+            DbContextContainer = new DbContextContainer(DbEngine, apiBaseUrl, eventBus, logger);
 
-            // 4. Движок сам создаёт репозитории, скрывая internal-генераторы внутри себя!
-            UserRepository = SqliteEngine.CreateUserRepository(eventBus);
-            MessageRepository = SqliteEngine.CreateMessageRepository(eventBus);
+            // 4. Штампуем репозитории на автопилоте!
+            UserRepository = DbEngine.CreateUserRepository(eventBus);
+            MessageRepository = DbEngine.CreateMessageRepository(eventBus);
+            DeviceSettingsRepository = DbEngine.CreateDeviceSettingsRepository();
 
-            // 🔥 ШАГ 4.1: Чистое создание репозитория настроек СТРОГО через фабрику движка! 
-            // Никаких генераторов в этом модуле нет, инкапсуляция соблюдена на все 100%.
-            DeviceSettingsRepository = SqliteEngine.CreateDeviceSettingsRepository();
-
-            // 5. 🔥 КРИСТАЛЬНАЯ ЧИСТОТА: Синхронизаторы теперь питаются ТОЛЬКО репозиторием, шиной и логгером. Сеть ушла наружу!
+            // 5. Инициализация слоев синхронизации
             var userSync = new UserSynchronizer(UserRepository, eventBus, logger);
             var messageSync = new MessageSynchronizer(MessageRepository, eventBus, logger);
-
             var syncCoordinator = new CompositeSyncCoordinator(userSync, messageSync);
 
-            // 6. Закрываем это добро внутрь нашего единого SincEngine движка ОРМ
+            // 6. Упаковываем репозитории в главный управляющий SincEngine
             OrmEngine = new SincEngine(UserRepository, MessageRepository, syncCoordinator, logger);
 
-            // 7. 🔥 СБОРКА СЕТЕВОГО СЛОЯ: Создаем монолитные двусторонние хандлеры
+            // 7. Сборка сетевых хандлеров
             var messageNetworkHandler = new MessageNetworkHandler(ApiClient, eventBus, logger);
             var userNetworkHandler = new UserNetworkHandler(ApiClient, eventBus, logger);
 
-            // 8. 🔥 НОВЫЙ КОММУТАТОР: Передаем хандлеры напрямую в листенер без всяких массивов и интерфейсов
+            // 8. Запуск SignalR листенера комьютаций
             NotificationListener = new SignalRNotificationListener(apiBaseUrl, messageNetworkHandler, userNetworkHandler, logger);
         }
 
-        /// <summary>
-        /// 🔥 НОВЫЙ АСИНХРОННЫЙ МЕТОД: Инициализация сессии устройства
-        /// Вызывать строго после того, как в бутстраппере отработает DbContextContainer.InitializeAsync()!
-        /// </summary>
         public async Task InitializeDeviceSessionAsync()
         {
-            // Репозиторий залезет в SQLite, заберет старый ID или сгенерирует новый без сырого SQL
             CurrentDeviceId = await DeviceSettingsRepository.GetOrCreateDeviceIdAsync();
         }
-
-
-
     }
 
-    /// <summary>
-    /// Координатор последовательного или параллельного запуска табличных синхронизаторов
-    /// </summary>
     public class CompositeSyncCoordinator : ISiberNetSyncCoordinator
     {
         private readonly ISiberNetSyncCoordinator _userSync;
@@ -107,7 +91,6 @@ namespace HomeNet.DI.Modules
 
         public async Task StartAsync()
         {
-            // Запускаем локальную сверку по обеим таблицам параллельно
             await Task.WhenAll(_userSync.StartAsync(), _messageSync.StartAsync());
         }
     }

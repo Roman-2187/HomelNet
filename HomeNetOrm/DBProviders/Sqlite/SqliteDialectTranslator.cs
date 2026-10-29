@@ -1,32 +1,34 @@
 ﻿using System;
-using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.Enums;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
 using static HomeNetOrm.Enums.Sql;
 
-namespace HomeNetOrm.DBProviders.Postgres.Base
+namespace HomeNetOrm.DBProviders.Sqlite
 {
-    public class PostgresDialectTranslator : ISqlDialectTranslator
+    public class SqliteDialectTranslator : ISqlDialectTranslator
     {
         // --- 🏗️ Блок экранирования метаданных (Таблицы и Колонки) ---
 
-        public string FormatTable(TableSchema schema) => $"\"{GenericSchemaAdapter.ToSnakeCase( schema.TableName)}\"";
+        public string FormatTable(TableSchema schema) => $"[{schema.TableName}]";
+        public string FormatColumnName(string columnName) => $"[{columnName}]";
 
-        public string FormatColumnName(string columnName) => $"\"{columnName}\"";
+        public string FormatReturningId(string columnName) => $"; SELECT last_insert_rowid() AS [{columnName}]";
 
         public string FormatLimit(int limit, int? offset = null) =>
             offset.HasValue ? $"LIMIT {limit} OFFSET {offset}" : $"LIMIT {limit}";
 
-        // --- ⚡ Системные функции и кастинг типов Postgres ---
+        // --- ⚡ Системные функции и кастинг типов SQLite ---
 
-        public string FormatCastToText(string expression) => $"{expression}::text";
+        public string FormatCastToText(string columnName) => $"CAST([{columnName}] AS TEXT)";
 
         public string FormatCountAll() => "COUNT(*)";
+        public string FormatCountOne() => "COUNT(*)";
 
-        public string FormatCountOne() => "COUNT(1)";
+        // 🔥 Динамическое получение текущего времени в SQLite через нативную функцию
+        public string FormatNow() => SqliteNowFunc;
 
-        // --- 🧱 Блок трансляции 4 компактных перечислений из DTO Sql ---
+        // --- 🧱 Блок трансляции перечислений из DTO Sql ---
 
         // 🟥 1. Команды (DML / DDL)
         public string Translate(CmdType cmd) => cmd switch
@@ -37,7 +39,7 @@ namespace HomeNetOrm.DBProviders.Postgres.Base
             CmdType.Insert => "INSERT",
             CmdType.Create => "CREATE",
             CmdType.Trigger => "TRIGGER",
-            CmdType.Function => "FUNCTION",
+            CmdType.Function => "CREATE FACTORY",
             CmdType.Procedure => "PROCEDURE",
             _ => throw new ArgumentOutOfRangeException(nameof(cmd))
         };
@@ -57,17 +59,20 @@ namespace HomeNetOrm.DBProviders.Postgres.Base
             PhraseType.Conflict => "CONFLICT",
             PhraseType.Do => "DO",
             PhraseType.As => "AS",
+            // 🔥 Дописываем кейсы для триггерных структур
+            PhraseType.Sequence => "SEQUENCE",
+            PhraseType.OrDml => "OR",
             _ => throw new ArgumentOutOfRangeException(nameof(phrase))
         };
 
-        // 🟩 3. Операторы, логика и границы блоков
+        // 🟩 3. Операторы и логика (Истина/Ложь в SQLite — это 1 и 0)
         public string Translate(OpType op) => op switch
         {
             OpType.Equal => "=",
             OpType.And => "AND",
             OpType.Or => "OR",
-            OpType.True => "TRUE",
-            OpType.False => "FALSE",
+            OpType.True => "1",
+            OpType.False => "0",
             OpType.OpenBracket => "(",
             OpType.CloseBracket => ")",
             OpType.Asc => "ASC",
@@ -76,10 +81,12 @@ namespace HomeNetOrm.DBProviders.Postgres.Base
             OpType.IsNull => "IS NULL",
             OpType.Begin => "BEGIN",
             OpType.End => "END;",
+            // 🔥 Наша новая космическая запятая, которая убирает хардкод строк из UPSERT-ов!
+            OpType.Comma => ",",
             _ => throw new ArgumentOutOfRangeException(nameof(op))
         };
 
-        // 🟦 4. Специфика триггеров
+        // 🟦 4. Специфика триггеров под диалект SQLite
         public string Translate(TriggerType trig) => trig switch
         {
             TriggerType.Returns => "RETURNS",
@@ -90,10 +97,15 @@ namespace HomeNetOrm.DBProviders.Postgres.Base
             TriggerType.On => "ON",
             TriggerType.ForEach => "FOR EACH",
             TriggerType.Row => "ROW",
-            TriggerType.Execute => "EXECUTE FUNCTION",
+            TriggerType.Execute => "BEGIN",
             TriggerType.New => "NEW",
             TriggerType.Old => "OLD",
             _ => throw new ArgumentOutOfRangeException(nameof(trig))
         };
+
+        // =========================================================================
+        // 🧰 ПОДВАЛ КЛАССА: Изолируем специфичные текстовые маркеры SQLite
+        // =========================================================================
+        private const string SqliteNowFunc = "datetime('now')";
     }
 }

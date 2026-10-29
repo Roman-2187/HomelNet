@@ -1,7 +1,7 @@
 ﻿using HomeNetOrm.Enums;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 
-namespace HomeNetOrm.DBProviders.Postgres.@base
+namespace HomeNetOrm.DBProviders.Postgres
 {
     /// <summary>
     /// Спецификация типов данных для PostgreSQL.

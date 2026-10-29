@@ -19,7 +19,9 @@
         // 🟨 2. Ключевые слова-связки
        
         public enum PhraseType { From, Where, Set, Into, Values, Returning, OrderBy, Language, On, Conflict, Do,
-            As
+            As,
+            Sequence,
+            OrDml
         }
 
         public static class Phrase
@@ -45,7 +47,9 @@
 
         public enum OpType { Equal, And, Or, True, False, OpenBracket, CloseBracket, Asc, Desc, GreaterThan, IsNull,
             Begin,
-            End
+            End,
+            Comma
+          
         }
 
         public static class Op

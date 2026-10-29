@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
@@ -8,7 +9,7 @@ using HomeNetOrm.Schemes;
 using System.Data;
 using System.Data.Common;
 
-namespace HomeNetOrm.DBProviders.Base
+namespace HomeNetOrm.Repositories.Base
 {
     internal class SchemaRepository
     {

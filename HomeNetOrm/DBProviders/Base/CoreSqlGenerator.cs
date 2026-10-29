@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Dapper;
+﻿using Dapper;
 using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
+using HomeNetOrm.Builders; // Убедись, что неймспейс билдера подключен
 
 namespace HomeNetOrm.DBProviders.Base
 {
@@ -55,11 +53,13 @@ namespace HomeNetOrm.DBProviders.Base
                             p.Snake != null && !string.IsNullOrEmpty(p.Snake.Name))
                 .ToList();
 
+            // 🔥 Словарь с StringComparer.OrdinalIgnoreCase уже готов принимать любые "senderId" или "SenderId"!
             DbColumns = validPairs.ToDictionary(p => p.Camel.Name!, p => p.Snake.Name!, StringComparer.OrdinalIgnoreCase);
             DapperParams = validPairs.ToDictionary(p => p.Camel.Name!, p => $"@{p.Camel.Name!}", StringComparer.OrdinalIgnoreCase);
         }
 
-        protected Builders.TokenQueryBuilder CreateQuery() => new(Translator, Schema, CamelSchema, DbColumns);
+        // 🔥 Переводим фабричный метод на типизированный TokenQueryBuilder<T>
+        protected TokenQueryBuilder<T> CreateQuery() => new(Translator, Schema, CamelSchema, DbColumns);
 
         protected SqlQueryCommand Command(string sql) => new(sql);
 

@@ -1,28 +1,39 @@
 ﻿using System;
+using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.Enums;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
 using static HomeNetOrm.Enums.Sql;
 
-namespace HomeNetOrm.DBProviders.Sqlite
+namespace HomeNetOrm.DBProviders.Postgres
 {
-    public class SqliteDialectTranslator : ISqlDialectTranslator
+    public class PostgresDialectTranslator : ISqlDialectTranslator
     {
-        // 🧙‍♂️ SQLite любит квадратные скобки для экранирования таблиц и колонок
-        public string FormatTable(TableSchema schema) => $"[{schema.TableName}]";
-        public string FormatColumnName(string columnName) => $"[{columnName}]";
+        // --- 🏗️ Блок экранирования метаданных (Таблицы и Колонки) ---
+
+        public string FormatTable(TableSchema schema) => $"\"{GenericSchemaAdapter.ToSnakeCase(schema.TableName)}\"";
+
+        public string FormatColumnName(string columnName) => $"\"{columnName}\"";
+
+        public string FormatReturningId(string columnName) => $"RETURNING \"{columnName}\"";
 
         public string FormatLimit(int limit, int? offset = null) =>
             offset.HasValue ? $"LIMIT {limit} OFFSET {offset}" : $"LIMIT {limit}";
 
-        // 🧙‍♂️ В SQLite кастинг к тексту делается через классический CAST(... AS TEXT)
-        public string FormatCastToText(string columnName) => $"CAST([{columnName}] AS TEXT)";
+        // --- ⚡ Системные функции и кастинг типов Postgres ---
 
-        // 🧙‍♂️ В SQLite COUNT(1) и COUNT(*) работают одинаково эффективно
+        public string FormatCastToText(string expression) => $"{expression}::text";
+
         public string FormatCountAll() => "COUNT(*)";
-        public string FormatCountOne() => "COUNT(*)";
 
-        // 🟥 Команды СУБД
+        public string FormatCountOne() => "COUNT(1)";
+
+        // 🔥 Наш новый метод динамического получения текущего времени СУБД
+        public string FormatNow() => PostgresNowFunc;
+
+        // --- 🧱 Блок трансляции compact перечислений из DTO Sql ---
+
+        // 🟥 1. Команды (DML / DDL)
         public string Translate(CmdType cmd) => cmd switch
         {
             CmdType.Select => "SELECT",
@@ -31,12 +42,12 @@ namespace HomeNetOrm.DBProviders.Sqlite
             CmdType.Insert => "INSERT",
             CmdType.Create => "CREATE",
             CmdType.Trigger => "TRIGGER",
-            CmdType.Function => "CREATE FACTORY", // Или любая заглушка, если триггеры SQLite собираются иначе
+            CmdType.Function => "FUNCTION",
             CmdType.Procedure => "PROCEDURE",
             _ => throw new ArgumentOutOfRangeException(nameof(cmd))
         };
 
-        // 🟨 Ключевые слова-связки
+        // 🟨 2. Ключевые слова-связки
         public string Translate(PhraseType phrase) => phrase switch
         {
             PhraseType.From => "FROM",
@@ -50,27 +61,35 @@ namespace HomeNetOrm.DBProviders.Sqlite
             PhraseType.On => "ON",
             PhraseType.Conflict => "CONFLICT",
             PhraseType.Do => "DO",
+            PhraseType.As => "AS",
+            // 🔥 Дописываем новые кейсы для триггерных расширений схем:
+            PhraseType.Sequence => "SEQUENCE",
+            PhraseType.OrDml => "OR",
             _ => throw new ArgumentOutOfRangeException(nameof(phrase))
         };
 
-        // 🟩 Операторы и логика (Тут SQLite вместо TRUE/FALSE использует 1 и 0)
+        // 🟩 3. Операторы, логика и границы блоков
         public string Translate(OpType op) => op switch
         {
             OpType.Equal => "=",
             OpType.And => "AND",
             OpType.Or => "OR",
-            OpType.True => "1",  // 🔥 В SQLite истина — это единица
-            OpType.False => "0",  // 🔥 В SQLite ложь — это ноль
+            OpType.True => "TRUE",
+            OpType.False => "FALSE",
             OpType.OpenBracket => "(",
             OpType.CloseBracket => ")",
             OpType.Asc => "ASC",
             OpType.Desc => "DESC",
             OpType.GreaterThan => ">",
             OpType.IsNull => "IS NULL",
+            OpType.Begin => "BEGIN",
+            OpType.End => "END;",
+            // 🔥 Наша новая космическая запятая и маркер процедурного языка:
+            OpType.Comma => ",",
             _ => throw new ArgumentOutOfRangeException(nameof(op))
         };
 
-        // 🟦 Специфика триггеров под диалект SQLite
+        // 🟦 4. Специфика триггеров
         public string Translate(TriggerType trig) => trig switch
         {
             TriggerType.Returns => "RETURNS",
@@ -81,10 +100,16 @@ namespace HomeNetOrm.DBProviders.Sqlite
             TriggerType.On => "ON",
             TriggerType.ForEach => "FOR EACH",
             TriggerType.Row => "ROW",
-            TriggerType.Execute => "BEGIN", // В SQLite тело триггера начинается с BEGIN вместо EXECUTE FUNCTION
+            TriggerType.Execute => "EXECUTE FUNCTION",
             TriggerType.New => "NEW",
             TriggerType.Old => "OLD",
             _ => throw new ArgumentOutOfRangeException(nameof(trig))
         };
+
+        // =========================================================================
+        // 🧰 ПОДВАЛ КЛАССА: Изолируем специфичные текстовые маркеры Postgres
+        // =========================================================================
+        private const string PostgresNowFunc = "NOW()";
+        private const string ProceduralLanguageMarker = "plpgsql";
     }
 }

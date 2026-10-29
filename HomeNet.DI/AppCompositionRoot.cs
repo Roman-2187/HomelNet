@@ -24,7 +24,10 @@ namespace HomeNet.DI
         public ILogger Logger => _infrastructure.Logger;
         public IEventBus EventBus => _infrastructure.EventBus;
 
-        private AppCompositionRoot(BackendMode mode, string postgresConn, string sqliteConn)
+       
+
+        // Переименовали postgresConn в apiBaseUrl, чтобы код читал сам себя
+        private AppCompositionRoot(BackendMode mode, string apiBaseUrl, string sqliteConn)
         {
             _infrastructure = new CoreInfrastructureModule();
 
@@ -33,7 +36,7 @@ namespace HomeNet.DI
 
             _dataAccess = new DataAccessModule(
                 sqliteConn,
-                postgresConn,
+                apiBaseUrl, // 🔥 Теперь имя переменной на 100% совпадает с внутренностями модуля!
                 registeredSchemas,
                 _infrastructure.Logger,
                 _infrastructure.LogQueueManager,
@@ -55,9 +58,10 @@ namespace HomeNet.DI
             );
         }
 
-        public static void Initialize(BackendMode mode, string postgresConn, string sqliteConn)
+        // В точке входа тоже навели порядок в названиях аргументов
+        public static void Initialize(BackendMode mode, string apiBaseUrl, string sqliteConn)
         {
-            _instance = new AppCompositionRoot(mode, postgresConn, sqliteConn);
+            _instance = new AppCompositionRoot(mode, apiBaseUrl, sqliteConn);
 
             _instance._infrastructure.EventBus.SubscribeAsync<IDbContextContainer.InfrastructureReady>(OnInfrastructureReady);
 
@@ -67,7 +71,8 @@ namespace HomeNet.DI
             });
         }
 
-        
+
+
         // 🔥 МЕТОД СТАЛ УМНЫМ СТРАЖЕМ СИНХРОНИЗАЦИИ (С ЛИМИТОМ В 4 ПОПЫТКИ)
         private static async Task OnInfrastructureReady(IDbContextContainer.InfrastructureReady ev)
         {

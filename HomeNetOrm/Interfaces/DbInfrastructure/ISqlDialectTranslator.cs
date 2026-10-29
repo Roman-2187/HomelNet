@@ -18,5 +18,7 @@ namespace HomeNetOrm.Interfaces.DbInfrastructure
         string Translate(PhraseType phrase);
         string Translate(OpType op);
         string Translate(TriggerType trig);
+        string FormatReturningId(string v);
+        string FormatNow();
     }
 }

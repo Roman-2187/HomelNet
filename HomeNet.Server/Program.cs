@@ -7,7 +7,6 @@ using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Repositories.Remote;
 using HomeNetServices.Diagnostics;
 using Microsoft.AspNetCore.SignalR;
-using System.Runtime.Intrinsics.X86;
 
 namespace HomeNet.Server
 {
@@ -19,16 +18,13 @@ namespace HomeNet.Server
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // 🎯 ЧИСТОЕ ИМЯ ДЛЯ ЛОГ-ФАЙЛА: Без всяких расширений типа .txt или .html
             const string serverLogName = "server_debug";
 
-            // 🎯 ТОТАЛЬНАЯ МИНИМИЗАЦИЯ: Наш логгер просто перенаправляет вызовы в DiagnosticHub
             HomeNetCore.Interfaces.Diagnostics.ILogger serverLogger = new Logger((logEntry, level, detectedNamespace) =>
             {
                 DiagnosticHub.Log(logEntry, (HomeNetCore.Enums.LogLevel)level, serverLogName);
             });
 
-            // Тестовый приветственный лог — улетит сразу в цветную консоль и в server_debug.html
             serverLogger.LogInfo("=== [СУБД ХАБ СЕРВЕРА] СИСТЕМА ДВОЙНОГО ЛОГИРОВАНИЯ ИНИЦИАЛИЗИРОВАНА ===");
 
             var schemaModule = new RemoteMessengerSchemaModule();
@@ -37,11 +33,17 @@ namespace HomeNet.Server
             string postgresConn = builder.Configuration.GetConnectionString("PostgresConnection")
                 ?? "Server=127.0.0.1;Port=5432;Database=home_net_db;User Id=postgres;Password=05011987;";
 
-            var postgresEngine = new SincedPostgresDbEngine(postgresConn, serverSchemas, serverLogger);
+            // 🎯 ЗАПУСКАЕМ СЕРВЕРНУЮ ЦАРЬ-МАШИНУ: Режим RemoteServer на полную мощность!
+            var postgresEngine = new SiberNetDbEngine(DbEngineType.RemoteServer, postgresConn, serverSchemas, serverLogger);
 
-            IMessageRepository messageRepository = postgresEngine.CreateMessageRepository();
-            IUserRepository userRepository = postgresEngine.CreateUserRepository();
+            // Штампуем репозитории на полном автомате по единому конвейеру. Никакой каши в именах!
+            IMessageRepository messageRepository = postgresEngine.CreateMessageRepository(null!); // На сервере шина клиента не нужна
+            IUserRepository userRepository = postgresEngine.CreateUserRepository(null!);
+
+            // 🔥 ФИКС: Генератор синхронизации девайсов собирается напрямую через метод движка!
             IDeviceSyncRepository deviceSyncRepository = postgresEngine.CreateDeviceSyncRepository();
+            // Сюда подставляешь твой конкретный PostgresDeviceSyncRepository, передавая ему соединение и генератор
+            // IDeviceSyncRepository deviceSyncRepository = new PostgresDeviceSyncRepository(postgresEngine.Connection, deviceSyncGenerator, serverLogger);
 
             builder.Services.AddSignalR();
             var app = builder.Build();
