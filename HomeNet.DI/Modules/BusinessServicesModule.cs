@@ -11,7 +11,8 @@ namespace HomeNet.DI.Modules
 {
     public class BusinessServicesModule
     {
-        public IUserService UserService { get; }
+      
+        public IUserRepository UserRepository { get; }
         public IRegistrationService RegistrationService { get; }
         public IAuthenticateService AuthenticateService { get; }
         public IDeleteService DeleteService { get; }
@@ -25,10 +26,10 @@ namespace HomeNet.DI.Modules
             ILogger logger,
             IEventBus eventBus)
         {
-            UserService = new UserService(userRepo, logger, eventBus);
-            RegistrationService = new RegistrationService(UserService);
-            AuthenticateService = new AuthenticateService(UserService);
-            DeleteService = new DeleteService(UserService, logger);
+           UserRepository = userRepo;
+            RegistrationService = new RegistrationService(userRepo);
+            AuthenticateService = new AuthenticateService(userRepo);
+            DeleteService = new DeleteService(userRepo, logger);
             MessageService = new MessageService(msgRepo, eventBus);
 
             // Ленивая инициализация железки прямо внутри конструктора сервиса

@@ -16,7 +16,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
     /// </summary>
     public partial class SeedUsersViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
     {
-        private readonly IUserService _userService;
+        private readonly IUserRepository _userRepository;
 
         [ObservableProperty]
         private string _seedStatusText = "🔋 Система генерации готова к сидингу 50 пользователей...";
@@ -24,22 +24,19 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         [ObservableProperty]
         private bool _isSeedInProgress;
 
-        public SeedUsersViewModel(IEventBus eventBus, IUserService userService, AdminNavigationManager navigation)
-            : base(eventBus, navigation) // Передали строго типизированный навигатор в generic-базу
+        public SeedUsersViewModel(IEventBus eventBus, IUserRepository userRepository, AdminNavigationManager navigation)
+            : base(eventBus, navigation)
         {
-            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
-
-            // 🔥 ПОДПИСКА ПО ФАКТАМ: Ловим изменение вкладок навигатора для сброса стейта формы
+           _userRepository = userRepository;
             _eventBus.Subscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
         }
 
-        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Для идеального графа в Инспекторе) 🧼
+        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК 🧼
 
         private void OnAdminTabChanged(IAdminVm.AdminTabChanged msg)
         {
             if (msg == null) return;
 
-            // 🔥 Если навигатор подтвердил повторное открытие вкладки сидинга — сбрасываем текст в дефолт
             if (msg.ActiveTab == AdminSubTab.SeedUsers)
             {
                 SeedStatusText = "🔋 Система генерации готова к сидингу  пользователей...";
@@ -59,18 +56,16 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 
             try
             {
-                // Вытягиваем наши заготовленные 50 тестовых аккаунтов
                 var testUsers = DbSeedData.GetGeneratedUsers();
 
                 foreach (var user in testUsers)
                 {
-                    bool emailExists = await _userService.CheckEmailExistsAsync(user.Email);
+                    bool emailExists = await _userRepository.EmailExistsAsync(user.Email);
                     if (!emailExists)
                     {
-                        await _userService.AddUserSecureAsync(user);
+                        await _userRepository.InsertUserAsync(user);
 
-                        // Публикуем в автобус, чтобы живая таблица сразу дорисовывала юзера на лету!
-                        _eventBus.Publish(this, new IUsersTableVm.Added(user));
+                        
                         addedCount++;
                     }
                 }
@@ -92,11 +87,11 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             }
         }
 
-        #region 🛡️ ЖЕЛЕЗОБЕТОННЫЙ СТЕРИЛИЗАТОР ПАМЯТИ
+        #region 🛡️ СТЕРЕЛИЗАТОР ПАМЯТИ
 
         public override void Dispose()
         {
-            base.Dispose(); // Чистим базовый слой
+            base.Dispose();
             _eventBus.Unsubscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
         }
 

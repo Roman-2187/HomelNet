@@ -9,18 +9,18 @@ using HomeNetCore.Utils;
 
 
 
-namespace HomeNetServices.Services.Identity
+namespace HomeNetServices.Identity
 {
     public class RegistrationService : IRegistrationService
     {
-        private readonly IUserService _userService;
+        private readonly IUserRepository _userRepository;
 
         // 🔥 СТАТИКА: Убрали private readonly ValidationFormat _validateField = new(); 
         // Теперь дергаем методы напрямую через класс-инструмент из Utils!
 
-        public RegistrationService(IUserService userService)
+        public RegistrationService(IUserRepository userRepository)
         {
-            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+           _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         }
 
         /// <summary>
@@ -36,7 +36,7 @@ namespace HomeNetServices.Services.Identity
             // 2. Чистое сохранение
             try
             {
-                await _userService.AddUserSecureAsync(user);
+                await _userRepository.InsertUserAsync(user);
                 return new IRegistrationService.Verdict(true, validationResults, user);
             }
             catch (Exception ex)
@@ -133,7 +133,7 @@ namespace HomeNetServices.Services.Identity
             var res = new ValidationResult { Field = TypeField.EmailType };
             try
             {
-                return await _userService.CheckEmailExistsAsync(email) ?
+                return await _userRepository.EmailExistsAsync(email) ?
                     SetResult(res, ValidationState.Error, "Email уже зарегистрирован") :
                     SetResult(res, ValidationState.Success, "Email свободен и принят");
             }

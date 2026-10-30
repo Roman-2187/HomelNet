@@ -11,18 +11,18 @@ namespace HomeNetServices.Services.Identity
 {
     public class DeleteService : IDeleteService
     {
-        private readonly IUserService _userService;
+        private readonly IUserRepository _userRepository;
         private readonly ILogger _logger;
 
-        public DeleteService(IUserService userService,ILogger logger )
+        public DeleteService(IUserRepository userRepo,ILogger logger )
         {
-            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+           _userRepository = userRepo;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<IEnumerable<UserEntity>> GetAllUsersAsync()
         {
-            return await _userService.GetAllAsync() ?? Enumerable.Empty<UserEntity>();
+            return await _userRepository.GetAllAsync() ?? Enumerable.Empty<UserEntity>();
         }
 
         /// <summary>
@@ -40,7 +40,7 @@ namespace HomeNetServices.Services.Identity
             try
             {
                 // Передаем Guid в обновленный метод сервиса
-                var user = await _userService.GetByIdAsync(id);
+                var user = await _userRepository.GetByIdAsync(id);
                 var res = validationResults.First();
 
                 if (user != null)
@@ -87,9 +87,9 @@ namespace HomeNetServices.Services.Identity
                     ? $"{selectedUser.FirstName} {selectedUser.LastName} (ID {id})"
                     : $"ID {id} (Точечно)";
 
-                await _userService.DeleteByIdAsync(id);
+                await _userRepository.DeleteByIdAsync(id);
 
-                var allUsers = await _userService.GetAllAsync() ?? Enumerable.Empty<UserEntity>();
+                var allUsers = await _userRepository.GetAllAsync() ?? Enumerable.Empty<UserEntity>();
                 _logger.LogDebug($"В системе {allUsers.Count()} пользователей");
 
                 idRes.Update(ValidationState.Success, $"Пользователь с ID {id} успешно удален.");

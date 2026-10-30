@@ -58,14 +58,14 @@ namespace HomeNet.DI.Modules
             DeleteUsersVM = new DeleteUsersViewModel(services.DeleteService, eventBus, logger, AdminNavigation);
             ChatVM = new ChatViewModel(eventBus, services.MessageService);
             TitleBarVM = new TitleBarViewModel(eventBus, logger, Navigation);
-            SeedUsersVM = new SeedUsersViewModel(eventBus, services.UserService, AdminNavigation);
+            SeedUsersVM = new SeedUsersViewModel(eventBus, services.UserRepository, AdminNavigation);
 
-            TableUsersVM = new TableUsersViewModel(eventBus, services.UserService, AdminNavigation);
+            TableUsersVM = new TableUsersViewModel(eventBus, services.UserRepository, AdminNavigation);
             UserVM = new UserViewModel(logger, eventBus, UserNavigation);
 
             // 🔥 Рождаем вьюмодель настроек устройства, скармливая ей сервис из контейнера
             // Передаем строго по подсказке: сервис девайса, сервис юзеров, автобус, логгер, навигатор
-            DeviceSettingsVM = new DeviceSettingsViewModel(services.DeviceSettingsService, services.UserService, eventBus, logger, UserNavigation);
+            DeviceSettingsVM = new DeviceSettingsViewModel(services.DeviceSettingsService, services.UserRepository, eventBus, logger, UserNavigation);
 
 
             ContactsVM = new ContactsViewModel(eventBus);

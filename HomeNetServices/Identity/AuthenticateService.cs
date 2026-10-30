@@ -8,14 +8,9 @@ using HomeNetCore.Utils;
 
 namespace HomeNetServices.Identity
 {
-    public class AuthenticateService : IAuthenticateService
+    public class AuthenticateService(IUserRepository userRepository) : IAuthenticateService
     {
-        private readonly IUserService _userService;
-
-        public AuthenticateService(IUserService userService)
-        {
-            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
-        }
+        private readonly IUserRepository _userRepository = userRepository;
 
         /// <summary>
         /// Выполняет проверку пользователя. Возвращает лаконичный вложенный вердикт из интерфейса Ядра.
@@ -40,7 +35,7 @@ namespace HomeNetServices.Identity
             // Если критических ошибок нет — вытаскиваем тёпленького юзера из базы для логгера и UI
             if (!hasCriticalErrors && !string.IsNullOrWhiteSpace(userInput.Email))
             {
-                authenticatedUser = await _userService.GetByEmailAsync(userInput.Email);
+                authenticatedUser = await _userRepository.GetByEmailAsync(userInput.Email);
             }
 
             // 🔥 Возвращаем наш красивый вложенный рекорд
@@ -83,7 +78,7 @@ namespace HomeNetServices.Identity
                 if (!ValidationFormat.IsValidEmail(email))
                     return SetResult(result, ValidationState.Error, "Некорректный формат email");
 
-                var emailExists = await _userService.CheckEmailExistsAsync(email);
+                var emailExists = await _userRepository.EmailExistsAsync(email);
 
                 return emailExists
                     ? SetResult(result, ValidationState.Success, "Email найден")
@@ -104,7 +99,7 @@ namespace HomeNetServices.Identity
                 if (string.IsNullOrWhiteSpace(password))
                     return SetResult(result, ValidationState.Error, "Пароль не может быть пустым");
 
-                var user = await _userService.GetByEmailAsync(email);
+                var user = await _userRepository.GetByEmailAsync(email);
                 if (user == null)
                     return SetResult(result, ValidationState.Error, "Пользователь не найден");
 

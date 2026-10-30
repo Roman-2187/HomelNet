@@ -8,7 +8,7 @@ namespace HomeNetCore.Interfaces
     public interface IUserRepository : IRepository<UserEntity>
     {
         Task DeleteByIdAsync(Guid id);
-        Task<bool> EmailExistsAsync(string email);
+        Task<bool> EmailExistsAsync(string? email);
         Task<UserEntity?> GetByEmailAsync(string email);
         Task<UserEntity> InsertUserAsync(UserEntity user);
      

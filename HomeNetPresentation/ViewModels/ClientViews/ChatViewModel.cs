@@ -2,7 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Services;
-using HomeNetCore.Interfaces.Sinc; // Подключаем пространство имен координатора синхронизации
+using HomeNetCore.Interfaces.Sinc;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models.Entity;
 using System.Collections.ObjectModel;

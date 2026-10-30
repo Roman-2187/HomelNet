@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
+using HomeNetCore.Interfaces.Sinc; // 🔥 Подключаем неймспейс ОРМ-событий
 using HomeNetCore.Models;
 using HomeNetCore.Models.Entity;
 using System.Collections.ObjectModel;
@@ -22,10 +23,8 @@ namespace HomeNetPresentation.ViewModels
         [ObservableProperty] private UserEntity? _selectedFriend;
         [ObservableProperty] private ObservableCollection<UserEntity> _friends = new();
 
-        // 🎯 ДОБАВЛЯЕМ СВОЙСТВО ДЛЯ UI ПЛАШКИ "КТО Я"
         [ObservableProperty] private string _currentUserName = "Авторизация...";
 
-        // Переводим отслеживание на ID вошедшего пользователя
         private Guid? _currentUserId;
 
         public ContactsViewModel(IEventBus eventBus)
@@ -36,12 +35,13 @@ namespace HomeNetPresentation.ViewModels
 
         private void InitializeBusSubscriptions()
         {
-            // Слушаем изменения таблицы пользователей в БД
+            // Слушаем изменения таблицы пользователей в БД через центральный репозиторий
             _eventBus.Subscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed);
-            _eventBus.Subscribe<IUsersTableVm.Added>(OnUserAdded);
-            _eventBus.Subscribe<IDeleteUserVm.Deleted>(OnUserDeleted);
 
-            // 🔥 ЛОВИМ ГЛОБАЛЬНЫЕ ИВЕНТЫ АВТОРИЗАЦИИ НАПРЯМУЮ ИЗ АВТОБУСА
+            // 🔥 ПЕРЕВОДИМ НА СИСТЕМНЫЕ СОБЫТИЯ СЛОЯ ДАННЫХ
+            _eventBus.Subscribe<ISiberNetSyncCoordinator.UserInserted>(OnUserAdded);
+            _eventBus.Subscribe<ISiberNetSyncCoordinator.UserDeleted>(OnUserDeleted);
+
             _eventBus.Subscribe<IUserVm.UserSignedIn>(OnGlobalUserSignedIn);
             _eventBus.Subscribe<IUserVm.UserSignedUp>(OnGlobalUserSignedUp);
         }
@@ -50,14 +50,10 @@ namespace HomeNetPresentation.ViewModels
         {
             if (msg?.User == null) return;
 
-            // 🎯 Забираем ID юзера прямо из прилетевшего сообщения входа
             _currentUserId = msg.User.Id;
             _currentUser = msg.User;
-
-            // 🎯 ЗАПОМИНАЕМ ИМЯ ТЕКУЩЕГО КИБЕР-ЮЗЕРА ДЛЯ ВЕРХНЕЙ ПЛАШКИ
             CurrentUserName = msg.User.FirstName ?? "Вы";
 
-            // Запрашиваем обновление списка у БД
             _eventBus.Publish(this, new IUsersTableVm.RefreshRequest());
         }
 
@@ -65,11 +61,8 @@ namespace HomeNetPresentation.ViewModels
         {
             if (msg?.User == null) return;
 
-            // 🎯 Забираем ID юзера прямо из прилетевшего сообщения регистрации
             _currentUserId = msg.User.Id;
             _currentUser = msg.User;
-
-            // 🎯 ЗАПОМИНАЕМ ИМЯ ПРИ РЕГИСТРАЦИИ ДЛЯ ВЕРХНЕЙ ПЛАШКИ
             CurrentUserName = msg.User.FirstName ?? "Вы";
 
             _eventBus.Publish(this, new IUsersTableVm.RefreshRequest());
@@ -79,8 +72,6 @@ namespace HomeNetPresentation.ViewModels
         {
             if (msg?.Users == null) return;
 
-            // 🎯 Железобетонная фильтрация: исключаем по сохраненному из автобуса ID.
-            // Теперь Иван гарантированно отсекается, даже если запросы в шине перемешались!
             var filtered = msg.Users
                 .Where(u => _currentUserId == null || u.Id != _currentUserId.Value)
                 .Select(u => {
@@ -99,7 +90,8 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Publish(this, new IUserVm.LogoutClient());
         }
 
-        private void OnUserAdded(IUsersTableVm.Added msg)
+        // 🔥 Метод теперь принимает системный тип события от репозитория
+        private void OnUserAdded(ISiberNetSyncCoordinator.UserInserted msg)
         {
             if (msg?.User == null) return;
             if (_currentUser != null && msg.User.Id == _currentUser.Id) return;
@@ -108,10 +100,11 @@ namespace HomeNetPresentation.ViewModels
             Friends.Add(msg.User);
         }
 
-        private void OnUserDeleted(IDeleteUserVm.Deleted msg)
+        // 🔥 Метод теперь принимает системный тип события от репозитория
+        private void OnUserDeleted(ISiberNetSyncCoordinator.UserDeleted msg)
         {
             if (msg == null) return;
-            var friendToRemove = Friends.FirstOrDefault(f => f.Id == msg.Id);
+            var friendToRemove = Friends.FirstOrDefault(f => f.Id == msg.UserId);
             if (friendToRemove != null) Friends.Remove(friendToRemove);
         }
 
@@ -119,7 +112,6 @@ namespace HomeNetPresentation.ViewModels
         {
             if (value != null)
             {
-                // 🔥 Передаем и выбранного друга, и СВОЙ СОБСТВЕННЫЙ сохраненный ID!
                 _eventBus.Publish(this, new IContactsVm.FriendSelected(value, _currentUserId ?? Guid.Empty));
             }
         }
@@ -137,10 +129,11 @@ namespace HomeNetPresentation.ViewModels
         public void Dispose()
         {
             _eventBus.Unsubscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed);
-            _eventBus.Unsubscribe<IUsersTableVm.Added>(OnUserAdded);
-            _eventBus.Unsubscribe<IDeleteUserVm.Deleted>(OnUserDeleted);
 
-            // 🔥 Очищаем подписки на авторизацию при уничтожении вью-модели
+            // 🔥 Не забываем отписаться от новых интерфейсов в Dispose
+            _eventBus.Unsubscribe<ISiberNetSyncCoordinator.UserInserted>(OnUserAdded);
+            _eventBus.Unsubscribe<ISiberNetSyncCoordinator.UserDeleted>(OnUserDeleted);
+
             _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnGlobalUserSignedIn);
             _eventBus.Unsubscribe<IUserVm.UserSignedUp>(OnGlobalUserSignedUp);
         }

@@ -37,7 +37,11 @@ namespace HomeNet.DI.Modules
         // Сетевой слушатель SignalR
         public SignalRNotificationListener NotificationListener { get; }
 
-        public DataAccessModule(string sqliteConn, string apiBaseUrl, IEnumerable<TableSchema> appSchemas, ILogger logger, ILogQueueManager logQueue, IEventBus eventBus)
+        public DataAccessModule(
+            string sqliteConn, string apiBaseUrl,
+            IEnumerable<TableSchema> appSchemas, 
+            ILogger logger, ILogQueueManager logQueue, 
+            IEventBus eventBus)
         {
             ApiBaseUrl = apiBaseUrl;
 

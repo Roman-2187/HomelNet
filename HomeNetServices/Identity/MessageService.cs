@@ -1,12 +1,7 @@
 ﻿using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Interfaces.Services;
-using HomeNetCore.Models;
 using HomeNetCore.Models.Entity;
-using HomeNetOrm.Sinc;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace HomeNetServices.Services.Identity
 {

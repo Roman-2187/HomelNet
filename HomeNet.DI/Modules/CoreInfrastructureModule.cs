@@ -23,10 +23,15 @@ public class CoreInfrastructureModule
 
         LogQueueManager = new LogQueueManager(EventBus, 1);
 
-        // 🎯 Переводим клиентский логгер на глобальный статический HTML-хаб
+        // 🔥 НАСТРОИЛИ ПАРАЛЛЕЛЬНУЮ ОТПРАВКУ:
+        // Теперь логгер одновременно пишет и в DiagnosticHub, и в очередь для UI
         Logger = new Logger((msg, level, ns) =>
         {
+            // 1. Пишем в глобальный статический HTML-хаб (чтобы логи сохранялись в файл)
             DiagnosticHub.Log(msg, (HomeNetCore.Enums.LogLevel)level, clientLogName);
+
+            // 2. Публикуем в очередь менеджера логов (чтобы они "бежали" строкой в UI)
+            LogQueueManager.WriteLog(msg, (HomeNetCore.Enums.LogLevel)level, clientLogName);
         });
 
         LogQueueManager.SetReady();

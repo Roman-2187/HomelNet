@@ -1,6 +1,7 @@
-﻿using System.Threading.Channels;
+﻿using System.Text;
+using System.Threading.Channels;
 using HomeNetCore.Enums;
-using HomeNetCore.Interfaces.Events; 
+using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.OutputLogging;
 
 namespace HomeNetServices.Diagnostics
@@ -10,17 +11,16 @@ namespace HomeNetServices.Diagnostics
         private readonly Channel<(LogLevel level, string message, string ns)> _channel;
         private readonly CancellationTokenSource _cts = new();
         private readonly int _typingDelayMs;
-        private readonly IEventBus _eventBus; // 🔥 Шина событий вместо эвентов
+        private readonly IEventBus _eventBus;
         private bool _isReady;
+        private Task? _processingTask; // Храним таску воркера
 
         public LogQueueManager(IEventBus eventBus, int typingDelayMs = 0)
         {
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             _typingDelayMs = typingDelayMs >= 0 ? typingDelayMs : throw new ArgumentOutOfRangeException(nameof(typingDelayMs));
 
-
-            Task.Run(() => ProcessLogQueueAsync(_cts.Token));
-
+            // Сначала полностью создаем канал
             _channel = Channel.CreateUnbounded<(LogLevel, string, string)>(new UnboundedChannelOptions
             {
                 SingleReader = true
@@ -32,7 +32,8 @@ namespace HomeNetServices.Diagnostics
             if (_isReady) return;
             _isReady = true;
 
-            Task.Run(() => ProcessLogQueueAsync(_cts.Token));
+            // Запускаем воркер СТРОГО один раз, когда менеджер готов
+            _processingTask = Task.Run(() => ProcessLogQueueAsync(_cts.Token));
         }
 
         public void WriteLog(string message, LogLevel level, string namespaceName)
@@ -42,45 +43,39 @@ namespace HomeNetServices.Diagnostics
 
         private async Task ProcessLogQueueAsync(CancellationToken token)
         {
-            // 🔥 МАГИЧЕСКИЙ ЩИТ: Если фоновый таск проснулся раньше, чем создался канал,
-            // мы просто мягко ждем в фоне по 10 мс, пока _channel перестанет быть null.
-            // Это предотвращает NullReferenceException и вылет Авалонии!
-            while (_channel == null)
-            {
-                if (token.IsCancellationRequested) return;
-                await Task.Delay(10, token);
-            }
-
             try
             {
-               
-               
+                // Правильный способ чтения из канала: ждем, пока появятся данные
+                while (await _channel.Reader.WaitToReadAsync(token))
+                {
                     while (_channel.Reader.TryRead(out var logEntry))
                     {
-                        // Убираем \r и \n с концов прилетевшего сообщения
-                        string cleanMessage = logEntry.message.TrimEnd('\r', '\n');
+                        token.ThrowIfCancellationRequested();
 
+                        string cleanMessage = logEntry.message.TrimEnd('\r', '\n');
                         if (string.IsNullOrEmpty(cleanMessage)) continue;
 
-                        string currentText = "";
+                        // Оптимизация: используем StringBuilder вместо конкатенации строк в цикле 'currentText += c'
+                        var currentTextBuilder = new StringBuilder();
+
                         foreach (char c in cleanMessage)
                         {
                             token.ThrowIfCancellationRequested();
-                            currentText += c;
+                            currentTextBuilder.Append(c);
 
-                            // 🔥 ОРЁТ В АВТОБУС НА КАЖДУЮ БУКВУ:
-                            // Передаем подросший кусок текста, энум уровня, имя неймспейса и флаг анимации (true = идет печать)
-                            _eventBus.Publish(this, new ILogQueueManager.LogMessageReceived(currentText, logEntry.level, logEntry.ns, true));
+                            // Отправляем текущую накопленную строку
+                            _eventBus.Publish(this, new ILogQueueManager.LogMessageReceived(
+                                currentTextBuilder.ToString(), logEntry.level, logEntry.ns, true));
 
                             if (_typingDelayMs > 0)
                                 await Task.Delay(_typingDelayMs, token);
                         }
 
-                        // 🔥 ОРЁТ В АВТОБУС ФИНАЛОМ СТРОКИ:
-                        // Посылаем сигнал закрытия строки (false = закрыть параграф)
-                        _eventBus.Publish(this, new ILogQueueManager.LogMessageReceived(Environment.NewLine, logEntry.level, logEntry.ns, false));
+                        // Финал строки
+                        _eventBus.Publish(this, new ILogQueueManager.LogMessageReceived(
+                            Environment.NewLine, logEntry.level, logEntry.ns, false));
                     }
-                
+                }
             }
             catch (OperationCanceledException) { }
             catch (Exception ex)
@@ -88,7 +83,6 @@ namespace HomeNetServices.Diagnostics
                 System.Diagnostics.Debug.WriteLine($"Ошибка в лог-канале: {ex.Message}");
             }
         }
-
 
         public void Dispose()
         {

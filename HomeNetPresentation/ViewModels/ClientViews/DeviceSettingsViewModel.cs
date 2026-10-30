@@ -1,10 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Services;
-using HomeNetCore.Interfaces.Sinc;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models.Entity;
 using HomeNetPresentation.Services;
@@ -20,7 +18,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
     {
         private readonly IDeviceSettingsService _deviceSettingsService;
         private readonly ILogger _logger;
-        private readonly IUserService _userService;
+        private readonly IUserRepository _userRepository;
 
         [ObservableProperty] private bool _isRememberMeChecked = true;
         [ObservableProperty] private string _deviceIdDisplay = "Загрузка...";
@@ -28,13 +26,13 @@ namespace HomeNetPresentation.ViewModels.ClientViews
 
         public DeviceSettingsViewModel(
             IDeviceSettingsService deviceSettingsService,
-            IUserService userService,
+            IUserRepository userRepository,
             IEventBus eventBus,
             ILogger logger,
             UserNavigationManager navigation) : base(eventBus, navigation)
         {
             _deviceSettingsService = deviceSettingsService;
-            _userService = userService;
+          _userRepository = userRepository;
             _logger = logger;
 
             // Подписываемся на успех входа/регистрации
@@ -91,7 +89,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
                 _logger.LogInfo($"[AutoLogin] Найдена сессия для {settings.Email}. Напрямую запрашиваем User из локального SQLite...");
 
                 // 2. Идем напрямую в сервис пользователей локального SQLite
-                UserEntity? localUser = await _userService.GetByEmailAsync(settings.Email);
+                UserEntity? localUser = await _userRepository.GetByEmailAsync(settings.Email);
 
                 // 3. Сверяем пароль для безопасности
                 if (localUser != null && localUser.Password == settings.Password)
@@ -142,7 +140,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
                 user.IsSynced = 0; // Строго 0 для SiberNet Engine PUSH!
 
                 // Обновляем сущность юзера в локальной БД
-                await _userService.UpdateUserAsync(user);
+                await _userRepository.UpdateAsync(user);
 
                 // Если галочка стоит — сохраняем сессию в настройки устройства для последующих автовходов
                 if (IsRememberMeChecked)

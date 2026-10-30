@@ -2,6 +2,7 @@
 using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
+using HomeNetCore.Interfaces.Sinc; // Подключаем интерфейс ОРМ-событий
 using HomeNetCore.Models.Entity;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetPresentation.Services;
@@ -11,29 +12,26 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 {
     public partial class TableUsersViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
     {
-        private readonly IUserService _userService;
-
-        // 🔥 ВСТРОЕННЫЙ ОБЪЕКТ СИНХРОНИЗАЦИИ .NET: Гарантирует потокобезопасность коллекции
+        private readonly IUserRepository _userRepo;
         private readonly object _collectionLock = new();
 
         [ObservableProperty] private ObservableCollection<UserEntity> _users = [];
 
-        public TableUsersViewModel(IEventBus eventBus, IUserService userService, AdminNavigationManager navigation)
+        public TableUsersViewModel(IEventBus eventBus,IUserRepository userRepo, AdminNavigationManager navigation)
             : base(eventBus, navigation)
         {
-            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
-
+           _userRepo = userRepo;
             InitializeBusSubscriptions();
         }
 
         private void InitializeBusSubscriptions()
         {
-            _eventBus.Subscribe<IDeleteUserVm.Deleted>(OnUserDeletedFromDb);
-            _eventBus.Subscribe<IUsersTableVm.Added>(OnUserAdded);
-            _eventBus.Subscribe<IUsersTableVm.Updated>(OnUserUpdated);
-            _eventBus.Subscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
+            // 🔥 ПЕРЕВОД НА ЦЕНТРАЛЬНЫЕ СОБЫТИЯ СЛОЯ ДАННЫХ (IDeleteUserVm / IUsersTableVm уходят в прошлое)
+            _eventBus.Subscribe<ISiberNetSyncCoordinator.UserDeleted>(OnUserDeletedFromDb);
+            _eventBus.Subscribe<ISiberNetSyncCoordinator.UserInserted>(OnUserAdded);
+            _eventBus.Subscribe<ISiberNetSyncCoordinator.UserUpdated>(OnUserUpdated);
 
-            // Ждем, пока Хаб баз данных отмаринует и прогреет обе СУБД!
+            _eventBus.Subscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
             _eventBus.Subscribe<IDbContextContainer.InfrastructureReady>(OnInfrastructureReady);
         }
 
@@ -46,9 +44,8 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         {
             try
             {
-                var list = await _userService.GetAllAsync();
+                var list = await _userRepo.GetAllAsync();
 
-                // 🔥 ЗАЩИТА ИНИЦИАЛИЗАЦИИ: Блокируем гонки потоков при полной перезаписи коллекции
                 lock (_collectionLock)
                 {
                     Users = new ObservableCollection<UserEntity>(list ?? Enumerable.Empty<UserEntity>());
@@ -62,13 +59,13 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             }
         }
 
-        #region 🎧 МЕТОДЫ ПОДПИСОК С ЖЕСТКОЙ СИНХРОНИЗАЦИЕЙ ПОТОКОВ 🧼
+        #region 🎧 СИНХРОННЫЕ МЕТОДЫ ПОДПИСОК НА ЕДИНЫЙ ИСТОЧНИК ПРАВДЫ 🧼
 
-        private void OnUserUpdated(IUsersTableVm.Updated msg)
+        // Перешли на ISiberNetSyncCoordinator.UserUpdated
+        private void OnUserUpdated(ISiberNetSyncCoordinator.UserUpdated msg)
         {
             if (msg?.User == null) return;
 
-            // 🔥 БЕЗОПАСНЫЙ АПДЕЙТ: Ни один фоновый поток не вобьет клин при замене объекта по индексу
             lock (_collectionLock)
             {
                 var existingUser = Users.FirstOrDefault(u => u.Id == msg.User.Id);
@@ -84,12 +81,12 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             }
         }
 
-        private void OnUserDeletedFromDb(IDeleteUserVm.Deleted msg)
+        // Перешли на ISiberNetSyncCoordinator.UserDeleted
+        private void OnUserDeletedFromDb(ISiberNetSyncCoordinator.UserDeleted msg)
         {
-            // 🔥 БЕЗОПАСНОЕ УДАЛЕНИЕ: Защита от выброса InvalidOperationException (коллекция была изменена)
             lock (_collectionLock)
             {
-                var uiUser = Users.FirstOrDefault(u => u.Id == msg.Id);
+                var uiUser = Users.FirstOrDefault(u => u.Id == msg.UserId);
                 if (uiUser != null)
                 {
                     Users.Remove(uiUser);
@@ -98,11 +95,11 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             }
         }
 
-        private void OnUserAdded(IUsersTableVm.Added msg)
+        // Перешли на ISiberNetSyncCoordinator.UserInserted
+        private void OnUserAdded(ISiberNetSyncCoordinator.UserInserted msg)
         {
             if (msg.User == null) return;
 
-            // 🔥 БЕЗОПАСНОЕ ДОБАВЛЕНИЕ: Потоки выстраиваются в очередь на запись
             lock (_collectionLock)
             {
                 if (!Users.Any(u => u.Id == msg.User.Id))
@@ -122,7 +119,6 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 
         private void BroadcastRefreshed()
         {
-            // Блокируем чтение при клонировании коллекции для отправки в шину
             lock (_collectionLock)
             {
                 _eventBus.Publish(this, new IUsersTableVm.Refreshed([.. Users]));
@@ -132,9 +128,9 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         public override void Dispose()
         {
             base.Dispose();
-            _eventBus.Unsubscribe<IDeleteUserVm.Deleted>(OnUserDeletedFromDb);
-            _eventBus.Unsubscribe<IUsersTableVm.Added>(OnUserAdded);
-            _eventBus.Unsubscribe<IUsersTableVm.Updated>(OnUserUpdated);
+            _eventBus.Unsubscribe<ISiberNetSyncCoordinator.UserDeleted>(OnUserDeletedFromDb);
+            _eventBus.Unsubscribe<ISiberNetSyncCoordinator.UserInserted>(OnUserAdded);
+            _eventBus.Unsubscribe<ISiberNetSyncCoordinator.UserUpdated>(OnUserUpdated);
             _eventBus.Unsubscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
         }
     }

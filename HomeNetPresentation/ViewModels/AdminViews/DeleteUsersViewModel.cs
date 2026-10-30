@@ -6,6 +6,7 @@ using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Interfaces.ViewModels;
+using HomeNetCore.Interfaces.Sinc; // Добавили неймспейс для интерфейса синхронизации
 using HomeNetCore.Models;
 using HomeNetCore.Models.Entity;
 using HomeNetPresentation.Services;
@@ -13,10 +14,6 @@ using System.Collections.ObjectModel;
 
 namespace HomeNetPresentation.ViewModels
 {
-    /// <summary>
-    /// Тонкая, автономная форма удаления пользователей SiberNet.
-    /// Работает полностью на подсосе данных от центральной таблицы пользователей.
-    /// </summary>
     public partial class DeleteUsersViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
     {
         private readonly IDeleteService _srv;
@@ -30,7 +27,6 @@ namespace HomeNetPresentation.ViewModels
         [NotifyCanExecuteChangedFor(nameof(SearchCommand))]
         private UserEntity? _selectedUser;
 
-        // Перешли с ID на Email для ввода в техтбоксе
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(SearchCommand))]
         private string _targetUserEmail = string.Empty;
@@ -46,12 +42,14 @@ namespace HomeNetPresentation.ViewModels
 
             _eventBus.Subscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
             _eventBus.Subscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed);
-            _eventBus.Subscribe<IDeleteUserVm.Deleted>(OnUserDeleted);
+
+            // 🔥 ПОДПИСКА НА ЕДИНЫЙ ИСТОЧНИК ПРАВДЫ ОТ ОРМ
+            _eventBus.Subscribe<ISiberNetSyncCoordinator.UserDeleted>(OnUserDeleted);
 
             ResetForm();
         }
 
-        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Реакция на шину) 🧼
+        #region 🎧 МЕТОДЫ ПОДПИСОК 🧼
 
         private void OnAdminTabChanged(IAdminVm.AdminTabChanged msg)
         {
@@ -68,9 +66,10 @@ namespace HomeNetPresentation.ViewModels
             FoundUsers = new ObservableCollection<UserEntity>(msg.Users);
         }
 
-        private void OnUserDeleted(IDeleteUserVm.Deleted msg)
+        // 🔥 Метод теперь принимает системный тип события от репозитория
+        private void OnUserDeleted(ISiberNetSyncCoordinator.UserDeleted msg)
         {
-            var userToRemove = FoundUsers.FirstOrDefault(u => u.Id == msg.Id);
+            var userToRemove = FoundUsers.FirstOrDefault(u => u.Id == msg.UserId);
             if (userToRemove != null)
             {
                 FoundUsers.Remove(userToRemove);
@@ -85,13 +84,11 @@ namespace HomeNetPresentation.ViewModels
         private async Task SearchAsync()
         {
             StatusMessage = "Поиск...";
-            // Сервис теперь дёргаем по Email (убедись, что метод в _srv принимает строку-email)
             var verdict = await _srv.SearchUserAsync(TargetUserEmail.Trim());
             StatusMessage = verdict.Results.FirstOrDefault()?.Message ?? string.Empty;
 
             if (verdict.IsValid && verdict.FoundUser != null)
             {
-                // Чтобы не дублировать, если такой юзер уже есть в коллекции подсоса
                 if (FoundUsers.All(u => u.Id != verdict.FoundUser.Id))
                 {
                     FoundUsers.Add(verdict.FoundUser);
@@ -107,23 +104,12 @@ namespace HomeNetPresentation.ViewModels
             {
                 StatusMessage = "Удаление...";
 
-                // Передаем TargetUserEmail вместо старого ID
                 var verdict = await _srv.DeleteUserAsync(TargetUserEmail.Trim(), SelectedUser);
                 UpdateValidation(verdict.Results);
                 StatusMessage = verdict.Results.FirstOrDefault()?.Message ?? string.Empty;
 
                 if (verdict.IsValid)
                 {
-                   
-
-                    if (verdict.ParsedId.HasValue)
-                    {
-                        _eventBus.Publish(this, new IDeleteUserVm.Deleted(verdict.ParsedId.Value));
-                    }
-                    else
-                    {
-                        _log.LogError("Удаление не выполнено. Шина событий пропущена.");
-                    }
 
                     if (!string.IsNullOrEmpty(verdict.HistoryMessage))
                     {
@@ -145,7 +131,6 @@ namespace HomeNetPresentation.ViewModels
         private async Task CancelAsync()
         {
             ResetForm();
-            _eventBus.Publish(this, new IAdminVm.OpenDelete());
         }
 
         #endregion
@@ -205,7 +190,7 @@ namespace HomeNetPresentation.ViewModels
             base.Dispose();
             _eventBus.Unsubscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
             _eventBus.Unsubscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed);
-            _eventBus.Unsubscribe<IDeleteUserVm.Deleted>(OnUserDeleted);
+            _eventBus.Unsubscribe<ISiberNetSyncCoordinator.UserDeleted>(OnUserDeleted);
         }
     }
 }
