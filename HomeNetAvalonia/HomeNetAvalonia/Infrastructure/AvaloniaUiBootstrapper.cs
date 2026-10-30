@@ -56,13 +56,38 @@ namespace HomeNetAvalonia.Infrastructure
                 await root.OrmEngine.StartAsync();
                 root.Logger.LogInfo("[Avalonia Bootstrapper] ✅ Репликатор OrmEngine успешно разбужен.");
 
-                // ✂️ УДАЛЕНО: await Task.Delay(10); — костыль уничтожен за ненадобностью!
+                // 🔥 2. СВЯЗЫВАЕМ СЕТЕВОЙ АВТОБУС: Достаем залогиненного юзера из рекордов вьюмоделей!
+                Guid? authenticatedUserId = null;
+
+                if (eventData is IUserVm.UserSignedIn signInMsg && signInMsg.User != null)
+                {
+                    authenticatedUserId = signInMsg.User.Id;
+                }
+                else if (eventData is IUserVm.UserSignedUp signUpMsg && signUpMsg.User != null)
+                {
+                    authenticatedUserId = signUpMsg.User.Id;
+                }
+
+                if (authenticatedUserId.HasValue)
+                {
+                    root.Logger.LogInfo($"[Avalonia Bootstrapper] Пробиваем туннель SignalR для UserId: {authenticatedUserId.Value}");
+
+                    var signalRListener = root.SignalRListener;
+
+                    // Пробиваем туннель
+                    await signalRListener.ConnectAsync(authenticatedUserId.Value);
+                }
+                else
+                {
+                    root.Logger.LogWarning("[Avalonia Bootstrapper] Не удалось определить UserId из события входа. Сетевой автобус запущен без привязки к группе.");
+                }
             }
             catch (Exception ex)
             {
-                root.Logger.LogError($"[Avalonia Bootstrapper] ❌ Ошибка отложенного старта репликации: {ex.Message}");
+                root.Logger.LogError($"[Avalonia Bootstrapper] ❌ Ошибка отложенного старта репликации или сокета: {ex.Message}");
             }
         }
+
 
     }
 }

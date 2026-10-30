@@ -21,6 +21,8 @@ namespace HomeNet.DI
         private readonly DataAccessModule _dataAccess;
         private readonly BusinessServicesModule _services;
         private readonly PresentationUiModule _ui;
+        // 🔥 Вытягиваем листенер из модуля данных по его настоящему имени!
+        public HomeNet.Network.SignalRNotificationListener SignalRListener => _dataAccess.NotificationListener;
 
         public ILogger Logger => _infrastructure.Logger;
         public IEventBus EventBus => _infrastructure.EventBus;
