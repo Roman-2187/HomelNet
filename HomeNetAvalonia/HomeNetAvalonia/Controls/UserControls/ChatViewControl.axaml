@@ -3,17 +3,17 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
               xmlns:vm="using:HomeNetPresentation.ViewModels"
+              xmlns:behaviors="using:HomeNetAvalonia.Behaviors"
              xmlns:models="using:HomeNetCore.Models.Entity"
              mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="500"
              x:Class="HomeNetAvalonia.Controls.ChatViewControl"
              x:DataType="vm:ChatViewModel">
 
-       <UserControl.Styles>
+      <UserControl.Styles>
         <!-- 🕶️ ЧУЖИЕ СООБЩЕНИЯ (Входящие слева): -->
         <Style Selector="Border.msg-cloud">
             <Setter Property="Border.HorizontalAlignment" Value="Left"/>
             <Setter Property="Border.Background" Value="#1500F0FF"/>
-            <!-- 🎯 ОТСТУП СЛЕВА: Отодвигаем от левого края на 20, а справа оставляем 0 -->
             <Setter Property="Border.Margin" Value="100,5,0,5"/>
         </Style>
 
@@ -21,11 +21,9 @@
         <Style Selector="Border.msg-cloud[Tag=true]">
             <Setter Property="Border.HorizontalAlignment" Value="Right"/>
             <Setter Property="Border.Background" Value="#3300F0FF"/>
-            <!-- 🎯 ОТСТУП СПРАВА: Слева ставим 0, а от правого края отодвигаем на 20 -->
             <Setter Property="Border.Margin" Value="0,5,100,5"/>
         </Style>
     </UserControl.Styles>
-
 
     <!-- 🌌 Глобальный DataContext Хаба для полной автономности контрола -->
     <ContentControl DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False">
@@ -41,7 +39,11 @@
 
             <!-- 💬 СРЕДНЯЯ ЧАСТЬ: Лента сообщений -->
             <Border Grid.Row="1" Background="#22000000" BorderBrush="#00F0FF" BorderThickness="1" Margin="0,0,0,5">
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <!-- 🔥 КРАСОТА: Навешиваем твой кастомный автоскролл через прикрепляемое свойство! -->
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" 
+                              VerticalScrollBarVisibility="Auto"
+                              behaviors:AutoScrollBehavior.EnableAutoScroll="True">
+                    
                     <ItemsControl ItemsSource="{Binding Messages}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="models:MessageEntity">
@@ -49,7 +51,6 @@
                                 <!-- 🦾 СВЯЗУЮЩИЙ МОСТ: Прямо пихаем булево свойство в Tag без StringFormat! -->
                                 <Border Classes="msg-cloud" 
                                         Tag="{Binding IsOutgoing}"
-                                        
                                         Padding="50,5,50,5" 
                                         CornerRadius="4" 
                                         BorderThickness="1" 
