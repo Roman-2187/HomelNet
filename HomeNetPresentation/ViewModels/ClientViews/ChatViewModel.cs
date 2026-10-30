@@ -2,8 +2,8 @@
 using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Services;
+using HomeNetCore.Interfaces.Sinc; // Подключаем пространство имен координатора синхронизации
 using HomeNetCore.Interfaces.ViewModels;
-using HomeNetCore.Models;
 using HomeNetCore.Models.Entity;
 using System.Collections.ObjectModel;
 
@@ -11,23 +11,21 @@ namespace HomeNetPresentation.ViewModels
 {
     /// <summary>
     /// Автономная киберпанк-витрина чата SiberNet.
-    /// Работает строго через сервис сообщений и шину событий! 🧼
+    /// Слушает ОРМ-репозитории напрямую через шину координатора! 🧼
     /// </summary>
     public partial class ChatViewModel : ObservableObject, IDisposable
     {
         private readonly IEventBus _eventBus;
         private readonly IMessageService _messageService;
 
-      
+        // Наш потокобезопасный lock для коллекции сообщений
+        private readonly object _collectionLock = new();
 
-        [ObservableProperty] private Guid _currentUserId; // Было приватным полем, станет свойством!
-
-
+        [ObservableProperty] private Guid _currentUserId;
         [ObservableProperty] private string _currentUserName = string.Empty;
         [ObservableProperty] private bool _isChatOpen = false;
         [ObservableProperty] private string _inputText = string.Empty;
 
-        // Добавляем хранение имени выбранного друга для шапки чата
         [ObservableProperty] private string _selectedFriendName = string.Empty;
         [ObservableProperty] private Guid? _selectedFriendId;
         [ObservableProperty] private ObservableCollection<MessageEntity> _messages = new();
@@ -46,9 +44,8 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Subscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
             _eventBus.Subscribe<IContactsVm.FriendSelected>(OnFriendSelected);
 
-            // 🔥 ОЧЕНЬ ВАЖНО: Слушаем шину на предмет новых входящих сообщений в реальном времени!
-           
-            _eventBus.Subscribe<IMessageService.MessageReceived>(OnMessageReceivedInRealTime);
+            // 🔥 КАРАУЛИМ РЕПОЗИТОРИЙ ИЗ ПЕРВЫХ РУК: Слушаем событие координатора ОРМ!
+            _eventBus.Subscribe<ISiberNetSyncCoordinator.MessageInserted>(OnMessageReceivedInRealTime);
         }
 
         private void OnUserSignedIn(IUserVm.UserSignedIn msg)
@@ -61,7 +58,7 @@ namespace HomeNetPresentation.ViewModels
         private void OnUserSignedUp(IUserVm.UserSignedUp msg)
         {
             if (msg?.User == null) return;
-           CurrentUserId = msg.User.Id;
+            CurrentUserId = msg.User.Id;
             CurrentUserName = msg.User.FirstName ?? "Вы";
         }
 
@@ -69,20 +66,19 @@ namespace HomeNetPresentation.ViewModels
         {
             if (msg?.Friend == null) return;
 
-            // Запоминаем ID текущего юзера и выбранного друга
             CurrentUserId = msg.CurrentUserId;
             SelectedFriendId = msg.Friend.Id;
             SelectedFriendName = msg.Friend.FirstName ?? "Собеседник";
-            Messages.Clear();
+
+            lock (_collectionLock)
+            {
+                Messages.Clear();
+            }
             IsChatOpen = true;
 
             try
             {
-                // Вытаскиваем сырые сообщения из базы
                 var history = await _messageService.GetPrivateHistoryAsync(CurrentUserId, SelectedFriendId.Value);
-
-                // Очищаем старый чат
-                Messages.Clear();
 
                 if (history != null)
                 {
@@ -91,12 +87,12 @@ namespace HomeNetPresentation.ViewModels
                     foreach (var m in historyList)
                     {
                         m.IsOutgoing = m.SenderId == CurrentUserId;
-                        Messages.Add(m); // 🎯 Вызов Add заставит UI-поток Avalonia перерисовать конкретный элемент с правильным Tag!
                     }
 
-
-                    // Только ТЕПЕРЬ, когда вся история размечена, отдаем ее в UI
-                    Messages = new ObservableCollection<MessageEntity>(historyList);
+                    lock (_collectionLock)
+                    {
+                        Messages = new ObservableCollection<MessageEntity>(historyList);
+                    }
                 }
             }
             catch (Exception ex)
@@ -105,47 +101,53 @@ namespace HomeNetPresentation.ViewModels
             }
         }
 
-
-
-
         [RelayCommand(CanExecute = nameof(CanSendMessage))]
         private async Task SendMessageAsync()
         {
             if (string.IsNullOrWhiteSpace(InputText) || SelectedFriendId == null) return;
 
             var rawText = InputText.Trim();
-            InputText = string.Empty; // Мгновенно чистим поле ввода в киберпанк-стиле
+            InputText = string.Empty;
 
-            // Отправляем запрос в сервис
             var verdict = await _messageService.SendPrivateMessageAsync(CurrentUserId, SelectedFriendId.Value, rawText);
-
-          
 
             if (verdict.IsValid && verdict.CreatedMessage != null)
             {
-                // Новое сообщение, которое отправил ТЫ, всегда является исходящим!
                 verdict.CreatedMessage.IsOutgoing = true;
-                Messages.Add(verdict.CreatedMessage);
+
+                lock (_collectionLock)
+                {
+                    // Локальное эхо для плавности интерфейса при отправке
+                    if (!Messages.Any(m => m.Id == verdict.CreatedMessage.Id))
+                    {
+                        Messages.Add(verdict.CreatedMessage);
+                    }
+                }
             }
-
-
             else
             {
-                // Выводим ошибку в неоновый статусбар приложения
                 _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"[ОШИБКА ЧАТА]: {verdict.ErrorMessage}"));
             }
         }
 
-        private void OnMessageReceivedInRealTime(IMessageService.MessageReceived msg)
+        private void OnMessageReceivedInRealTime(ISiberNetSyncCoordinator.MessageInserted msg)
         {
-            if (msg?.Message == null) return;
+            if (msg?.Message == null || SelectedFriendId == null) return;
 
-            // 🔥 ПРОВЕРКА СВЯЗИ: Если новое сообщение пришло от того друга, чей чат сейчас ОТКРЫТ, 
-            // и предназначалось именно МНЕ — мгновенно рендерим его на экране
-            if (msg.Message.SenderId == SelectedFriendId && msg.Message.ReceiverId == CurrentUserId)
+            // Проверяем, что сообщение принадлежит текущему активному диалогу
+            if ((msg.Message.SenderId == SelectedFriendId.Value && msg.Message.ReceiverId == CurrentUserId) ||
+                (msg.Message.SenderId == CurrentUserId && msg.Message.ReceiverId == SelectedFriendId.Value))
             {
-                // Avalonia сама обновит ListBox/ItemsControl благодаря ObservableCollection
-                Messages.Add(msg.Message);
+                msg.Message.IsOutgoing = msg.Message.SenderId == CurrentUserId;
+
+                lock (_collectionLock)
+                {
+                    // Защита от дублирования: если сообщение уже добавлено локальным эхо, пропускаем
+                    if (!Messages.Any(m => m.Id == msg.Message.Id))
+                    {
+                        Messages.Add(msg.Message);
+                    }
+                }
             }
         }
 
@@ -159,7 +161,7 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
             _eventBus.Unsubscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
             _eventBus.Unsubscribe<IContactsVm.FriendSelected>(OnFriendSelected);
-            _eventBus.Unsubscribe<IMessageService.MessageReceived>(OnMessageReceivedInRealTime);
+            _eventBus.Unsubscribe<ISiberNetSyncCoordinator.MessageInserted>(OnMessageReceivedInRealTime);
         }
     }
 }
