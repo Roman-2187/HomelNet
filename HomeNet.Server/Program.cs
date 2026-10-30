@@ -1,18 +1,30 @@
 using HomeNet.DI.Modules;
+using HomeNet.DI.Modules;
 using HomeNetCore.Extensions;
+using HomeNetCore.Extensions;
+using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Models.Entity;
 using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Repositories.Remote;
 using HomeNetServices.Diagnostics;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.Intrinsics.X86;
+using System.Threading.Tasks;
 
 namespace HomeNet.Server
 {
     public partial class Program
     {
-        private static readonly SemaphoreSlim _dbSemaphore = new SemaphoreSlim(1, 1);
+        // 🔥 ФИКС: УДАЛЕН ГЛОБАЛЬНЫЙ МЕРТВЫЙ ЗАМОК _dbSemaphore! База теперь работает в параллели.
 
         private static async Task Main(string[] args)
         {
@@ -36,14 +48,10 @@ namespace HomeNet.Server
             // 🎯 ЗАПУСКАЕМ СЕРВЕРНУЮ ЦАРЬ-МАШИНУ: Режим RemoteServer на полную мощность!
             var postgresEngine = new SiberNetDbEngine(DbEngineType.RemoteServer, postgresConn, serverSchemas, serverLogger);
 
-            // Штампуем репозитории на полном автомате по единому конвейеру. Никакой каши в именах!
-            IMessageRepository messageRepository = postgresEngine.CreateMessageRepository(null!); // На сервере шина клиента не нужна
+            // Штампуем репозитории на полном автомате по единому конвейеру.
+            IMessageRepository messageRepository = postgresEngine.CreateMessageRepository(null!);
             IUserRepository userRepository = postgresEngine.CreateUserRepository(null!);
-
-            // 🔥 ФИКС: Генератор синхронизации девайсов собирается напрямую через метод движка!
             IDeviceSyncRepository deviceSyncRepository = postgresEngine.CreateDeviceSyncRepository();
-            // Сюда подставляешь твой конкретный PostgresDeviceSyncRepository, передавая ему соединение и генератор
-            // IDeviceSyncRepository deviceSyncRepository = new PostgresDeviceSyncRepository(postgresEngine.Connection, deviceSyncGenerator, serverLogger);
 
             builder.Services.AddSignalR();
             var app = builder.Build();
@@ -51,19 +59,15 @@ namespace HomeNet.Server
             app.MapHub<ServerChatHub>("/chatHub");
 
             // ============================================================================
-            // 📥 🎯 ЭНДПОИНТ PULL: СИНХРОНИЗАЦИЯ СМС ДЛЯ КЛИЕНТА (Строго через методы ОРМ)
-            // ============================================================================
-            // 📥 🎯 ЭНДПОИНТ PULL: СИНХРОНИЗАЦИЯ СМС ПО USER ID (Фикс гонки девайсов)
+            // 📥 🎯 ЭНДПОИНТ PULL: СИНХРОНИЗАЦИЯ СМС ПО USER ID (Асинхронный и параллельный)
             // ============================================================================
             app.MapGet("/api/messages/sync", async (Guid userId, string lastSyncedAt) =>
             {
-                await _dbSemaphore.WaitAsync();
                 try
                 {
                     if (!DateTimeOffset.TryParse(lastSyncedAt, out var clientCheckpoint))
                         clientCheckpoint = DateTimeOffset.MinValue;
 
-                    // ВРЕМЕННО: Нам плевать на плавающий deviceId, мы верим переданному userId!
                     if (userId == Guid.Empty) return Results.Ok(Array.Empty<MessageEntity>());
 
                     serverLogger.LogInfo($"[API PULL] Юзер {userId} запрашивает свои СМС с метки {clientCheckpoint:HH:mm:ss}");
@@ -79,19 +83,13 @@ namespace HomeNet.Server
                     serverLogger.LogError($"[API Ошибка] Сбой PULL синхронизации СМС: {ex.Message}");
                     return Results.Problem("Ошибка сервера");
                 }
-                finally
-                {
-                    _dbSemaphore.Release();
-                }
             });
 
-
             // ============================================================================
-            // 📥 🎯 ЭНДПОИНТ PULL: ВЫДАЧА ОБНОВЛЕНИЙ ПОЛЬЗОВАТЕЛЕЙ (Строго через методы ОРМ)
+            // 📥 🎯 ЭНДПОИНТ PULL: ВЫДАЧА ОБНОВЛЕНИЙ ПОЛЬЗОВАТЕЛЕЙ (Без блокировок)
             // ============================================================================
             app.MapGet("/api/users/sync", async (Guid deviceId, string lastSyncedAt) =>
             {
-                await _dbSemaphore.WaitAsync();
                 try
                 {
                     if (!DateTimeOffset.TryParse(lastSyncedAt, out var clientCheckpoint))
@@ -107,23 +105,18 @@ namespace HomeNet.Server
                     serverLogger.LogError($"[API Ошибка] Сбой PULL ОРМ пользователей: {ex.Message}");
                     return Results.Problem("Ошибка сервера");
                 }
-                finally
-                {
-                    _dbSemaphore.Release();
-                }
             });
 
             // ============================================================================
-            // 📤 ЭНДПОИНТ: ПРИЕМ СООБЩЕНИЙ ЧЕРЕЗ РЕПОЗИТОРИЙ (Твой старый метод PUSH)
+            // 📤 ЭНДПОИНТ: ПРИЕМ СООБЩЕНИЙ ЧЕРЕЗ РЕПОЗИТОРИЙ (PUSH)
             // ============================================================================
             app.MapPost("/api/messages", async (MessageEntity incomingMessage, IHubContext<ServerChatHub> hubContext) =>
             {
-                await _dbSemaphore.WaitAsync();
                 try
                 {
                     serverLogger.LogInfo($"[API] Прилетел объект сообщения от {incomingMessage.SenderId} для {incomingMessage.ReceiverId}");
                     await messageRepository.SaveMessageAsync(incomingMessage);
-                    serverLogger.LogInfo($"[API Успех] Сообщение {incomingMessage.Id} успешно записано в PostgreSQL.");
+                    serverLogger.LogInfo($"[API Успех] Сообщение {incomingMessage.Id} успешно записано in PostgreSQL.");
 
                     await hubContext.Clients.Group(incomingMessage.ReceiverId.ToString()).SendAsync("ReceiveMessage", incomingMessage);
                     return Results.Ok(new { Success = true });
@@ -133,10 +126,6 @@ namespace HomeNet.Server
                     serverLogger.LogError($"[API Ошибка] Не удалось сохранить через репозиторий: {ex.Message}");
                     return Results.Problem("Ошибка сервера");
                 }
-                finally
-                {
-                    _dbSemaphore.Release();
-                }
             });
 
             // ============================================================================
@@ -144,7 +133,6 @@ namespace HomeNet.Server
             // ============================================================================
             app.MapPost("/api/users", async (UserEntity incomingUser, IHubContext<ServerChatHub> hubContext) =>
             {
-                await _dbSemaphore.WaitAsync();
                 try
                 {
                     serverLogger.LogInfo($"[API PUSH] Прилетел профиль пользователя '{incomingUser.Email}' (ID: {incomingUser.Id})");
@@ -154,7 +142,7 @@ namespace HomeNet.Server
                     if (existingServerUser == null)
                     {
                         await userRepository.InsertUserAsync(incomingUser);
-                        serverLogger.LogInfo($"[API Успех] Новый... пользователь '{incomingUser.FirstName}' успешно создан в PostgreSQL.");
+                        serverLogger.LogInfo($"[API Успех] Новый пользователь '{incomingUser.FirstName}' успешно создан в PostgreSQL.");
                     }
                     else
                     {
@@ -177,10 +165,6 @@ namespace HomeNet.Server
                     serverLogger.LogError($"[API Ошибка] Не удалось обработать PUSH пользователя через репозиторий: {ex.Message}");
                     return Results.Problem("Ошибка сервера");
                 }
-                finally
-                {
-                    _dbSemaphore.Release();
-                }
             });
 
             // ============================================================================
@@ -188,15 +172,13 @@ namespace HomeNet.Server
             // ============================================================================
             app.MapDelete("/api/users/{id:guid}", async (Guid id, IHubContext<ServerChatHub> hubContext) =>
             {
-                await _dbSemaphore.WaitAsync();
                 try
                 {
                     serverLogger.LogInfo($"[API] Запрос на удаление пользователя (ID: {id})");
                     await userRepository.DeleteByIdAsync(id);
                     serverLogger.LogInfo($"[API Успех] Пользователь (ID: {id}) успешно удален из PostgreSQL.");
 
-                  
-                 await hubContext.Clients.All.SendAsync("ReceiveUserDeleted", id);
+                    await hubContext.Clients.All.SendAsync("ReceiveUserDeleted", id);
                     return Results.Ok(new { Success = true });
                 }
                 catch (Exception ex)
@@ -204,11 +186,8 @@ namespace HomeNet.Server
                     serverLogger.LogError($"[API Ошибка] Не удалось удалить пользователя через репозиторий: {ex.Message}");
                     return Results.Problem("Ошибка сервера");
                 }
-                finally
-                {
-                    _dbSemaphore.Release();
-                }
             });
+
             // ============================================================================
             // 📦 ИНИЦИАЛИЗАЦИЯ И ЗАПУСК БАЗЫ ДАННЫХ СЕРВЕРА
             // ============================================================================
@@ -218,7 +197,9 @@ namespace HomeNet.Server
             app.Run();
         }
     }
-    public class ServerChatHub : Hub
+
+
+public class ServerChatHub : Hub
     {
         public override async Task OnConnectedAsync()
         {
