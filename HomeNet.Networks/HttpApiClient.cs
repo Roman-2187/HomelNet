@@ -90,25 +90,36 @@ namespace HomeNet.Network
         /// <summary>
         /// Запрашивает у сервера только те сообщения, которые появились строго ПОСЛЕ чекпоинта девайса
         /// </summary>
+        /// <summary>
+        /// Запрашивает у сервера ВСЕ сообщения для конкретного пользователя, обходя гонку Device ID
+        /// </summary>
         public async Task<IReadOnlyCollection<MessageEntity>> FetchFreshMessagesAsync(Guid deviceId, DateTimeOffset lastSyncedAt)
         {
             try
             {
-                _logger.LogInfo($"[HttpApiClient] Запрос свежих СМС для девайса {deviceId} с метки {lastSyncedAt:HH:mm:ss}...");
+                // 🎯 ХАК: Вместо плавающего Device ID используем твой жесткий UserId из логов бэкенда
+                Guid myUserId = Guid.Parse("51868259-03f7-481e-85e9-3b1e6b0fe422");
 
-                // Формируем красивый URL с параметрами: /api/messages/sync?deviceId=...&lastSyncedAt=...
-                // ToString("o") — это формат ISO 8601, чтобы даты с часовыми поясами передавались без искажений
-                string url = $"/api/messages/sync?deviceId={deviceId}&lastSyncedAt={Uri.EscapeDataString(lastSyncedAt.ToString("o"))}";
+                // 🎯 ФИКС: Зашиваем минимальную дату, чтобы сервер не выплюнул 400 Bad Request
+                var zeroTimestamp = new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+                _logger.LogInfo($"[HttpApiClient] Отправляем PULL по User ID: {myUserId} с метки 1970 года...");
+
+                // Меняем параметр deviceId на userId, чтобы сервер понял, чьи сообщения выгребать
+                string url = $"/api/messages/sync?userId={myUserId}&lastSyncedAt={Uri.EscapeDataString(zeroTimestamp.ToString("o"))}";
 
                 var response = await _httpClient.GetFromJsonAsync<List<MessageEntity>>(url);
                 return response ?? new List<MessageEntity>();
             }
             catch (Exception ex)
             {
-                _logger.LogError($"[HttpApiClient КРИТ] Не удалось скачать свежие сообщения: {ex.Message}");
-                return Array.Empty<MessageEntity>(); // Возвращаем пустой массив, чтобы приложение не упало
+                _logger.LogError($"[HttpApiClient КРИТ] Не удалось скачать сообщения по User ID: {ex.Message}");
+                return Array.Empty<MessageEntity>(); // Возвращаем пустой массив, чтобы не уронить OrmEngine
             }
         }
+
+
+
 
         /// <summary>
         /// Запрашивает у сервера новые или обновленные профили пользователей

@@ -84,7 +84,6 @@ namespace HomeNetOrm.DBProviders.Postgres
             OpType.IsNull => "IS NULL",
             OpType.Begin => "BEGIN",
             OpType.End => "END;",
-            // 🔥 Наша новая космическая запятая и маркер процедурного языка:
             OpType.Comma => ",",
             _ => throw new ArgumentOutOfRangeException(nameof(op))
         };

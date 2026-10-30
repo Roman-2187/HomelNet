@@ -53,7 +53,9 @@ namespace HomeNet.Server
             // ============================================================================
             // 📥 🎯 ЭНДПОИНТ PULL: СИНХРОНИЗАЦИЯ СМС ДЛЯ КЛИЕНТА (Строго через методы ОРМ)
             // ============================================================================
-            app.MapGet("/api/messages/sync", async (Guid deviceId, string lastSyncedAt) =>
+            // 📥 🎯 ЭНДПОИНТ PULL: СИНХРОНИЗАЦИЯ СМС ПО USER ID (Фикс гонки девайсов)
+            // ============================================================================
+            app.MapGet("/api/messages/sync", async (Guid userId, string lastSyncedAt) =>
             {
                 await _dbSemaphore.WaitAsync();
                 try
@@ -61,24 +63,20 @@ namespace HomeNet.Server
                     if (!DateTimeOffset.TryParse(lastSyncedAt, out var clientCheckpoint))
                         clientCheckpoint = DateTimeOffset.MinValue;
 
-                    var deviceRepo = deviceSyncRepository as IDeviceSyncRepository;
-                    Guid userId = deviceRepo != null ? await deviceRepo.GetUserIdByDeviceAsync(deviceId) : Guid.Empty;
-
+                    // ВРЕМЕННО: Нам плевать на плавающий deviceId, мы верим переданному userId!
                     if (userId == Guid.Empty) return Results.Ok(Array.Empty<MessageEntity>());
 
-                    serverLogger.LogInfo($"[API PULL] Девайс {deviceId} (Юзер: {userId}) запрашивает СМС с метки {clientCheckpoint:HH:mm:ss}");
+                    serverLogger.LogInfo($"[API PULL] Юзер {userId} запрашивает свои СМС с метки {clientCheckpoint:HH:mm:ss}");
 
                     var freshMessages = await messageRepository.GetFreshMessagesForUserAsync(userId, clientCheckpoint);
                     var messageList = freshMessages.ToList();
 
-                    await deviceSyncRepository.UpdateDeviceCheckpointAsync(deviceId, userId, DateTimeOffset.UtcNow);
-
-                    serverLogger.LogInfo($"[API Успех] Отдано {messageList.Count} СМС для девайса {deviceId} через методы ОРМ.");
+                    serverLogger.LogInfo($"[API Успех] Отдано {messageList.Count} СМС для пользователя {userId} из PostgreSQL.");
                     return Results.Ok(messageList);
                 }
                 catch (Exception ex)
                 {
-                    serverLogger.LogError($"[API Ошибка] Сбой PULL синхронизации СМС через методы репозиториев: {ex.Message}");
+                    serverLogger.LogError($"[API Ошибка] Сбой PULL синхронизации СМС: {ex.Message}");
                     return Results.Problem("Ошибка сервера");
                 }
                 finally
@@ -86,6 +84,7 @@ namespace HomeNet.Server
                     _dbSemaphore.Release();
                 }
             });
+
 
             // ============================================================================
             // 📥 🎯 ЭНДПОИНТ PULL: ВЫДАЧА ОБНОВЛЕНИЙ ПОЛЬЗОВАТЕЛЕЙ (Строго через методы ОРМ)

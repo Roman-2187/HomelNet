@@ -74,63 +74,23 @@ namespace HomeNet.DI
         private static async Task OnInfrastructureReady(IDbContextContainer.InfrastructureReady ev)
         {
             if (_instance == null) return;
-
             var logger = _instance._infrastructure.Logger;
-            var dataAccess = _instance._dataAccess;
 
-            logger.LogInfo("[App Старт] Локальные хранилища готовы. Проверяем статус бэкенд сервера...");
-
-            using (var client = new HttpClient { Timeout = TimeSpan.FromMilliseconds(800) })
+            logger.LogInfo("[App Старт] Принудительно будим синхронизатор...");
+            try
             {
-                string pingUrl = $"{dataAccess.ApiBaseUrl.TrimEnd('/')}/api/ping";
-                bool isServerUp = false;
-                int attempts = 0;
-                const int maxAttempts = 4;
-
-                while (!isServerUp && attempts < maxAttempts)
-                {
-                    attempts++;
-                    try
-                    {
-                        var response = await client.GetAsync(pingUrl);
-                        if (response.IsSuccessStatusCode)
-                        {
-                            isServerUp = true;
-                            logger.LogInfo($"[App Старт] Бэкенд успешно ответил на {attempts}-й попытке. Сервер прогрет!");
-                        }
-                    }
-                    catch
-                    {
-                        logger.LogWarning($"[App Старт] Сервер бэкенда еще занят или недоступен. Попытка {attempts}/{maxAttempts}...");
-
-                        if (attempts < maxAttempts)
-                        {
-                            await Task.Delay(500);
-                        }
-                    }
-                }
-
-                if (!isServerUp)
-                {
-                    logger.LogWarning("[App Старт] Бэкенд не ответил за 4 попытки. Переходим в ОФЛАЙН режим работы.");
-                }
+                // Стартуем движок в обход любых проверок пинга
+                await _instance.OrmEngine.StartAsync();
+                logger.LogInfo("[App Старт] ✅ OrmEngine запущен, пошла синхронизация!");
             }
-
-            if (dataAccess.NotificationListener != null)
+            catch (Exception ex)
             {
-                try
-                {
-                    await dataAccess.NotificationListener.ConnectAsync();
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError($"[App Старт] Не удалось подключить логи бэкенда (офлайн): {ex.Message}");
-                }
+                logger.LogError($"[App Старт] Ошибка: {ex.Message}");
             }
-
-            await Task.Delay(200);
-            // 🔥 СТРОКА ХОЛОСТОГО ЗАПУСКА УДАЛЕНА ИЗ ПОДВАЛА. Теперь старт строго контролируемый!
         }
+
+
+
 
         public TGet GetViewModel<TGet>() where TGet : class
         {

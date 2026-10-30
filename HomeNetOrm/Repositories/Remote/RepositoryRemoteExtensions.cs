@@ -22,7 +22,7 @@ namespace HomeNetOrm.Repositories.Remote
 
             // 🎯 Кастуем строго к твоему готовому SyncedMessageSqlGenerator!
             if (syncSupport.SqlGenerator is not SyncedMessageSqlGenerator messageGen)
-                return Array.Empty<MessageEntity>();
+                return [];
 
             DbConnection serverConn = syncSupport.Connection;
             if (serverConn.State != ConnectionState.Open) await serverConn.OpenAsync();

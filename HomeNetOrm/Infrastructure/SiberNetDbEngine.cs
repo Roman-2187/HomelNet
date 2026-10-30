@@ -102,7 +102,7 @@ namespace HomeNetOrm.Infrastructure
 
 
 
-        // --- ⚙️ Универсальный запуск инициализации таблиц и схем ---
+       
         // --- ⚙️ Универсальный запуск инициализации таблиц и схем ---
         public async Task InitializeChannelAsync()
         {
@@ -193,6 +193,127 @@ namespace HomeNetOrm.Infrastructure
                 }
             }
         }
+
+
+
+
+        //// --- ⚙️ Универсальный запуск инициализации таблиц и схем ---
+        //public async Task InitializeChannelAsync()
+        //{
+        //    if (_connection.State != System.Data.ConnectionState.Open)
+        //    {
+        //        await _connection.OpenAsync();
+        //    }
+
+        //    // Наш универсальный сборщик провайдера схем
+        //    var schemaProvider = new GenericSchemaProvider(_schemaGenerator, _connection, _spec, _logger);
+        //    var tableInitializer = new SchemaRepository(_connection, schemaProvider, _schemaGenerator, _schemas, _logger);
+
+        //    await tableInitializer.InitializeAsync();
+
+        //    // 🔥 АВТОМАТИЧЕСКИЙ НАКАТ ТРИГГЕРОВ ДЛЯ ПОСТГРЕСА
+        //    if (_engineType == DbEngineType.RemoteServer)
+        //    {
+        //        _logger.LogInfo("[SiberNet Engine] Серверный режим: Проверка системы версионирования Postgres...");
+
+        //        try
+        //        {
+        //            // 1. Сначала накатываем/обновляем общую функцию инкремента (там внутри OR REPLACE, так что безопасно)
+        //            string functionSql = _schemaGenerator.GenerateVersionFunctionSql(_translator);
+        //            using (var cmdFunc = _connection.CreateCommand())
+        //            {
+        //                cmdFunc.CommandText = functionSql;
+        //                await cmdFunc.ExecuteNonQueryAsync();
+        //            }
+        //            _logger.LogInfo("[SiberNet Engine] ✅ Глобальная функция инкремента 'update_version_func' проверена.");
+
+        //            // 📋 Черный список таблиц, которым НЕ нужно серверное версионирование и триггеры
+        //            var ignoreTablesForVersioning = new HashSet<string> { "device_sync", "devicesync" };
+
+        //            // 2. Бежим по всем зарегистрированным таблицам и проверяем триггеры через колонку-маркер
+        //            foreach (var schema in _schemas)
+        //            {
+        //                if (string.IsNullOrEmpty(schema.TableName)) continue;
+
+        //                string cleanTableName = schema.TableName.Replace("\"", "").ToLower();
+
+        //                // 🛑 Проверяем, входит ли таблица в список исключений
+        //                if (ignoreTablesForVersioning.Contains(cleanTableName))
+        //                {
+        //                    _logger.LogInfo($"[SiberNet Engine] Игнор-лист: Таблица '{schema.TableName}' исключена из системы серверного версионирования.");
+        //                    continue;
+        //                }
+
+        //                // 🔍 КОПЕЕЧНАЯ ОПЕРАЦИЯ: Проверяем наличие колонки-маркера в таблице
+        //                bool hasMarkerColumn = false;
+        //                using (var checkCmd = _connection.CreateCommand())
+        //                {
+        //                    checkCmd.CommandText = @"
+        //                        SELECT COUNT(*) 
+        //                        FROM information_schema.columns 
+        //                        WHERE table_name = @tableName AND column_name = 'is_triggered';";
+
+        //                    var param = checkCmd.CreateParameter();
+        //                    param.ParameterName = "@tableName";
+        //                    param.Value = cleanTableName;
+        //                    checkCmd.Parameters.Add(param);
+
+        //                    var result = await checkCmd.ExecuteScalarAsync();
+        //                    hasMarkerColumn = Convert.ToInt32(result) > 0;
+        //                }
+
+        //                if (hasMarkerColumn)
+        //                {
+        //                    _logger.LogInfo($"[SiberNet Engine] Лог: Маркер 'is_triggered' найден для таблицы '{schema.TableName}'. Триггер активен. Пропуск.");
+        //                }
+        //                else
+        //                {
+        //                    string triggerName = $"trg_{cleanTableName}_version";
+        //                    _logger.LogWarning($"[SiberNet Engine] Лог: Маркер для таблицы '{schema.TableName}' НЕ найден. Генерируем триггер...");
+
+        //                    // Атомарно накатываем триггер и добавляем колонку-маркер
+        //                    // Используем транзакцию, чтобы маркер и триггер создавались строго вместе
+        //                    using (var transaction = _connection.BeginTransaction())
+        //                    {
+        //                        try
+        //                        {
+        //                            // А. Создаем триггер
+        //                            string triggerSql = _schemaGenerator.GenerateVersionTriggerSql(schema, _translator);
+        //                            using (var runCmd = _connection.CreateCommand())
+        //                            {
+        //                                runCmd.Transaction = transaction;
+        //                                runCmd.CommandText = triggerSql;
+        //                                await runCmd.ExecuteNonQueryAsync();
+        //                            }
+
+        //                            // Б. Добавляем колонку-маркер с дефолтным значением
+        //                            using (var alterCmd = _connection.CreateCommand())
+        //                            {
+        //                                alterCmd.Transaction = transaction;
+        //                                alterCmd.CommandText = $"ALTER TABLE {schema.TableName} ADD COLUMN is_triggered BOOLEAN DEFAULT TRUE;";
+        //                                await alterCmd.ExecuteNonQueryAsync();
+        //                            }
+
+        //                            await transaction.CommitAsync();
+        //                            _logger.LogInfo($"[SiberNet Engine] ✅ Триггер '{triggerName}' успешно привязан, таблица '{schema.TableName}' помечена.");
+        //                        }
+        //                        catch
+        //                        {
+        //                            await transaction.RollbackAsync();
+        //                            throw;
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            _logger.LogCritical($"[SiberNet Engine] ❌ КРИТИЧЕСКАЯ ОШИБКА инициализации триггеров версионирования: {ex.Message}");
+        //            throw;
+        //        }
+        //    }
+        //}
+
 
 
 
