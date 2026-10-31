@@ -1,6 +1,5 @@
-﻿using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Events;
+﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetOrm.Interfaces.Builders;
 
 namespace HomeNetOrm.Infrastructure

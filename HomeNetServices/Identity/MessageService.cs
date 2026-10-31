@@ -1,4 +1,4 @@
-﻿using HomeNetCore.Interfaces.Events;
+﻿using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Models.Entity;

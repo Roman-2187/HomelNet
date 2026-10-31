@@ -1,8 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Enums.Navigation;
-using HomeNetCore.Interfaces.Events;
-using HomeNetCore.Interfaces.OutputLogging;
+using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetPresentation.Services;
 

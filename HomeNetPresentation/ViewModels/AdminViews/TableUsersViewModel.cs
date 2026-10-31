@@ -1,12 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNetCore.Interfaces;
-using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
-using HomeNetCore.Interfaces.Sinc; // Подключаем интерфейс ОРМ-событий
+using HomeNetCore.Interfaces.Sinc;
 using HomeNetCore.Models.Entity;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetPresentation.Services;
 using System.Collections.ObjectModel;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 
 namespace HomeNetPresentation.ViewModels.AdminViews
 {
@@ -27,9 +27,9 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         private void InitializeBusSubscriptions()
         {
             // 🔥 ПЕРЕВОД НА ЦЕНТРАЛЬНЫЕ СОБЫТИЯ СЛОЯ ДАННЫХ (IDeleteUserVm / IUsersTableVm уходят в прошлое)
-            _eventBus.Subscribe<ISiberNetSyncCoordinator.UserDeleted>(OnUserDeletedFromDb);
-            _eventBus.Subscribe<ISiberNetSyncCoordinator.UserInserted>(OnUserAdded);
-            _eventBus.Subscribe<ISiberNetSyncCoordinator.UserUpdated>(OnUserUpdated);
+            _eventBus.Subscribe<ISyncCoordinator.UserDeleted>(OnUserDeletedFromDb);
+            _eventBus.Subscribe<ISyncCoordinator.UserInserted>(OnUserAdded);
+            _eventBus.Subscribe<ISyncCoordinator.UserUpdated>(OnUserUpdated);
 
             _eventBus.Subscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
             _eventBus.Subscribe<IDbContextContainer.InfrastructureReady>(OnInfrastructureReady);
@@ -61,8 +61,8 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 
         #region 🎧 СИНХРОННЫЕ МЕТОДЫ ПОДПИСОК НА ЕДИНЫЙ ИСТОЧНИК ПРАВДЫ 🧼
 
-        // Перешли на ISiberNetSyncCoordinator.UserUpdated
-        private void OnUserUpdated(ISiberNetSyncCoordinator.UserUpdated msg)
+        // Перешли на ISyncCoordinator.UserUpdated
+        private void OnUserUpdated(ISyncCoordinator.UserUpdated msg)
         {
             if (msg?.User == null) return;
 
@@ -81,8 +81,8 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             }
         }
 
-        // Перешли на ISiberNetSyncCoordinator.UserDeleted
-        private void OnUserDeletedFromDb(ISiberNetSyncCoordinator.UserDeleted msg)
+        // Перешли на ISyncCoordinator.UserDeleted
+        private void OnUserDeletedFromDb(ISyncCoordinator.UserDeleted msg)
         {
             lock (_collectionLock)
             {
@@ -95,8 +95,8 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             }
         }
 
-        // Перешли на ISiberNetSyncCoordinator.UserInserted
-        private void OnUserAdded(ISiberNetSyncCoordinator.UserInserted msg)
+        // Перешли на ISyncCoordinator.UserInserted
+        private void OnUserAdded(ISyncCoordinator.UserInserted msg)
         {
             if (msg.User == null) return;
 
@@ -128,9 +128,9 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         public override void Dispose()
         {
             base.Dispose();
-            _eventBus.Unsubscribe<ISiberNetSyncCoordinator.UserDeleted>(OnUserDeletedFromDb);
-            _eventBus.Unsubscribe<ISiberNetSyncCoordinator.UserInserted>(OnUserAdded);
-            _eventBus.Unsubscribe<ISiberNetSyncCoordinator.UserUpdated>(OnUserUpdated);
+            _eventBus.Unsubscribe<ISyncCoordinator.UserDeleted>(OnUserDeletedFromDb);
+            _eventBus.Unsubscribe<ISyncCoordinator.UserInserted>(OnUserAdded);
+            _eventBus.Unsubscribe<ISyncCoordinator.UserUpdated>(OnUserUpdated);
             _eventBus.Unsubscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
         }
     }

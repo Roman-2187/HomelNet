@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace HomeNetCore.Models.Diagnostics
+﻿namespace HomeNet.Infrastructure.Shared.Enums
 {
     /// <summary>
     /// Битовый автомат состояний сигнала в шине SiberNet.

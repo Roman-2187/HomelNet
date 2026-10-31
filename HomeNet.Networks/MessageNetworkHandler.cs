@@ -1,9 +1,8 @@
 ﻿using HomeNetCore.Interfaces;
-using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Sinc;
-using HomeNetCore.Extensions;
 using HomeNetCore.Models.Entity;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 
 namespace HomeNet.Network
 {
@@ -16,11 +15,11 @@ namespace HomeNet.Network
 
         protected override void SubscribeToEvents()
         {
-            EventBus.Subscribe<ISiberNetSyncCoordinator.MessagePendingSync>(OnMessagePendingSync);
-            EventBus.Subscribe<ISiberNetSyncCoordinator.MessagePullRequested>(OnMessagePullRequested);
+            EventBus.Subscribe<ISyncCoordinator.MessagePendingSync>(OnMessagePendingSync);
+            EventBus.Subscribe<ISyncCoordinator.MessagePullRequested>(OnMessagePullRequested);
         }
 
-        private void OnMessagePendingSync(ISiberNetSyncCoordinator.MessagePendingSync @event)
+        private void OnMessagePendingSync(ISyncCoordinator.MessagePendingSync @event)
         {
             FireAndForget(() => PushMessageInternalAsync(@event.Message), $"Push Message {@event.Message.Id}");
         }
@@ -32,11 +31,11 @@ namespace HomeNet.Network
             if (success)
             {
                 Logger.LogInfo($"[MessageNet] Сервер принял сообщение {message.Id}. Уведомляем синхронизатор.");
-                EventBus.Publish(this, new ISiberNetSyncCoordinator.MessageSyncedOnServer(message.Id));
+                EventBus.Publish(this, new ISyncCoordinator.MessageSyncedOnServer(message.Id));
             }
         }
 
-        private void OnMessagePullRequested(ISiberNetSyncCoordinator.MessagePullRequested @event)
+        private void OnMessagePullRequested(ISyncCoordinator.MessagePullRequested @event)
         {
             FireAndForget(PullMessagesInternalAsync, "Pull Messages From Server");
         }
@@ -64,14 +63,14 @@ namespace HomeNet.Network
             Logger.LogInfo($"[MessageNet] Сервер прислал новое сообщение {message.Id}. Кидаем в синхронизатор.");
             message.IsSynced = 1;
 
-            EventBus.Publish(this, new ISiberNetSyncCoordinator.MessageInserted(message));
+            EventBus.Publish(this, new ISyncCoordinator.MessageInserted(message));
             return Task.CompletedTask;
         }
 
         public override void Dispose()
         {
-            EventBus.Unsubscribe<ISiberNetSyncCoordinator.MessagePendingSync>(OnMessagePendingSync);
-            EventBus.Unsubscribe<ISiberNetSyncCoordinator.MessagePullRequested>(OnMessagePullRequested);
+            EventBus.Unsubscribe<ISyncCoordinator.MessagePendingSync>(OnMessagePendingSync);
+            EventBus.Unsubscribe<ISyncCoordinator.MessagePullRequested>(OnMessagePullRequested);
         }
     }
 }

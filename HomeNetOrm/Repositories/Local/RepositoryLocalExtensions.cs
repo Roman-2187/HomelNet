@@ -1,6 +1,6 @@
 ﻿using Dapper;
-using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces.Events;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models.Entity;
 using HomeNetOrm.Interfaces.DbInfrastructure;
@@ -55,7 +55,7 @@ namespace HomeNetOrm.Repositories.Local
             this ISyncSupport<TEntity> localRepository,
             IEnumerable<TEntity> remoteRecords,
             IEventBus eventBus,
-            HomeNetCore.Interfaces.Diagnostics.ILogger logger) where TEntity : BaseEntity
+            ILogger logger) where TEntity : BaseEntity
         {
             if (remoteRecords == null) return 0;
 

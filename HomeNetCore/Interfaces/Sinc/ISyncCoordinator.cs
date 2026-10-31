@@ -8,7 +8,7 @@ namespace HomeNetCore.Interfaces.Sinc
     /// <summary>
     /// Контракт управления фоновой и реалтайм синхронизацией между SQLite и PostgreSQL.
     /// </summary>
-    public interface ISiberNetSyncCoordinator
+    public interface ISyncCoordinator
     {
         Task StartAsync();
 

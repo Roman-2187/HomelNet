@@ -1,7 +1,5 @@
-﻿using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces.Diagnostics;
+﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNetOrm.Models;
-using HomeNetOrm.Schemes;
 
 namespace HomeNetOrm.DBProviders.Base
 {

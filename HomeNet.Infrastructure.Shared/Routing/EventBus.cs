@@ -1,35 +1,30 @@
-﻿using HomeNetCore.Interfaces.Events;
-using HomeNetServices.Diagnostics;
+﻿using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNet.Infrastructure.Shared.Diagnostics;
 
-namespace HomeNetServices.Routing
+namespace HomeNet.Infrastructure.Shared.Routing
 {
     public class EventBus : IEventBus
     {
-        // Храним делегаты как есть (и Action<T>, и Func<T, Task>)
         private readonly Dictionary<Type, List<object>> _subscribers = new();
 
-        // 🔥 ТЕПЕРЬ ЭТО ПРОСТО ССЫЛКА НА ИНЖЕКТИРОВАННЫЙ СИНГЛТОН
+        // Наш главный агент слежки
         public EventBusInspector Inspector { get; }
 
-        // 🔥 Конструктор явно требует инспектор из DI контейнера
         public EventBus(EventBusInspector inspector)
         {
             Inspector = inspector ?? throw new ArgumentNullException(nameof(inspector));
         }
 
-        // --- 1. СИНХРОННАЯ ПОДПИСКА (Для вкладок, кнопок и стейта) ---
         public void Subscribe<TMessage>(Action<TMessage> action)
         {
             RegisterSubscriber(typeof(TMessage), action, action.Target, action.Method);
         }
 
-        // --- 2. АСИНХРОННАЯ ПОДПИСКА (Для тяжелых задач, ОРМ и сети) ---
         public void SubscribeAsync<TMessage>(Func<TMessage, Task> asyncHandler)
         {
             RegisterSubscriber(typeof(TMessage), asyncHandler, asyncHandler.Target, asyncHandler.Method);
         }
 
-        // Общий приватный метод регистрации для устранения дублирования кода
         private void RegisterSubscriber(Type messageType, object handler, object? target, System.Reflection.MethodInfo method)
         {
             if (handler == null) throw new ArgumentNullException(nameof(handler));
@@ -46,14 +41,12 @@ namespace HomeNetServices.Routing
 
             try
             {
-                // Находим тип самого класса-подписчика
                 Type subscriberType = target?.GetType() ?? method.DeclaringType ?? typeof(object);
+                string componentName = subscriberType.Name.StartsWith("<") && subscriberType.DeclaringType != null
+                    ? subscriberType.DeclaringType.Name
+                    : subscriberType.Name;
 
-                string controlName = subscriberType.Name;
-                string methodName = method.Name;
-
-                // Передаем в инспектор — теперь он увидит и асинхронные методы!
-                Inspector.RecordSubscribe(controlName, messageType, methodName, subscriberType);
+                Inspector.RecordSubscribe(componentName, messageType, method.Name, subscriberType);
             }
             catch (Exception ex)
             {
@@ -61,11 +54,9 @@ namespace HomeNetServices.Routing
             }
         }
 
-        // --- 3. АСИНХРОННАЯ ПУБЛИКАЦИЯ (Умеет дожидаться Task) ---
         public async Task PublishAsync<TMessage>(object sender, TMessage message)
         {
             if (message == null) return;
-
             var type = message.GetType();
 
             try
@@ -86,10 +77,8 @@ namespace HomeNetServices.Routing
                     {
                         if (action is Delegate del)
                         {
-                            // Вызываем метод динамически
                             var result = del.DynamicInvoke(message);
 
-                            // 🔥 КЛЮЧЕВАЯ ФИШКА: Если метод вернул Task (был асинхронным), дожидаемся его!
                             if (result is Task task)
                             {
                                 await task;
@@ -104,14 +93,11 @@ namespace HomeNetServices.Routing
             }
         }
 
-        // --- 4. СИНХРОННАЯ ПУБЛИКАЦИЯ (Для совместимости со старым кодом) ---
         public void Publish<TMessage>(object sender, TMessage message)
         {
-            // Запускаем асинхронную публикацию "пожар и забыл" для синхронного контекста
             _ = PublishAsync(sender, message);
         }
 
-        // --- 5. ОТПИСКА (Работает универсально для обоих типов) ---
         public void Unsubscribe<TMessage>(Action<TMessage> action)
         {
             UnsubscribeInternal(typeof(TMessage), action);

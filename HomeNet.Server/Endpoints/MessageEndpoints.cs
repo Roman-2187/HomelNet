@@ -1,19 +1,13 @@
 ﻿using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Models.Entity;
 using HomeNetOrm.Repositories.Remote;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
-using HomeNetCore.Extensions;
-using System;
-using System.Linq;
 
 namespace HomeNet.Server.Endpoints
 {
     public static class MessageEndpoints
     {
-        public static void MapMessageEndpoints(this IEndpointRouteBuilder endpoints, IMessageRepository messageRepository, HomeNetCore.Interfaces.Diagnostics.ILogger serverLogger)
+        public static void MapMessageEndpoints(this IEndpointRouteBuilder endpoints, IMessageRepository messageRepository, HomeNet.Infrastructure.Shared.Interfaces.Diagnostics.ILogger serverLogger)
         {
             // === [📥 PULL СИНХРОНИЗАЦИЯ СМС] ===
             endpoints.MapGet("/api/messages/sync", async (Guid userId, string lastSyncedAt) =>

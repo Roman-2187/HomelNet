@@ -1,13 +1,7 @@
-﻿using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces.Diagnostics;
+﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Interfaces.Services;
-using HomeNetCore.Models;
 using HomeNetCore.Models.Entity;
-using HomeNetOrm.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace HomeNetServices.Services.Identity
 {

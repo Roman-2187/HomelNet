@@ -1,8 +1,8 @@
-﻿using HomeNetCore.Interfaces.Diagnostics;
+﻿using HomeNet.Infrastructure.Shared.Enums;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNetCore.Models.Diagnostics;
-using HomeNetServices.Diagnostics.EventScanner;
 
-namespace HomeNetServices.Diagnostics
+namespace HomeNet.Infrastructure.Shared.Diagnostics
 {
     public class EventBusInspector : IEventInspector
     {
@@ -13,8 +13,6 @@ namespace HomeNetServices.Diagnostics
 
         private bool _isProjectScanned = false;
         private readonly object _scanLock = new();
-
-        public EventBusInspector() { }
 
         public void RecordPublish(object sender, Type messageType)
         {
@@ -34,7 +32,6 @@ namespace HomeNetServices.Diagnostics
                     _signalTimeline.Add(new ComponentNode.SignalEvent(DateTime.Now, name, messageType));
             }
 
-            // 🔥 Пишем изменения в файл СРАЗУ на лету, не дожидаясь клика кнопки!
             GraphReporter.BuildGraph(_nodes, _registry, _signalTimeline, _scanLock);
         }
 
@@ -55,7 +52,6 @@ namespace HomeNetServices.Diagnostics
                 _registry[messageType] |= MessageState.Subscribed;
             }
 
-            // 🔥 Сразу обновляем отчет на жестком диске
             GraphReporter.BuildGraph(_nodes, _registry, _signalTimeline, _scanLock);
         }
 

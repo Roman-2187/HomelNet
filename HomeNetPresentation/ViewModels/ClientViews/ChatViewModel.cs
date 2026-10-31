@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using HomeNetCore.Interfaces.Events;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Interfaces.Sinc;
 using HomeNetCore.Interfaces.ViewModels;
@@ -45,7 +45,7 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Subscribe<IContactsVm.FriendSelected>(OnFriendSelected);
 
             // 🔥 КАРАУЛИМ РЕПОЗИТОРИЙ ИЗ ПЕРВЫХ РУК: Слушаем событие координатора ОРМ!
-            _eventBus.Subscribe<ISiberNetSyncCoordinator.MessageInserted>(OnMessageReceivedInRealTime);
+            _eventBus.Subscribe<ISyncCoordinator.MessageInserted>(OnMessageReceivedInRealTime);
         }
 
         private void OnUserSignedIn(IUserVm.UserSignedIn msg)
@@ -130,7 +130,7 @@ namespace HomeNetPresentation.ViewModels
             }
         }
 
-        private void OnMessageReceivedInRealTime(ISiberNetSyncCoordinator.MessageInserted msg)
+        private void OnMessageReceivedInRealTime(ISyncCoordinator.MessageInserted msg)
         {
             if (msg?.Message == null || SelectedFriendId == null) return;
 
@@ -161,7 +161,7 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
             _eventBus.Unsubscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
             _eventBus.Unsubscribe<IContactsVm.FriendSelected>(OnFriendSelected);
-            _eventBus.Unsubscribe<ISiberNetSyncCoordinator.MessageInserted>(OnMessageReceivedInRealTime);
+            _eventBus.Unsubscribe<ISyncCoordinator.MessageInserted>(OnMessageReceivedInRealTime);
         }
     }
 }

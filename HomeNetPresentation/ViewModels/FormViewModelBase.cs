@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Enums;
-using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Models.Validation;
 using HomeNetPresentation.Services;

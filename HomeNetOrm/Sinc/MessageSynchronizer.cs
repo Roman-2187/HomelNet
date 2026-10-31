@@ -1,6 +1,5 @@
-﻿using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Events;
+﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Interfaces.Sinc;
 using HomeNetCore.Models.Entity;
@@ -15,18 +14,18 @@ namespace HomeNetOrm.Sinc
 
         protected override void SubscribeEvents()
         {
-            EventBus.Subscribe<ISiberNetSyncCoordinator.MessageInserted>(OnMessageInserted);
-            EventBus.Subscribe<ISiberNetSyncCoordinator.MessageUpdated>(OnMessageUpdated);
-            EventBus.Subscribe<ISiberNetSyncCoordinator.MessageDeleted>(OnMessageDeleted);
-            EventBus.Subscribe<ISiberNetSyncCoordinator.MessageSyncedOnServer>(OnMessageSyncedOnServer);
+            EventBus.Subscribe<ISyncCoordinator.MessageInserted>(OnMessageInserted);
+            EventBus.Subscribe<ISyncCoordinator.MessageUpdated>(OnMessageUpdated);
+            EventBus.Subscribe<ISyncCoordinator.MessageDeleted>(OnMessageDeleted);
+            EventBus.Subscribe<ISyncCoordinator.MessageSyncedOnServer>(OnMessageSyncedOnServer);
         }
 
         protected override void UnsubscribeEvents()
         {
-            EventBus.Unsubscribe<ISiberNetSyncCoordinator.MessageInserted>(OnMessageInserted);
-            EventBus.Unsubscribe<ISiberNetSyncCoordinator.MessageUpdated>(OnMessageUpdated);
-            EventBus.Unsubscribe<ISiberNetSyncCoordinator.MessageDeleted>(OnMessageDeleted);
-            EventBus.Unsubscribe<ISiberNetSyncCoordinator.MessageSyncedOnServer>(OnMessageSyncedOnServer);
+            EventBus.Unsubscribe<ISyncCoordinator.MessageInserted>(OnMessageInserted);
+            EventBus.Unsubscribe<ISyncCoordinator.MessageUpdated>(OnMessageUpdated);
+            EventBus.Unsubscribe<ISyncCoordinator.MessageDeleted>(OnMessageDeleted);
+            EventBus.Unsubscribe<ISyncCoordinator.MessageSyncedOnServer>(OnMessageSyncedOnServer);
         }
 
         protected override async Task ExecuteTableSyncInternalAsync()
@@ -43,7 +42,7 @@ namespace HomeNetOrm.Sinc
                 // ============================================================================
                 Logger.LogInfo($"[{GetType().Name}] Запрашиваем у автобуса новые сообщения с бэкенда...");
 
-                EventBus.Publish(this, new ISiberNetSyncCoordinator.MessagePullRequested());
+                EventBus.Publish(this, new ISyncCoordinator.MessagePullRequested());
 
                 // ============================================================================
                 // 📤 НАПРАВЛЕНИЕ PUSH: Локальные оффлайн-хвосты СМС на отправку
@@ -56,7 +55,7 @@ namespace HomeNetOrm.Sinc
                     Logger.LogWarning($"[{GetType().Name}] Обнаружено {pendingList.Count} неотправленных СМС. Пушим в автобус.");
                     foreach (var message in pendingList)
                     {
-                        EventBus.Publish(this, new ISiberNetSyncCoordinator.MessagePendingSync(message));
+                        EventBus.Publish(this, new ISyncCoordinator.MessagePendingSync(message));
                     }
                 }
             }
@@ -66,7 +65,7 @@ namespace HomeNetOrm.Sinc
             }
         }
 
-        private async void OnMessageInserted(ISiberNetSyncCoordinator.MessageInserted msg)
+        private async void OnMessageInserted(ISyncCoordinator.MessageInserted msg)
         {
             if (msg?.Message == null) return;
 
@@ -83,10 +82,10 @@ namespace HomeNetOrm.Sinc
             }
 
             // Локальное оффлайн-сообщение
-            EventBus.Publish(this, new ISiberNetSyncCoordinator.MessagePendingSync(msg.Message));
+            EventBus.Publish(this, new ISyncCoordinator.MessagePendingSync(msg.Message));
         }
 
-        private async void OnMessageSyncedOnServer(ISiberNetSyncCoordinator.MessageSyncedOnServer msg)
+        private async void OnMessageSyncedOnServer(ISyncCoordinator.MessageSyncedOnServer msg)
         {
             if (msg == null) return;
             Logger.LogInfo($"[MessageSync] Сервер подтвердил СМС '{msg.MessageId}'. Обновляем статус в SQLite.");
@@ -100,7 +99,7 @@ namespace HomeNetOrm.Sinc
             }
         }
 
-        private void OnMessageUpdated(ISiberNetSyncCoordinator.MessageUpdated msg) { }
-        private void OnMessageDeleted(ISiberNetSyncCoordinator.MessageDeleted msg) { }
+        private void OnMessageUpdated(ISyncCoordinator.MessageUpdated msg) { }
+        private void OnMessageDeleted(ISyncCoordinator.MessageDeleted msg) { }
     }
 }

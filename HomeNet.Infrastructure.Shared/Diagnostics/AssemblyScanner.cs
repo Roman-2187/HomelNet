@@ -1,7 +1,8 @@
 ﻿using System.Reflection;
+using HomeNet.Infrastructure.Shared.Enums;
 using HomeNetCore.Models.Diagnostics;
 
-namespace HomeNetServices.Diagnostics
+namespace HomeNet.Infrastructure.Shared.Diagnostics
 {
     public static class AssemblyScanner
     {
@@ -31,11 +32,15 @@ namespace HomeNetServices.Diagnostics
 
                     foreach (var method in methods)
                     {
-                        var body = method.GetMethodBody();
-                        byte[] il = body?.GetILAsByteArray();
-                        if (il == null || il.Length == 0) continue;
+                        try
+                        {
+                            var body = method.GetMethodBody();
+                            byte[] il = body?.GetILAsByteArray();
+                            if (il == null || il.Length == 0) continue;
 
-                        ParseMethodIL(il, method, componentName, getOrCreateNode, registry);
+                            ParseMethodIL(il, method, componentName, getOrCreateNode, registry);
+                        }
+                        catch { }
                     }
                 }
             }

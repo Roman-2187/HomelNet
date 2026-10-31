@@ -1,12 +1,12 @@
 ﻿using Dapper;
-using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetOrm.Interfaces.Generators;
 using System.Data.Common;
 using HomeNetCore.Interfaces.Sinc;
-using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Models.Entity;
 using HomeNetOrm.Models;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 
 namespace HomeNetOrm.Repositories.Base
 {
@@ -34,7 +34,7 @@ namespace HomeNetOrm.Repositories.Base
                 object safeParameters = _messageSqlGenerator.PrepareParameters(message);
                 await ExecuteAsync(async db => await db.ExecuteAsync(cmd.Sql, safeParameters));
 
-                _eventBus.Publish(this, new ISiberNetSyncCoordinator.MessageInserted(message));
+                _eventBus.Publish(this, new ISyncCoordinator.MessageInserted(message));
                 return true;
             }
             catch (Exception ex)
@@ -100,7 +100,7 @@ namespace HomeNetOrm.Repositories.Base
 
                     if (rowsAffected > 0 && message != null)
                     {
-                        _eventBus.Publish(this, new ISiberNetSyncCoordinator.MessageDeleted(message.Id));
+                        _eventBus.Publish(this, new ISyncCoordinator.MessageDeleted(message.Id));
                     }
 
                     return rowsAffected > 0;
@@ -122,7 +122,7 @@ namespace HomeNetOrm.Repositories.Base
                     int rowsAffected = await db.ExecuteAsync(cmd.Sql, cmd.Params);
                     if (rowsAffected > 0)
                     {
-                        _eventBus.Publish(this, new ISiberNetSyncCoordinator.ChatCleared(senderId, receiverId));
+                        _eventBus.Publish(this, new ISyncCoordinator.ChatCleared(senderId, receiverId));
                     }
                     return rowsAffected > 0;
                 });

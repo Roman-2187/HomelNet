@@ -1,15 +1,13 @@
-﻿using HomeNetCore.Enums;
+﻿using HomeNet.Infrastructure.Shared.Enums;
 
-namespace HomeNetCore.Interfaces.OutputLogging
-{
-
-
-    
-    
+namespace HomeNetCore.Interfaces.Diagnostics
+{ 
         public interface ILogQueueManager
         {
             void SetReady();
-            void WriteLog(string message, LogLevel level, string namespaceName);
+
+        public void WriteLog(string message, LogLevel level, string namespaceName);
+          
 
             // 🔥 ОБНОВЛЕННЫЙ РЕКОРД ДЛЯ АВТОБУСА СОБЫТИЙ:
             public record LogMessageReceived(string Text, LogLevel Level, string Namespace, bool IsAnimating);

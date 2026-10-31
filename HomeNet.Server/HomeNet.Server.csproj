@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HomeNet.DI\HomeNet.DI.csproj" />
+    <ProjectReference Include="..\HomeNet.Infrastructure.Shared\HomeNet.Infrastructure.Shared.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

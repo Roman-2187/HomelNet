@@ -1,5 +1,4 @@
 ﻿using HomeNetCore.Interfaces;
-using HomeNetCore.Extensions;
 using HomeNetCore.Models.Entity;
 using Microsoft.AspNetCore.SignalR;
 using HomeNetOrm.Repositories.Remote;
@@ -8,7 +7,7 @@ namespace HomeNet.Server.Endpoints
 {
     public static class UserEndpoints
     {
-        public static void MapUserEndpoints(this IEndpointRouteBuilder endpoints, IUserRepository userRepository, HomeNetCore.Interfaces.Diagnostics.ILogger serverLogger)
+        public static void MapUserEndpoints(this IEndpointRouteBuilder endpoints, IUserRepository userRepository, HomeNet.Infrastructure.Shared.Interfaces.Diagnostics.ILogger serverLogger)
         {
             // === [📥 PULL ОБНОВЛЕНИЯ ПРОФИЛЕЙ] ===
             endpoints.MapGet("/api/users/sync", async (Guid deviceId, string lastSyncedAt) =>

@@ -1,8 +1,7 @@
 ﻿using HomeNet.DI.Modules;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Enums;
-using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Events;
 using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetPresentation.ViewModels;

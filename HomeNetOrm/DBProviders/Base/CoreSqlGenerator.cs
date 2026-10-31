@@ -1,9 +1,8 @@
 ﻿using Dapper;
-using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
-using HomeNetOrm.Builders; // Убедись, что неймспейс билдера подключен
+using HomeNetOrm.Builders;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 
 namespace HomeNetOrm.DBProviders.Base
 {

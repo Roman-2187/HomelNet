@@ -1,10 +1,10 @@
 ﻿using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Events;
-using HomeNetCore.Interfaces.OutputLogging;
-using HomeNetCore.Extensions;
 using HomeNetServices.Diagnostics;
-using HomeNetServices.Routing;
-using HomeNet.Network;
+using HomeNet.Infrastructure.Shared.Diagnostics;
+using HomeNet.Infrastructure.Shared.Enums;
+using HomeNet.Infrastructure.Shared.Routing;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 
 public class CoreInfrastructureModule
 {
@@ -21,21 +21,21 @@ public class CoreInfrastructureModule
         EventBusInspector = new EventBusInspector();
         EventBus = new EventBus(EventBusInspector);
 
+        // 2. Инициализируем менеджер очереди логов для UI
         LogQueueManager = new LogQueueManager(EventBus, 1);
 
-        // 🔥 НАСТРОИЛИ ПАРАЛЛЕЛЬНУЮ ОТПРАВКУ:
-        // Теперь логгер одновременно пишет и в DiagnosticHub, и в очередь для UI
-        Logger = new Logger((msg, level, ns) =>
+        // 3. 🔥 НАСТРАИВАЕМ НАШ ОБНОВЛЕННЫЙ SiberNetLogger
+        // В Action передаем только то, что должно уходить дальше (в очередь UI)
+        Logger = new SiberNetLogger((logEntry, level, ns) =>
         {
-            // 1. Пишем в глобальный статический HTML-хаб (чтобы логи сохранялись в файл)
-            DiagnosticHub.Log(msg, (HomeNetCore.Enums.LogLevel)level, clientLogName);
+            
+            LogQueueManager.WriteLog(logEntry, level, ns);
+        }, clientLogName);
 
-            // 2. Публикуем в очередь менеджера логов (чтобы они "бежали" строкой в UI)
-            LogQueueManager.WriteLog(msg, (HomeNetCore.Enums.LogLevel)level, clientLogName);
-        });
-
+        // 4. Запускаем воркер очереди логов
         LogQueueManager.SetReady();
 
+        // 5. Стреляем первым логом через обновленный интерфейс
         Logger.LogInfo("[Инфраструктура] Логгер успешно поднят и настроен.");
     }
 }

@@ -1,9 +1,8 @@
 ﻿
-using HomeNetCore.Extensions;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces;
-using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Interfaces.Repositories;
-using HomeNetCore.Interfaces.Sinc; // Для ISiberNetSyncCoordinator
+using HomeNetCore.Interfaces.Sinc; // Для ISyncCoordinator
 
 namespace HomeNetOrm.Infrastructure
 {
@@ -15,13 +14,13 @@ namespace HomeNetOrm.Infrastructure
     {
         private readonly IUserRepository _userRepository;
         private readonly IMessageRepository _messageRepository;
-        private readonly ISiberNetSyncCoordinator _syncCoordinator;
+        private readonly ISyncCoordinator _syncCoordinator;
         private readonly ILogger _logger;
 
         public SincEngine(
             IUserRepository userRepository,
             IMessageRepository messageRepository,
-            ISiberNetSyncCoordinator syncCoordinator,
+            ISyncCoordinator syncCoordinator,
             ILogger logger)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));

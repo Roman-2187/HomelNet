@@ -1,6 +1,6 @@
-﻿using HomeNetCore.Interfaces;
-using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Events;
+﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Interfaces.Services;
 using HomeNetOrm.Repositories.Local;
@@ -27,7 +27,7 @@ namespace HomeNet.DI.Modules
             IEventBus eventBus)
         {
            UserRepository = userRepo;
-            RegistrationService = new RegistrationService(userRepo);
+            RegistrationService = new RegistrationServiceEx(userRepo);
             AuthenticateService = new AuthenticateService(userRepo);
             DeleteService = new DeleteService(userRepo, logger);
             MessageService = new MessageService(msgRepo, eventBus);

@@ -1,9 +1,18 @@
-﻿using System.Text;
-using HomeNetCore.Interfaces.Diagnostics;
+﻿using HomeNet.Infrastructure.Shared.Enums;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNetCore.Models.Diagnostics;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
 
-namespace HomeNetServices.Diagnostics.EventScanner
+namespace HomeNet.Infrastructure.Shared.Diagnostics
 {
+    /// <summary>
+    /// Генератор сочных интерактивных HTML-отчетов для визуализации связей и рантайм-ленты шины EventBus.
+    /// Дампит файлы прямо на Рабочий стол. 🪐
+    /// </summary>
     public static class GraphReporter
     {
         public static List<IEventInspector.Line> BuildGraph(
@@ -96,7 +105,6 @@ namespace HomeNetServices.Diagnostics.EventScanner
             sb.AppendLine("        .component-card { background-color: #252526; border: 1px solid #3e3e3e; border-radius: 6px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }");
             sb.AppendLine("        .component-title { color: #4fc1ff; font-weight: bold; font-size: 16px; margin-bottom: 10px; display: block; border-left: 4px solid #007acc; padding-left: 8px; }");
             sb.AppendLine("        .line { white-space: pre-wrap; display: block; padding: 4px 8px; border-radius: 4px; margin: 2px 0; font-size: 14px; }");
-            // CSS Подсветка статусов
             sb.AppendLine("        .state-live { color: #4ec9b0; background-color: rgba(78, 201, 176, 0.06); border-left: 3px solid #4ec9b0; }");
             sb.AppendLine("        .state-published { color: #dcdcaa; background-color: rgba(220, 220, 170, 0.04); border-left: 3px solid #dcdcaa; }");
             sb.AppendLine("        .state-subscribed { color: #f44336; background-color: rgba(244, 67, 54, 0.08); font-weight: bold; border-left: 3px solid #f44336; }");
@@ -110,17 +118,15 @@ namespace HomeNetServices.Diagnostics.EventScanner
 
             foreach (var line in lines)
             {
-                // Если строка — это заголовок компонента, упаковываем его в красивую VS-карточку
                 if (line.Text.StartsWith("[ КОМПОНЕНТ:"))
                 {
-                    if (isInCard) sb.AppendLine("    </div>"); // Закрываем предыдущую карточку
+                    if (isInCard) sb.AppendLine("    </div>");
                     sb.AppendLine("    <div class='component-card'>");
                     sb.AppendLine($"        <span class='component-title'>{HtmlEncode(line.Text)}</span>");
                     isInCard = true;
                     continue;
                 }
 
-                // Для разделителей верхнего и нижнего уровня
                 if (line.Text.StartsWith("===="))
                 {
                     if (isInCard) { sb.AppendLine("    </div>"); isInCard = false; }
@@ -133,12 +139,11 @@ namespace HomeNetServices.Diagnostics.EventScanner
                 else if (line.State == MessageState.Published) cssClass = "state-published";
                 else if (line.State == MessageState.Subscribed) cssClass = "state-subscribed";
 
-                // Обычная строка данных (подписка/публикация/сигнал)
                 string padding = isInCard ? "        " : "    ";
                 sb.AppendLine($"{padding}<span class='line {cssClass}'>{HtmlEncode(line.Text)}</span>");
             }
 
-            if (isInCard) sb.AppendLine("    </div>"); // Закрываем последнюю карточку
+            if (isInCard) sb.AppendLine("    </div>");
 
             sb.AppendLine("</body>");
             sb.AppendLine("</html>");

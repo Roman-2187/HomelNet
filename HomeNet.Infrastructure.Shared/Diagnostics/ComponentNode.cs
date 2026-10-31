@@ -1,7 +1,10 @@
-﻿namespace HomeNetCore.Models.Diagnostics
+﻿using System;
+using System.Collections.Generic;
+
+namespace HomeNetCore.Models.Diagnostics
 {
     /// <summary>
-    /// Архитурный узел компонента системы (ВьюМодель, Сервис или Репозиторий).
+    /// Архитектурный узел компонента системы (ВьюМодель, Сервис или Репозиторий).
     /// Удерживает в себе полную карту своих публикаций и подписок.
     /// </summary>
     public class ComponentNode
@@ -28,7 +31,6 @@
         /// <summary>
         /// Стрелочка связи. Описывает, кто и каким методом слушает воздух.
         /// </summary>
-        // 🔥 ОБНОВЛЕНО: Добавили TargetClassName прямо в конструктор рекорда для зрячего графа
         public record SubscriptionLink(
             Type MessageType,     // На какой тип сообщения подписались
             string MethodName,    // Имя метода, который сработает (например, "OnMessageReceived")

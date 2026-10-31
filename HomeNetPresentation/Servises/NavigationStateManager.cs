@@ -1,8 +1,6 @@
-﻿using System;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Enums.Navigation;
-using HomeNetCore.Interfaces.Events;
-using HomeNetCore.Models;
 using HomeNetCore.Models.Entity;
 
 namespace HomeNetPresentation.Services

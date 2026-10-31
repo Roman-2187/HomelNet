@@ -1,16 +1,14 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Enums.Navigation;
-using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Interfaces.Sinc; // Добавили неймспейс для интерфейса синхронизации
-using HomeNetCore.Models;
 using HomeNetCore.Models.Entity;
 using HomeNetPresentation.Services;
 using System.Collections.ObjectModel;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 
 namespace HomeNetPresentation.ViewModels
 {
@@ -44,7 +42,7 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Subscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed);
 
             // 🔥 ПОДПИСКА НА ЕДИНЫЙ ИСТОЧНИК ПРАВДЫ ОТ ОРМ
-            _eventBus.Subscribe<ISiberNetSyncCoordinator.UserDeleted>(OnUserDeleted);
+            _eventBus.Subscribe<ISyncCoordinator.UserDeleted>(OnUserDeleted);
 
             ResetForm();
         }
@@ -67,7 +65,7 @@ namespace HomeNetPresentation.ViewModels
         }
 
         // 🔥 Метод теперь принимает системный тип события от репозитория
-        private void OnUserDeleted(ISiberNetSyncCoordinator.UserDeleted msg)
+        private void OnUserDeleted(ISyncCoordinator.UserDeleted msg)
         {
             var userToRemove = FoundUsers.FirstOrDefault(u => u.Id == msg.UserId);
             if (userToRemove != null)
@@ -190,7 +188,7 @@ namespace HomeNetPresentation.ViewModels
             base.Dispose();
             _eventBus.Unsubscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
             _eventBus.Unsubscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed);
-            _eventBus.Unsubscribe<ISiberNetSyncCoordinator.UserDeleted>(OnUserDeleted);
+            _eventBus.Unsubscribe<ISyncCoordinator.UserDeleted>(OnUserDeleted);
         }
     }
 }

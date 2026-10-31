@@ -1,8 +1,8 @@
-﻿using HomeNet.Network;
+﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNet.Network;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Events;
-using HomeNetCore.Interfaces.OutputLogging;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Interfaces.Sinc;
 using HomeNetOrm.Infrastructure;
@@ -81,12 +81,12 @@ namespace HomeNet.DI.Modules
         }
     }
 
-    public class CompositeSyncCoordinator : ISiberNetSyncCoordinator
+    public class CompositeSyncCoordinator : ISyncCoordinator
     {
-        private readonly ISiberNetSyncCoordinator _userSync;
-        private readonly ISiberNetSyncCoordinator _messageSync;
+        private readonly ISyncCoordinator _userSync;
+        private readonly ISyncCoordinator _messageSync;
 
-        public CompositeSyncCoordinator(ISiberNetSyncCoordinator userSync, ISiberNetSyncCoordinator messageSync)
+        public CompositeSyncCoordinator(ISyncCoordinator userSync, ISyncCoordinator messageSync)
         {
             Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
             _userSync = userSync ?? throw new ArgumentNullException(nameof(userSync));

@@ -1,10 +1,9 @@
 using HomeNet.DI.Modules;
+using HomeNet.Infrastructure.Shared.Diagnostics;
 using HomeNet.Server.Endpoints;
-using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetOrm.Infrastructure;
-using HomeNetServices.Diagnostics;
 using Microsoft.AspNetCore.SignalR;
 
 namespace HomeNet.Server
@@ -17,10 +16,12 @@ namespace HomeNet.Server
 
             const string serverLogName = "server_debug";
 
-            HomeNetCore.Interfaces.Diagnostics.ILogger serverLogger = new Logger((logEntry, level, detectedNamespace) =>
+            HomeNet.Infrastructure.Shared.Interfaces.Diagnostics.ILogger serverLogger = new SiberNetLogger((logEntry, level, detectedNamespace) =>
             {
-                DiagnosticHub.Log(logEntry, (HomeNetCore.Enums.LogLevel)level, serverLogName);
-            });
+                // Старый DiagnosticHub стерт — логгер сам сохранит всё в HTML и TXT на рабочий стол!
+                // Для сервера в делегат вывода просто дублируем чистую строку в стандартную консоль
+                System.Console.WriteLine(logEntry);
+            }, serverLogName);
 
             serverLogger.LogInfo("=== [СУБД ХАБ СЕРВЕРА] СИСТЕМА ДВОЙНОГО ЛОГИРОВАНИЯ ИНИЦИАЛИЗИРОВАНА ===");
 

@@ -1,6 +1,5 @@
 ﻿using Dapper;
-using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces.Diagnostics;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Interfaces.DbInfrastructure;

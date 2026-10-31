@@ -1,8 +1,5 @@
-﻿using System;
-using System;
-using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using HomeNetCore.Interfaces.Events;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetPresentation.Services;
 

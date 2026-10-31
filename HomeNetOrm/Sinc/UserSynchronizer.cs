@@ -1,7 +1,6 @@
-﻿using HomeNetCore.Extensions;
+﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Interfaces;
-using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Sinc;
 using HomeNetCore.Models.Entity;
 using HomeNetOrm.Interfaces.DbInfrastructure;
@@ -26,22 +25,22 @@ namespace HomeNetOrm.Sinc
         protected override void SubscribeEvents()
         {
             // Локальные изменения профилей
-            EventBus.Subscribe<ISiberNetSyncCoordinator.UserInserted>(OnUserInserted);
-            EventBus.Subscribe<ISiberNetSyncCoordinator.UserUpdated>(OnUserUpdated);
-            EventBus.Subscribe<ISiberNetSyncCoordinator.UserDeleted>(OnUserDeleted);
+            EventBus.Subscribe<ISyncCoordinator.UserInserted>(OnUserInserted);
+            EventBus.Subscribe<ISyncCoordinator.UserUpdated>(OnUserUpdated);
+            EventBus.Subscribe<ISyncCoordinator.UserDeleted>(OnUserDeleted);
 
             // Ответы от сетевого слоя
-            EventBus.Subscribe<ISiberNetSyncCoordinator.UserSyncedOnServer>(OnUserSyncedOnServer);
-            EventBus.Subscribe<ISiberNetSyncCoordinator.UserDeleteConfirmedByServer>(OnUserDeleteConfirmedByServer);
+            EventBus.Subscribe<ISyncCoordinator.UserSyncedOnServer>(OnUserSyncedOnServer);
+            EventBus.Subscribe<ISyncCoordinator.UserDeleteConfirmedByServer>(OnUserDeleteConfirmedByServer);
         }
 
         protected override void UnsubscribeEvents()
         {
-            EventBus.Unsubscribe<ISiberNetSyncCoordinator.UserInserted>(OnUserInserted);
-            EventBus.Unsubscribe<ISiberNetSyncCoordinator.UserUpdated>(OnUserUpdated);
-            EventBus.Unsubscribe<ISiberNetSyncCoordinator.UserDeleted>(OnUserDeleted);
-            EventBus.Unsubscribe<ISiberNetSyncCoordinator.UserSyncedOnServer>(OnUserSyncedOnServer);
-            EventBus.Unsubscribe<ISiberNetSyncCoordinator.UserDeleteConfirmedByServer>(OnUserDeleteConfirmedByServer);
+            EventBus.Unsubscribe<ISyncCoordinator.UserInserted>(OnUserInserted);
+            EventBus.Unsubscribe<ISyncCoordinator.UserUpdated>(OnUserUpdated);
+            EventBus.Unsubscribe<ISyncCoordinator.UserDeleted>(OnUserDeleted);
+            EventBus.Unsubscribe<ISyncCoordinator.UserSyncedOnServer>(OnUserSyncedOnServer);
+            EventBus.Unsubscribe<ISyncCoordinator.UserDeleteConfirmedByServer>(OnUserDeleteConfirmedByServer);
         }
 
         /// <summary>
@@ -60,7 +59,7 @@ namespace HomeNetOrm.Sinc
                 // 📥 НАПРАВЛЕНИЕ PULL: Затягиваем обновления с бэкенда
                 // ============================================================================
                 Logger.LogInfo($"[{GetType().Name}] Кричим в автобус запрос на скачивание обновлений юзеров...");
-                EventBus.Publish(this, new ISiberNetSyncCoordinator.UserPullRequested());
+                EventBus.Publish(this, new ISyncCoordinator.UserPullRequested());
 
                 // ============================================================================
                 // 📤 НАПРАВЛЕНИЕ PUSH: Достаем локальные оффлайн-хвосты (IsSynced == 0)
@@ -74,7 +73,7 @@ namespace HomeNetOrm.Sinc
                     foreach (var user in pendingList)
                     {
                         // Один контролируемый пуш на одну грязную запись!
-                        EventBus.Publish(this, new ISiberNetSyncCoordinator.UserPendingSync(user));
+                        EventBus.Publish(this, new ISyncCoordinator.UserPendingSync(user));
                     }
                 }
             }
@@ -84,7 +83,7 @@ namespace HomeNetOrm.Sinc
             }
         }
 
-        private async void OnUserInserted(ISiberNetSyncCoordinator.UserInserted msg)
+        private async void OnUserInserted(ISyncCoordinator.UserInserted msg)
         {
             if (msg?.User == null) return;
 
@@ -106,7 +105,7 @@ namespace HomeNetOrm.Sinc
             // сам лениво подхватит эту запись при следующем тике таймера репликации!
         }
 
-        private async void OnUserSyncedOnServer(ISiberNetSyncCoordinator.UserSyncedOnServer msg)
+        private async void OnUserSyncedOnServer(ISyncCoordinator.UserSyncedOnServer msg)
         {
             if (msg == null) return;
             Logger.LogInfo($"[UserSync] Сервер подтвердил профиль '{msg.UserId}'. Помечаем как синхронизированный.");
@@ -119,20 +118,20 @@ namespace HomeNetOrm.Sinc
             }
         }
 
-        private void OnUserDeleted(ISiberNetSyncCoordinator.UserDeleted msg)
+        private void OnUserDeleted(ISyncCoordinator.UserDeleted msg)
         {
             if (msg == null || msg.UserId == Guid.Empty) return;
-            EventBus.Publish(this, new ISiberNetSyncCoordinator.UserPendingDelete(msg.UserId));
+            EventBus.Publish(this, new ISyncCoordinator.UserPendingDelete(msg.UserId));
         }
 
-        private async void OnUserDeleteConfirmedByServer(ISiberNetSyncCoordinator.UserDeleteConfirmedByServer msg)
+        private async void OnUserDeleteConfirmedByServer(ISyncCoordinator.UserDeleteConfirmedByServer msg)
         {
             if (msg == null) return;
             Logger.LogInfo($"[UserSync] Удаление подтверждено сервером. Стираем локально: {msg.UserId}");
             await _userRepository.DeleteByIdAsync(msg.UserId);
         }
 
-        private void OnUserUpdated(ISiberNetSyncCoordinator.UserUpdated msg)
+        private void OnUserUpdated(ISyncCoordinator.UserUpdated msg)
         {
             // Логика апдейтов будет аналогично подхватываться через общий пул Unsynced
         }

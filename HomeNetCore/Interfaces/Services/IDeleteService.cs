@@ -1,9 +1,6 @@
 ﻿using HomeNetCore.Enums;
-using HomeNetCore.Models;
 using HomeNetCore.Models.Entity;
 using HomeNetCore.Models.Validation;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace HomeNetCore.Interfaces.Services
 {
@@ -26,14 +23,9 @@ namespace HomeNetCore.Interfaces.Services
         Task<DeleteVerdict> DeleteUserAsync(string targetUserId, UserEntity? selectedUser);
 
 
-       
-        public record DeleteVerdict(
-      bool IsValid,
-      List<ValidationResult> Results,
-      Guid? ParsedId, // 🎯 ТЕПЕРЬ ТУТ ЧЕСТНЫЙ Guid? вместо int?
-      IEnumerable<UserEntity>? UpdatedUsers = null)
-        {
-            // 🔥 Сюда сервис запишет уже готовый текст для ListBox-а истории
+
+        public record DeleteVerdict(bool IsValid,List<ValidationResult> Results, Guid? ParsedId, IEnumerable<UserEntity>? UpdatedUsers = null)  
+        {  
             public string HistoryMessage { get; set; } = string.Empty;
         }
 

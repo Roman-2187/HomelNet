@@ -1,8 +1,9 @@
-﻿using System.Text;
+﻿// 🔥 ПОДКЛЮЧАЕМ НАШИ НОВЫЕ АВТОНОМНЫЕ КОНТРАКТЫ
+using HomeNet.Infrastructure.Shared.Enums;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNetCore.Interfaces.Diagnostics;
+using System.Text;
 using System.Threading.Channels;
-using HomeNetCore.Enums;
-using HomeNetCore.Interfaces.Events;
-using HomeNetCore.Interfaces.OutputLogging;
 
 namespace HomeNetServices.Diagnostics
 {
@@ -41,6 +42,8 @@ namespace HomeNetServices.Diagnostics
             _channel.Writer.TryWrite((level, message, namespaceName));
         }
 
+       
+
         private async Task ProcessLogQueueAsync(CancellationToken token)
         {
             try
@@ -55,7 +58,7 @@ namespace HomeNetServices.Diagnostics
                         string cleanMessage = logEntry.message.TrimEnd('\r', '\n');
                         if (string.IsNullOrEmpty(cleanMessage)) continue;
 
-                        // Оптимизация: используем StringBuilder вместо конкатенации строк в цикле 'currentText += c'
+                        // Оптимизация: используем StringBuilder вместо конкатенации строк
                         var currentTextBuilder = new StringBuilder();
 
                         foreach (char c in cleanMessage)
@@ -63,7 +66,7 @@ namespace HomeNetServices.Diagnostics
                             token.ThrowIfCancellationRequested();
                             currentTextBuilder.Append(c);
 
-                            // Отправляем текущую накопленную строку
+                            // Отправляем текущую накопленную строку в новый автобус
                             _eventBus.Publish(this, new ILogQueueManager.LogMessageReceived(
                                 currentTextBuilder.ToString(), logEntry.level, logEntry.ns, true));
 
@@ -90,5 +93,7 @@ namespace HomeNetServices.Diagnostics
             _cts.Cancel();
             _cts.Dispose();
         }
+
+       
     }
 }

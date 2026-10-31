@@ -1,6 +1,5 @@
-﻿using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Events;
+﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Interfaces.Sinc;
 
 namespace HomeNetOrm.Sinc
@@ -8,7 +7,7 @@ namespace HomeNetOrm.Sinc
     /// <summary>
     /// Базовый диспетчер синхронизации. Теперь реально отвязан от сети и полностью безопасен! 🦾
     /// </summary>
-    public abstract class BaseSynchronizer<TEntity> : ISiberNetSyncCoordinator, IDisposable
+    public abstract class BaseSynchronizer<TEntity> : ISyncCoordinator, IDisposable
         where TEntity : class
     {
         protected readonly IEventBus EventBus;

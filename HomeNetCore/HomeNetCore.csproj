@@ -26,4 +26,8 @@
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.0-preview3.26238.4" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\HomeNet.Infrastructure.Shared\HomeNet.Infrastructure.Shared.csproj" />
+  </ItemGroup>
+
 </Project>

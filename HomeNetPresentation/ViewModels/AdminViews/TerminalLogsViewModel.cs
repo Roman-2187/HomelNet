@@ -1,7 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using HomeNetCore.Enums;
-using HomeNetCore.Interfaces.Events;
-using HomeNetCore.Interfaces.OutputLogging;
+using HomeNet.Infrastructure.Shared.Enums;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Models;
 using System.Collections.ObjectModel;
 

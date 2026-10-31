@@ -1,9 +1,8 @@
 ﻿using Dapper;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Exeptions;
-using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;
-using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Sinc;
 using HomeNetCore.Models.Entity;
 using HomeNetOrm.Interfaces.Generators;
@@ -36,7 +35,7 @@ namespace HomeNetOrm.Repositories.Base
             if (existingUser != null)
             {
                 Logger.LogWarning($"[UserRepository] Вставка отменена! Пользователь '{user.FirstName}' ({user.Email ?? "Без почты"}) уже существует в БД. (ID: {user.Id})");
-                _eventBus.Publish(this, new ISiberNetSyncCoordinator.UserInserted(existingUser));
+                _eventBus.Publish(this, new ISyncCoordinator.UserInserted(existingUser));
                 return existingUser;
             }
 
@@ -49,7 +48,7 @@ namespace HomeNetOrm.Repositories.Base
             {
                 await ExecuteAsync(async db => await db.ExecuteAsync(cmd.Sql, user));
                 Logger.LogInfo($"[UserRepository] Пользователь '{user.FirstName}' ({user.Email}) успешно записан в БД.");
-                _eventBus.Publish(this, new ISiberNetSyncCoordinator.UserInserted(user));
+                _eventBus.Publish(this, new ISyncCoordinator.UserInserted(user));
                 return user;
             }
             catch (Exception ex)
@@ -68,7 +67,7 @@ namespace HomeNetOrm.Repositories.Base
                     var affectedRows = await db.ExecuteAsync(cmd.Sql, cmd.Params);
                     if (affectedRows > 0)
                     {
-                        _eventBus.Publish(this, new ISiberNetSyncCoordinator.UserDeleted(id));
+                        _eventBus.Publish(this, new ISyncCoordinator.UserDeleted(id));
                     }
                 });
             }
@@ -112,7 +111,7 @@ namespace HomeNetOrm.Repositories.Base
             try
             {
                 await ExecuteAsync(async db => await db.ExecuteAsync(cmd.Sql, user));
-                _eventBus.Publish(this, new ISiberNetSyncCoordinator.UserUpdated(user));
+                _eventBus.Publish(this, new ISyncCoordinator.UserUpdated(user));
             }
             catch (Exception ex)
             {

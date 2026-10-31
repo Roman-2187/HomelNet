@@ -1,11 +1,10 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetCore.Interfaces.Sinc; // 🔥 Подключаем неймспейс ОРМ-событий
-using HomeNetCore.Models;
 using HomeNetCore.Models.Entity;
 using System.Collections.ObjectModel;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 
 namespace HomeNetPresentation.ViewModels
 {
@@ -39,8 +38,8 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Subscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed);
 
             // 🔥 ПЕРЕВОДИМ НА СИСТЕМНЫЕ СОБЫТИЯ СЛОЯ ДАННЫХ
-            _eventBus.Subscribe<ISiberNetSyncCoordinator.UserInserted>(OnUserAdded);
-            _eventBus.Subscribe<ISiberNetSyncCoordinator.UserDeleted>(OnUserDeleted);
+            _eventBus.Subscribe<ISyncCoordinator.UserInserted>(OnUserAdded);
+            _eventBus.Subscribe<ISyncCoordinator.UserDeleted>(OnUserDeleted);
 
             _eventBus.Subscribe<IUserVm.UserSignedIn>(OnGlobalUserSignedIn);
             _eventBus.Subscribe<IUserVm.UserSignedUp>(OnGlobalUserSignedUp);
@@ -91,7 +90,7 @@ namespace HomeNetPresentation.ViewModels
         }
 
         // 🔥 Метод теперь принимает системный тип события от репозитория
-        private void OnUserAdded(ISiberNetSyncCoordinator.UserInserted msg)
+        private void OnUserAdded(ISyncCoordinator.UserInserted msg)
         {
             if (msg?.User == null) return;
             if (_currentUser != null && msg.User.Id == _currentUser.Id) return;
@@ -101,7 +100,7 @@ namespace HomeNetPresentation.ViewModels
         }
 
         // 🔥 Метод теперь принимает системный тип события от репозитория
-        private void OnUserDeleted(ISiberNetSyncCoordinator.UserDeleted msg)
+        private void OnUserDeleted(ISyncCoordinator.UserDeleted msg)
         {
             if (msg == null) return;
             var friendToRemove = Friends.FirstOrDefault(f => f.Id == msg.UserId);
@@ -131,8 +130,8 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Unsubscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed);
 
             // 🔥 Не забываем отписаться от новых интерфейсов в Dispose
-            _eventBus.Unsubscribe<ISiberNetSyncCoordinator.UserInserted>(OnUserAdded);
-            _eventBus.Unsubscribe<ISiberNetSyncCoordinator.UserDeleted>(OnUserDeleted);
+            _eventBus.Unsubscribe<ISyncCoordinator.UserInserted>(OnUserAdded);
+            _eventBus.Unsubscribe<ISyncCoordinator.UserDeleted>(OnUserDeleted);
 
             _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnGlobalUserSignedIn);
             _eventBus.Unsubscribe<IUserVm.UserSignedUp>(OnGlobalUserSignedUp);

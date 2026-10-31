@@ -1,6 +1,6 @@
-﻿using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Events;
-using HomeNetPresentation.Services; 
+﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels
 {

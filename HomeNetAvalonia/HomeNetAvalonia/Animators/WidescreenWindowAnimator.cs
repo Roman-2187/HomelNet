@@ -1,9 +1,8 @@
 ﻿using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
-using HomeNetCore.Interfaces.Events;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Interfaces.ViewModels;
-using HomeNetPresentation.ViewModels;
 using System;
 
 namespace HomeNetAvalonia.Animators

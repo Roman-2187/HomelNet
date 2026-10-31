@@ -1,8 +1,6 @@
 ﻿using HomeNetCore.Enums;
-using HomeNetCore.Extensions;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Services;
-using HomeNetCore.Models;
 using HomeNetCore.Models.Entity;
 using HomeNetCore.Models.Validation;
 using HomeNetCore.Utils;
@@ -11,14 +9,14 @@ using HomeNetCore.Utils;
 
 namespace HomeNetServices.Identity
 {
-    public class RegistrationService : IRegistrationService
+    public class RegistrationServiceEx : IRegistrationService
     {
         private readonly IUserRepository _userRepository;
 
         // 🔥 СТАТИКА: Убрали private readonly ValidationFormat _validateField = new(); 
         // Теперь дергаем методы напрямую через класс-инструмент из Utils!
 
-        public RegistrationService(IUserRepository userRepository)
+        public RegistrationServiceEx(IUserRepository userRepository)
         {
            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         }

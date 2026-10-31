@@ -1,6 +1,5 @@
-﻿using HomeNetCore.Interfaces.Diagnostics;
-using Microsoft.AspNetCore.SignalR.Client;
-using HomeNetCore.Extensions;
+﻿using Microsoft.AspNetCore.SignalR.Client;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 
 
 namespace HomeNet.Network

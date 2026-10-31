@@ -1,11 +1,8 @@
-﻿using System;
-using System.IO;
+﻿using HomeNet.Infrastructure.Shared.Enums;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using HomeNetCore.Enums;
-using HomeNetCore.Interfaces.Diagnostics;
 
-namespace HomeNetServices.Diagnostics
+namespace HomeNet.Infrastructure.Shared.Interceptors
 {
     /// <summary>
     /// Автоматический перехватчик и мясорубка для методов репозиториев и сервисов.
@@ -20,9 +17,6 @@ namespace HomeNetServices.Diagnostics
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        /// <summary>
-        /// Выполняет и логирует АСИНХРОННЫЙ метод, который ВОЗВРАЩАЕТ результат (Task от T)
-        /// </summary>
         public async Task<T> ExecuteAsync<T>(
             object caller,
             Func<Task<T>> action,
@@ -31,29 +25,21 @@ namespace HomeNetServices.Diagnostics
             [CallerLineNumber] int lineNumber = 0)
         {
             string className = caller?.GetType().Name ?? "UnknownClass";
-
-            // Авто-лог перед запуском операции
-            _logger.Log(LogLevel.Info, $"[СТАРТ] Операция запущена.", memberName, filePath, lineNumber);
+            _logger.Log(LogLevel.Info, "[СТАРТ] Операция запущена.", memberName, filePath, lineNumber);
 
             try
             {
                 T result = await action();
-
-                // Авто-лог успешного завершения
-                _logger.Log(LogLevel.Info, $"[УСПЕХ] Операция успешно завершена.", memberName, filePath, lineNumber);
+                _logger.Log(LogLevel.Info, "[УСПЕХ] Операция успешно завершена.", memberName, filePath, lineNumber);
                 return result;
             }
             catch (Exception ex)
             {
-                // Мгновенный перехват и детальный лог ошибки с пробросом исключения дальше
                 _logger.Log(LogLevel.Error, $"[КРИТ ИСКЛЮЧЕНИЕ] Сбой в {className}.{memberName}! Ошибка: {ex.Message} | StackTrace: {ex.StackTrace}", memberName, filePath, lineNumber);
                 throw;
             }
         }
 
-        /// <summary>
-        /// Выполняет и логирует АСИНХРОННЫЙ метод, который НЕ возвращает результат (Task)
-        /// </summary>
         public async Task ExecuteAsync(
             object caller,
             Func<Task> action,
@@ -62,12 +48,12 @@ namespace HomeNetServices.Diagnostics
             [CallerLineNumber] int lineNumber = 0)
         {
             string className = caller?.GetType().Name ?? "UnknownClass";
-            _logger.Log(LogLevel.Info, $"[СТАРТ] Вошли в метод.", memberName, filePath, lineNumber);
+            _logger.Log(LogLevel.Info, "[СТАРТ] Вошли в метод.", memberName, filePath, lineNumber);
 
             try
             {
                 await action();
-                _logger.Log(LogLevel.Info, $"[КОНЕЦ] Метод отработал штатно.", memberName, filePath, lineNumber);
+                _logger.Log(LogLevel.Info, "[КОНЕЦ] Метод отработал штатно.", memberName, filePath, lineNumber);
             }
             catch (Exception ex)
             {
@@ -76,9 +62,6 @@ namespace HomeNetServices.Diagnostics
             }
         }
 
-        /// <summary>
-        /// Выполняет и логирует СИНХРОННЫЙ метод с возвращаемым значением
-        /// </summary>
         public T Execute<T>(
             object caller,
             Func<T> action,
@@ -87,18 +70,46 @@ namespace HomeNetServices.Diagnostics
             [CallerLineNumber] int lineNumber = 0)
         {
             string className = caller?.GetType().Name ?? "UnknownClass";
-            _logger.Log(LogLevel.Info, $"[СТАРТ] Синхронный вызов.", memberName, filePath, lineNumber);
+            _logger.Log(LogLevel.Info, "[СТАРТ] Синхронный вызов.", memberName, filePath, lineNumber);
 
             try
             {
                 T result = action();
-                _logger.Log(LogLevel.Info, $"[УСПЕХ] Синхронный вызов завершен.", memberName, filePath, lineNumber);
+                _logger.Log(LogLevel.Info, "[УСПЕХ] Синхронный вызов завершен.", memberName, filePath, lineNumber);
                 return result;
             }
             catch (Exception ex)
             {
                 _logger.Log(LogLevel.Error, $"[КРИТ ИСКЛЮЧЕНИЕ] Ошибка: {ex.Message}", memberName, filePath, lineNumber);
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Сеньорский реактивный страж. Заменяет try-catch рутину в репозиториях.
+        /// Автоматически логирует процесс и пакует сбой в красивый текст для шины без падения потока.
+        /// </summary>
+        public async Task<(TResult? Data, string? Error)> GuardAsync<TResult>(
+            object caller,
+            Func<Task<TResult>> action,
+            [CallerMemberName] string memberName = "",
+            [CallerFilePath] string filePath = "",
+            [CallerLineNumber] int lineNumber = 0) where TResult : class
+        {
+            string className = caller?.GetType().Name ?? "UnknownClass";
+            _logger.Log(LogLevel.Info, $"[СТАРТ ОРМ/СЕТЬ] Операция {className}.{memberName} запущена.", memberName, filePath, lineNumber);
+
+            try
+            {
+                var result = await action();
+                _logger.Log(LogLevel.Info, $"[УСПЕХ ОРМ/СЕТЬ] Операция {className}.{memberName} завершена.", memberName, filePath, lineNumber);
+                return (result, null);
+            }
+            catch (Exception ex)
+            {
+                string errorMessage = $"Сбой операции [{className}.{memberName}]: {ex.Message}";
+                _logger.Log(LogLevel.Error, $"[КРИТ ИСКЛЮЧЕНИЕ] {errorMessage} | Стек: {ex.StackTrace}", memberName, filePath, lineNumber);
+                return (null, errorMessage);
             }
         }
     }

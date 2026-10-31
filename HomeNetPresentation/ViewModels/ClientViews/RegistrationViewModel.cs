@@ -1,12 +1,10 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Enums;
-using HomeNetCore.Extensions;
-using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Interfaces.ViewModels;
-using HomeNetCore.Models;
 using HomeNetCore.Models.Entity;
 using HomeNetCore.Models.Validation;
 using HomeNetPresentation.Services;

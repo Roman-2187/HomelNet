@@ -7,7 +7,6 @@ using HomeNetCore.Enums;
 using HomeNetOrm.Helpers;
 using HomeNetPresentation.ViewModels;
 using System;
-using HomeNetCore.Extensions;
 
 namespace HomeNetAvalonia
 {

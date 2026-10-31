@@ -1,10 +1,8 @@
 ﻿using HomeNetCore.Interfaces;
-using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Events;
 using HomeNetCore.Interfaces.Sinc;
-using HomeNetCore.Models;
-using HomeNetCore.Extensions;
 using HomeNetCore.Models.Entity;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 
 namespace HomeNet.Network
 {
@@ -17,12 +15,12 @@ namespace HomeNet.Network
 
         protected override void SubscribeToEvents()
         {
-            EventBus.Subscribe<ISiberNetSyncCoordinator.UserPendingSync>(OnUserPendingSync);
-            EventBus.Subscribe<ISiberNetSyncCoordinator.UserPendingDelete>(OnUserPendingDelete);
-            EventBus.Subscribe<ISiberNetSyncCoordinator.UserPullRequested>(OnUserPullRequested);
+            EventBus.Subscribe<ISyncCoordinator.UserPendingSync>(OnUserPendingSync);
+            EventBus.Subscribe<ISyncCoordinator.UserPendingDelete>(OnUserPendingDelete);
+            EventBus.Subscribe<ISyncCoordinator.UserPullRequested>(OnUserPullRequested);
         }
 
-        private void OnUserPendingSync(ISiberNetSyncCoordinator.UserPendingSync @event)
+        private void OnUserPendingSync(ISyncCoordinator.UserPendingSync @event)
         {
             FireAndForget(() => PushUserInternalAsync(@event.User), $"Push User {@event.User.Id}");
         }
@@ -32,11 +30,11 @@ namespace HomeNet.Network
             Logger.LogInfo($"[UserNet] Отправляем профиль {user.Id} на сервер...");
             if (await ApiClient.PushUserAsync(user))
             {
-                EventBus.Publish(this, new ISiberNetSyncCoordinator.UserSyncedOnServer(user.Id));
+                EventBus.Publish(this, new ISyncCoordinator.UserSyncedOnServer(user.Id));
             }
         }
 
-        private void OnUserPendingDelete(ISiberNetSyncCoordinator.UserPendingDelete @event)
+        private void OnUserPendingDelete(ISyncCoordinator.UserPendingDelete @event)
         {
             FireAndForget(() => DeleteUserInternalAsync(@event.UserId), $"Delete User {@event.UserId}");
         }
@@ -50,7 +48,7 @@ namespace HomeNet.Network
             await ApiClient.DeleteUserAsync(userId);
         }
 
-        private void OnUserPullRequested(ISiberNetSyncCoordinator.UserPullRequested @event)
+        private void OnUserPullRequested(ISyncCoordinator.UserPullRequested @event)
         {
             FireAndForget(PullUsersInternalAsync, "Pull Users From Server");
         }
@@ -77,7 +75,7 @@ namespace HomeNet.Network
             Logger.LogInfo($"[UserNet] Сервер прислал апдейт профиля {user.Id}. Отправляем в шину.");
             user.IsSynced = 1;
 
-            EventBus.Publish(this, new ISiberNetSyncCoordinator.UserInserted(user));
+            EventBus.Publish(this, new ISyncCoordinator.UserInserted(user));
             return Task.CompletedTask;
         }
 
@@ -86,15 +84,15 @@ namespace HomeNet.Network
         public Task HandleIncomingUserDeletedAsync(Guid userId)
         {
             Logger.LogWarning($"[UserNet] Сервер прислал команду удаления юзера {userId}. Передаем подтверждение в шину.");
-            EventBus.Publish(this, new ISiberNetSyncCoordinator.UserDeleteConfirmedByServer(userId));
+            EventBus.Publish(this, new ISyncCoordinator.UserDeleteConfirmedByServer(userId));
             return Task.CompletedTask;
         }
 
         public override void Dispose()
         {
-            EventBus.Unsubscribe<ISiberNetSyncCoordinator.UserPendingSync>(OnUserPendingSync);
-            EventBus.Unsubscribe<ISiberNetSyncCoordinator.UserPendingDelete>(OnUserPendingDelete);
-            EventBus.Unsubscribe<ISiberNetSyncCoordinator.UserPullRequested>(OnUserPullRequested);
+            EventBus.Unsubscribe<ISyncCoordinator.UserPendingSync>(OnUserPendingSync);
+            EventBus.Unsubscribe<ISyncCoordinator.UserPendingDelete>(OnUserPendingDelete);
+            EventBus.Unsubscribe<ISyncCoordinator.UserPullRequested>(OnUserPullRequested);
         }
     }
 }
