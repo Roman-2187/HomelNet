@@ -1,5 +1,4 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Diagnostics;
 using HomeNetCore.Models.Entity;
 using HomeNetOrm.Generators.Base;
 using HomeNetOrm.Interfaces.DbInfrastructure;
@@ -38,6 +37,7 @@ namespace HomeNetOrm.Generators.Sinc
                 .Build();
 
         // Серверный метод синхронизации — чистый секс без хардкода строки параметров!
+        // Серверный метод синхронизации — теперь с железной хронологией!
         public SqlQueryCommand GenerateSelectMessagesForSync(Guid senderId, DateTimeOffset timestamp) =>
             CreateQuery()
                 .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
@@ -49,7 +49,8 @@ namespace HomeNetOrm.Generators.Sinc
                 .Emit(OpType.CloseBracket)
                 .Emit(OpType.And)
                     .Col(m => m.UpdatedAt).Emit(OpType.GreaterThan).Param(m => m.UpdatedAt, timestamp)
-                .Emit(PhraseType.OrderBy).Col(m => m.UpdatedAt).Emit(OpType.Asc)
+                // 🔥 ИСПРАВЛЕНИЕ: Выстраиваем пакет репликации строго по дате рождения СМС!
+                .Emit(PhraseType.OrderBy).Col(m => m.CreatedAt).Emit(OpType.Asc)
                 .Build();
     }
 }
