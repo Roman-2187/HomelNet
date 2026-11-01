@@ -5,6 +5,7 @@ using HomeNet.Infrastructure.Shared.Enums;
 using HomeNet.Infrastructure.Shared.Routing;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Infrastructure.Shared.Diagnostics.EventInspector;
 
 public class CoreInfrastructureModule
 {
@@ -24,13 +25,12 @@ public class CoreInfrastructureModule
         // 2. Инициализируем менеджер очереди логов для UI
         LogQueueManager = new LogQueueManager(EventBus, 1);
 
-        // 3. 🔥 НАСТРАИВАЕМ НАШ ОБНОВЛЕННЫЙ SiberNetLogger
-        // В Action передаем только то, что должно уходить дальше (в очередь UI)
-        Logger = new SiberNetLogger((logEntry, level, ns) =>
-        {
-            
-            LogQueueManager.WriteLog(logEntry, level, ns);
-        }, clientLogName);
+
+        // 🔥 Собираем трехствольный логгер для клиента: Консоль + HTML + Экран приложения!
+        Logger = new AggregateLogger(
+     new HtmlLogger(clientLogName),
+     new QueueLogger(entry => LogQueueManager.WriteLog(entry)) 
+ );
 
         // 4. Запускаем воркер очереди логов
         LogQueueManager.SetReady();

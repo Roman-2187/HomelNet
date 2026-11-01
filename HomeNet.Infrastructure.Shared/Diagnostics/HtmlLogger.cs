@@ -1,67 +1,53 @@
-﻿using HomeNet.Infrastructure.Shared.Enums;
-using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+﻿using System;
+using System.IO;
+using System.Linq;
 using System.Text;
+using HomeNet.Infrastructure.Shared.Enums;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 
 namespace HomeNet.Infrastructure.Shared.Diagnostics
 {
     /// <summary>
-    /// Боевой трехствольный логгер SiberNet Engine.
-    /// Параллельно пишет чистый лог в консоль, TXT, HTML и пушит в конвейер UI без дублирования. 🪐
+    /// Боевой одноствольный логгер SiberNet Engine для записи на диск.
+    /// Генерирует интерактивный HTML-журнал со штампом места вызова. 🪐
     /// </summary>
-    public class SiberNetLogger : ILogger
+    public class HtmlLogger : ILogger
     {
         private readonly object _fileLock = new();
         private readonly string _debugFolderPath;
         private readonly string _htmlPath;
-        private readonly string _txtPath;
-        private readonly Action<string, LogLevel, string> _output; // Наш старый добрый кабель сохранен!
 
         private bool _isHtmlInitialized = false;
 
         /// <summary>
-        /// Инициализирует универсальный логгер. Сохраняет 100% совместимость со старым кодом.
+        /// Инициализирует HTML-логгер и гарантирует чистый запуск сессии.
         /// </summary>
-        /// <param name="output">Старый делегат вывода (например, для пересылки в LogQueueManager/UI)</param>
-        /// <param name="logName">Имя файлов логов на рабочем столе</param>
-        public SiberNetLogger(Action<string, LogLevel, string> output, string logName = "app_debug")
+        public HtmlLogger(string logName = "app_debug")
         {
-            _output = output ?? throw new ArgumentNullException(nameof(output), "Вывод не может быть null");
-
             string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             _debugFolderPath = Path.Combine(desktopPath, "debug");
-
             _htmlPath = Path.Combine(_debugFolderPath, $"{logName}.html");
-            _txtPath = Path.Combine(_debugFolderPath, $"{logName}.txt");
-        }
 
-        /// <summary>
-        /// Вспомогательная фабрика для быстрой сборки логгера только под консоль (например, для тестов)
-        /// </summary>
-        public static SiberNetLogger CreateConsoleLogger()
-        {
-            return new SiberNetLogger((logEntry, level, _) =>
+            // 🔥 ЧИСТЫЙ ЗАПУСК: Если старый файл лога существует, сносим его к чертям!
+            try
             {
-                Console.ForegroundColor = level switch
-                {
-                    LogLevel.Info => ConsoleColor.Green,
-                    LogLevel.Error => ConsoleColor.Red,
-                    _ => ConsoleColor.White
-                };
-                Console.WriteLine(logEntry);
-                Console.ResetColor();
-            }, "console_only");
+                if (!Directory.Exists(_debugFolderPath)) Directory.CreateDirectory(_debugFolderPath);
+                if (File.Exists(_htmlPath)) File.Delete(_htmlPath);
+            }
+            catch
+            {
+                // Пуленепробиваемый щит, если файл заблокирован другой системой
+            }
         }
 
-        public void Log(LogLevel level, string message, string memberName = "", string filePath = "", int lineNumber = 0, params object[] args)
+        public void Log(LogLevel level, string message, string memberName = "", string filePath = "", int lineNumber = 0)
         {
-            string formattedMessage = args != null && args.Length > 0 ? string.Format(message, args) : message;
-
             // 1. Вытаскиваем имя класса из пути к файлу
             string className = string.IsNullOrEmpty(filePath)
                 ? "UnknownClass"
                 : Path.GetFileNameWithoutExtension(filePath).Split('.').Last() ?? "Unknown";
 
-            // 2. Вытаскиваем имя папки (Наш архитектурный Namespace)
+            // 2. Вытаскиваем имя папки (Наш архитектурный Namespace) прямо на месте вызова
             string detectedNamespace = "Core";
             if (!string.IsNullOrEmpty(filePath))
             {
@@ -75,28 +61,18 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics
             className = className.Replace('_', ' ').Trim();
             memberName = memberName.Replace('_', ' ').Trim();
 
-            // 3. ГЕНЕРИРУЕМ ДАННЫЕ СТРОГО ОДИН РАЗ (Уничтожаем дубли тегов!)
             var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
             var levelStr = level.ToString().ToUpper();
-
-            // Чистая монолитная строка, которая пойдет в TXT, консоль и уйдет по Action делегату
-            var logEntry = $"[{timestamp}] [{levelStr}] [{detectedNamespace} -> {className}.{memberName}:{lineNumber}] | {formattedMessage}";
 
             lock (_fileLock)
             {
                 try
                 {
-                    // Гарантируем наличие папки на рабочем столе
-                    if (!Directory.Exists(_debugFolderPath)) Directory.CreateDirectory(_debugFolderPath);
-
-                    // КАНАЛ 1: Пишем готовую чистую строку в плоский TXT файл
-                    File.AppendAllText(_txtPath, logEntry + Environment.NewLine, Encoding.UTF8);
-
-                    // КАНАЛ 2: Пишем в интерактивный HTML-журнал (Используем те же чистые переменные)
+                    // КАНАЛ ВЫВОДА: Пишем строго в интерактивный HTML-журнал с оригинальной красотой
                     EnsureHtmlHeaderInitialized(Path.GetFileNameWithoutExtension(_htmlPath));
 
                     string cssClass = level.ToString().ToLower();
-                    string safeMessage = formattedMessage.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+                    string safeMessage = message.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
                     string htmlLine = $"        <span class='log-row {cssClass}'>[{timestamp}] [{levelStr}] [{detectedNamespace} -> {className}.{memberName}:{lineNumber}] | {safeMessage}</span>{Environment.NewLine}";
 
                     byte[] bytes = Encoding.UTF8.GetBytes(htmlLine);
@@ -105,12 +81,9 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics
                 }
                 catch
                 {
-                    // Пуленепробиваемая защита рантайма от случайных блокировок диска
+                    // Защита рантайма от случайных блокировок диска
                 }
             }
-
-            // КАНАЛ 3: Пуляем чистую собранную строку в оригинальный кабель вывода (Консоль, ЛогМенеджер и UI)
-            _output.Invoke(logEntry, level, detectedNamespace);
         }
 
         private void EnsureHtmlHeaderInitialized(string logName)

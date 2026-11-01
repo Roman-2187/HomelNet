@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace HomeNetCore.Models.Diagnostics
+namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
 {
     /// <summary>
     /// Архитектурный узел компонента системы (ВьюМодель, Сервис или Репозиторий).

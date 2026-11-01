@@ -6,23 +6,46 @@
              x:Class="HomeNetAvalonia.Controls.StatusBarControl"
               xmlns:vm="using:HomeNetPresentation.ViewModels"
               x:DataType="vm:StatusBarViewModel" Background="Transparent">
- 
-    <Border Background="#FF1C2433" Margin="5"
+   <Border Background="#FF1C2433" Margin="5"
             BorderBrush="#304050" 
             BorderThickness="0.5" 
             CornerRadius="2" 
             VerticalAlignment="Stretch" 
             HorizontalAlignment="Stretch">
         
-        <Grid VerticalAlignment="Center">
+        <Grid VerticalAlignment="Center" ColumnDefinitions="*, Auto">
             
+            <!-- Левый оригинальный розовый текст событий -->
             <TextBlock
+                Grid.Column="0"
                 Text="{Binding StatusText, FallbackValue='Загрузка системы...'}"
                 Margin="0" 
                 Padding="15,0,0,0"
                 FontWeight="Light"
                 Foreground="#FFF5546F"
                 VerticalAlignment="Center"/>
+
+            <!-- Правый аскетичный индикатор бортового компьютера -->
+            <StackPanel 
+                Grid.Column="1"
+                Orientation="Horizontal" 
+                HorizontalAlignment="Right" 
+                VerticalAlignment="Center" 
+                Background="Transparent"
+                Margin="0,0,15,0">
+                
+                <!-- 🔥 ЖЕЛЕЗОБЕТОННЫЙ БИНДИНГ ЦВЕТА НАПРЯМУЮ ВО ВЬЮМОДЕЛЬ -->
+                <TextBlock 
+                    Name="NetworkIndicator"
+                    Text="{Binding CombinedStatusText, FallbackValue='OFFLINE'}" 
+                    Foreground="{Binding StatusColor}" 
+                    FontFamily="Consolas" 
+                    FontSize="11" 
+                    FontWeight="Bold"
+                    VerticalAlignment="Center"/>
+                    
+            </StackPanel>
         </Grid>
     </Border>
+       
 </UserControl>

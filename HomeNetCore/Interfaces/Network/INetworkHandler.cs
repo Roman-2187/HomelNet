@@ -14,4 +14,6 @@ namespace HomeNetCore.Interfaces.Network
         // Метод, который вызовется автоматически при прилете JSON-строки
         Task HandleAsync(object payload);
     }
+
+    public record NetworkStatusChanged(bool IsOnline);
 }

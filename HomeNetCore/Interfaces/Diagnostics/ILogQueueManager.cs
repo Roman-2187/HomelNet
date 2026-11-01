@@ -1,16 +1,19 @@
-﻿using HomeNet.Infrastructure.Shared.Enums;
+﻿using HomeNet.Infrastructure.Shared.Diagnostics;
+using HomeNet.Infrastructure.Shared.Enums;
 
 namespace HomeNetCore.Interfaces.Diagnostics
-{ 
-        public interface ILogQueueManager
-        {
-            void SetReady();
+{
+    public interface ILogQueueManager
+    {
+        void SetReady();
 
-        public void WriteLog(string message, LogLevel level, string namespaceName);
-          
+        // 🔥 Принимает строго наше готовое DTO! Без всяких ns строк
+        void WriteLog(LogQueueEntry entry);
 
-            // 🔥 ОБНОВЛЕННЫЙ РЕКОРД ДЛЯ АВТОБУСА СОБЫТИЙ:
-            public record LogMessageReceived(string Text, LogLevel Level, string Namespace, bool IsAnimating);
-        }
+        // 🎯 ДТО ДЛЯ ВНУТРЕННЕЙ ТРУБЫ КАНАЛА
+       
+
+        // 🔥 ОБНОВЛЕННЫЙ РЕКОРД ДЛЯ АВТОБУСА СОБЫТИЙ БЕЗ NS:
+        public record LogMessageReceived(string Text, LogLevel Level, bool IsAnimating);
     }
-
+}

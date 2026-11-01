@@ -1,5 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using HomeNet.Infrastructure.Shared.Diagnostics;
+using HomeNet.Infrastructure.Shared.Diagnostics.EventInspector;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Enums.Navigation;

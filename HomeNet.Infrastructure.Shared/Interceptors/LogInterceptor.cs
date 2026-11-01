@@ -1,115 +1,59 @@
-﻿using HomeNet.Infrastructure.Shared.Enums;
+﻿using HomeNet.Infrastructure.Shared.Diagnostics;
+using HomeNet.Infrastructure.Shared.Enums;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace HomeNet.Infrastructure.Shared.Interceptors
 {
-    /// <summary>
-    /// Автоматический перехватчик и мясорубка для методов репозиториев и сервисов.
-    /// Полностью убирает необходимость писать ручные try-catch блоки и базовые логи.
-    /// </summary>
-    public class LogInterceptor
+    public class AutoLoggerInterceptor
     {
-        private readonly ILogger _logger;
+        private readonly ILogger _baseLogger;
 
-        public LogInterceptor(ILogger logger)
+        public AutoLoggerInterceptor(ILogger baseLogger)
         {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _baseLogger = baseLogger ?? throw new ArgumentNullException(nameof(baseLogger));
         }
 
-        public async Task<T> ExecuteAsync<T>(
-            object caller,
-            Func<Task<T>> action,
-            [CallerMemberName] string memberName = "",
-            [CallerFilePath] string filePath = "",
-            [CallerLineNumber] int lineNumber = 0)
+        // Логируем кастомную строку через сборщик автолога
+        private void LogAuto(LogLevel level, string rawMessage, string memberName, string filePath, int lineNumber)
         {
-            string className = caller?.GetType().Name ?? "UnknownClass";
-            _logger.Log(LogLevel.Info, "[СТАРТ] Операция запущена.", memberName, filePath, lineNumber);
+            // Собираем строку принудительно со штампом [АВТОЛОГ]
+            string autoMessage = LogFormatter.Format(rawMessage, memberName, filePath, lineNumber, isAutoLog: true);
 
+            // Отправляем в базовый логгер (он просто выведет её в консоль/файл)
+            _baseLogger.Log(level, autoMessage);
+        }
+
+        public async Task<T> ExecuteAsync<T>(object caller, Func<Task<T>> action, [CallerMemberName] string memberName = "", [CallerFilePath] string filePath = "", [CallerLineNumber] int lineNumber = 0)
+        {
+            LogAuto(LogLevel.Info, "[СТАРТ] Операция запущенна автоматикой.", memberName, filePath, lineNumber);
             try
             {
                 T result = await action();
-                _logger.Log(LogLevel.Info, "[УСПЕХ] Операция успешно завершена.", memberName, filePath, lineNumber);
+                LogAuto(LogLevel.Info, "[УСПЕХ] Завершено.", memberName, filePath, lineNumber);
                 return result;
             }
             catch (Exception ex)
             {
-                _logger.Log(LogLevel.Error, $"[КРИТ ИСКЛЮЧЕНИЕ] Сбой в {className}.{memberName}! Ошибка: {ex.Message} | StackTrace: {ex.StackTrace}", memberName, filePath, lineNumber);
+                LogAuto(LogLevel.Error, $"[КРИТ ИСКЛЮЧЕНИЕ] Сбой! Ошибка: {ex.Message}", memberName, filePath, lineNumber);
                 throw;
             }
         }
 
-        public async Task ExecuteAsync(
-            object caller,
-            Func<Task> action,
-            [CallerMemberName] string memberName = "",
-            [CallerFilePath] string filePath = "",
-            [CallerLineNumber] int lineNumber = 0)
+        public async Task<(TResult? Data, string? Error)> GuardAsync<TResult>(object caller, Func<Task<TResult>> action, [CallerMemberName] string memberName = "", [CallerFilePath] string filePath = "", [CallerLineNumber] int lineNumber = 0) where TResult : class
         {
-            string className = caller?.GetType().Name ?? "UnknownClass";
-            _logger.Log(LogLevel.Info, "[СТАРТ] Вошли в метод.", memberName, filePath, lineNumber);
-
-            try
-            {
-                await action();
-                _logger.Log(LogLevel.Info, "[КОНЕЦ] Метод отработал штатно.", memberName, filePath, lineNumber);
-            }
-            catch (Exception ex)
-            {
-                _logger.Log(LogLevel.Error, $"[КРИТ ИСКЛЮЧЕНИЕ] Ошибка выполнения: {ex.Message}", memberName, filePath, lineNumber);
-                throw;
-            }
-        }
-
-        public T Execute<T>(
-            object caller,
-            Func<T> action,
-            [CallerMemberName] string memberName = "",
-            [CallerFilePath] string filePath = "",
-            [CallerLineNumber] int lineNumber = 0)
-        {
-            string className = caller?.GetType().Name ?? "UnknownClass";
-            _logger.Log(LogLevel.Info, "[СТАРТ] Синхронный вызов.", memberName, filePath, lineNumber);
-
-            try
-            {
-                T result = action();
-                _logger.Log(LogLevel.Info, "[УСПЕХ] Синхронный вызов завершен.", memberName, filePath, lineNumber);
-                return result;
-            }
-            catch (Exception ex)
-            {
-                _logger.Log(LogLevel.Error, $"[КРИТ ИСКЛЮЧЕНИЕ] Ошибка: {ex.Message}", memberName, filePath, lineNumber);
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// Сеньорский реактивный страж. Заменяет try-catch рутину в репозиториях.
-        /// Автоматически логирует процесс и пакует сбой в красивый текст для шины без падения потока.
-        /// </summary>
-        public async Task<(TResult? Data, string? Error)> GuardAsync<TResult>(
-            object caller,
-            Func<Task<TResult>> action,
-            [CallerMemberName] string memberName = "",
-            [CallerFilePath] string filePath = "",
-            [CallerLineNumber] int lineNumber = 0) where TResult : class
-        {
-            string className = caller?.GetType().Name ?? "UnknownClass";
-            _logger.Log(LogLevel.Info, $"[СТАРТ ОРМ/СЕТЬ] Операция {className}.{memberName} запущена.", memberName, filePath, lineNumber);
-
+            LogAuto(LogLevel.Info, $"[СТАРТ ОРМ/СЕТЬ] Метод вызван.", memberName, filePath, lineNumber);
             try
             {
                 var result = await action();
-                _logger.Log(LogLevel.Info, $"[УСПЕХ ОРМ/СЕТЬ] Операция {className}.{memberName} завершена.", memberName, filePath, lineNumber);
+                LogAuto(LogLevel.Info, $"[УСПЕХ ОРМ/СЕТЬ] Отработало штатно.", memberName, filePath, lineNumber);
                 return (result, null);
             }
             catch (Exception ex)
             {
-                string errorMessage = $"Сбой операции [{className}.{memberName}]: {ex.Message}";
-                _logger.Log(LogLevel.Error, $"[КРИТ ИСКЛЮЧЕНИЕ] {errorMessage} | Стек: {ex.StackTrace}", memberName, filePath, lineNumber);
-                return (null, errorMessage);
+                string errMsg = $"Сбой операции автоматики: {ex.Message}";
+                LogAuto(LogLevel.Error, $"[КРИТ ИСКЛЮЧЕНИЕ] {errMsg}", memberName, filePath, lineNumber);
+                return (null, errMsg);
             }
         }
     }

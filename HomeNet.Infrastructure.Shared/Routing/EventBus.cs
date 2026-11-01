@@ -1,5 +1,5 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNet.Infrastructure.Shared.Diagnostics;
+using HomeNet.Infrastructure.Shared.Diagnostics.EventInspector;
 
 namespace HomeNet.Infrastructure.Shared.Routing
 {

@@ -5,6 +5,8 @@ using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Repositories;
 using HomeNetOrm.Infrastructure;
 using Microsoft.AspNetCore.SignalR;
+using ILogger = HomeNet.Infrastructure.Shared.Interfaces.Diagnostics.ILogger;
+
 
 namespace HomeNet.Server
 {
@@ -13,15 +15,15 @@ namespace HomeNet.Server
         private static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-
             const string serverLogName = "server_debug";
 
-            HomeNet.Infrastructure.Shared.Interfaces.Diagnostics.ILogger serverLogger = new SiberNetLogger((logEntry, level, detectedNamespace) =>
-            {
-                // Старый DiagnosticHub стерт — логгер сам сохранит всё в HTML и TXT на рабочий стол!
-                // Для сервера в делегат вывода просто дублируем чистую строку в стандартную консоль
-                System.Console.WriteLine(logEntry);
-            }, serverLogName);
+            // 1. 🪐 СОБИРАЕМ МНОГОСТВОЛЬНЫЙ ЛОГГЕР
+            // Передаем в него нужные реализации. Они все реализуют один чистый ILogger
+            ILogger serverLogger = new AggregateLogger(
+                new ConsoleLogger(),                  // Ствол 1: Яркая консоль
+                        
+                new HtmlLogger(serverLogName)         // Ствол 2: Интерактивный киберпанк .html
+            );
 
             serverLogger.LogInfo("=== [СУБД ХАБ СЕРВЕРА] СИСТЕМА ДВОЙНОГО ЛОГИРОВАНИЯ ИНИЦИАЛИЗИРОВАНА ===");
 
@@ -53,6 +55,9 @@ namespace HomeNet.Server
             serverLogger.LogInfo("=== [СУБД ХАБ СЕРВЕРА] ЗАПУСК ИНИЦИАЛИЗАЦИИ POSTGRES ===");
             await postgresEngine.InitializeChannelAsync();
 
+
+           
+
             serverLogger.LogInfo("[SERVER START] Веб-сервер запущен и слушает порт.");
             app.Run();
         }
@@ -67,7 +72,14 @@ namespace HomeNet.Server
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, userId);
             }
+
+            // 🔥 РУКОПОЖАТИЕ SIBERNET:
+            // Как только любой клиент (в режиме логирования или чата) успешно открыл сокет,
+            // мы ЛИЧНО ЕМУ (Clients.Caller) отправляем сигнал, что сервер готов к синхронизации!
+            await Clients.Caller.SendAsync("ReceiveServerReady");
+
             await base.OnConnectedAsync();
         }
     }
+
 }

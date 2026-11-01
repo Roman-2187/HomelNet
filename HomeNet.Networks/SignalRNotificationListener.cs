@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
-
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 
 namespace HomeNet.Network
 {
@@ -8,8 +8,8 @@ namespace HomeNet.Network
     {
         private readonly string _apiBaseUrl;
         private readonly ILogger _logger;
+        private readonly IEventBus _eventBus; // Наш бортовой автобус
 
-        // Внедряем наши конкретные двусторонние хандлеры напрямую
         private readonly MessageNetworkHandler _messageHandler;
         private readonly UserNetworkHandler _userHandler;
 
@@ -19,12 +19,14 @@ namespace HomeNet.Network
             string apiBaseUrl,
             MessageNetworkHandler messageHandler,
             UserNetworkHandler userHandler,
-            ILogger logger)
+            ILogger logger,
+            IEventBus eventBus) // Забираем шину из DI
         {
             _apiBaseUrl = apiBaseUrl ?? throw new ArgumentNullException(nameof(apiBaseUrl));
             _messageHandler = messageHandler ?? throw new ArgumentNullException(nameof(messageHandler));
             _userHandler = userHandler ?? throw new ArgumentNullException(nameof(userHandler));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         }
 
         public async Task ConnectAsync(Guid? userId = null)
@@ -44,25 +46,32 @@ namespace HomeNet.Network
             // КРАСИВАЯ СТРОГАЯ ПОДПИСКА НА МЕТОДЫ СЕРВЕРА
             // =========================================================================
 
-            // 1. Слушаем входящие сообщения
             _connection.On<HomeNetCore.Models.Entity.MessageEntity>(_messageHandler.ServerMethodName, async (message) =>
             {
                 _logger.LogInfo($"[СЕТЬ] Поймали метод '{_messageHandler.ServerMethodName}' от сервера.");
                 await _messageHandler.HandleIncomingMessageAsync(message);
             });
 
-            // 2. Слушаем входящие апдейты пользователей
             _connection.On<HomeNetCore.Models.Entity.UserEntity>(_userHandler.ServerMethodName, async (user) =>
             {
                 _logger.LogInfo($"[СЕТЬ] Поймали метод '{_userHandler.ServerMethodName}' от сервера.");
                 await _userHandler.HandleIncomingUserAsync(user);
             });
 
-            // 3. Слушаем входящие удаления пользователей
             _connection.On<Guid>("ReceiveUserDeleted", async (userIdDeleted) =>
             {
                 _logger.LogWarning("[СЕТЬ] Поймали метод 'ReceiveUserDeleted' от сервера.");
                 await _userHandler.HandleIncomingUserDeletedAsync(userIdDeleted);
+            });
+
+            // 🔥 4. СЛУШАЕМ РЕАКТИВНЫЙ СИГНАЛ ГОТОВНОСТИ БЭКЕНДА
+            _connection.On("ReceiveServerReady", () =>
+            {
+                _logger.LogInfo("[СЕТЬ] 🔥 Получен сигнал готовности от сервера! База данных на сервере прогрета.");
+
+                // Просто шлём пакет в трубу автобуса. Никаких лямбд, чистый проброс!
+                _eventBus.Publish(this, new ServerBecameReadyEvent());
+                return Task.CompletedTask;
             });
 
             // =========================================================================
@@ -75,8 +84,10 @@ namespace HomeNet.Network
 
         public void Dispose()
         {
-            // Здесь можно неявно почистить ресурсы, если нужно, 
-            // но хандлеры живут в DI как синглтоны, так что пускай работают.
         }
+
+
     }
+
+    public record ServerBecameReadyEvent();
 }

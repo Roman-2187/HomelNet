@@ -1,8 +1,7 @@
 ﻿using System.Reflection;
 using HomeNet.Infrastructure.Shared.Enums;
-using HomeNetCore.Models.Diagnostics;
 
-namespace HomeNet.Infrastructure.Shared.Diagnostics
+namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
 {
     public static class AssemblyScanner
     {

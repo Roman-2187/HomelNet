@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Interfaces.ViewModels;
-using HomeNetCore.Interfaces.Sinc; // Добавили неймспейс для интерфейса синхронизации
+using HomeNetCore.Interfaces.Sinc; 
 using HomeNetCore.Models.Entity;
 using HomeNetPresentation.Services;
 using System.Collections.ObjectModel;
@@ -29,7 +29,7 @@ namespace HomeNetPresentation.ViewModels
         [NotifyCanExecuteChangedFor(nameof(SearchCommand))]
         private string _targetUserEmail = string.Empty;
 
-        public ObservableCollection<string> DeletedUsersHistory { get; } = new();
+        public ObservableCollection<string> DeletedUsersHistory { get; } = [];
 
         public DeleteUsersViewModel(IDeleteService srv, IEventBus bus, ILogger log, AdminNavigationManager nav)
             : base(bus, nav)
@@ -47,7 +47,6 @@ namespace HomeNetPresentation.ViewModels
             ResetForm();
         }
 
-        #region 🎧 МЕТОДЫ ПОДПИСОК 🧼
 
         private void OnAdminTabChanged(IAdminVm.AdminTabChanged msg)
         {
@@ -74,9 +73,9 @@ namespace HomeNetPresentation.ViewModels
             }
         }
 
-        #endregion
+       
 
-        #region 🚀 КОМАНДЫ UI 🧼
+       
 
         [RelayCommand(CanExecute = nameof(CanSearch))]
         private async Task SearchAsync()
@@ -126,15 +125,9 @@ namespace HomeNetPresentation.ViewModels
         }
 
         [RelayCommand]
-        private async Task CancelAsync()
-        {
-            ResetForm();
-        }
-
-        #endregion
-
-        #region 🛠 ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ 🧼
-
+        private async Task CancelAsync() =>ResetForm();
+       
+       
         private void ResetForm()
         {
             TargetUserEmail = string.Empty;
@@ -181,7 +174,7 @@ namespace HomeNetPresentation.ViewModels
                 StatusMessage = $"Введён сторонний Email: {value}. Нажмите 'Поиск'.";
         }
 
-        #endregion
+       
 
         public override void Dispose()
         {

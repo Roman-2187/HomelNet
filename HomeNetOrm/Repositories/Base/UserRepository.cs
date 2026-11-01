@@ -46,7 +46,12 @@ namespace HomeNetOrm.Repositories.Base
 
             try
             {
-                await ExecuteAsync(async db => await db.ExecuteAsync(cmd.Sql, user));
+                Task DbAction(DbConnection db)
+                {
+                    return db.ExecuteAsync(cmd.Sql, user);
+                }
+
+                await ExecuteAsync(DbAction);
                 Logger.LogInfo($"[UserRepository] Пользователь '{user.FirstName}' ({user.Email}) успешно записан в БД.");
                 _eventBus.Publish(this, new ISyncCoordinator.UserInserted(user));
                 return user;
@@ -60,20 +65,26 @@ namespace HomeNetOrm.Repositories.Base
         public async Task DeleteByIdAsync(Guid id)
         {
             var cmd = _userSqlGenerator.GenerateDelete(id);
+            int affectedRows = 0;
+
             try
             {
-                await ExecuteAsync(async db =>
+                Task<int> DbAction(DbConnection db)
                 {
-                    var affectedRows = await db.ExecuteAsync(cmd.Sql, cmd.Params);
-                    if (affectedRows > 0)
-                    {
-                        _eventBus.Publish(this, new ISyncCoordinator.UserDeleted(id));
-                    }
-                });
+                    return db.ExecuteAsync(cmd.Sql, cmd.Params);
+                }
+
+                affectedRows = await ExecuteAsync(DbAction);
             }
             catch (Exception ex) when (!(ex is NotFoundException))
             {
                 throw new InvalidOperationException($"Ошибка при удалении пользователя через ОРМ: {ex.Message}");
+            }
+
+            // Публикация вынесена из лямбды наружу
+            if (affectedRows > 0)
+            {
+                _eventBus.Publish(this, new ISyncCoordinator.UserDeleted(id));
             }
         }
 
@@ -82,7 +93,13 @@ namespace HomeNetOrm.Repositories.Base
             var cmd = _userSqlGenerator.GenerateSelectAll();
             try
             {
-                return await ExecuteAsync(async db => (await db.QueryAsync<UserEntity>(cmd.Sql)).ToList());
+                async Task<List<UserEntity>> DbAction(DbConnection db)
+                {
+                    var result = await db.QueryAsync<UserEntity>(cmd.Sql);
+                    return result.ToList();
+                }
+
+                return await ExecuteAsync(DbAction);
             }
             catch (Exception ex)
             {
@@ -93,13 +110,25 @@ namespace HomeNetOrm.Repositories.Base
         public async Task<UserEntity?> GetByIdAsync(Guid id)
         {
             var cmd = _userSqlGenerator.GenerateSelectById(id);
-            return await ExecuteAsync(async db => await db.QueryFirstOrDefaultAsync<UserEntity>(cmd.Sql, cmd.Params));
+
+            Task<UserEntity?> DbAction(DbConnection db)
+            {
+                return db.QueryFirstOrDefaultAsync<UserEntity>(cmd.Sql, cmd.Params);
+            }
+
+            return await ExecuteAsync(DbAction);
         }
 
         public async Task<UserEntity?> GetByEmailAsync(string email)
         {
             var cmd = _userSqlGenerator.GenerateSelectByEmail(email);
-            return await ExecuteAsync(async db => await db.QueryFirstOrDefaultAsync<UserEntity>(cmd.Sql, cmd.Params));
+
+            Task<UserEntity?> DbAction(DbConnection db)
+            {
+                return db.QueryFirstOrDefaultAsync<UserEntity>(cmd.Sql, cmd.Params);
+            }
+
+            return await ExecuteAsync(DbAction);
         }
 
         public async Task UpdateAsync(UserEntity user)
@@ -110,7 +139,12 @@ namespace HomeNetOrm.Repositories.Base
             var cmd = _userSqlGenerator.GenerateUpdate();
             try
             {
-                await ExecuteAsync(async db => await db.ExecuteAsync(cmd.Sql, user));
+                Task DbAction(DbConnection db)
+                {
+                    return db.ExecuteAsync(cmd.Sql, user);
+                }
+
+                await ExecuteAsync(DbAction);
                 _eventBus.Publish(this, new ISyncCoordinator.UserUpdated(user));
             }
             catch (Exception ex)
@@ -124,11 +158,14 @@ namespace HomeNetOrm.Repositories.Base
             if (string.IsNullOrWhiteSpace(email)) return false;
 
             var cmd = _userSqlGenerator.GenerateEmailExists(email);
-            return await ExecuteAsync(async db =>
+
+            async Task<bool> DbAction(DbConnection db)
             {
                 var count = await db.ExecuteScalarAsync<int>(cmd.Sql, cmd.Params);
                 return count > 0;
-            });
+            }
+
+            return await ExecuteAsync(DbAction);
         }
 
         private class NullEventProxy : IEventBus { }

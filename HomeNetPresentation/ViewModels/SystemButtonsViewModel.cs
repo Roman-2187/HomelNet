@@ -8,14 +8,10 @@ namespace HomeNetPresentation.ViewModels
     /// <summary>
     /// Изолированная вьюмодель для системных кнопок окна (Свернуть, Развернуть, Закрыть).
     /// </summary>
-    public partial class SystemButtonsViewModel : ObservableObject
+    public partial class SystemButtonsViewModel(IEventBus eventBus) : ObservableObject
     {
-        private readonly IEventBus _eventBus;
+        private readonly IEventBus _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
 
-        public SystemButtonsViewModel(IEventBus eventBus)
-        {
-            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-        }
 
         // ✕ КНОПКА: Закрыть приложение
         [RelayCommand]
@@ -24,11 +20,12 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Publish(this, new IMainViewModel.CloseRequest());
         }
 
+
         // 🔳 КНОПКА: Развернуть окно
         [RelayCommand]
         public void ToggleGrowWindow()
         {
-            _eventBus.Publish(this, new IMainViewModel.ToggleSize());
+          //  _eventBus.Publish(this, new IMainViewModel.ToggleSize());
         }
 
         // ➖ КНОПКА: Свернуть окно (Пока без логики на будущее)

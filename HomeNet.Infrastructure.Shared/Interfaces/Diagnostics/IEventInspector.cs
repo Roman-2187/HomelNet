@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using HomeNet.Infrastructure.Shared.Enums;
-using HomeNetCore.Models.Diagnostics; // Наш "паспортный стол" узлов
+﻿using HomeNet.Infrastructure.Shared.Enums;
 
 namespace HomeNet.Infrastructure.Shared.Interfaces.Diagnostics
 {

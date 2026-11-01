@@ -32,7 +32,13 @@ namespace HomeNetOrm.Repositories.Base
             try
             {
                 object safeParameters = _messageSqlGenerator.PrepareParameters(message);
-                await ExecuteAsync(async db => await db.ExecuteAsync(cmd.Sql, safeParameters));
+
+                Task DbAction(DbConnection db)
+                {
+                    return db.ExecuteAsync(cmd.Sql, safeParameters);
+                }
+
+                await ExecuteAsync(DbAction);
 
                 _eventBus.Publish(this, new ISyncCoordinator.MessageInserted(message));
                 return true;
@@ -48,7 +54,12 @@ namespace HomeNetOrm.Repositories.Base
             SqlQueryCommand cmd = _messageSqlGenerator.GenerateSelectChatHistory(senderId, receiverId);
             try
             {
-                return await ExecuteAsync(async db => await db.QueryAsync<MessageEntity>(cmd.Sql, cmd.Params));
+                Task<IEnumerable<MessageEntity>> DbAction(DbConnection db)
+                {
+                    return db.QueryAsync<MessageEntity>(cmd.Sql, cmd.Params);
+                }
+
+                return await ExecuteAsync(DbAction);
             }
             catch (Exception ex)
             {
@@ -61,11 +72,13 @@ namespace HomeNetOrm.Repositories.Base
             SqlQueryCommand cmd = _messageSqlGenerator.GenerateMarkAsRead(senderId, receiverId);
             try
             {
-                return await ExecuteAsync(async db =>
+                async Task<bool> DbAction(DbConnection db)
                 {
                     int rowsAffected = await db.ExecuteAsync(cmd.Sql, cmd.Params);
                     return rowsAffected > 0;
-                });
+                }
+
+                return await ExecuteAsync(DbAction);
             }
             catch (Exception ex)
             {
@@ -78,7 +91,12 @@ namespace HomeNetOrm.Repositories.Base
             SqlQueryCommand cmd = _messageSqlGenerator.GenerateUnreadCount(currentUserId, senderId);
             try
             {
-                return await ExecuteAsync(async db => await db.ExecuteScalarAsync<int>(cmd.Sql, cmd.Params));
+                Task<int> DbAction(DbConnection db)
+                {
+                    return db.ExecuteScalarAsync<int>(cmd.Sql, cmd.Params);
+                }
+
+                return await ExecuteAsync(DbAction);
             }
             catch (Exception ex)
             {
@@ -91,66 +109,97 @@ namespace HomeNetOrm.Repositories.Base
             var selectCmd = _messageSqlGenerator.GenerateSelectById(id);
             SqlQueryCommand deleteCmd = _messageSqlGenerator.GenerateDelete(id);
 
+            MessageEntity? deletedMessage = null;
+            int rowsAffected = 0;
+
             try
             {
-                return await ExecuteAsync(async db =>
+                async Task DbAction(DbConnection db)
                 {
-                    var message = await db.QueryFirstOrDefaultAsync<MessageEntity>(selectCmd.Sql, selectCmd.Params);
-                    int rowsAffected = await db.ExecuteAsync(deleteCmd.Sql, deleteCmd.Params);
+                    deletedMessage = await db.QueryFirstOrDefaultAsync<MessageEntity>(selectCmd.Sql, selectCmd.Params);
+                    rowsAffected = await db.ExecuteAsync(deleteCmd.Sql, deleteCmd.Params);
+                }
 
-                    if (rowsAffected > 0 && message != null)
-                    {
-                        _eventBus.Publish(this, new ISyncCoordinator.MessageDeleted(message.Id));
-                    }
-
-                    return rowsAffected > 0;
-                });
+                await ExecuteAsync(DbAction);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException($"Ошибка удаления сообщения по ID через ОРМ: {ex.Message}");
             }
+
+            // Публикация вынесена из замыкания наружу
+            if (rowsAffected > 0 && deletedMessage != null)
+            {
+                _eventBus.Publish(this, new ISyncCoordinator.MessageDeleted(deletedMessage.Id));
+            }
+
+            return rowsAffected > 0;
         }
 
         public async Task<bool> ClearChatHistoryAsync(Guid senderId, Guid receiverId)
         {
             SqlQueryCommand cmd = _messageSqlGenerator.GenerateClearChatHistory(senderId, receiverId);
+            int rowsAffected = 0;
+
             try
             {
-                return await ExecuteAsync(async db =>
+                Task<int> DbAction(DbConnection db)
                 {
-                    int rowsAffected = await db.ExecuteAsync(cmd.Sql, cmd.Params);
-                    if (rowsAffected > 0)
-                    {
-                        _eventBus.Publish(this, new ISyncCoordinator.ChatCleared(senderId, receiverId));
-                    }
-                    return rowsAffected > 0;
-                });
+                    return db.ExecuteAsync(cmd.Sql, cmd.Params);
+                }
+
+                rowsAffected = await ExecuteAsync(DbAction);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException($"Ошибка при полной очистке чата через ОРМ: {ex.Message}");
             }
+
+            // Публикация вынесена из замыкания наружу
+            if (rowsAffected > 0)
+            {
+                _eventBus.Publish(this, new ISyncCoordinator.ChatCleared(senderId, receiverId));
+            }
+
+            return rowsAffected > 0;
         }
 
         public async Task<MessageEntity?> GetByIdAsync(Guid id)
         {
             SqlQueryCommand cmd = _messageSqlGenerator.GenerateSelectById(id);
-            return await ExecuteAsync(async db => await db.QueryFirstOrDefaultAsync<MessageEntity>(cmd.Sql, cmd.Params));
+
+            Task<MessageEntity?> DbAction(DbConnection db)
+            {
+                return db.QueryFirstOrDefaultAsync<MessageEntity>(cmd.Sql, cmd.Params);
+            }
+
+            return await ExecuteAsync(DbAction);
         }
 
-        // 🎯 Меняем возвращаемый тип на Task<List<MessageEntity>>, как просит интерфейс!
         public async Task<List<MessageEntity>> GetAllAsync()
         {
             SqlQueryCommand cmd = _messageSqlGenerator.GenerateSelectAll();
-            return await ExecuteAsync(async db => (await db.QueryAsync<MessageEntity>(cmd.Sql, cmd.Params)).ToList());
+
+            async Task<List<MessageEntity>> DbAction(DbConnection db)
+            {
+                var result = await db.QueryAsync<MessageEntity>(cmd.Sql, cmd.Params);
+                return result.ToList();
+            }
+
+            return await ExecuteAsync(DbAction);
         }
 
         public async Task UpdateAsync(MessageEntity entity)
         {
             SqlQueryCommand cmd = _messageSqlGenerator.GenerateUpdate();
             object parameters = _messageSqlGenerator.PrepareParameters(entity);
-            await ExecuteAsync(async db => await db.ExecuteAsync(cmd.Sql, parameters));
+
+            Task DbAction(DbConnection db)
+            {
+                return db.ExecuteAsync(cmd.Sql, parameters);
+            }
+
+            await ExecuteAsync(DbAction);
         }
 
         private class NullEventProxy : IEventBus { }

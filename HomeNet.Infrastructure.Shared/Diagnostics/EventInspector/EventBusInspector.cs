@@ -1,8 +1,7 @@
 ﻿using HomeNet.Infrastructure.Shared.Enums;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
-using HomeNetCore.Models.Diagnostics;
 
-namespace HomeNet.Infrastructure.Shared.Diagnostics
+namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
 {
     public class EventBusInspector : IEventInspector
     {

@@ -1,13 +1,8 @@
 ﻿using HomeNet.Infrastructure.Shared.Enums;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
-using HomeNetCore.Models.Diagnostics;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text;
 
-namespace HomeNet.Infrastructure.Shared.Diagnostics
+namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
 {
     /// <summary>
     /// Генератор сочных интерактивных HTML-отчетов для визуализации связей и рантайм-ленты шины EventBus.

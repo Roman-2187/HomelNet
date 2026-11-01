@@ -89,15 +89,21 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Publish(this, new IUserVm.LogoutClient());
         }
 
-        // 🔥 Метод теперь принимает системный тип события от репозитория
         private void OnUserAdded(ISyncCoordinator.UserInserted msg)
         {
             if (msg?.User == null) return;
+
+            // 1. Не добавляем самого себя
             if (_currentUser != null && msg.User.Id == _currentUser.Id) return;
 
+            // 2. 🔥 ЗАЩИТА ОТ ДВОЙНИКОВ: если такой юзер уже есть в списке, не добавляем его снова!
+            if (Friends.Any(f => f.Id == msg.User.Id)) return;
+
             if (msg.User.FirstName == null) msg.User.FirstName = "Пользователь без имени";
+
             Friends.Add(msg.User);
         }
+
 
         // 🔥 Метод теперь принимает системный тип события от репозитория
         private void OnUserDeleted(ISyncCoordinator.UserDeleted msg)

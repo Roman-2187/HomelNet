@@ -1,39 +1,41 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNetCore.Interfaces.Network;
 using HomeNetCore.Interfaces.ViewModels;
 using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels
 {
-    /// <summary>
-    /// Глобальная строка состояния приложения SiberNet.
-    /// Наследуется от дженерик-базы с указанием базового менеджера навигации верхнего уровня.
-    /// </summary>
     public partial class StatusBarViewModel : FormViewModelBase<BaseNavigationState>, IDisposable
     {
         [ObservableProperty]
         private string _statusText = "Готов к работе";
 
+        [ObservableProperty]
+        private string _combinedStatusText = "OFFLINE";
+
+        // 🔥 СЕНЬОРСКОЕ СВОЙСТВО ДЛЯ ДИНАМИЧЕСКОГО ЦВЕТА ИНДИКАТОРА
+        [ObservableProperty]
+        private string _statusColor = "#FFF5546F"; // Стартуем с тревожного розово-красного
+
         public StatusBarViewModel(IEventBus eventBus, BaseNavigationState navigation)
-            : base(eventBus, navigation) // Передали базовый навигатор верхнего уровня
+            : base(eventBus, navigation)
         {
             InitializeBusSubscriptions();
         }
 
         private void InitializeBusSubscriptions()
         {
-            // 🔥 ЧИСТОТА ДЛЯ ИНСПЕКТОРА: Никаких лямбд, только ссылки на именованные методы! 🧼
             _eventBus.Subscribe<IStatusBarViewModel.TextChanged>(OnTextChanged);
             _eventBus.Subscribe<IUsersTableVm.Refreshed>(OnUsersTableRefreshed);
+            _eventBus.Subscribe<NetworkStatusChanged>(OnNetworkStatusChanged);
         }
 
-        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Для идеального графа в Инспекторе) 🧼
+        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК
 
         private async void OnTextChanged(IStatusBarViewModel.TextChanged msg)
         {
             if (msg == null) return;
-
-            // Просто и плавно обновляем текст на тот, который реально прилетел в посылке
             await UpdateStatusTextAsync(msg.NewStatus);
         }
 
@@ -41,30 +43,44 @@ namespace HomeNetPresentation.ViewModels
         {
             if (msg == null) return;
 
-            // Статус-бар реагирует на обновление таблицы и выводит красивый итог
             StatusText = msg.Users != null && msg.Users.Count > 0
                 ? $"База данных синхронизирована. Загружено пользователей: {msg.Users.Count}"
                 : "Синхронизация завершена. Список пользователей пуст.";
         }
 
+        // 🔥 ЖЕСТКОЕ УПРАВЛЕНИЕ ЦВЕТОМ И ТЕКСТОМ ИЗ ВЬЮМОДЕЛИ
+        private void OnNetworkStatusChanged(NetworkStatusChanged msg)
+        {
+            if (msg == null) return;
+
+            if (msg.IsOnline)
+            {
+                CombinedStatusText = "API_OK | DB_OK";
+                StatusColor = "#FF4EC9B0"; // Вспыхивает сочный изумрудный зеленый!
+            }
+            else
+            {
+                CombinedStatusText = "OFFLINE";
+                StatusColor = "#FFF5546F"; // Падает в розово-красный офлайн
+            }
+        }
+
         #endregion
 
-        /// <summary>
-        /// Плавно выставляет текст статуса без побочных эффектов и холостого спама в шину
-        /// </summary>
         private Task UpdateStatusTextAsync(string newText)
         {
             StatusText = newText;
             return Task.CompletedTask;
         }
 
-        #region 🛡️ ЖЕЛЕЗОБЕТОННЫЙ СТЕРИЛИЗАТОР ПАМЯТИ
+        #region 🛡️ ПУЛЕНЕПРОБИВАЕМЫЙ СТЕРИЛИЗАТОР ПАМЯТИ
 
         public override void Dispose()
         {
-            base.Dispose(); // Чистим базовые ресурсы дженерик-базы
+            base.Dispose();
             _eventBus.Unsubscribe<IStatusBarViewModel.TextChanged>(OnTextChanged);
             _eventBus.Unsubscribe<IUsersTableVm.Refreshed>(OnUsersTableRefreshed);
+            _eventBus.Unsubscribe<NetworkStatusChanged>(OnNetworkStatusChanged);
         }
 
         #endregion

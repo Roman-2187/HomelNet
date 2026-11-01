@@ -10,20 +10,15 @@ namespace HomeNet.Network
         private readonly HttpClient _httpClient;
         private readonly ILogger _logger;
 
-        public HttpApiClient(string apiBaseUrl, ILogger logger)
-        {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        public bool IsServerAvailable => throw new NotImplementedException();
 
-            _httpClient = new HttpClient
-            {
-                BaseAddress = new Uri(apiBaseUrl),
-                Timeout = TimeSpan.FromSeconds(10)
-            };
+        // Конструктор принимает уже полностью собранный и защищенный HttpClient
+        public HttpApiClient(HttpClient httpClient, ILogger logger)
+        {
+            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        // =========================================================================
-        // 📤 СУЩЕСТВУЮЩИЕ МЕТОДЫ PUSH (Оставляем как есть)
-        // =========================================================================
         public async Task<bool> PushMessageAsync(object messageEntity)
         {
             try
@@ -34,7 +29,7 @@ namespace HomeNet.Network
             catch (Exception ex)
             {
                 _logger.LogError($"[HttpApiClient] Ошибка отправки сообщения по сети: {ex.Message}");
-                return false;
+                return false; // Интерцептор уже погасил индикатор, тут просто выходим!
             }
         }
 
@@ -66,45 +61,15 @@ namespace HomeNet.Network
             }
         }
 
-        public bool IsServerAvailable
-        {
-            get
-            {
-                try
-                {
-                    var response = _httpClient.GetAsync("api/ping").GetAwaiter().GetResult();
-                    return response.IsSuccessStatusCode;
-                }
-                catch
-                {
-                    return false;
-                }
-            }
-        }
-
-        // =========================================================================
-        // 📥 🔥 НАШИ НОВЫЕ МЕТОДЫ PULL (Добавляем!)
-        // =========================================================================
-
-        /// <summary>
-        /// Запрашивает у сервера только те сообщения, которые появились строго ПОСЛЕ чекпоинта девайса
-        /// </summary>
-        /// <summary>
-        /// Запрашивает у сервера ВСЕ сообщения для конкретного пользователя, обходя гонку Device ID
-        /// </summary>
         public async Task<IReadOnlyCollection<MessageEntity>> FetchFreshMessagesAsync(Guid deviceId, DateTimeOffset lastSyncedAt)
         {
             try
             {
-                // 🎯 ХАК: Вместо плавающего Device ID используем твой жесткий UserId из логов бэкенда
                 Guid myUserId = Guid.Parse("51868259-03f7-481e-85e9-3b1e6b0fe422");
-
-                // 🎯 ФИКС: Зашиваем минимальную дату, чтобы сервер не выплюнул 400 Bad Request
                 var zeroTimestamp = new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
                 _logger.LogInfo($"[HttpApiClient] Отправляем PULL по User ID: {myUserId} с метки 1970 года...");
 
-                // Меняем параметр deviceId на userId, чтобы сервер понял, чьи сообщения выгребать
                 string url = $"/api/messages/sync?userId={myUserId}&lastSyncedAt={Uri.EscapeDataString(zeroTimestamp.ToString("o"))}";
 
                 var response = await _httpClient.GetFromJsonAsync<List<MessageEntity>>(url);
@@ -113,16 +78,10 @@ namespace HomeNet.Network
             catch (Exception ex)
             {
                 _logger.LogError($"[HttpApiClient КРИТ] Не удалось скачать сообщения по User ID: {ex.Message}");
-                return Array.Empty<MessageEntity>(); // Возвращаем пустой массив, чтобы не уронить OrmEngine
+                return Array.Empty<MessageEntity>();
             }
         }
 
-
-
-
-        /// <summary>
-        /// Запрашивает у сервера новые или обновленные профили пользователей
-        /// </summary>
         public async Task<IReadOnlyCollection<UserEntity>> FetchFreshUsersAsync(Guid deviceId, DateTimeOffset lastSyncedAt)
         {
             try

@@ -10,6 +10,10 @@ using HomeNetOrm.Interfaces.Builders;
 using HomeNetOrm.Models;
 using HomeNetOrm.Repositories.Local;
 using HomeNetOrm.Sinc;
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace HomeNet.DI.Modules
 {
@@ -39,8 +43,8 @@ namespace HomeNet.DI.Modules
 
         public DataAccessModule(
             string sqliteConn, string apiBaseUrl,
-            IEnumerable<TableSchema> appSchemas, 
-            ILogger logger, ILogQueueManager logQueue, 
+            IEnumerable<TableSchema> appSchemas,
+            ILogger logger, ILogQueueManager logQueue,
             IEventBus eventBus)
         {
             ApiBaseUrl = apiBaseUrl;
@@ -48,8 +52,25 @@ namespace HomeNet.DI.Modules
             // 🎯 1. Запускаем SiberNetDbEngine в режиме локального клиента (SQLite)
             DbEngine = new SiberNetDbEngine(DbEngineType.LocalClient, sqliteConn, appSchemas, logger);
 
-            // 2. Сетевой курьер API
-            ApiClient = new HttpApiClient(apiBaseUrl, logger);
+            // =========================================================================
+            // 🔥 2. СЕТЕВОЙ КУРЬЕР API С АВТОМАТИЧЕСКИМ ИНТЕРЦЕПТОРОМ ОШИБОК
+            // =========================================================================
+            // Создаем наш сетевой фильтр-партизан и отдаем ему автобус
+            var networkInterceptor = new NetworkExceptionInterceptor(eventBus);
+
+            // Жестко привязываем его к стандартному внутреннему хэндлеру .NET для отправки пакетов
+            networkInterceptor.InnerHandler = new HttpClientHandler();
+
+            // Собираем HttpClient, пропустив его через наш интерцептор, и задаем базовый адрес
+            var httpClient = new HttpClient(networkInterceptor)
+            {
+                BaseAddress = new Uri(apiBaseUrl),
+                Timeout = TimeSpan.FromSeconds(10) // Защита от бесконечного зависания сети
+            };
+
+            // Отдаем полностью заряженный HttpClient в твой курьер API
+            ApiClient = new HttpApiClient(httpClient, logger);
+            // =========================================================================
 
             // 3. Контейнер хаба инициализации (принимает наш универсальный движок)
             DbContextContainer = new DbContextContainer(DbEngine, apiBaseUrl, eventBus, logger);
@@ -72,7 +93,7 @@ namespace HomeNet.DI.Modules
             var userNetworkHandler = new UserNetworkHandler(ApiClient, eventBus, logger);
 
             // 8. Запуск SignalR листенера комьютаций
-            NotificationListener = new SignalRNotificationListener(apiBaseUrl, messageNetworkHandler, userNetworkHandler, logger);
+            NotificationListener = new SignalRNotificationListener(apiBaseUrl, messageNetworkHandler, userNetworkHandler, logger, eventBus);
         }
 
         public async Task InitializeDeviceSessionAsync()

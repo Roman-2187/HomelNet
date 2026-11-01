@@ -1,7 +1,9 @@
 ﻿using HomeNet.DI.Modules;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNet.Network;
 using HomeNetCore.Enums;
+using HomeNetCore.Interfaces.Network;
 using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetPresentation.ViewModels;
@@ -20,13 +22,12 @@ namespace HomeNet.DI
         private readonly DataAccessModule _dataAccess;
         private readonly BusinessServicesModule _services;
         private readonly PresentationUiModule _ui;
-        // 🔥 Вытягиваем листенер из модуля данных по его настоящему имени!
-        public HomeNet.Network.SignalRNotificationListener SignalRListener => _dataAccess.NotificationListener;
 
+        private static bool _isSyncStarted = false; // Защита от двойного старта
+
+        public SignalRNotificationListener SignalRListener => _dataAccess.NotificationListener;
         public ILogger Logger => _infrastructure.Logger;
         public IEventBus EventBus => _infrastructure.EventBus;
-
-        // 🔥 Публичный доступ к конкретному синхро-движку без кривых интерфейсов
         public SincEngine OrmEngine => _dataAccess.OrmEngine;
 
         private AppCompositionRoot(BackendMode mode, string apiBaseUrl, string sqliteConn)
@@ -64,6 +65,8 @@ namespace HomeNet.DI
         {
             _instance = new AppCompositionRoot(mode, apiBaseUrl, sqliteConn);
 
+            // ПОДПИСКИ АВТОБУСА БЕЗ ЛЯМБД — строго на чистые методы
+            _instance._infrastructure.EventBus.SubscribeAsync<ServerBecameReadyEvent>(OnServerBecameReady);
             _instance._infrastructure.EventBus.SubscribeAsync<IDbContextContainer.InfrastructureReady>(OnInfrastructureReady);
 
             Task.Run(async () =>
@@ -77,20 +80,57 @@ namespace HomeNet.DI
             if (_instance == null) return;
             var logger = _instance._infrastructure.Logger;
 
-            logger.LogInfo("[App Старт] Принудительно будим синхронизатор...");
+            logger.LogInfo("[App Старт] Локальные СУБД инициализированы. Поднимаем сокет-листенер...");
+
             try
             {
-                // Стартуем движок в обход любых проверок пинга
-                await _instance.OrmEngine.StartAsync();
-                logger.LogInfo("[App Старт] ✅ OrmEngine запущен, пошла синхронизация!");
+                await _instance.SignalRListener.ConnectAsync();
+
+                // ВЗВОДИМ АВТОНОМНЫЙ ТАЙМЕР НА 8 СЕКУНД
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(8));
+
+                    if (!_isSyncStarted)
+                    {
+                        logger.LogWarning("[SiberNet Engine] ⏳ Превышено время ожидания сервера (8 сек). Переходим в Автономный режим (Offline Mode).");
+
+                        // 🔥 СИГНАЛИЗИРУЕМ СТАТУС-БАРУ: СЕРВЕР НЕ ОТВЕТИЛ, МЫ ОФЛАЙН
+                        _instance._infrastructure.EventBus.Publish(_instance, new NetworkStatusChanged(false));
+                    }
+                });
             }
             catch (Exception ex)
             {
-                logger.LogError($"[App Старт] Ошибка: {ex.Message}");
+                logger.LogError($"[App Старт] Ошибка старта сокет-клиента: {ex.Message}");
+                // В случае падения сокета сразу гасим индикатор в офлайн
+                _instance._infrastructure.EventBus.Publish(_instance, new NetworkStatusChanged(false));
             }
         }
 
+        private static async Task OnServerBecameReady(ServerBecameReadyEvent ev)
+        {
+            if (_instance == null || _isSyncStarted) return;
+            _isSyncStarted = true;
 
+            var logger = _instance._infrastructure.Logger;
+            logger.LogInfo("[SiberNet Engine] Бортовой компьютер получил сигнал готовности! Будим репликацию...");
+
+            // 🔥 СИГНАЛИЗИРУЕМ СТАТУС-БАРУ: РУКОПОЖАТИЕ ПРОШЛО, СЕТЬ КИПИТ!
+            _instance._infrastructure.EventBus.Publish(_instance, new NetworkStatusChanged(true));
+
+            try
+            {
+                await _instance.OrmEngine.StartAsync();
+                logger.LogInfo("[App Старт] ✅ Движок OrmEngine успешно запущен, пошла синхронизация данных!");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError($"[App Старт] Критическая ошибка движка репликации: {ex.Message}");
+
+                _instance.EventBus.Publish(_instance, new NetworkStatusChanged(false));
+            }
+        }
 
 
         public TGet GetViewModel<TGet>() where TGet : class
