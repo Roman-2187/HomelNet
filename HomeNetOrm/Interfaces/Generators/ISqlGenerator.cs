@@ -1,14 +1,10 @@
-﻿using HomeNetOrm.Models;
+﻿using HomeNetOrm.Builders;
 
 namespace HomeNetOrm.Interfaces.Generators
 {
+    // 🔥 Абсолютно чистый интерфейс. Больше никаких жестких CRUD-методов!
     internal interface ISqlGenerator<T> where T : class
     {
-        SqlQueryCommand GenerateInsert();
-        SqlQueryCommand GenerateUpdate();
-        SqlQueryCommand GenerateDelete(Guid id); // 🎯 Теперь принимает ID, чтобы завернуть в команду
-        SqlQueryCommand GenerateSelectById(Guid id); // 🎯 Тоже принимает ID
-        SqlQueryCommand GenerateSelectAll();
-        object PrepareParameters(T entity);
+        TokenQueryBuilder<T> CreateQuery();
     }
 }

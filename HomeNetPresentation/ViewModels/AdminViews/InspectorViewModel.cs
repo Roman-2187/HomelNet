@@ -3,7 +3,7 @@ using HomeNet.Infrastructure.Shared.Diagnostics.EventInspector;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Enums.Navigation;
-using HomeNetCore.Interfaces.ViewModels;
+using HomeNetCore.Interfaces.ViewModels.AdminZone;
 using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels.AdminViews

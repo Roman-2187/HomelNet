@@ -1,7 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Interfaces.Network;
-using HomeNetCore.Interfaces.ViewModels;
+using HomeNetCore.Interfaces.ViewModels.AdminZone;
+using HomeNetCore.Interfaces.ViewModels.MainZone;
 using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels

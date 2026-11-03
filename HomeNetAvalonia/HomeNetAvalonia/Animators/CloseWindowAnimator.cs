@@ -3,7 +3,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNetCore.Interfaces.ViewModels;
+using HomeNetCore.Interfaces.ViewModels.MainZone;
 
 namespace HomeNetAvalonia.Animators
 {

@@ -1,16 +1,16 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Repositories;
+using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Interfaces.Services;
-using HomeNetCore.Models.Entity;
+using HomeNetOrm.Interfaces.Repositories;
 
 namespace HomeNetServices.Services.Identity
 {
     public class FriendService : IFriendService
     {
-        private readonly IFriendRepository _friendRepository;
+        private readonly IFriendRepo _friendRepository;
         private readonly ILogger _logger;
 
-        public FriendService(IFriendRepository friendRepository, ILogger logger)
+        public FriendService(IFriendRepo friendRepository, ILogger logger)
         {
             _friendRepository = friendRepository ?? throw new ArgumentNullException(nameof(friendRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

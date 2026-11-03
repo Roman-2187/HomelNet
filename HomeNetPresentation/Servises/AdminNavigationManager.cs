@@ -1,7 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Enums.Navigation;
-using HomeNetCore.Interfaces.ViewModels;
+using HomeNetCore.Interfaces.ViewModels.AdminZone;
+using HomeNetCore.Interfaces.ViewModels.MainZone;
 
 namespace HomeNetPresentation.Services
 {
@@ -25,7 +26,7 @@ namespace HomeNetPresentation.Services
             EventBus.Subscribe<IAdminVm.OpenEventInspector>(OnOpenEventInspector);
         }
 
-        #region 👑 МАКРО-УПРАВЛЕНИЕ ЗОНОЙ АДМИНА
+        
 
         private void OnRequestAdminZone(IAdminVm.RequestAdminZone msg)
         {
@@ -50,7 +51,7 @@ namespace HomeNetPresentation.Services
             EventBus.Publish(this, new IAdminVm.AdminTabChanged(CurrentAdminTab));
         }
 
-        #endregion
+       
 
         #region 🎧 ЛОКАЛЬНЫЕ ВНУТРЕННИЕ ВКЛАДКИ АДМИНКИ
 

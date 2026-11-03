@@ -1,0 +1,34 @@
+﻿using HomeNetCore.Enums;
+namespace HomeNetCore.Validation
+{
+    public class ValidationResult
+    {
+        public TypeField Field { get; set; }
+        public ValidationState State { get; set; } = ValidationState.None;
+        public string Message { get; set; } = string.Empty;
+        public bool IsInitialHint { get; }  // true для подсказок при загрузке
+
+        public ValidationResult(TypeField field, string message, ValidationState state, bool isInitialHint = false)
+        {
+            Field = field;
+            Message = message;
+            State = state;
+            IsInitialHint = isInitialHint;
+        }
+
+        public ValidationResult() { }
+
+
+        public ValidationResult Update(ValidationState state, string message)
+        {
+            State = state;
+            Message = message;
+            return this; // Возвращаем сам объект, чтобы можно было писать цепочки кода
+        }
+    }
+
+}
+
+
+
+

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using HomeNetCore.Models;
-using HomeNetCore.Models.Entity;
+﻿using HomeNet.Models.Shared.Entity;
 
 namespace HomeNetCore.Interfaces.Services
 {

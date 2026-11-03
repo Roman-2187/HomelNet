@@ -1,6 +1,5 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Models.Entity;
+using HomeNet.Models.Shared.Entity;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
@@ -8,6 +7,7 @@ using static HomeNetOrm.Enums.Sql;
 
 namespace HomeNetOrm.Generators.Base
 {
+    // 🔥 Класс чист от репликации, занимается только доменной логикой пользователей
     internal class UserSqlGenerator : BaseSqlGenerator<UserEntity>, IUserSqlGenerator
     {
         public UserSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ILogger logger)

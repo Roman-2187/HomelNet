@@ -1,7 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNetCore.Interfaces.ViewModels;
+using HomeNetCore.Interfaces.ViewModels.MainZone;
 
 namespace HomeNetPresentation.ViewModels
 {
@@ -12,7 +12,6 @@ namespace HomeNetPresentation.ViewModels
     {
         private readonly IEventBus _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
 
-
         // ✕ КНОПКА: Закрыть приложение
         [RelayCommand]
         public void RequestCloseApplication()
@@ -20,19 +19,20 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Publish(this, new IMainViewModel.CloseRequest());
         }
 
-
-        // 🔳 КНОПКА: Развернуть окно
+        // 🔳 КНОПКА: Развернуть/Восстановить окно
         [RelayCommand]
         public void ToggleGrowWindow()
         {
-          //  _eventBus.Publish(this, new IMainViewModel.ToggleSize());
+            // 🔥 Публикуем сигнал изменения размеров
+            _eventBus.Publish(this, new IMainViewModel.ToggleSize());
         }
 
-        // ➖ КНОПКА: Свернуть окно (Пока без логики на будущее)
+        // ➖ КНОПКА: Свернуть окно
         [RelayCommand]
         public void MinimizeWindow()
         {
-            // Здесь будет логика сворачивания, когда допишешь эвент на бэке
+            // 🔥 Публикуем сигнал сворачивания
+            _eventBus.Publish(this, new IMainViewModel.MinimizeRequest());
         }
     }
 }

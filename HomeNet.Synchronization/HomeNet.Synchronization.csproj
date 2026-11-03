@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HomeNet.Infrastructure.Shared\HomeNet.Infrastructure.Shared.csproj" />
+    <ProjectReference Include="..\HomeNet.Models.Shared\HomeNet.Models.Shared.csproj" />
+    <ProjectReference Include="..\HomeNetOrm\HomeNetOrm.csproj" />
+  </ItemGroup>
+
+</Project>

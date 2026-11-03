@@ -1,25 +1,16 @@
-﻿using HomeNetCore.Enums;
-using HomeNetCore.Interfaces;
+﻿using HomeNet.Models.Shared.Entity;
+using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.Services;
-using HomeNetCore.Models.Entity;
-using HomeNetCore.Models.Validation;
-using HomeNetCore.Utils;
+using HomeNetCore.Validation;
+using HomeNetOrm.Interfaces.Repositories;
 
 
 
 namespace HomeNetServices.Identity
 {
-    public class RegistrationServiceEx : IRegistrationService
+    public class RegistrationService(IUserRepo userRepository) : IRegistrationService
     {
-        private readonly IUserRepository _userRepository;
-
-        // 🔥 СТАТИКА: Убрали private readonly ValidationFormat _validateField = new(); 
-        // Теперь дергаем методы напрямую через класс-инструмент из Utils!
-
-        public RegistrationServiceEx(IUserRepository userRepository)
-        {
-           _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
-        }
+        private readonly IUserRepo _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
 
         /// <summary>
         /// Выполняет регистрацию. Возвращает лаконичный вложенный вердикт из интерфейса.

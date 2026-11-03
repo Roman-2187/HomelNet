@@ -1,8 +1,9 @@
-﻿using HomeNetCore.Interfaces;
-using HomeNetCore.Interfaces.Sinc;
-using HomeNetCore.Models.Entity;
+﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Models.Shared.Entity;
+using HomeNet.Synchronization.Interfaces.Sinc; // 🔥 Подключаем укрощённых братьев-синхронизаторов
+using HomeNetCore.Interfaces;
+using HomeNetOrm.Interfaces.Repositories;
 
 namespace HomeNet.Network
 {
@@ -13,13 +14,17 @@ namespace HomeNet.Network
         public MessageNetworkHandler(IApiClient apiClient, IEventBus eventBus, ILogger logger)
             : base(apiClient, eventBus, logger) { }
 
+        // Приватная реализация защищённого факта репозитория, чтобы Авалония и синхронизатор подхватили СМС
+        private record MessageSavedFact(MessageEntity Message) : IMessageRepo.ISaved;
+
         protected override void SubscribeToEvents()
         {
-            EventBus.Subscribe<ISyncCoordinator.MessagePendingSync>(OnMessagePendingSync);
-            EventBus.Subscribe<ISyncCoordinator.MessagePullRequested>(OnMessagePullRequested);
+            // 🔥 Слушаем новые лаконичные рекорды-братья синхронизации
+            EventBus.Subscribe<IMessageSyncActions.Pending>(OnMessagePendingSync);
+            EventBus.Subscribe<IMessageSyncActions.PullRequested>(OnMessagePullRequested);
         }
 
-        private void OnMessagePendingSync(ISyncCoordinator.MessagePendingSync @event)
+        private void OnMessagePendingSync(IMessageSyncActions.Pending @event)
         {
             FireAndForget(() => PushMessageInternalAsync(@event.Message), $"Push Message {@event.Message.Id}");
         }
@@ -30,12 +35,13 @@ namespace HomeNet.Network
             bool success = await ApiClient.PushMessageAsync(message);
             if (success)
             {
-                Logger.LogInfo($"[MessageNet] Сервер принял сообщение {message.Id}. Уведомляем синхронизатор.");
-                EventBus.Publish(this, new ISyncCoordinator.MessageSyncedOnServer(message.Id));
+                Logger.LogInfo($"[MessageNet] Сервер принял сообщение {message.Id}. Уведомляем синхронизатор через Confirmed.");
+                // 🔥 Публикуем укрощённое подтверждение для синхронизатора
+                EventBus.Publish(this, new IMessageSyncActions.Confirmed(message.Id));
             }
         }
 
-        private void OnMessagePullRequested(ISyncCoordinator.MessagePullRequested @event)
+        private void OnMessagePullRequested(IMessageSyncActions.PullRequested @event)
         {
             FireAndForget(PullMessagesInternalAsync, "Pull Messages From Server");
         }
@@ -60,17 +66,18 @@ namespace HomeNet.Network
         {
             if (message == null) return Task.CompletedTask;
 
-            Logger.LogInfo($"[MessageNet] Сервер прислал новое сообщение {message.Id}. Кидаем в синхронизатор.");
+            Logger.LogInfo($"[MessageNet] Сервер прислал новое сообщение {message.Id}. Кидаем в репозиторий через фабрику факта.");
             message.IsSynced = 1;
 
-            EventBus.Publish(this, new ISyncCoordinator.MessageInserted(message));
+            // 🔥 Выстреливаем защищённым фактом репозитория! Синхронизатор запишет его, а UI отрисует без локов
+            EventBus.Publish(this, new MessageSavedFact(message));
             return Task.CompletedTask;
         }
 
         public override void Dispose()
         {
-            EventBus.Unsubscribe<ISyncCoordinator.MessagePendingSync>(OnMessagePendingSync);
-            EventBus.Unsubscribe<ISyncCoordinator.MessagePullRequested>(OnMessagePullRequested);
+            EventBus.Unsubscribe<IMessageSyncActions.Pending>(OnMessagePendingSync);
+            EventBus.Unsubscribe<IMessageSyncActions.PullRequested>(OnMessagePullRequested);
         }
     }
 }

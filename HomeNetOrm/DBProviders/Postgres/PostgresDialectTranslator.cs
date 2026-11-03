@@ -85,7 +85,10 @@ namespace HomeNetOrm.DBProviders.Postgres
             OpType.Begin => "BEGIN",
             OpType.End => "END;",
             OpType.Comma => ",",
-            _ => throw new ArgumentOutOfRangeException(nameof(op))
+            OpType.Excluded => "EXCLUDED", // 🆕 Подставляется перед точкой в блоке SET
+            OpType.CurrentTimestamp => "CURRENT_TIMESTAMP", // 🆕 Встроенное время Postgres
+            _ => throw new ArgumentOutOfRangeException(nameof(op)) //
+           
         };
 
         // 🟦 4. Специфика триггеров

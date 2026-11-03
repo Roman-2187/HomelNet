@@ -1,9 +1,11 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNetCore.Enums;
 using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.ViewModels;
+using HomeNetCore.Interfaces.ViewModels.AdminZone;
+using HomeNetCore.Interfaces.ViewModels.MainZone;
 using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels
@@ -41,7 +43,7 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Subscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
         }
 
-        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Ловим пули от Навигатора) 🧼
+       
 
         private void OnAdminTabChanged(IAdminVm.AdminTabChanged msg)
         {
@@ -56,12 +58,12 @@ namespace HomeNetPresentation.ViewModels
                                 msg.ActiveTab == AdminSubTab.Logger || msg.ActiveTab== AdminSubTab.UserTable);
 
             // Лениво пуляем приказ нашему сервису трансформации окна
-            _eventBus.Publish(this, new IWidescreenService.ToggleWidescreen(shouldBeWide));
+            _eventBus.Publish(this, new ITitleBarVm.ToggleWidescreen(shouldBeWide));
 
             NotifyAllButtonsChanged();
         }
 
-        #endregion
+       
 
         private void NotifyAllButtonsChanged()
         {
@@ -72,7 +74,7 @@ namespace HomeNetPresentation.ViewModels
             OnPropertyChanged(nameof(InspectorButtonText));
         }
 
-        #region 🚀 МАРШРУТИЗАЦИЯ НАМЕРЕНИЙ (Публикация в автобус) 🧼
+       
 
 
 
@@ -105,7 +107,7 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"[Лог-Фильтр]: Установлен режим {targetFilter}"));
         }
 
-        #endregion
+        
 
         public override void Dispose()
         {

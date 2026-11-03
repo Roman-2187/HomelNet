@@ -1,8 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Enums;
-using HomeNetCore.Interfaces.ViewModels;
-using HomeNetCore.Models.Validation;
+using HomeNetCore.Interfaces.ViewModels.MainZone;
+using HomeNetCore.Validation;
 using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels
@@ -11,7 +11,7 @@ namespace HomeNetPresentation.ViewModels
     /// Стерильный generic-фундамент для всех интерактивных форм проекта SiberNet.
     /// Строго типизирует навигатор для каждого конкретного экрана.
     /// </summary>
-    public abstract partial class FormViewModelBase<TNavigation> : ObservableObject, IDisposable, IFormViewModel
+    public abstract partial class FormViewModelBase<TNavigation> : ObservableObject, IDisposable
         where TNavigation : BaseNavigationState
     {
         #pragma warning disable CS8618 

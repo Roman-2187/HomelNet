@@ -1,6 +1,6 @@
-﻿using HomeNetCore.Enums;
-using HomeNetCore.Models.Entity;
-using HomeNetCore.Models.Validation;
+﻿using HomeNet.Models.Shared.Entity;
+using HomeNetCore.Enums;
+using HomeNetCore.Validation;
 
 namespace HomeNetCore.Interfaces.Services
 {

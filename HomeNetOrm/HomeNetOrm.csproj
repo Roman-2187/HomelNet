@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.89" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.0-preview3.26238.4" />
     <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="10.0.12" />
     <PackageReference Include="Npgsql" Version="10.0.3" />
@@ -14,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\HomeNet.Infrastructure.Shared\HomeNet.Infrastructure.Shared.csproj" />
     <ProjectReference Include="..\HomeNetCore\HomeNetCore.csproj" />
   </ItemGroup>
 

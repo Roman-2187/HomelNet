@@ -4,7 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
               xmlns:vm="using:HomeNetPresentation.ViewModels"
               xmlns:behaviors="using:HomeNetAvalonia.Behaviors"
-             xmlns:models="using:HomeNetCore.Models.Entity"
+            xmlns:models="using:HomeNet.Models.Shared.Entity"
+
              mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="500"
              x:Class="HomeNetAvalonia.Controls.ChatViewControl"
              x:DataType="vm:ChatViewModel">

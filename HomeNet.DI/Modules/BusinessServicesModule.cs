@@ -1,8 +1,8 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Interfaces;
-using HomeNetCore.Interfaces.Repositories;
 using HomeNetCore.Interfaces.Services;
+using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Repositories.Local;
 using HomeNetServices.Identity;
 using HomeNetServices.Services.Identity;
@@ -12,7 +12,7 @@ namespace HomeNet.DI.Modules
     public class BusinessServicesModule
     {
       
-        public IUserRepository UserRepository { get; }
+        public IUserRepo UserRepository { get; }
         public IRegistrationService RegistrationService { get; }
         public IAuthenticateService AuthenticateService { get; }
         public IDeleteService DeleteService { get; }
@@ -20,14 +20,14 @@ namespace HomeNet.DI.Modules
         public IDeviceSettingsService DeviceSettingsService { get; } // Наш красавец на месте!
 
         public BusinessServicesModule(
-            IUserRepository userRepo,
-            IMessageRepository msgRepo,
+            IUserRepo userRepo,
+            IMessageRepo msgRepo,
             ClientDeviceSettingsRepository deviceSettingsRepo,
             ILogger logger,
             IEventBus eventBus)
         {
            UserRepository = userRepo;
-            RegistrationService = new RegistrationServiceEx(userRepo);
+            RegistrationService = new RegistrationService(userRepo);
             AuthenticateService = new AuthenticateService(userRepo);
             DeleteService = new DeleteService(userRepo, logger);
             MessageService = new MessageService(msgRepo, eventBus);

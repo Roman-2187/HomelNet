@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Models.Entity;
-using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.Enums;
+using HomeNetOrm.Generators.Base;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
@@ -13,7 +13,7 @@ using static HomeNetOrm.Enums.Sql;
 namespace HomeNetOrm.Generators.Remote
 {
     // 🔥 Наследуемся строго от CoreSqlGenerator! Никакого лишнего CRUD-мусора
-    internal class DeviceSyncSqlGenerator : CoreSqlGenerator<DeviceSyncEntity>, IRemoteDeviceSyncSqlGenerator
+    internal class DeviceSyncSqlGenerator :BaseSqlGenerator<DeviceSyncEntity>, IRemoteDeviceSyncSqlGenerator
     {
         public DeviceSyncSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ILogger logger)
             : base(schemas, translator, logger) { }

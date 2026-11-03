@@ -1,26 +1,32 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Enums;
-using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Services;
-using HomeNetCore.Models.Entity;
-using HomeNetCore.Models.Validation;
+using HomeNetCore.Validation;
+using HomeNetOrm.Interfaces.Repositories;
+using HomeNetOrm.Repositories.Extensions; // 🔥 ПОДКЛЮЧАЕМ НАШИ ГЛОБАЛЬНЫЙ CRUD ОБВЕС
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace HomeNetServices.Services.Identity
 {
     public class DeleteService : IDeleteService
     {
-        private readonly IUserRepository _userRepository;
+        private readonly IUserRepo _userRepository;
         private readonly ILogger _logger;
 
-        public DeleteService(IUserRepository userRepo,ILogger logger )
+        public DeleteService(IUserRepo userRepo, ILogger logger)
         {
-           _userRepository = userRepo;
+            _userRepository = userRepo;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<IEnumerable<UserEntity>> GetAllUsersAsync()
         {
-            return await _userRepository.GetAllAsync() ?? Enumerable.Empty<UserEntity>();
+            // 🔥 ИСПРАВЛЕНО: Явно указали тип сущности <UserEntity>
+            return await _userRepository.GetAllAsync<UserEntity>() ?? Enumerable.Empty<UserEntity>();
         }
 
         /// <summary>
@@ -33,12 +39,11 @@ namespace HomeNetServices.Services.Identity
             if (validationResults.Any(r => r.State == ValidationState.Error))
                 return new IDeleteService.SearchVerdict(false, validationResults, null);
 
-            // 🎯 ТЕПЕРЬ ТУТ ЧЕСТНЫЙ Guid вместо int.Parse
             Guid id = Guid.Parse(targetUserId);
             try
             {
-                // Передаем Guid в обновленный метод сервиса
-                var user = await _userRepository.GetByIdAsync(id);
+                // 🔥 ИСПРАВЛЕНО: Добавлен дженерик-параметр <UserEntity> для точечного поиска по ID
+                var user = await _userRepository.GetByIdAsync<UserEntity>(id);
                 var res = validationResults.First();
 
                 if (user != null)
@@ -57,48 +62,43 @@ namespace HomeNetServices.Services.Identity
             }
         }
 
-
         /// <summary>
         /// 🎯 Конвейер удаления пользователя
         /// </summary>
-
         public async Task<IDeleteService.DeleteVerdict> DeleteUserAsync(string targetUserId, UserEntity? selectedUser)
         {
-            // 🎯 Чистый, современный рефакторинг под Guid
             Guid id = selectedUser?.Id ?? (Guid.TryParse(targetUserId, out Guid parsedId) ? parsedId : Guid.Empty);
 
             var validationResults = new List<ValidationResult>();
             var idRes = new ValidationResult { Field = TypeField.IdType, State = ValidationState.Success };
             validationResults.Add(idRes);
 
-            // 🛠 ФИКС: Проверяем Guid на пустоту вместо математического сравнения <= 0
             if (id == Guid.Empty)
             {
                 idRes.Update(ValidationState.Error, "Ошибка: Некорректный ID пользователя!");
-                return new IDeleteService.DeleteVerdict(false, validationResults, id, null); // Передаем id вместо null, так как тип возвращаемого значения, скорее всего, изменился на Guid?
+                return new IDeleteService.DeleteVerdict(false, validationResults, id, null);
             }
 
             try
             {
-                // 🔥 СПИХНУЛИ СЮДА: Вычисляем имя и формат ДО удаления из базы, пока объект выбран
                 string userInfo = selectedUser != null
                     ? $"{selectedUser.FirstName} {selectedUser.LastName} (ID {id})"
                     : $"ID {id} (Точечно)";
 
-                await _userRepository.DeleteByIdAsync(id);
+                // 🔥 ИСПРАВЛЕНО: Вызываем глобальный CRUD-метод удаления с указанием <UserEntity>
+                await _userRepository.DeleteByIdAsync<UserEntity>(id);
 
-                var allUsers = await _userRepository.GetAllAsync() ?? Enumerable.Empty<UserEntity>();
+                // 🔥 ИСПРАВЛЕНО: Вызываем GetAllAsync с указанием <UserEntity>
+                var allUsers = await _userRepository.GetAllAsync<UserEntity>() ?? Enumerable.Empty<UserEntity>();
                 _logger.LogDebug($"В системе {allUsers.Count()} пользователей");
 
                 idRes.Update(ValidationState.Success, $"Пользователь с ID {id} успешно удален.");
 
-                // 🔥 СПИХНУЛИ СЮДА: Сервис сам штампует время и красивый UI-текст лога
                 string readyHistoryLine = $"[{DateTime.Now:HH:mm:ss}] ❌ Удален: {userInfo}";
 
-                // Собираем вердикт и отдаем его наверх
                 var verdict = new IDeleteService.DeleteVerdict(true, validationResults, id, allUsers)
                 {
-                    HistoryMessage = readyHistoryLine // Завертываем строку в посылку
+                    HistoryMessage = readyHistoryLine
                 };
 
                 return verdict;
@@ -110,7 +110,6 @@ namespace HomeNetServices.Services.Identity
             }
         }
 
-
         private List<ValidationResult> ValidateIdInput(string targetUserId)
         {
             var res = new ValidationResult { Field = TypeField.IdType };
@@ -118,12 +117,11 @@ namespace HomeNetServices.Services.Identity
             if (string.IsNullOrWhiteSpace(targetUserId))
                 return new List<ValidationResult> { res.Update(ValidationState.Error, "Ошибка: ID не может быть пустым!") };
 
-            if (!int.TryParse(targetUserId, out _))
-                return new List<ValidationResult> { res.Update(ValidationState.Error, "Ошибка: ID должен состоять только из цифр!") };
+            // 🔥 ИСПРАВЛЕНО С int НА Guid: Теперь валидация проверяет валидный шестнадцатеричный Guid, а не цифры!
+            if (!Guid.TryParse(targetUserId, out _))
+                return new List<ValidationResult> { res.Update(ValidationState.Error, "Ошибка: ID должен быть валидным Guid (формат: 00000000-0000-0000-0000-000000000000)!") };
 
             return new List<ValidationResult> { res.Update(ValidationState.Success, "ID корректен для поиска") };
         }
     }
-
-  
 }

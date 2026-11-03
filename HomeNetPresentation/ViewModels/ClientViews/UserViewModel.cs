@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Enums.Navigation;
-using HomeNetCore.Interfaces.ViewModels;
+using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels

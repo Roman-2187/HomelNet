@@ -1,6 +1,6 @@
 ﻿using System.Data.Common;
 using Dapper;
-using HomeNetCore.Models.Entity;
+using HomeNet.Models.Shared.Entity;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
 

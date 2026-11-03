@@ -1,14 +1,13 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNetCore.Interfaces;
-using HomeNetCore.Interfaces.Repositories;
 using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.DBProviders.Postgres;
+using HomeNetOrm.Generators.Base;
 using HomeNetOrm.Generators.Local;
 using HomeNetOrm.Generators.Remote;
-using HomeNetOrm.Generators.Sinc;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetOrm.Interfaces.DbInfrastructure;
+using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Models;
 using HomeNetOrm.Repositories.Base;
 using HomeNetOrm.Repositories.Local;
@@ -27,7 +26,7 @@ namespace HomeNetOrm.Infrastructure
 
     public class SiberNetDbEngine : IDbEngine, IDisposable
     {
-        private readonly string _connectionString; // 🔥 Храним строку подключения вместо долгоживущего объекта коннекшена
+        private readonly string _connectionString; 
         private readonly ILogger _logger;
         private readonly IEnumerable<TableSchema> _schemas;
         private readonly ISqlDialectTranslator _translator;
@@ -50,7 +49,6 @@ namespace HomeNetOrm.Infrastructure
             return conn;
         };
 
-        // Оставляем для обратной совместимости с интерфейсом IDbEngine, выдавая свежий коннекшен
         public DbConnection Connection => ConnectionFactory();
 
         public SiberNetDbEngine(DbEngineType engineType, string connectionString, IEnumerable<TableSchema> schemas, ILogger logger)
@@ -60,7 +58,6 @@ namespace HomeNetOrm.Infrastructure
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _schemas = schemas ?? throw new ArgumentNullException(nameof(schemas));
 
-            // 🧙‍♂️ Настройка стратегии трансляции ОДИН РАЗ в конструкторе. Никаких рантайм if-else в фабриках!
             switch (engineType)
             {
                 case DbEngineType.LocalClient:
@@ -82,16 +79,17 @@ namespace HomeNetOrm.Infrastructure
 
         // --- 🏗️ Универсальные фабрики репозиториев штампуют методы на базе ConnectionFactory ---
 
-        public IUserRepository CreateUserRepository(IEventBus eventBus)
+        public IUserRepo CreateUserRepository(IEventBus eventBus)
         {
-            var generator = new SyncedUserSqlGenerator(_schemas, _translator, _logger);
-            // Прокидываем лямбду ConnectionFactory вместо старого одиночного _connection
+            // 🔥 Вычищено: Используем новый плоский генератор пользователей взамен Synced-мусора!
+            var generator = new UserSqlGenerator(_schemas, _translator, _logger);
             return new UserRepository(ConnectionFactory, generator, _logger, eventBus);
         }
 
-        public IMessageRepository CreateMessageRepository(IEventBus eventBus)
+        public IMessageRepo CreateMessageRepository(IEventBus eventBus)
         {
-            var generator = new SyncedMessageSqlGenerator(_schemas, _translator, _logger);
+            // 🔥 Вычищено: Используем новый плоский генератор сообщений взамен Synced-мусора!
+            var generator = new MessageSqlGenerator(_schemas, _translator, _logger);
             return new MessageRepository(ConnectionFactory, generator, _logger, eventBus);
         }
 
@@ -104,13 +102,13 @@ namespace HomeNetOrm.Infrastructure
         public IDeviceSyncRepository CreateDeviceSyncRepository()
         {
             var generator = new DeviceSyncSqlGenerator(_schemas, _translator, _logger);
-            return new DeviceSyncRepository(ConnectionFactory, generator);
+            // 🔥 Исправлено: Добавлен логгер в конструктор репозитория чекпоинтов девайса
+            return new DeviceSyncRepository(ConnectionFactory, generator, _logger);
         }
 
         // --- ⚙️ Универсальный запуск инициализации таблиц и схем ---
         public async Task InitializeChannelAsync()
         {
-            // Для первоначальной миграции и сверки таблиц поднимаем один временный коннекшен
             using (var baseConnection = ConnectionFactory())
             {
                 if (baseConnection.State != System.Data.ConnectionState.Open)
@@ -119,14 +117,10 @@ namespace HomeNetOrm.Infrastructure
                 }
 
                 var schemaProvider = new GenericSchemaProvider(_schemaGenerator, baseConnection, _spec, _logger);
-
-                // Создаем инициализатор таблиц ("табле криатер")
                 var tableInitializer = new SchemaRepository(baseConnection, schemaProvider, _schemaGenerator, _schemas, _logger);
 
-                // 1. Запуск базового наката таблиц и сверки колонок (SQLite / Postgres)
                 await tableInitializer.InitializeAsync();
 
-                // 2. 🔥 КРАСОТА: Вызываем наше новое расширение прямо через точку от инстанса tableInitializer!
                 if (_engineType == DbEngineType.RemoteServer)
                 {
                     await tableInitializer.MigratePostgresVersionTriggersAsync(
@@ -137,13 +131,11 @@ namespace HomeNetOrm.Infrastructure
                         _logger
                     );
                 }
-            } // Инициализационный коннекшен гарантированно закрывается и уничтожается здесь
+            } 
         }
 
         public void Dispose()
         {
-            // Больше не нужно принудительно диспозить глобальный коннекшен,
-            // так как репозитории будут сами управлять своими соединениями через using блоки
         }
     }
 }

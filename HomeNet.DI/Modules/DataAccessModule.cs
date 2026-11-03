@@ -1,19 +1,15 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Network;
+using HomeNet.Synchronization.Interfaces.Sinc;
+using HomeNet.Synchronization.Sinc;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Repositories;
-using HomeNetCore.Interfaces.Sinc;
 using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Interfaces.Builders;
+using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Models;
 using HomeNetOrm.Repositories.Local;
-using HomeNetOrm.Sinc;
-using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Threading.Tasks;
 
 namespace HomeNet.DI.Modules
 {
@@ -26,8 +22,8 @@ namespace HomeNet.DI.Modules
         public IDbContextContainer DbContextContainer { get; }
 
         // Чистые интерфейсы репозиториев наружу для Avalonia
-        public IUserRepository UserRepository { get; }
-        public IMessageRepository MessageRepository { get; }
+        public IUserRepo UserRepository { get; }
+        public IMessageRepo MessageRepository { get; }
 
         // Конкретный репозиторий настроек девайса без лишних интерфейсов-пустышек
         public ClientDeviceSettingsRepository DeviceSettingsRepository { get; }
@@ -36,7 +32,7 @@ namespace HomeNet.DI.Modules
         public Guid CurrentDeviceId { get; private set; }
 
         // Наш главный синхро-движок ОРМ
-        public SincEngine OrmEngine { get; }
+        public SyncEngine OrmEngine { get; }
 
         // Сетевой слушатель SignalR
         public SignalRNotificationListener NotificationListener { get; }
@@ -86,7 +82,7 @@ namespace HomeNet.DI.Modules
             var syncCoordinator = new CompositeSyncCoordinator(userSync, messageSync);
 
             // 6. Упаковываем репозитории в главный управляющий SincEngine
-            OrmEngine = new SincEngine(UserRepository, MessageRepository, syncCoordinator, logger);
+            OrmEngine = new SyncEngine(UserRepository, MessageRepository, syncCoordinator, logger);
 
             // 7. Сборка сетевых хандлеров
             var messageNetworkHandler = new MessageNetworkHandler(ApiClient, eventBus, logger);

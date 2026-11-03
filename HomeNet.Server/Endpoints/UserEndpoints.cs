@@ -1,13 +1,13 @@
-﻿using HomeNetCore.Interfaces;
-using HomeNetCore.Models.Entity;
+﻿using HomeNet.Models.Shared.Entity; // Подключаем твою правильную модель со Shared
+using HomeNetOrm.Interfaces.Repositories;
+using HomeNetOrm.Repositories.Extensions; // 🔥 ПОДКЛЮЧАЕМ НАШИ РАСШИРЕНИЯ (CRUD + SYNC)
 using Microsoft.AspNetCore.SignalR;
-using HomeNetOrm.Repositories.Remote;
 
 namespace HomeNet.Server.Endpoints
 {
     public static class UserEndpoints
     {
-        public static void MapUserEndpoints(this IEndpointRouteBuilder endpoints, IUserRepository userRepository, HomeNet.Infrastructure.Shared.Interfaces.Diagnostics.ILogger serverLogger)
+        public static void MapUserEndpoints(this IEndpointRouteBuilder endpoints, IUserRepo userRepository, HomeNet.Infrastructure.Shared.Interfaces.Diagnostics.ILogger serverLogger)
         {
             // === [📥 PULL ОБНОВЛЕНИЯ ПРОФИЛЕЙ] ===
             endpoints.MapGet("/api/users/sync", async (Guid deviceId, string lastSyncedAt) =>
@@ -19,7 +19,8 @@ namespace HomeNet.Server.Endpoints
 
                     serverLogger.LogInfo($"[API PULL] Запрос обновлений профилей через методы репозиториев...");
 
-                    var freshUsers = await userRepository.GetUpdatesSinceAsync(clientCheckpoint);
+                    // 🔥 ИСПРАВЛЕНО: Вызываем наш новый симметричный экстеншен репликации
+                    var freshUsers = await userRepository.GetUsersForSyncAsync(clientCheckpoint);
                     return Results.Ok(freshUsers.ToList());
                 }
                 catch (Exception ex)
@@ -36,25 +37,26 @@ namespace HomeNet.Server.Endpoints
                 {
                     serverLogger.LogInfo($"[API PUSH] Прилетел профиль пользователя '{incomingUser.Email}' (ID: {incomingUser.Id})");
 
-                    var existingServerUser = await userRepository.GetByIdAsync(incomingUser.Id);
+                    // 🔥 ИСПРАВЛЕНО: Вызываем GetByIdAsync через глобальный дженерик-обвес
+                    var existingServerUser = await userRepository.GetByIdAsync<UserEntity>(incomingUser.Id);
 
                     if (existingServerUser == null)
                     {
                         await userRepository.InsertUserAsync(incomingUser);
-                        serverLogger.LogInfo($"[API Успех] Новый пользователь '{incomingUser.FirstName}' успешно создан в PostgreSQL.");
+                        serverLogger.LogInfo($"[API Успех] Новый... записан.");
                     }
                     else
                     {
-                        serverLogger.LogInfo($"[API Чек] Пользователь '{incomingUser.Email}' найден. Обновляем поля сессии и привязываем Device ID...");
+                        serverLogger.LogInfo($"[API Чек] Пользователь... найден. Обновляем сессию...");
 
                         existingServerUser.DeviceId = incomingUser.DeviceId;
                         existingServerUser.FirstName = incomingUser.FirstName;
                         existingServerUser.LastName = incomingUser.LastName;
                         existingServerUser.PhoneNumber = incomingUser.PhoneNumber;
-                        existingServerUser.UpdatedAt = DateTimeOffset.UtcNow;
 
-                        await userRepository.UpdateAsync(existingServerUser);
-                        serverLogger.LogInfo($"[API Успех] Профиль '{incomingUser.Email}' успешно обновлен в PostgreSQL. Device ID зафиксирован: {incomingUser.DeviceId}");
+                        // 🔥 ИСПРАВЛЕНО: Вызываем UpdateAsync через глобальный дженерик-обвес
+                        await userRepository.UpdateAsync<UserEntity>(existingServerUser);
+                        serverLogger.LogInfo($"[API Успех] Профиль... успешно обновлен.");
                     }
 
                     return Results.Ok(new { Success = true });
@@ -72,8 +74,10 @@ namespace HomeNet.Server.Endpoints
                 try
                 {
                     serverLogger.LogInfo($"[API] Запрос на удаление пользователя (ID: {id})");
-                    await userRepository.DeleteByIdAsync(id);
-                    serverLogger.LogInfo($"[API Успех] Пользователь (ID: {id}) успешно удален из PostgreSQL.");
+
+                    // 🔥 ИСПРАВЛЕНО: Вызываем DeleteByIdAsync через глобальный дженерик-обвес
+                    await userRepository.DeleteByIdAsync<UserEntity>(id);
+                    serverLogger.LogInfo($"[API Успех] Пользователь успешно удален.");
 
                     await hubContext.Clients.All.SendAsync("ReceiveUserDeleted", id);
                     return Results.Ok(new { Success = true });

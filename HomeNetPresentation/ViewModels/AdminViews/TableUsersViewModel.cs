@@ -1,35 +1,39 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using HomeNetCore.Interfaces;
-using HomeNetCore.Interfaces.ViewModels;
-using HomeNetCore.Interfaces.Sinc;
-using HomeNetCore.Models.Entity;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNet.Models.Shared.Entity;
+using HomeNetCore.Interfaces.ViewModels.AdminZone;
+using HomeNetCore.Interfaces.ViewModels.MainZone;
 using HomeNetOrm.Interfaces.Builders;
+using HomeNetOrm.Interfaces.Repositories;
+using HomeNetOrm.Repositories.Extensions;
 using HomeNetPresentation.Services;
 using System.Collections.ObjectModel;
-using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 
 namespace HomeNetPresentation.ViewModels.AdminViews
 {
+    /// <summary>
+    /// Административная таблица пользователей SiberNet.
+    /// Благодаря сквозному конвейеру бутстраппера вычищена от локов и потоковых костылей! 🧼
+    /// </summary>
     public partial class TableUsersViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
     {
-        private readonly IUserRepository _userRepo;
-        private readonly object _collectionLock = new();
+        private readonly IUserRepo _userRepo;
 
         [ObservableProperty] private ObservableCollection<UserEntity> _users = [];
 
-        public TableUsersViewModel(IEventBus eventBus,IUserRepository userRepo, AdminNavigationManager navigation)
+        public TableUsersViewModel(IEventBus eventBus, IUserRepo userRepo, AdminNavigationManager navigation)
             : base(eventBus, navigation)
         {
-           _userRepo = userRepo;
+            _userRepo = userRepo;
             InitializeBusSubscriptions();
         }
 
         private void InitializeBusSubscriptions()
         {
-            // 🔥 ПЕРЕВОД НА ЦЕНТРАЛЬНЫЕ СОБЫТИЯ СЛОЯ ДАННЫХ (IDeleteUserVm / IUsersTableVm уходят в прошлое)
-            _eventBus.Subscribe<ISyncCoordinator.UserDeleted>(OnUserDeletedFromDb);
-            _eventBus.Subscribe<ISyncCoordinator.UserInserted>(OnUserAdded);
-            _eventBus.Subscribe<ISyncCoordinator.UserUpdated>(OnUserUpdated);
+            // 🔥 ВСЕ ЭТИ СОБЫТИЯ КОНВЕЙЕР БУТСТРАППЕРА ГАРАНТИРОВАННО ВЫРАВНЯЛ В UI-ПОТОК!
+            _eventBus.Subscribe<IUserRepo.IDeleted>(OnUserDeletedFromDb);
+            _eventBus.Subscribe<IUserRepo.IInserted>(OnUserAdded);
+            _eventBus.Subscribe<IUserRepo.IUpdated>(OnUserUpdated);
 
             _eventBus.Subscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
             _eventBus.Subscribe<IDbContextContainer.InfrastructureReady>(OnInfrastructureReady);
@@ -44,12 +48,10 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         {
             try
             {
-                var list = await _userRepo.GetAllAsync();
+                var list = await _userRepo.GetAllAsync<UserEntity>();
 
-                lock (_collectionLock)
-                {
-                    Users = new ObservableCollection<UserEntity>(list ?? Enumerable.Empty<UserEntity>());
-                }
+                // 🧼 Чистота: Запрос шел через await, возврат контекста гарантирован .NET
+                Users = new ObservableCollection<UserEntity>(list ?? Enumerable.Empty<UserEntity>());
 
                 BroadcastRefreshed();
             }
@@ -59,54 +61,43 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             }
         }
 
-        #region 🎧 СИНХРОННЫЕ МЕТОДЫ ПОДПИСОК НА ЕДИНЫЙ ИСТОЧНИК ПРАВДЫ 🧼
+       
 
-        // Перешли на ISyncCoordinator.UserUpdated
-        private void OnUserUpdated(ISyncCoordinator.UserUpdated msg)
+        private void OnUserUpdated(IUserRepo.IUpdated msg)
         {
             if (msg?.User == null) return;
 
-            lock (_collectionLock)
+            // Никаких локов — мы на скоростной трассе UI
+            var existingUser = Users.FirstOrDefault(u => u.Id == msg.User.Id);
+            if (existingUser != null)
             {
-                var existingUser = Users.FirstOrDefault(u => u.Id == msg.User.Id);
-                if (existingUser != null)
+                int index = Users.IndexOf(existingUser);
+                if (index >= 0)
                 {
-                    int index = Users.IndexOf(existingUser);
-                    if (index >= 0)
-                    {
-                        Users[index] = msg.User;
-                        BroadcastRefreshed();
-                    }
-                }
-            }
-        }
-
-        // Перешли на ISyncCoordinator.UserDeleted
-        private void OnUserDeletedFromDb(ISyncCoordinator.UserDeleted msg)
-        {
-            lock (_collectionLock)
-            {
-                var uiUser = Users.FirstOrDefault(u => u.Id == msg.UserId);
-                if (uiUser != null)
-                {
-                    Users.Remove(uiUser);
+                    Users[index] = msg.User;
                     BroadcastRefreshed();
                 }
             }
         }
 
-        // Перешли на ISyncCoordinator.UserInserted
-        private void OnUserAdded(ISyncCoordinator.UserInserted msg)
+        private void OnUserDeletedFromDb(IUserRepo.IDeleted msg)
+        {
+            var uiUser = Users.FirstOrDefault(u => u.Id == msg.UserId);
+            if (uiUser != null)
+            {
+                Users.Remove(uiUser);
+                BroadcastRefreshed();
+            }
+        }
+
+        private void OnUserAdded(IUserRepo.IInserted msg)
         {
             if (msg.User == null) return;
 
-            lock (_collectionLock)
+            if (!Users.Any(u => u.Id == msg.User.Id))
             {
-                if (!Users.Any(u => u.Id == msg.User.Id))
-                {
-                    Users.Add(msg.User);
-                    BroadcastRefreshed();
-                }
+                Users.Add(msg.User);
+                BroadcastRefreshed();
             }
         }
 
@@ -115,22 +106,19 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             await InitializeDataAsync();
         }
 
-        #endregion
+      
 
         private void BroadcastRefreshed()
         {
-            lock (_collectionLock)
-            {
-                _eventBus.Publish(this, new IUsersTableVm.Refreshed([.. Users]));
-            }
+            _eventBus.Publish(this, new IUsersTableVm.Refreshed([.. Users]));
         }
 
         public override void Dispose()
         {
             base.Dispose();
-            _eventBus.Unsubscribe<ISyncCoordinator.UserDeleted>(OnUserDeletedFromDb);
-            _eventBus.Unsubscribe<ISyncCoordinator.UserInserted>(OnUserAdded);
-            _eventBus.Unsubscribe<ISyncCoordinator.UserUpdated>(OnUserUpdated);
+            _eventBus.Unsubscribe<IUserRepo.IDeleted>(OnUserDeletedFromDb);
+            _eventBus.Unsubscribe<IUserRepo.IInserted>(OnUserAdded);
+            _eventBus.Unsubscribe<IUserRepo.IUpdated>(OnUserUpdated);
             _eventBus.Unsubscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
         }
     }

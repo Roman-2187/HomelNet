@@ -1,38 +1,18 @@
-﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetOrm.Interfaces.DbInfrastructure;
-using HomeNetOrm.Interfaces.Generators;
-using System.Data;
+﻿using System.Data;
 using System.Data.Common;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNetOrm.Interfaces.Generators;
+using HomeNetOrm.Interfaces.Repositories;
 
 namespace HomeNetOrm.Repositories.Base
 {
-    /// <summary>
-    /// Декларативное ядро всех репозиториев ОРМ. 
-    /// Берет на себя управление многопоточными фабриками соединений и контекстом синхронизации! 🦾
-    /// </summary>
-    public abstract class BaseRepository<TEntity> : ISyncSupport<TEntity> where TEntity : class
-
+    public abstract class BaseRepository<TEntity> : IRepository where TEntity : class
     {
         protected readonly Func<DbConnection> ConnectionFactory;
-        internal readonly ISqlGenerator<TEntity> SqlGenerator;
-        protected readonly ILogger Logger;
 
-        // Реализуем интерфейс синхронизации на автомате
-        ILogger ISyncSupport<TEntity>.Logger => Logger;
-        ISqlGenerator<TEntity> ISyncSupport<TEntity>.SqlGenerator => SqlGenerator;
-
-        // 💥 Магия полиморфизма: Для движка синхронизации мы на лету выдаем 
-        // свежее, открытое изолированное соединение при обращении к свойству!
-        DbConnection ISyncSupport<TEntity>.Connection
-        {
-            get
-            {
-                var conn = ConnectionFactory();
-                if (conn.State != ConnectionState.Open) conn.Open();
-                return conn;
-            }
-        }
+        // Торчит наружу internal-ом: экстеншены репозитория его увидят, а бизнес-логика — нет!
+        internal ISqlGenerator<TEntity> SqlGenerator { get; }
+        public ILogger Logger { get; }
 
         internal BaseRepository(Func<DbConnection> connectionFactory, ISqlGenerator<TEntity> sqlGenerator, ILogger logger)
         {
@@ -41,29 +21,19 @@ namespace HomeNetOrm.Repositories.Base
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        /// <summary>
-        /// Универсальный хэндлер выполнения асинхронных запросов в изолированном контексте.
-        /// Инкапсулирует в себе using, открытие стейта и безопасныйDispose.
-        /// </summary>
-        protected async Task<TResult> ExecuteAsync<TResult>(Func<DbConnection, Task<TResult>> query)
+        // 🔥 УПРАВЛЕНИЕ ПУЛОМ СОЕДИНЕНИЙ: Чисто, асинхронно, без утечек
+        public async Task<TResult> ExecuteAsync<TResult>(Func<DbConnection, Task<TResult>> query)
         {
-            using (var db = ConnectionFactory())
-            {
-                if (db.State != ConnectionState.Open) await db.OpenAsync();
-                return await query(db);
-            }
+            using var db = ConnectionFactory();
+            if (db.State != ConnectionState.Open) await db.OpenAsync();
+            return await query(db);
         }
 
-        /// <summary>
-        /// Универсальный хэндлер выполнения команд (INSERT/UPDATE/DELETE) без возвращаемого значения.
-        /// </summary>
-        protected async Task ExecuteAsync(Func<DbConnection, Task> command)
+        public async Task ExecuteAsync(Func<DbConnection, Task> command)
         {
-            using (var db = ConnectionFactory())
-            {
-                if (db.State != ConnectionState.Open) await db.OpenAsync();
-                await command(db);
-            }
+            using var db = ConnectionFactory();
+            if (db.State != ConnectionState.Open) await db.OpenAsync();
+            await command(db);
         }
     }
 }

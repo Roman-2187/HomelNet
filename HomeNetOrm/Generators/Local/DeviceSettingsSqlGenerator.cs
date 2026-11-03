@@ -1,7 +1,6 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Models.Entity;
-using HomeNetOrm.DBProviders.Base;
+using HomeNet.Models.Shared.Entity;
+using HomeNetOrm.Generators.Base;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
@@ -10,7 +9,7 @@ using static HomeNetOrm.Enums.Sql;
 namespace HomeNetOrm.Generators.Local
 {
     // 🔥 Тоже строго от CoreSqlGenerator. Чистая спецификация под одну задачу автологина
-    internal class DeviceSettingsSqlGenerator : CoreSqlGenerator<DeviceSettingsEntity>, ILocalDeviceSettingsSqlGenerator
+    internal class DeviceSettingsSqlGenerator : BaseSqlGenerator<DeviceSettingsEntity>,  ILocalDeviceSettingsSqlGenerator
     {
         public DeviceSettingsSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ILogger logger)
             : base(schemas, translator, logger) { }

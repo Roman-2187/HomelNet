@@ -79,9 +79,10 @@ namespace HomeNetOrm.DBProviders.Sqlite
             OpType.IsNull => "IS NULL",
             OpType.Begin => "BEGIN",
             OpType.End => "END;",
-            // 🔥 Наша новая космическая запятая, которая убирает хардкод строк из UPSERT-ов!
             OpType.Comma => ",",
-            _ => throw new ArgumentOutOfRangeException(nameof(op))
+            OpType.Excluded => "EXCLUDED", // 🆕 SQLite поймет конструкцию EXCLUDED.field один в один!
+            OpType.CurrentTimestamp => "CURRENT_TIMESTAMP", // 🆕 Встроенное время SQLite (вернет текущую дату-время)
+            _ => throw new ArgumentOutOfRangeException(nameof(op)) //
         };
 
         // 🟦 4. Специфика триггеров под диалект SQLite

@@ -1,17 +1,25 @@
-﻿using System;
-using System.Threading.Tasks;
-using Dapper;
+﻿using Dapper;
 using HomeNet.DI;
+using HomeNet.Network;
 using HomeNetAvalonia.Animators;
 using HomeNetCore.Enums;
+using HomeNetCore.Interfaces.Network;
+using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetOrm.Helpers;
-using HomeNetCore.Interfaces.ViewModels;
+using HomeNetOrm.Interfaces.Builders;
+using System;
+using System.Threading.Tasks;
 
 namespace HomeNetAvalonia.Infrastructure
 {
+    /// <summary>
+    /// Бортовой конфигуратор и регулировщик жизненного цикла SiberNet.
+    /// Отвечает за чистый запуск систем, оркестрацию СУБД и активацию сокетов. 🧼
+    /// </summary>
     public static class AvaloniaUiBootstrapper
     {
         private static bool _isInitialized = false;
+        private static bool _isSyncStarted = false; // Защита от двойного старта репликации
 
         public static AppCompositionRoot BuildAvaloniaContainer(BackendMode mode, string apiBaseUrl, string sqliteConn)
         {
@@ -20,73 +28,118 @@ namespace HomeNetAvalonia.Infrastructure
                 return AppCompositionRoot.Instance;
             }
 
+            // 1. Базовые мапперы типов Dapper
             SqlMapper.AddTypeHandler(new DateTimeOffsetHandler());
             SqlMapper.AddTypeHandler(new GuidTypeHandler());
 
+            // 2. Строим чистый каркас контейнера Pure DI
             AppCompositionRoot.Initialize(mode, apiBaseUrl, sqliteConn);
             _isInitialized = true;
 
             AppCompositionRoot root = AppCompositionRoot.Instance;
 
             // ============================================================================
-            // 🚌 ЛОВИМ РОДНЫЕ АВТОБУСЫ ВЬЮМОДЕЛЕЙ
-            // Подписываемся на события, которые вьюмодели ПРЕКРАСНО знают и сами пускают в шину!
+            // 🚌 ОРКЕСТРАЦИЯ ЖИЗНЕННОГО ЦИКЛА СИСТЕМЫ (ПОДПИСКИ)
             // ============================================================================
+
+            // Системные подписки на готовность слоев, переехавшие из Root
+            root.EventBus.SubscribeAsync<ServerBecameReadyEvent>(OnServerBecameReady);
+            root.EventBus.SubscribeAsync<IDbContextContainer.InfrastructureReady>(OnInfrastructureReady);
+
+            // Родные автобусы авторизации вьюмоделей сессий
             root.EventBus.SubscribeAsync<IUserVm.UserSignedIn>(OnUserSessionActivated);
             root.EventBus.SubscribeAsync<IUserVm.UserSignedUp>(OnUserSessionActivated);
 
             if (mode == BackendMode.Real || mode == BackendMode.Local)
             {
-                var animator = new CloseWindowAnimator(root.EventBus);
-                var widescreenAnimator = new WidescreenWindowAnimator(root.EventBus);
+                _ = new CloseWindowAnimator(root.EventBus);
+                _ = new MinimizeWindowAnimator(root.EventBus); // 🔥 ДОБАВИЛИ СВЕРТЫВАНИЕ
+                _ = new WidescreenWindowAnimator(root.EventBus); // 
             }
 
+            // ============================================================================
+            // 💥 СТАРТ АСИНХРОННОЙ ИНИЦИАЛИЗАЦИИ БАЗ ДАННЫХ
+            // ============================================================================
+            Task.Run(async () =>
+            {
+                await root.DataAccess.DbContextContainer.InitializeAllDatabasesAsync();
+            });
+
             return root;
+        }
+
+        private static async Task OnInfrastructureReady(IDbContextContainer.InfrastructureReady ev)
+        {
+            AppCompositionRoot root = AppCompositionRoot.Instance;
+            root.Logger.LogInfo("[Bootstrapper Старт] Локальные СУБД проверены. Поднимаем сокет...");
+
+            try
+            {
+                await root.SignalRListener.ConnectAsync();
+
+                // Автономный защитный таймер на 8 секунд ожидания рукопожатия бэка
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(8));
+
+                    if (!_isSyncStarted)
+                    {
+                        root.Logger.LogWarning("[SiberNet Engine] ⏳ Превышено время ожидания сервера (8 сек). Переход в Offline Mode.");
+                        root.EventBus.Publish(root, new NetworkStatusChanged(false));
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                root.Logger.LogError($"[Bootstrapper Старт] Ошибка сокета: {ex.Message}");
+                root.EventBus.Publish(root, new NetworkStatusChanged(false));
+            }
+        }
+
+        private static async Task OnServerBecameReady(ServerBecameReadyEvent ev)
+        {
+            if (_isSyncStarted) return;
+            _isSyncStarted = true;
+
+            AppCompositionRoot root = AppCompositionRoot.Instance;
+            root.Logger.LogInfo("[SiberNet Engine] Сигнал готовности получен бутстраппером! Зажигаем репликацию...");
+
+            root.EventBus.Publish(root, new NetworkStatusChanged(true));
+
+            try
+            {
+                await root.OrmEngine.StartAsync();
+                root.Logger.LogInfo("[Bootstrapper Старт] ✅ Репликация запущена в штатном режиме.");
+            }
+            catch (Exception ex)
+            {
+                root.Logger.LogError($"[Bootstrapper Старт] Критический сбой движка репликации: {ex.Message}");
+                root.EventBus.Publish(root, new NetworkStatusChanged(false));
+            }
         }
 
         private static async Task OnUserSessionActivated(object eventData)
         {
             AppCompositionRoot root = AppCompositionRoot.Instance;
-            root.Logger.LogInfo("[Avalonia Bootstrapper] Сигнал авторизации пойман. Будим OrmEngine...");
+            root.Logger.LogInfo("[Bootstrapper] Сессия поймана, пробиваем туннель SignalR по UserId...");
 
             try
             {
-                // 1. Включаем ОРМ-движок. Он мгновенно настраивает свои внутренние подписки и сам сканирует базу!
                 await root.OrmEngine.StartAsync();
-                root.Logger.LogInfo("[Avalonia Bootstrapper] ✅ Репликатор OrmEngine успешно разбужен.");
 
-                // 🔥 2. СВЯЗЫВАЕМ СЕТЕВОЙ АВТОБУС: Достаем залогиненного юзера из рекордов вьюмоделей!
                 Guid? authenticatedUserId = null;
-
-                if (eventData is IUserVm.UserSignedIn signInMsg && signInMsg.User != null)
-                {
-                    authenticatedUserId = signInMsg.User.Id;
-                }
-                else if (eventData is IUserVm.UserSignedUp signUpMsg && signUpMsg.User != null)
-                {
-                    authenticatedUserId = signUpMsg.User.Id;
-                }
+                if (eventData is IUserVm.UserSignedIn signInMsg) authenticatedUserId = signInMsg.User?.Id;
+                else if (eventData is IUserVm.UserSignedUp signUpMsg) authenticatedUserId = signUpMsg.User?.Id;
 
                 if (authenticatedUserId.HasValue)
                 {
-                    root.Logger.LogInfo($"[Avalonia Bootstrapper] Пробиваем туннель SignalR для UserId: {authenticatedUserId.Value}");
-
-                    var signalRListener = root.SignalRListener;
-
-                    // Пробиваем туннель
-                    await signalRListener.ConnectAsync(authenticatedUserId.Value);
-                }
-                else
-                {
-                    root.Logger.LogWarning("[Avalonia Bootstrapper] Не удалось определить UserId из события входа. Сетевой автобус запущен без привязки к группе.");
+                    await root.SignalRListener.ConnectAsync(authenticatedUserId.Value);
                 }
             }
             catch (Exception ex)
             {
-                root.Logger.LogError($"[Avalonia Bootstrapper] ❌ Ошибка отложенного старта репликации или сокета: {ex.Message}");
+                root.Logger.LogError($"[Bootstrapper] Сбой отложенного старта по сессии: {ex.Message}");
             }
         }
-
-
     }
 }

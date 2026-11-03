@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\HomeNet.Synchronization\HomeNet.Synchronization.csproj" />
     <ProjectReference Include="..\HomeNetCore\HomeNetCore.csproj" />
   </ItemGroup>
 

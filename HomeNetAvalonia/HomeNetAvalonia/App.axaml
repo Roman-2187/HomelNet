@@ -21,6 +21,10 @@
         <StyleInclude Source="avares://HomeNetAvalonia/Themes/Buttons.axaml"/>
         <StyleInclude Source="avares://HomeNetAvalonia/Themes/Fields.axaml"/>
        <StyleInclude Source="avares://HomeNetAvalonia/Themes/Containers.axaml"/>
+
+       <!-- Стили для анимации сворачивания Зайбернета -->
+
+
     
    
 </Application.Styles>

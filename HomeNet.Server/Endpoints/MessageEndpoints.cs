@@ -1,13 +1,13 @@
-﻿using HomeNetCore.Interfaces.Repositories;
-using HomeNetCore.Models.Entity;
-using HomeNetOrm.Repositories.Remote;
+﻿using HomeNet.Models.Shared.Entity;
+using HomeNetOrm.Interfaces.Repositories;
+using HomeNetOrm.Repositories.Extensions; // 🔥 ОБЯЗАТЕЛЬНО ПОДКЛЮЧАЕМ НАШИ ЭКСТЕНШЕНЫ!
 using Microsoft.AspNetCore.SignalR;
 
 namespace HomeNet.Server.Endpoints
 {
     public static class MessageEndpoints
     {
-        public static void MapMessageEndpoints(this IEndpointRouteBuilder endpoints, IMessageRepository messageRepository, HomeNet.Infrastructure.Shared.Interfaces.Diagnostics.ILogger serverLogger)
+        public static void MapMessageEndpoints(this IEndpointRouteBuilder endpoints, IMessageRepo messageRepository, HomeNet.Infrastructure.Shared.Interfaces.Diagnostics.ILogger serverLogger)
         {
             // === [📥 PULL СИНХРОНИЗАЦИЯ СМС] ===
             endpoints.MapGet("/api/messages/sync", async (Guid userId, string lastSyncedAt) =>
@@ -21,7 +21,8 @@ namespace HomeNet.Server.Endpoints
 
                     serverLogger.LogInfo($"[API PULL] Юзер {userId} запрашивает свои СМС с метки {clientCheckpoint:HH:mm:ss}");
 
-                    var freshMessages = await messageRepository.GetFreshMessagesForUserAsync(userId, clientCheckpoint);
+                    // 🔥 ИСПРАВЛЕНО: Вызываем наш новый, очищенный от хардкода экстеншен синхронизации репозитория!
+                    var freshMessages = await messageRepository.GetMessagesForSyncAsync(userId, clientCheckpoint);
                     var messageList = freshMessages.ToList();
 
                     serverLogger.LogInfo($"[API Успех] Отдано {messageList.Count} СМС для пользователя {userId} из PostgreSQL.");
@@ -40,7 +41,10 @@ namespace HomeNet.Server.Endpoints
                 try
                 {
                     serverLogger.LogInfo($"[API] Прилетел объект сообщения от {incomingMessage.SenderId} для {incomingMessage.ReceiverId}");
+
+                    // Метод остался доменным, внутри него пропишутся правильные таймстампы
                     await messageRepository.SaveMessageAsync(incomingMessage);
+
                     serverLogger.LogInfo($"[API Успех] Сообщение {incomingMessage.Id} успешно записано in PostgreSQL.");
 
                     // Наш транслятор сетевого автобуса в действии! 🧼

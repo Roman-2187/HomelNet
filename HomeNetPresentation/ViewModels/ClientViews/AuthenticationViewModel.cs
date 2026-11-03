@@ -2,11 +2,11 @@
 using CommunityToolkit.Mvvm.Input;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces;
-using HomeNetCore.Interfaces.ViewModels;
-using HomeNetCore.Models.Entity;
-using HomeNetCore.Models.Validation;
+using HomeNetCore.Interfaces.ViewModels.UserZone;
+using HomeNetCore.Validation;
 using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels
@@ -39,7 +39,7 @@ namespace HomeNetPresentation.ViewModels
            
         }
 
-        #region 🎧 ИМЕНОВАННЫЕ МЕТОДЫ ПОДПИСОК (Для идеального графа в Инспекторе) 🧼
+       
 
         /// <summary>
         /// Локальный сброс полей формы после подтверждения успешного входа
@@ -52,7 +52,7 @@ namespace HomeNetPresentation.ViewModels
             InitializeInitialHints();
         }
 
-        #endregion
+        
 
         private void InitializeInitialHints()
         {
@@ -73,7 +73,7 @@ namespace HomeNetPresentation.ViewModels
             SubmitButtonText = "войти";
         }
 
-        #region 🦾 НАНО-КОМАНДЫ ДЛЯ КНОПОК ВХОДА (CommunityToolkit)
+       
 
         [RelayCommand]
         private async Task LoginAsync()
@@ -131,9 +131,9 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Publish(this, new IUserVm.BackToStart());
         }
 
-        #endregion
+        
 
-        #region 🛡️ ЖЕЛЕЗОБЕТОННЫЙ СТЕРИЛИЗАТОР ПАМЯТИ
+       
 
         public override void Dispose()
         {
@@ -141,6 +141,6 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserAuthenticated);
         }
 
-        #endregion
+      
     }
 }

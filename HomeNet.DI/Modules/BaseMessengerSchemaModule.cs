@@ -1,4 +1,4 @@
-﻿using HomeNetCore.Models.Entity;
+﻿using HomeNet.Models.Shared.Entity;
 using HomeNetOrm.Builders;
 using HomeNetOrm.Models;
 
@@ -31,18 +31,20 @@ namespace HomeNet.DI.Modules
             _schemas.Add(friends.Generate());
         }
 
-        // Выносим в защищенные методы, чтобы наследники (Local/Remote) могли докинуть свои поля!
         protected virtual TableBuilder<UserEntity> BuildUsersSchema()
         {
             var builder = new TableBuilder<UserEntity>("Users");
             builder.AddColumn(u => u.Id).AsPrimaryKey();
-            builder.AddColumn(u => u.DeviceId).IsRequired(); // Наш сетевой связующий хвост!
+            builder.AddColumn(u => u.DeviceId).IsRequired();
             builder.AddColumn(u => u.FirstName).HasLength(50).IsRequired();
             builder.AddColumn(u => u.LastName).HasLength(50);
             builder.AddColumn(u => u.PhoneNumber).HasLength(50);
             builder.AddColumn(u => u.Email).HasLength(50).IsRequired();
             builder.AddColumn(u => u.Password).HasLength(100).IsRequired();
-            builder.AddColumn(u => u.CreatedAt);
+
+            // 🔥 НАШ НОВЫЙ СТАНДАРТ РАСПРЕДЕЛЕННЫХ ТАЙМСТАМПОВ
+            builder.AddColumn(u => u.LocalCreatedAt);
+            builder.AddColumn(u => u.ServerCreatedAt);
             builder.AddColumn(u => u.UpdatedAt);
             return builder;
         }
@@ -56,7 +58,10 @@ namespace HomeNet.DI.Modules
             builder.AddColumn(m => m.Text).AsText();
             builder.AddColumn(m => m.MediaType).AsText();
             builder.AddColumn(m => m.IsRead);
-            builder.AddColumn(m => m.CreatedAt);
+
+            // 🔥 НАШ НОВЫЙ СТАНДАРТ РАСПРЕДЕЛЕННЫХ ТАЙМСТАМПОВ
+            builder.AddColumn(m => m.LocalCreatedAt);
+            builder.AddColumn(m => m.ServerCreatedAt);
             builder.AddColumn(m => m.UpdatedAt);
             return builder;
         }
@@ -67,7 +72,10 @@ namespace HomeNet.DI.Modules
             builder.AddColumn(f => f.Id).AsPrimaryKey();
             builder.AddColumn(f => f.UserId).IsRequired();
             builder.AddColumn(f => f.FriendId).IsRequired();
-            builder.AddColumn(f => f.CreatedAt);
+
+            // 🔥 НАШ НОВЫЙ СТАНДАРТ РАСПРЕДЕЛЕННЫХ ТАЙМСТАМПОВ
+            builder.AddColumn(f => f.LocalCreatedAt);
+            builder.AddColumn(f => f.ServerCreatedAt);
             builder.AddColumn(f => f.UpdatedAt);
             return builder;
         }

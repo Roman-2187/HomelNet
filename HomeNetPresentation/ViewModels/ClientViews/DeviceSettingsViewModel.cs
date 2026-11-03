@@ -1,10 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNetCore.Interfaces;
+using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Interfaces.Services;
-using HomeNetCore.Interfaces.ViewModels;
-using HomeNetCore.Models.Entity;
+using HomeNetCore.Interfaces.ViewModels.AdminZone;
+using HomeNetCore.Interfaces.ViewModels.UserZone;
+using HomeNetOrm.Interfaces.Repositories;
+using HomeNetOrm.Repositories.Extensions;
 using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels.ClientViews
@@ -17,7 +19,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
     {
         private readonly IDeviceSettingsService _deviceSettingsService;
         private readonly ILogger _logger;
-        private readonly IUserRepository _userRepository;
+        private readonly IUserRepo _userRepository;
 
         [ObservableProperty] private bool _isRememberMeChecked = true;
         [ObservableProperty] private string _deviceIdDisplay = "Загрузка...";
@@ -25,7 +27,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
 
         public DeviceSettingsViewModel(
             IDeviceSettingsService deviceSettingsService,
-            IUserRepository userRepository,
+            IUserRepo userRepository,
             IEventBus eventBus,
             ILogger logger,
             UserNavigationManager navigation) : base(eventBus, navigation)

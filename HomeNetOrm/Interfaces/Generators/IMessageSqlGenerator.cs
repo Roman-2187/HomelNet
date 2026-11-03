@@ -1,4 +1,4 @@
-﻿using HomeNetCore.Models.Entity;
+﻿using HomeNet.Models.Shared.Entity;
 using HomeNetOrm.Models;
 
 namespace HomeNetOrm.Interfaces.Generators

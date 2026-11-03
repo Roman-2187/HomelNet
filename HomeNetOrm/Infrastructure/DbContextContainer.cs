@@ -1,6 +1,9 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetOrm.Interfaces.Builders;
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace HomeNetOrm.Infrastructure
 {
@@ -16,11 +19,11 @@ namespace HomeNetOrm.Infrastructure
         public bool IsLocalAvailable { get; private set; }
         public bool IsRemoteAvailable { get; private set; }
 
-        // 💥 ФИКС: Связываем интерфейсные свойства напрямую с нашими переменными!
+        // Связываем интерфейсные свойства напрямую с переменными
         public bool IsServerAvailable => IsRemoteAvailable;
         public bool IsPostgresAvailable => IsRemoteAvailable;
 
-        // 🔌 Конструктор принимает строго локальный абстрактный движок и адрес сервера
+        // Конструктор принимает строго локальный абстрактный движок и адрес сервера
         public DbContextContainer(
             IDbEngine localEngine,
             string remoteServerUrl,
@@ -35,16 +38,13 @@ namespace HomeNetOrm.Infrastructure
             _pingClient = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
         }
 
-        // 💥 ФИКС: Сделали метод публичным (public), чтобы AppCompositionRoot мог его вызывать!
         public async Task InitializeAllDatabasesAsync()
         {
-            _logger.LogInfo("=== [СУБД ХАБ] ЗАПУСК ПАРАЛЛЕЛЬНОЙ ИНИЦИАЛИЗАЦИИ ХРАНИЛИЩ ===");
+            _logger.LogInfo("=== [СУБД ХАБ] ЗАПУСК ИНИЦИАЛИЗАЦИИ ХРАНИЛИЩ ===");
 
-            // Запускаем каналы локального движка и удаленного сервера параллельно
-            Task localInitTask = InitializeLocalChannelInternalAsync();
-            Task remoteCheckTask = CheckRemoteServerAvailabilityInternalAsync();
-
-            await Task.WhenAll(localInitTask, remoteCheckTask);
+            // Запускаем локальный движок данных и проверяем сервер последовательно
+            await InitializeLocalChannelInternalAsync();
+            await CheckRemoteServerAvailabilityInternalAsync();
 
             _logger.LogInfo("=== [СУБД ХАБ] ИНИЦИАЛИЗАЦИЯ ХРАНИЛИЩ ЗАВЕРШЕНА ===");
             _eventBus.Publish(this, new IDbContextContainer.InfrastructureReady());

@@ -1,8 +1,9 @@
-﻿using HomeNetCore.Interfaces;
-using HomeNetCore.Interfaces.Sinc;
-using HomeNetCore.Models.Entity;
+﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Models.Shared.Entity;
+using HomeNet.Synchronization.Interfaces.Sinc;
+using HomeNetCore.Interfaces;
+using HomeNetOrm.Interfaces.Repositories;
 
 namespace HomeNet.Network
 {
@@ -13,14 +14,19 @@ namespace HomeNet.Network
         public UserNetworkHandler(IApiClient apiClient, IEventBus eventBus, ILogger logger)
             : base(apiClient, eventBus, logger) { }
 
+        // Внутренние реализации защищённых фактов IUserRepo для сквозного мёржа
+        private record UserInsertedFact(UserEntity User, string? Message) : IUserRepo.IInserted;
+        private record UserDeletedFact(Guid UserId) : IUserRepo.IDeleted;
+
         protected override void SubscribeToEvents()
         {
-            EventBus.Subscribe<ISyncCoordinator.UserPendingSync>(OnUserPendingSync);
-            EventBus.Subscribe<ISyncCoordinator.UserPendingDelete>(OnUserPendingDelete);
-            EventBus.Subscribe<ISyncCoordinator.UserPullRequested>(OnUserPullRequested);
+            // 🔥 Переподключаемся на лаконичные рекорды-братья синхронизации пользователей
+            EventBus.Subscribe<IUserSyncActions.Pending>(OnUserPendingSync);
+            EventBus.Subscribe<IUserSyncActions.DeletePending>(OnUserPendingDelete);
+            EventBus.Subscribe<IUserSyncActions.PullRequested>(OnUserPullRequested);
         }
 
-        private void OnUserPendingSync(ISyncCoordinator.UserPendingSync @event)
+        private void OnUserPendingSync(IUserSyncActions.Pending @event)
         {
             FireAndForget(() => PushUserInternalAsync(@event.User), $"Push User {@event.User.Id}");
         }
@@ -30,11 +36,12 @@ namespace HomeNet.Network
             Logger.LogInfo($"[UserNet] Отправляем профиль {user.Id} на сервер...");
             if (await ApiClient.PushUserAsync(user))
             {
-                EventBus.Publish(this, new ISyncCoordinator.UserSyncedOnServer(user.Id));
+                // 🔥 Кидаем укрощённое подтверждение синхронизатору
+                EventBus.Publish(this, new IUserSyncActions.Confirmed(user.Id));
             }
         }
 
-        private void OnUserPendingDelete(ISyncCoordinator.UserPendingDelete @event)
+        private void OnUserPendingDelete(IUserSyncActions.DeletePending @event)
         {
             FireAndForget(() => DeleteUserInternalAsync(@event.UserId), $"Delete User {@event.UserId}");
         }
@@ -42,13 +49,10 @@ namespace HomeNet.Network
         private async Task DeleteUserInternalAsync(Guid userId)
         {
             Logger.LogWarning($"[UserNet] Запрос удаления пользователя {userId} на сервере...");
-
-            // Просто пушим HTTP-запрос на удаление. 
-            // Ждать ответа и пулять подтверждение отсюда НЕ НАДО — для этого ниже есть SignalR!
             await ApiClient.DeleteUserAsync(userId);
         }
 
-        private void OnUserPullRequested(ISyncCoordinator.UserPullRequested @event)
+        private void OnUserPullRequested(IUserSyncActions.PullRequested @event)
         {
             FireAndForget(PullUsersInternalAsync, "Pull Users From Server");
         }
@@ -72,27 +76,29 @@ namespace HomeNet.Network
         {
             if (user == null) return Task.CompletedTask;
 
-            Logger.LogInfo($"[UserNet] Сервер прислал апдейт профиля {user.Id}. Отправляем в шину.");
+            Logger.LogInfo($"[UserNet] Сервер прислал апдейт профиля {user.Id}. Отправляем защищённый факт в шину.");
             user.IsSynced = 1;
 
-            EventBus.Publish(this, new ISyncCoordinator.UserInserted(user));
+            // 🔥 Выстреливаем фабрикой защищённого факта ОРМ
+            EventBus.Publish(this, new UserInsertedFact(user, "Скачан из сети"));
             return Task.CompletedTask;
         }
 
         // 🎯 ЕДИНСТВЕННЫЙ ИСТОЧНИК ПРАВДЫ ДЛЯ УДАЛЕНИЯ:
-        // Сюда прилетает бродкаст сокета, и именно он один контролирует снос записи
         public Task HandleIncomingUserDeletedAsync(Guid userId)
         {
-            Logger.LogWarning($"[UserNet] Сервер прислал команду удаления юзера {userId}. Передаем подтверждение в шину.");
-            EventBus.Publish(this, new ISyncCoordinator.UserDeleteConfirmedByServer(userId));
+            Logger.LogWarning($"[UserNet] Сервер прислал команду удаления юзера {userId}. Передаем подтверждение удаления.");
+
+            // 🔥 Публикуем укрощённый факт-ответ сервера для координатора
+            EventBus.Publish(this, new IUserSyncActions.DeleteConfirmed(userId));
             return Task.CompletedTask;
         }
 
         public override void Dispose()
         {
-            EventBus.Unsubscribe<ISyncCoordinator.UserPendingSync>(OnUserPendingSync);
-            EventBus.Unsubscribe<ISyncCoordinator.UserPendingDelete>(OnUserPendingDelete);
-            EventBus.Unsubscribe<ISyncCoordinator.UserPullRequested>(OnUserPullRequested);
+            EventBus.Unsubscribe<IUserSyncActions.Pending>(OnUserPendingSync);
+            EventBus.Unsubscribe<IUserSyncActions.DeletePending>(OnUserPendingDelete);
+            EventBus.Unsubscribe<IUserSyncActions.PullRequested>(OnUserPullRequested);
         }
     }
 }

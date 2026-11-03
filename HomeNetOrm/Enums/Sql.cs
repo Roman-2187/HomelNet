@@ -48,8 +48,11 @@
         public enum OpType { Equal, And, Or, True, False, OpenBracket, CloseBracket, Asc, Desc, GreaterThan, IsNull,
             Begin,
             End,
-            Comma
-          
+            Comma,
+
+                  Excluded,          // 🆕 Для синтаксиса EXCLUDED.column в UPSERT
+            CurrentTimestamp   // 🆕 Для CURRENT_TIME
+
         }
 
         public static class Op
@@ -64,6 +67,9 @@
             public const OpType Asc = OpType.Asc;
             public const OpType Desc = OpType.Desc;
             public const OpType GreaterThan = OpType.GreaterThan;
+
+            public const OpType Excluded = OpType.Excluded;
+            public const OpType CurrentTimestamp = OpType.CurrentTimestamp;
 
             // 🆕 Добавляем последнюю недостающую константу для проверки на NULL:
             public const OpType IsNull = OpType.IsNull;

@@ -1,7 +1,7 @@
 ﻿using HomeNetCore.Interfaces.Services;
-using HomeNetCore.Models.Entity;
 using HomeNetOrm.Repositories.Local;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Models.Shared.Entity;
 
 namespace HomeNetServices.Identity
 {

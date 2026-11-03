@@ -1,7 +1,7 @@
-﻿using HomeNetCore.Enums.Navigation;
-using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces.Events;
-using HomeNetCore.Interfaces.ViewModels;
+﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNetCore.Enums.Navigation;
+using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetCore.Models.Entity;
 using HomeNetPresentation.Services;
 using HomeNetPresentation.ViewModels;

@@ -1,8 +1,8 @@
-﻿
-using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
-using HomeNetCore.Interfaces;
-using HomeNetCore.Interfaces.Repositories;
-using HomeNetCore.Interfaces.Sinc; // Для ISyncCoordinator
+﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Synchronization.Interfaces.Sinc;
+using HomeNetOrm.Interfaces.Repositories;
+using System;
+using System.Threading.Tasks;
 
 namespace HomeNetOrm.Infrastructure
 {
@@ -10,16 +10,16 @@ namespace HomeNetOrm.Infrastructure
     /// 🔥 ГЛАВНЫЙ СИНХРО-ДВИЖОК СИСТЕМЫ:
     /// Принимает репозитории и координатор, полностью закрывая логику фоновой репликации в ОРМ! 🦾
     /// </summary>
-    public class SincEngine
+    public class SyncEngine
     {
-        private readonly IUserRepository _userRepository;
-        private readonly IMessageRepository _messageRepository;
+        private readonly IUserRepo _userRepository;
+        private readonly IMessageRepo _messageRepository;
         private readonly ISyncCoordinator _syncCoordinator;
         private readonly ILogger _logger;
 
-        public SincEngine(
-            IUserRepository userRepository,
-            IMessageRepository messageRepository,
+        public SyncEngine(
+            IUserRepo userRepository,
+            IMessageRepo messageRepository,
             ISyncCoordinator syncCoordinator,
             ILogger logger)
         {
@@ -30,15 +30,15 @@ namespace HomeNetOrm.Infrastructure
         }
 
         /// <summary>
-        /// Главная кнопка мессенджера: запускает пакетную сверку данных!
+        /// Главная кнопка мессенджера: запускает репликацию!
         /// </summary>
         public async Task StartAsync()
         {
-            _logger.LogInfo("=== [SiberNet Engine] ЗАПУСК СИСТЕМЫ СИНХРОНИЗАЦИИ ===");
+            _logger.LogInfo("=== [SiberNet Engine] ЗАПУСК СИСТЕМЫ РЕПЛИКАЦИИ ===");
 
             try
             {
-                // Запускаем координатор, который под капотом параллельно пнет все наши синхронизаторы таблиц
+                // Запускаем координатор, который под капотом пнет все наши синхронизаторы таблиц
                 await _syncCoordinator.StartAsync();
             }
             catch (Exception ex)
@@ -48,4 +48,3 @@ namespace HomeNetOrm.Infrastructure
         }
     }
 }
-

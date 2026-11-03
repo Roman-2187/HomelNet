@@ -1,25 +1,23 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Interfaces.Services;
-using HomeNetCore.Interfaces.Sinc;
-using HomeNetCore.Interfaces.ViewModels;
-using HomeNetCore.Models.Entity;
+using HomeNetCore.Interfaces.ViewModels.MainZone;
+using HomeNetCore.Interfaces.ViewModels.UserZone;
+using HomeNetOrm.Interfaces.Repositories;
 using System.Collections.ObjectModel;
 
 namespace HomeNetPresentation.ViewModels
 {
     /// <summary>
     /// Автономная киберпанк-витрина чата SiberNet.
-    /// Слушает ОРМ-репозитории напрямую через шину координатора! 🧼
+    /// Благодаря сквозному UI-конвейеру работает на полной скорости без единого лока! 🧼
     /// </summary>
     public partial class ChatViewModel : ObservableObject, IDisposable
     {
         private readonly IEventBus _eventBus;
         private readonly IMessageService _messageService;
-
-        // Наш потокобезопасный lock для коллекции сообщений
-        private readonly object _collectionLock = new();
 
         [ObservableProperty] private Guid _currentUserId;
         [ObservableProperty] private string _currentUserName = string.Empty;
@@ -42,10 +40,8 @@ namespace HomeNetPresentation.ViewModels
         {
             _eventBus.Subscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
             _eventBus.Subscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
-            _eventBus.Subscribe<IContactsVm.FriendSelected>(OnFriendSelected);
-
-            // 🔥 КАРАУЛИМ РЕПОЗИТОРИЙ ИЗ ПЕРВЫХ РУК: Слушаем событие координатора ОРМ!
-            _eventBus.Subscribe<ISyncCoordinator.MessageInserted>(OnMessageReceivedInRealTime);
+            _eventBus.Subscribe<IContactsVm.FriendSelected>(OnFriendSelected);     
+            _eventBus.Subscribe<IMessageRepo.ISaved>(OnMessageReceivedInRealTime);
         }
 
         private void OnUserSignedIn(IUserVm.UserSignedIn msg)
@@ -70,10 +66,8 @@ namespace HomeNetPresentation.ViewModels
             SelectedFriendId = msg.Friend.Id;
             SelectedFriendName = msg.Friend.FirstName ?? "Собеседник";
 
-            lock (_collectionLock)
-            {
-                Messages.Clear();
-            }
+            // 🧼 Полная безопасность: Мы зашли из UI-потока, локи больше не нужны
+            Messages.Clear();
             IsChatOpen = true;
 
             try
@@ -89,10 +83,7 @@ namespace HomeNetPresentation.ViewModels
                         m.IsOutgoing = m.SenderId == CurrentUserId;
                     }
 
-                    lock (_collectionLock)
-                    {
-                        Messages = new ObservableCollection<MessageEntity>(historyList);
-                    }
+                    Messages = new ObservableCollection<MessageEntity>(historyList);
                 }
             }
             catch (Exception ex)
@@ -115,13 +106,10 @@ namespace HomeNetPresentation.ViewModels
             {
                 verdict.CreatedMessage.IsOutgoing = true;
 
-                lock (_collectionLock)
+                // Локальное эхо выполняется атомарно в родном UI-потоке
+                if (!Messages.Any(m => m.Id == verdict.CreatedMessage.Id))
                 {
-                    // Локальное эхо для плавности интерфейса при отправке
-                    if (!Messages.Any(m => m.Id == verdict.CreatedMessage.Id))
-                    {
-                        Messages.Add(verdict.CreatedMessage);
-                    }
+                    Messages.Add(verdict.CreatedMessage);
                 }
             }
             else
@@ -130,23 +118,20 @@ namespace HomeNetPresentation.ViewModels
             }
         }
 
-        private void OnMessageReceivedInRealTime(ISyncCoordinator.MessageInserted msg)
+        private void OnMessageReceivedInRealTime(IMessageRepo.ISaved msg)
         {
             if (msg?.Message == null || SelectedFriendId == null) return;
 
-            // Проверяем, что сообщение принадлежит текущему активному диалогу
+            // Проверяем, принадлежит ли прилетевшее сообщение текущему открытому диалогу
             if ((msg.Message.SenderId == SelectedFriendId.Value && msg.Message.ReceiverId == CurrentUserId) ||
                 (msg.Message.SenderId == CurrentUserId && msg.Message.ReceiverId == SelectedFriendId.Value))
             {
                 msg.Message.IsOutgoing = msg.Message.SenderId == CurrentUserId;
 
-                lock (_collectionLock)
+             
+                if (!Messages.Any(m => m.Id == msg.Message.Id))
                 {
-                    // Защита от дублирования: если сообщение уже добавлено локальным эхо, пропускаем
-                    if (!Messages.Any(m => m.Id == msg.Message.Id))
-                    {
-                        Messages.Add(msg.Message);
-                    }
+                    Messages.Add(msg.Message);
                 }
             }
         }
@@ -161,7 +146,7 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
             _eventBus.Unsubscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
             _eventBus.Unsubscribe<IContactsVm.FriendSelected>(OnFriendSelected);
-            _eventBus.Unsubscribe<ISyncCoordinator.MessageInserted>(OnMessageReceivedInRealTime);
+            _eventBus.Unsubscribe<IMessageRepo.ISaved>(OnMessageReceivedInRealTime);
         }
     }
 }

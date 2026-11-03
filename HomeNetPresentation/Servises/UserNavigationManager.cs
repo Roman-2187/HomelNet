@@ -2,7 +2,8 @@
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Enums.Navigation;
-using HomeNetCore.Interfaces.ViewModels;
+using HomeNetCore.Interfaces.ViewModels.MainZone;
+using HomeNetCore.Interfaces.ViewModels.UserZone;
 
 namespace HomeNetPresentation.Services
 {
@@ -32,7 +33,7 @@ namespace HomeNetPresentation.Services
             EventBus.Subscribe<IUserVm.LogoutClient>(OnLogoutClientRequested);
         }
 
-        #region 👤 УПРАВЛЕНИЕ ВНУТРЕННИМИ ЭНУМАМИ ХОЛСТА ПОЛЬЗОВАТЕЛЯ
+       
 
         private void OnOpenAuthRequested(IUserVm.OpenAuth msg)
         {
@@ -101,7 +102,7 @@ namespace HomeNetPresentation.Services
             PublishStateDuet();
         }
 
-        #endregion
+       
 
         private void PublishStateDuet()
         {

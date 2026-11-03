@@ -2,11 +2,11 @@
 using CommunityToolkit.Mvvm.Input;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.Services;
-using HomeNetCore.Interfaces.ViewModels;
-using HomeNetCore.Models.Entity;
-using HomeNetCore.Models.Validation;
+using HomeNetCore.Interfaces.ViewModels.UserZone;
+using HomeNetCore.Validation;
 using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels

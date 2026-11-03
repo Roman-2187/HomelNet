@@ -2,10 +2,11 @@
 using CommunityToolkit.Mvvm.Input;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Enums.Navigation;
-using HomeNetCore.Interfaces;
-using HomeNetCore.Interfaces.ViewModels;
-using HomeNetCore.Models;
+using HomeNetCore.Interfaces.ViewModels.AdminZone;
+using HomeNetCore.Interfaces.ViewModels.MainZone;
+using HomeNetOrm.Interfaces.Repositories;
 using HomeNetPresentation.Services;
+using HomeNetPresentation.TestData;
 
 namespace HomeNetPresentation.ViewModels.AdminViews
 {
@@ -15,7 +16,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
     /// </summary>
     public partial class SeedUsersViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
     {
-        private readonly IUserRepository _userRepository;
+        private readonly IUserRepo _userRepository;
 
         [ObservableProperty]
         private string _seedStatusText = "🔋 Система генерации готова к сидингу 50 пользователей...";
@@ -23,7 +24,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         [ObservableProperty]
         private bool _isSeedInProgress;
 
-        public SeedUsersViewModel(IEventBus eventBus, IUserRepository userRepository, AdminNavigationManager navigation)
+        public SeedUsersViewModel(IEventBus eventBus, IUserRepo userRepository, AdminNavigationManager navigation)
             : base(eventBus, navigation)
         {
            _userRepository = userRepository;

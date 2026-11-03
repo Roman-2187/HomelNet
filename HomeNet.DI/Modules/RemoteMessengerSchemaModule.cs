@@ -1,5 +1,4 @@
-﻿using HomeNetCore.Models;
-using HomeNetCore.Models.Entity;
+﻿using HomeNet.Models.Shared.Entity;
 using HomeNetOrm.Builders;
 
 namespace HomeNet.DI.Modules
@@ -11,25 +10,25 @@ namespace HomeNet.DI.Modules
     {
         public RemoteMessengerSchemaModule() : base()
         {
-
-            // Добавляем таблицу синхронизации девайсов на составном ключе (Только на сервере!)
+            // Серверная таблица девайсов на составном ключе
             var deviceSync = new TableBuilder<DeviceSyncEntity>("DeviceSync")
-                .WithVersionTracking(); // Включаем серверный триггер для этой таблицы!
+                .WithVersionTracking();
 
             deviceSync.AddColumn(d => d.DeviceId).AsPrimaryKey();
             deviceSync.AddColumn(d => d.UserId).AsPrimaryKey();
-            deviceSync.AddColumn(d => d.Version); // Поле для триггера
-            deviceSync.AddColumn(d => d.CreatedAt); // <-- ВОТ ОНА! Теперь ОРМ создаст эту колонку в PostgreSQL
+            deviceSync.AddColumn(d => d.Version);
+
+            // 🔥 ПРИВЕЛИ ДАТЫ В ПОРЯДОК: У девайсов нет Local/Server логики, они пишут техническое время
+            deviceSync.AddColumn(d => d.CreatedAt);
             deviceSync.AddColumn(d => d.UpdatedAt);
 
             _schemas.Add(deviceSync.Generate());
         }
 
-        // Внедряем серверное поле Version и включаем триггеры для общих таблиц
         protected override TableBuilder<UserEntity> BuildUsersSchema()
         {
             var builder = base.BuildUsersSchema().WithVersionTracking();
-            builder.AddColumn(u => u.Version); // Твой ОРМ теперь знает про колонку Version
+            builder.AddColumn(u => u.Version);
             return builder;
         }
 
@@ -48,4 +47,3 @@ namespace HomeNet.DI.Modules
         }
     }
 }
-

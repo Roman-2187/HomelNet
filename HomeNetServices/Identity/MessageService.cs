@@ -1,16 +1,16 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNetCore.Interfaces.Repositories;
+using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Interfaces.Services;
-using HomeNetCore.Models.Entity;
+using HomeNetOrm.Interfaces.Repositories;
 
 namespace HomeNetServices.Services.Identity
 {
     public class MessageService : IMessageService
     {
-        private readonly IMessageRepository _messageRepo;
+        private readonly IMessageRepo _messageRepo;
         private readonly IEventBus _eventBus;
 
-        public MessageService(IMessageRepository messageRepo, IEventBus eventBus)
+        public MessageService(IMessageRepo messageRepo, IEventBus eventBus)
         {
             _messageRepo = messageRepo ?? throw new ArgumentNullException(nameof(messageRepo));
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
@@ -31,7 +31,7 @@ namespace HomeNetServices.Services.Identity
                 Text = text.Trim(),
                 MediaType = "Text",
                 IsRead = false,
-                CreatedAt = DateTime.UtcNow,
+                LocalCreatedAt = DateTime.UtcNow,
                 IsSynced = 0
             };
 
@@ -61,7 +61,7 @@ namespace HomeNetServices.Services.Identity
 
 
                 // На всякий случай сортируем по времени, чтобы переписка шла сверху вниз
-                return allMessages.OrderBy(m => m.CreatedAt);
+                return allMessages.OrderBy(m => m.LocalCreatedAt);
             }
             catch (Exception)
             {

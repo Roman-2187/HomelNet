@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNet.Models.Shared.Entity;
 
 namespace HomeNet.Network
 {
@@ -46,13 +47,13 @@ namespace HomeNet.Network
             // КРАСИВАЯ СТРОГАЯ ПОДПИСКА НА МЕТОДЫ СЕРВЕРА
             // =========================================================================
 
-            _connection.On<HomeNetCore.Models.Entity.MessageEntity>(_messageHandler.ServerMethodName, async (message) =>
+            _connection.On<MessageEntity>(_messageHandler.ServerMethodName, async (message) =>
             {
                 _logger.LogInfo($"[СЕТЬ] Поймали метод '{_messageHandler.ServerMethodName}' от сервера.");
                 await _messageHandler.HandleIncomingMessageAsync(message);
             });
 
-            _connection.On<HomeNetCore.Models.Entity.UserEntity>(_userHandler.ServerMethodName, async (user) =>
+            _connection.On<UserEntity>(_userHandler.ServerMethodName, async (user) =>
             {
                 _logger.LogInfo($"[СЕТЬ] Поймали метод '{_userHandler.ServerMethodName}' от сервера.");
                 await _userHandler.HandleIncomingUserAsync(user);

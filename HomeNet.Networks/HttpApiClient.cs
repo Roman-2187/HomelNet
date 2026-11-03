@@ -1,7 +1,7 @@
 ﻿using HomeNetCore.Interfaces;
 using System.Net.Http.Json;
-using HomeNetCore.Models.Entity;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Models.Shared.Entity;
 
 namespace HomeNet.Network
 {

@@ -1,14 +1,14 @@
-﻿using HomeNetCore.Enums;
+﻿using HomeNet.Models.Shared.Entity;
+using HomeNetCore.Enums;
 using HomeNetCore.Interfaces;
-using HomeNetCore.Models.Entity;
-using HomeNetCore.Models.Validation;
-using HomeNetCore.Utils;
+using HomeNetCore.Validation;
+using HomeNetOrm.Interfaces.Repositories;
 
 namespace HomeNetServices.Identity
 {
-    public class AuthenticateService(IUserRepository userRepository) : IAuthenticateService
+    public class AuthenticateService(IUserRepo userRepository) : IAuthenticateService
     {
-        private readonly IUserRepository _userRepository = userRepository;
+        private readonly IUserRepo _userRepository = userRepository;
 
         /// <summary>
         /// Выполняет проверку пользователя. Возвращает лаконичный вложенный вердикт из интерфейса Ядра.

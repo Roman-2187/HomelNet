@@ -1,0 +1,17 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace HomeNetCore.Enums
+{
+    /// <summary>
+    /// Микро-рубильник для фильтрации логов внутри Logger.
+    /// </summary>
+    public enum LogLevelFilter
+    {
+        All,        // Показать вообще всё
+        Warning,    // Только оранжевые варнинги
+        Error,      // Только красные ошибки
+        Critical    // Только критические сбои базы данных
+    }
+}

@@ -1,4 +1,4 @@
-﻿using HomeNetCore.Interfaces.Repositories;
+﻿using HomeNetOrm.Interfaces.Repositories;
 
 namespace HomeNet.Server.Endpoints
 {
