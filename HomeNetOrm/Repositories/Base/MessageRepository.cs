@@ -21,20 +21,16 @@ namespace HomeNetOrm.Repositories.Base
             _eventBus = eventBus ?? new NullEventProxy();
         }
 
-        private record MessageSavedFact(MessageEntity Message) : IMessageRepo.ISaved;
-        private record ChatClearedFact(Guid SenderId, Guid ReceiverId) : IMessageRepo.IChatCleared;
+      
 
         public async Task<bool> SaveMessageAsync(MessageEntity message)
         {
-            message.LocalCreatedAt = DateTimeOffset.UtcNow;
-            message.ServerCreatedAt = DateTimeOffset.UtcNow;
-            message.UpdatedAt = DateTimeOffset.UtcNow;
-            message.IsSynced = 0;
+          
 
             var cmd = _messageSqlGenerator.GenerateInsert();
             await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, message));
 
-            _eventBus.Publish(this, new MessageSavedFact(message));
+            _eventBus.Publish(this, new IMessageRepo.Saved(message));
             return true;
         }
 
@@ -45,7 +41,7 @@ namespace HomeNetOrm.Repositories.Base
 
             if (rowsAffected > 0)
             {
-                _eventBus.Publish(this, new ChatClearedFact(senderId, receiverId));
+                _eventBus.Publish(this, new IMessageRepo.ChatCleared(senderId, receiverId));
             }
 
             return rowsAffected > 0;

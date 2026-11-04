@@ -6,6 +6,7 @@ using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetPresentation.Services;
 using HomeNetPresentation.ViewModels;
 using Moq;
+using Xunit;
 using Assert = Xunit.Assert;
 
 namespace HomeNetTests

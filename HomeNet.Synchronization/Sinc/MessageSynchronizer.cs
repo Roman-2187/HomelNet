@@ -21,17 +21,17 @@ namespace HomeNet.Synchronization.Sinc
 
         protected override void SubscribeEvents()
         {
-            EventBus.Subscribe<IMessageRepo.ISaved>(OnMessageInserted);
-            EventBus.Subscribe<IMessageRepo.IUpdated>(OnMessageUpdated);
-            EventBus.Subscribe<IMessageRepo.IDeleted>(OnMessageDeleted);
+            EventBus.Subscribe<IMessageRepo.Saved>(OnMessageInserted);
+            EventBus.Subscribe<IMessageRepo.Updated>(OnMessageUpdated);
+            EventBus.Subscribe<IMessageRepo.Deleted>(OnMessageDeleted);
             EventBus.Subscribe<IMessageSyncActions.Confirmed>(OnMessageSyncedOnServer);
         }
 
         protected override void UnsubscribeEvents()
         {
-            EventBus.Unsubscribe<IMessageRepo.ISaved>(OnMessageInserted);
-            EventBus.Unsubscribe<IMessageRepo.IUpdated>(OnMessageUpdated);
-            EventBus.Unsubscribe<IMessageRepo.IDeleted>(OnMessageDeleted);
+            EventBus.Unsubscribe<IMessageRepo.Saved>(OnMessageInserted);
+            EventBus.Unsubscribe<IMessageRepo.Updated>(OnMessageUpdated);
+            EventBus.Unsubscribe<IMessageRepo.Deleted>(OnMessageDeleted);
             EventBus.Unsubscribe<IMessageSyncActions.Confirmed>(OnMessageSyncedOnServer);
         }
 
@@ -69,7 +69,7 @@ namespace HomeNet.Synchronization.Sinc
             }
         }
 
-        private async void OnMessageInserted(IMessageRepo.ISaved msg)
+        private async void OnMessageInserted(IMessageRepo.Saved msg)
         {
             if (msg?.Message == null) return;
 
@@ -91,7 +91,7 @@ namespace HomeNet.Synchronization.Sinc
             await _messageRepository.MarkMessageAsSyncedAsync(msg.MessageId);
         }
 
-        private void OnMessageUpdated(IMessageRepo.IUpdated msg) { }
-        private void OnMessageDeleted(IMessageRepo.IDeleted msg) { }
+        private void OnMessageUpdated(IMessageRepo.Updated msg) { }
+        private void OnMessageDeleted(IMessageRepo.Deleted msg) { }
     }
 }

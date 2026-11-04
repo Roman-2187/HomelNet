@@ -16,10 +16,10 @@ namespace HomeNetOrm.Interfaces.Repositories
         // ==========================================
         // 📤 ФАКТЫ (Защищенные интерфейсы фактов)
         // ==========================================
-        public interface ISaved { MessageEntity Message { get; } }
-        public interface IUpdated { MessageEntity Message { get; } }
-        public interface IDeleted { Guid MessageId { get; } }
-        public interface IChatCleared { Guid SenderId { get; } Guid ReceiverId { get; } }
+        public record Saved(MessageEntity Message);
+        public record Updated(MessageEntity Message);
+        public record Deleted(Guid MessageId);
+        public record ChatCleared(Guid SenderId, Guid ReceiverId);
 
         // ==========================================
         // 🔍 ПРЯМЫЕ МЕТОДЫ (Только уникальный домен чатов)

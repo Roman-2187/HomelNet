@@ -15,7 +15,7 @@ namespace HomeNet.Network
             : base(apiClient, eventBus, logger) { }
 
         // Приватная реализация защищённого факта репозитория, чтобы Авалония и синхронизатор подхватили СМС
-        private record MessageSavedFact(MessageEntity Message) : IMessageRepo.ISaved;
+        
 
         protected override void SubscribeToEvents()
         {
@@ -70,7 +70,7 @@ namespace HomeNet.Network
             message.IsSynced = 1;
 
             // 🔥 Выстреливаем защищённым фактом репозитория! Синхронизатор запишет его, а UI отрисует без локов
-            EventBus.Publish(this, new MessageSavedFact(message));
+            EventBus.Publish(this, new IMessageRepo.SaveRequested(message));
             return Task.CompletedTask;
         }
 

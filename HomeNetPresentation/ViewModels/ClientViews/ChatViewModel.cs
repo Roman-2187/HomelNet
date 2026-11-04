@@ -41,7 +41,7 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Subscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
             _eventBus.Subscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
             _eventBus.Subscribe<IContactsVm.FriendSelected>(OnFriendSelected);     
-            _eventBus.Subscribe<IMessageRepo.ISaved>(OnMessageReceivedInRealTime);
+            _eventBus.Subscribe<IMessageRepo.SaveRequested>(OnMessageReceivedInRealTime);
         }
 
         private void OnUserSignedIn(IUserVm.UserSignedIn msg)
@@ -118,7 +118,7 @@ namespace HomeNetPresentation.ViewModels
             }
         }
 
-        private void OnMessageReceivedInRealTime(IMessageRepo.ISaved msg)
+        private void OnMessageReceivedInRealTime(IMessageRepo.SaveRequested msg)
         {
             if (msg?.Message == null || SelectedFriendId == null) return;
 
@@ -146,7 +146,7 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
             _eventBus.Unsubscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
             _eventBus.Unsubscribe<IContactsVm.FriendSelected>(OnFriendSelected);
-            _eventBus.Unsubscribe<IMessageRepo.ISaved>(OnMessageReceivedInRealTime);
+            _eventBus.Unsubscribe<IMessageRepo.SaveRequested>(OnMessageReceivedInRealTime);
         }
     }
 }
