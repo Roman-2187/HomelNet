@@ -26,18 +26,18 @@ namespace HomeNet.Synchronization.Sinc
 
         protected override void SubscribeEvents()
         {
-            EventBus.Subscribe<IUserRepo.IInserted>(OnUserInserted);
-            EventBus.Subscribe<IUserRepo.IUpdated>(OnUserUpdated);
-            EventBus.Subscribe<IUserRepo.IDeleted>(OnUserDeleted);
+            EventBus.Subscribe<IUserRepo.Inserted>(OnUserInserted);
+            EventBus.Subscribe<IUserRepo.Updated>(OnUserUpdated);
+            EventBus.Subscribe<IUserRepo.Deleted>(OnUserDeleted);
             EventBus.Subscribe<IUserSyncActions.Confirmed>(OnUserSyncedOnServer);
             EventBus.Subscribe<IUserSyncActions.DeleteConfirmed>(OnUserDeleteConfirmedByServer);
         }
 
         protected override void UnsubscribeEvents()
         {
-            EventBus.Unsubscribe<IUserRepo.IInserted>(OnUserInserted);
-            EventBus.Unsubscribe<IUserRepo.IUpdated>(OnUserUpdated);
-            EventBus.Unsubscribe<IUserRepo.IDeleted>(OnUserDeleted);
+            EventBus.Unsubscribe<IUserRepo.Inserted>(OnUserInserted);
+            EventBus.Unsubscribe<IUserRepo.Updated>(OnUserUpdated);
+            EventBus.Unsubscribe<IUserRepo.Deleted>(OnUserDeleted);
             EventBus.Unsubscribe<IUserSyncActions.Confirmed>(OnUserSyncedOnServer);
             EventBus.Unsubscribe<IUserSyncActions.DeleteConfirmed>(OnUserDeleteConfirmedByServer);
         }
@@ -76,7 +76,7 @@ namespace HomeNet.Synchronization.Sinc
             }
         }
 
-        private async void OnUserInserted(IUserRepo.IInserted msg)
+        private async void OnUserInserted(IUserRepo.Inserted msg)
         {
             if (msg?.User == null) return;
 
@@ -99,7 +99,7 @@ namespace HomeNet.Synchronization.Sinc
             await _userRepository.MarkUserAsSyncedAsync(msg.GuidId);
         }
 
-        private void OnUserDeleted(IUserRepo.IDeleted msg)
+        private void OnUserDeleted(IUserRepo.Deleted msg)
         {
             if (msg == null || msg.UserId == Guid.Empty) return;
 
@@ -115,7 +115,7 @@ namespace HomeNet.Synchronization.Sinc
             await _userRepository.DeleteByIdAsync<UserEntity>(msg.UserId);
         }
 
-        private void OnUserUpdated(IUserRepo.IUpdated msg)
+        private void OnUserUpdated(IUserRepo.Updated msg)
         {
             if (msg?.User == null) return;
 

@@ -3,6 +3,7 @@ using HomeNet.Infrastructure.Shared.Diagnostics;
 using HomeNet.Server.Endpoints;
 using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Interfaces.Repositories;
+using HomeNetOrm.Repositories.Remote;
 using Microsoft.AspNetCore.SignalR;
 using ILogger = HomeNet.Infrastructure.Shared.Interfaces.Diagnostics.ILogger;
 
@@ -33,11 +34,11 @@ namespace HomeNet.Server
             string postgresConn = builder.Configuration.GetConnectionString("PostgresConnection")
                 ?? "Server=127.0.0.1;Port=5432;Database=home_net_db;User Id=postgres;Password=05011987;";
 
-            var postgresEngine = new SiberNetDbEngine(DbEngineType.RemoteServer, postgresConn, serverSchemas, serverLogger);
+            var postgresEngine = new SiberNetDbEngine(DbEngineType.PostgreSQLServer, postgresConn, serverSchemas, serverLogger);
 
             IMessageRepo messageRepository = postgresEngine.CreateMessageRepository(null!);
             IUserRepo userRepository = postgresEngine.CreateUserRepository(null!);
-            IDeviceSyncRepository deviceSyncRepository = postgresEngine.CreateDeviceSyncRepository();
+            DeviceSyncRepository deviceSyncRepository = postgresEngine.CreateDeviceSyncRepository();
 
             builder.Services.AddSignalR();
             var app = builder.Build();

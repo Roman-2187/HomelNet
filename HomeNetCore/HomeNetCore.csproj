@@ -20,15 +20,16 @@
     <None Remove="Interfaces\OutputLogging\**" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageReference Include="Dapper" Version="2.1.86" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.0-preview3.26238.4" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+		<PackageReference Include="Dapper" Version="2.1.89" />
+		<PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
+	</ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\HomeNet.Infrastructure.Shared\HomeNet.Infrastructure.Shared.csproj" />
     <ProjectReference Include="..\HomeNet.Models.Shared\HomeNet.Models.Shared.csproj" />
+    <ProjectReference Include="..\HomeNetOrm\HomeNetOrm.csproj" />
   </ItemGroup>
 
 </Project>

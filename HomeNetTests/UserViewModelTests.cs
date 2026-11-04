@@ -1,8 +1,8 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
-using HomeNetCore.Models.Entity;
 using HomeNetPresentation.Services;
 using HomeNetPresentation.ViewModels;
 using Moq;

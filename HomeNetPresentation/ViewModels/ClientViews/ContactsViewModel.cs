@@ -39,8 +39,8 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Subscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed);
 
             // 🔥 ПЕРЕВОДИМ НА СИСТЕМНЫЕ СОБЫТИЯ СЛОЯ ДАННЫХ
-            _eventBus.Subscribe<IUserRepo.IInserted>(OnUserAdded);
-            _eventBus.Subscribe<IUserRepo.IDeleted>(OnUserDeleted);
+            _eventBus.Subscribe<IUserRepo.Inserted>(OnUserAdded);
+            _eventBus.Subscribe<IUserRepo.Deleted>(OnUserDeleted);
 
             _eventBus.Subscribe<IUserVm.UserSignedIn>(OnGlobalUserSignedIn);
             _eventBus.Subscribe<IUserVm.UserSignedUp>(OnGlobalUserSignedUp);
@@ -90,7 +90,7 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Publish(this, new IUserVm.LogoutClient());
         }
 
-        private void OnUserAdded(IUserRepo.IInserted msg)
+        private void OnUserAdded(IUserRepo.Inserted msg)
         {
             if (msg?.User == null) return;
 
@@ -107,7 +107,7 @@ namespace HomeNetPresentation.ViewModels
 
 
         // 🔥 Метод теперь принимает системный тип события от репозитория
-        private void OnUserDeleted(IUserRepo.IDeleted msg)
+        private void OnUserDeleted(IUserRepo.Deleted msg)
         {
             if (msg == null) return;
             var friendToRemove = Friends.FirstOrDefault(f => f.Id == msg.UserId);
@@ -137,8 +137,8 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Unsubscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed);
 
             // 🔥 Не забываем отписаться от новых интерфейсов в Dispose
-            _eventBus.Unsubscribe<IUserRepo.IInserted>(OnUserAdded);
-            _eventBus.Unsubscribe<IUserRepo.IDeleted>(OnUserDeleted);
+            _eventBus.Unsubscribe<IUserRepo.Inserted>(OnUserAdded);
+            _eventBus.Unsubscribe<IUserRepo.Deleted>(OnUserDeleted);
 
             _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnGlobalUserSignedIn);
             _eventBus.Unsubscribe<IUserVm.UserSignedUp>(OnGlobalUserSignedUp);

@@ -20,8 +20,8 @@ namespace HomeNetOrm.Infrastructure
 {
     public enum DbEngineType
     {
-        LocalClient, // Режим клиента (SQLite)
-        RemoteServer // Режим сервера (PostgreSQL)
+        SQLiteSQLClient, // Режим клиента (SQLite)
+        PostgreSQLServer // Режим сервера (PostgreSQL)
     }
 
     public class SiberNetDbEngine : IDbEngine, IDisposable
@@ -42,8 +42,8 @@ namespace HomeNetOrm.Infrastructure
         {
             DbConnection conn = _engineType switch
             {
-                DbEngineType.LocalClient => new SqliteConnection(_connectionString),
-                DbEngineType.RemoteServer => new NpgsqlConnection(_connectionString),
+                DbEngineType.SQLiteSQLClient => new SqliteConnection(_connectionString),
+                DbEngineType.PostgreSQLServer => new NpgsqlConnection(_connectionString),
                 _ => throw new InvalidOperationException("Неизвестный тип СУБД движка.")
             };
             return conn;
@@ -60,13 +60,13 @@ namespace HomeNetOrm.Infrastructure
 
             switch (engineType)
             {
-                case DbEngineType.LocalClient:
+                case DbEngineType.SQLiteSQLClient:
                     _translator = new DBProviders.Sqlite.SqliteDialectTranslator();
                     _spec = new DBProviders.Sqlite.SqliteProviderSpecification();
                     _schemaGenerator = new DBProviders.Sqlite.SqliteSchemaGenerator(_spec);
                     break;
 
-                case DbEngineType.RemoteServer:
+                case DbEngineType.PostgreSQLServer:
                     _translator = new DBProviders.Postgres.PostgresDialectTranslator();
                     _spec = new DBProviders.Postgres.PostgresProviderSpecification();
                     _schemaGenerator = new DBProviders.Postgres.PostgresSchemaSqlGenerator(_spec);
@@ -99,11 +99,11 @@ namespace HomeNetOrm.Infrastructure
             return new ClientDeviceSettingsRepository(ConnectionFactory, generator);
         }
 
-        public IDeviceSyncRepository CreateDeviceSyncRepository()
+        public DeviceSyncRepository CreateDeviceSyncRepository()
         {
             var generator = new DeviceSyncSqlGenerator(_schemas, _translator, _logger);
             // 🔥 Исправлено: Добавлен логгер в конструктор репозитория чекпоинтов девайса
-            return new DeviceSyncRepository(ConnectionFactory, generator, _logger);
+            return new DeviceSyncRepository(ConnectionFactory, generator);
         }
 
         // --- ⚙️ Универсальный запуск инициализации таблиц и схем ---
@@ -121,7 +121,7 @@ namespace HomeNetOrm.Infrastructure
 
                 await tableInitializer.InitializeAsync();
 
-                if (_engineType == DbEngineType.RemoteServer)
+                if (_engineType == DbEngineType.PostgreSQLServer)
                 {
                     await tableInitializer.MigratePostgresVersionTriggersAsync(
                         baseConnection,

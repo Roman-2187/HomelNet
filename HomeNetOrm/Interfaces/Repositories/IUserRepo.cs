@@ -2,7 +2,6 @@
 
 namespace HomeNetOrm.Interfaces.Repositories
 {
-    // 🔥 Наследуем плоский корневой IRepository
     public interface IUserRepo : IRepository
     {
         // ==========================================
@@ -13,14 +12,14 @@ namespace HomeNetOrm.Interfaces.Repositories
         public record DeleteRequested(Guid UserId);
 
         // ==========================================
-        // 📤 ФАКТЫ (Защищенные интерфейсы только для чтения)
+        // 📤 ФАКТЫ (🔥 Теперь это рекорды, а не интерфейсы!)
         // ==========================================
-        public interface IInserted { UserEntity User { get; } string? Message { get; } }
-        public interface IUpdated { UserEntity User { get; } string? Message { get; } }
-        public interface IDeleted { Guid UserId { get; } }
+        public record Inserted(UserEntity User, string? Message);
+        public record Updated(UserEntity User, string? Message);
+        public record Deleted(Guid UserId);
 
         // ==========================================
-        // 🔍 ПРЯМЫЕ МЕТОДЫ (Только уникальный домен юзеров)
+        // 🔍 ПРЯМЫЕ МЕТОДЫ
         // ==========================================
         Task<bool> EmailExistsAsync(string? email);
         Task<UserEntity?> GetByEmailAsync(string email);

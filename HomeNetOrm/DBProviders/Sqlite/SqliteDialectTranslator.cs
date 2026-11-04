@@ -105,6 +105,8 @@ namespace HomeNetOrm.DBProviders.Sqlite
         // =========================================================================
         // 🧰 ПОДВАЛ КЛАССА: Изолируем специфичные текстовые маркеры SQLite
         // =========================================================================
-        private const string SqliteNowFunc = "datetime('now')";
+        //private const string SqliteNowFunc = "datetime('now')";
+
+       private const string SqliteNowFunc = "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')";
     }
 }

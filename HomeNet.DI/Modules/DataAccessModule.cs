@@ -1,6 +1,7 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Network;
+using HomeNet.Synchronization;
 using HomeNet.Synchronization.Interfaces.Sinc;
 using HomeNet.Synchronization.Sinc;
 using HomeNetCore.Interfaces;
@@ -46,7 +47,7 @@ namespace HomeNet.DI.Modules
             ApiBaseUrl = apiBaseUrl;
 
             // 🎯 1. Запускаем SiberNetDbEngine в режиме локального клиента (SQLite)
-            DbEngine = new SiberNetDbEngine(DbEngineType.LocalClient, sqliteConn, appSchemas, logger);
+            DbEngine = new SiberNetDbEngine(DbEngineType.SQLiteSQLClient, sqliteConn, appSchemas, logger);
 
             // =========================================================================
             // 🔥 2. СЕТЕВОЙ КУРЬЕР API С АВТОМАТИЧЕСКИМ ИНТЕРЦЕПТОРОМ ОШИБОК

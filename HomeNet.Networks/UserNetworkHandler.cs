@@ -4,6 +4,7 @@ using HomeNet.Models.Shared.Entity;
 using HomeNet.Synchronization.Interfaces.Sinc;
 using HomeNetCore.Interfaces;
 using HomeNetOrm.Interfaces.Repositories;
+using HomeNetOrm.Repositories.Base;
 
 namespace HomeNet.Network
 {
@@ -14,9 +15,7 @@ namespace HomeNet.Network
         public UserNetworkHandler(IApiClient apiClient, IEventBus eventBus, ILogger logger)
             : base(apiClient, eventBus, logger) { }
 
-        // Внутренние реализации защищённых фактов IUserRepo для сквозного мёржа
-        private record UserInsertedFact(UserEntity User, string? Message) : IUserRepo.IInserted;
-        private record UserDeletedFact(Guid UserId) : IUserRepo.IDeleted;
+       
 
         protected override void SubscribeToEvents()
         {
@@ -76,11 +75,11 @@ namespace HomeNet.Network
         {
             if (user == null) return Task.CompletedTask;
 
-            Logger.LogInfo($"[UserNet] Сервер прислал апдейт профиля {user.Id}. Отправляем защищённый факт в шину.");
+            Logger.LogInfo($"[UserNet] Сервер прислал апдейт профиля {user.Id}. Отправляем команду на сохранение в шину.");
             user.IsSynced = 1;
 
-            // 🔥 Выстреливаем фабрикой защищённого факта ОРМ
-            EventBus.Publish(this, new UserInsertedFact(user, "Скачан из сети"));
+            // 🔥 Публикуем КОМАНДУ, а не факт
+            EventBus.Publish(this, new IUserRepo.InsertRequested(user));
             return Task.CompletedTask;
         }
 

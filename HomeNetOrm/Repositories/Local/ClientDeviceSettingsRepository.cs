@@ -1,17 +1,23 @@
-﻿using System.Data.Common;
-using Dapper;
+﻿using Dapper;
 using HomeNet.Models.Shared.Entity;
-using HomeNetOrm.Interfaces.Generators;
+using HomeNetOrm.Generators; // Подключаем напрямую папку с классами генераторов
+using HomeNetOrm.Generators.Local;
 using HomeNetOrm.Models;
+using System;
+using System.Data.Common;
+using System.Threading.Tasks;
 
 namespace HomeNetOrm.Repositories.Local
 {
+    /// <summary>
+    /// Чистый репозиторий настроек. Работает напрямую с классом генератора! 🧼🦾
+    /// </summary>
     public class ClientDeviceSettingsRepository
     {
         private readonly Func<DbConnection> _connectionFactory;
-        private readonly ILocalDeviceSettingsSqlGenerator _sqlGenerator;
+        private readonly DeviceSettingsSqlGenerator _sqlGenerator; // Твой конкретный класс генератора!
 
-        internal ClientDeviceSettingsRepository(Func<DbConnection> connectionFactory, ILocalDeviceSettingsSqlGenerator sqlGenerator)
+        internal ClientDeviceSettingsRepository(Func<DbConnection> connectionFactory, DeviceSettingsSqlGenerator sqlGenerator)
         {
             _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             _sqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));
@@ -42,7 +48,6 @@ namespace HomeNetOrm.Repositories.Local
                     UpdatedAt = DateTimeOffset.UtcNow
                 };
 
-                // Вызываем метод сохранения в контексте этого же репозитория
                 await SaveSettingsInternalAsync(db, newSettings);
                 return newDeviceId;
             }

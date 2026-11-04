@@ -1,6 +1,4 @@
-﻿using System;
-using HomeNet.Models.Shared.Entity;
-using HomeNetOrm.Interfaces.Generators;
+﻿using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Models;
 using static HomeNetOrm.Enums.Sql;
 

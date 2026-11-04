@@ -1,4 +1,4 @@
-﻿namespace HomeNetCore.Exeptions
+﻿namespace HomeNetOrm.Exeptions
 {
     public class DuplicateEmailException : Exception
     {

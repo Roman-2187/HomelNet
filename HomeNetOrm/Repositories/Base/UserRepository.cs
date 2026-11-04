@@ -20,15 +20,36 @@ namespace HomeNetOrm.Repositories.Base
         {
             _userSqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));
             _eventBus = eventBus ?? new NullEventProxy();
+
+            // 🔥 Подписываемся на команду вставки (из сети или других источников)
+            if (_eventBus is not NullEventProxy)
+            {
+                _eventBus.Subscribe<IUserRepo.InsertRequested>(OnInsertRequested);
+            }
         }
 
-        private record UserInsertedFact(UserEntity User, string? Message) : IUserRepo.IInserted;
+        private async void OnInsertRequested(IUserRepo.InsertRequested cmd)
+        {
+            if (cmd?.User == null) return;
 
+            try
+            {
+                await InsertUserAsync(cmd.User);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[UserRepository] Ошибка при обработке InsertRequested: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Публичный метод вставки. Если юзер реально вставлен — публикует Inserted.
+        /// Если уже существует — НЕ публикует (чтобы не спамить UI).
+        /// </summary>
         public async Task<UserEntity> InsertUserAsync(UserEntity user)
         {
             if (user.Id == Guid.Empty) user.Id = Guid.NewGuid();
 
-            // Пользуемся базовым CRUD-экстеншеном GetByIdAsync внутри самого репо!
             var existingUser = await this.GetByIdAsync<UserEntity>(user.Id);
             if (existingUser == null && !string.IsNullOrWhiteSpace(user.Email))
             {
@@ -37,22 +58,26 @@ namespace HomeNetOrm.Repositories.Base
 
             if (existingUser != null)
             {
-                Logger.LogWarning($"[UserRepository] Пользователь уже существует. (ID: {user.Id})");
-                _eventBus.Publish(this, new UserInsertedFact(existingUser, "Существует"));
+                // 🔥 Юзер уже в базе. НИЧЕГО не публикуем — просто возвращаем.
+                Logger.LogWarning($"[UserRepository] Пользователь уже существует. (ID: {user.Id}). Публикация Inserted пропущена.");
                 return existingUser;
             }
 
-            user.LocalCreatedAt = DateTimeOffset.UtcNow;
-            user.ServerCreatedAt = DateTimeOffset.UtcNow;
-            user.UpdatedAt = DateTimeOffset.UtcNow;
-            user.IsSynced = 0;
+            // 🔥 НЕ трогаем user.IsSynced! Позволяем вызывающему коду решать:
+            // - локальная регистрация → IsSynced = 0 (по умолчанию)
+            // - из сети → IsSynced = 1 (ставит UserNetworkHandler)
+
+          
 
             var cmd = _userSqlGenerator.GenerateInsert();
             try
             {
                 await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, user));
                 Logger.LogInfo($"[UserRepository] Пользователь '{user.FirstName}' успешно записан.");
-                _eventBus.Publish(this, new UserInsertedFact(user, "Успешно записан"));
+
+                // 🔥 Публикуем факт ВСЕГДА, когда вставка реально произошла.
+                // IsSynced внутри юзера уже тот, что нужен (0 или 1).
+                _eventBus.Publish(this, new IUserRepo.Inserted(user, "Успешно записан"));
                 return user;
             }
             catch (Exception ex)
@@ -61,7 +86,6 @@ namespace HomeNetOrm.Repositories.Base
             }
         }
 
-        // Чисто уникальные методы выборки юзеров по бизнес-полям (Email)
         public async Task<UserEntity?> GetByEmailAsync(string email) =>
             await ExecuteAsync(db => db.QueryFirstOrDefaultAsync<UserEntity>(_userSqlGenerator.GenerateSelectByEmail(email).Sql, new { Email = email }));
 

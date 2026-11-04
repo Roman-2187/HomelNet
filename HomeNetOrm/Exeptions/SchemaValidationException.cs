@@ -1,4 +1,4 @@
-﻿namespace HomeNetCore.Exeptions
+﻿namespace HomeNetOrm.Exeptions
 {
     [Serializable]
 

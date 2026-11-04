@@ -1,10 +1,8 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Synchronization.Interfaces.Sinc;
 using HomeNetOrm.Interfaces.Repositories;
-using System;
-using System.Threading.Tasks;
 
-namespace HomeNetOrm.Infrastructure
+namespace HomeNet.Synchronization
 {
     /// <summary>
     /// 🔥 ГЛАВНЫЙ СИНХРО-ДВИЖОК СИСТЕМЫ:
@@ -12,8 +10,7 @@ namespace HomeNetOrm.Infrastructure
     /// </summary>
     public class SyncEngine
     {
-        private readonly IUserRepo _userRepository;
-        private readonly IMessageRepo _messageRepository;
+        
         private readonly ISyncCoordinator _syncCoordinator;
         private readonly ILogger _logger;
 
@@ -22,9 +19,7 @@ namespace HomeNetOrm.Infrastructure
             IMessageRepo messageRepository,
             ISyncCoordinator syncCoordinator,
             ILogger logger)
-        {
-            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
-            _messageRepository = messageRepository ?? throw new ArgumentNullException(nameof(messageRepository));
+        { 
             _syncCoordinator = syncCoordinator ?? throw new ArgumentNullException(nameof(syncCoordinator));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }

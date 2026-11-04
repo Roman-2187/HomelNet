@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Models.Shared.Entity;
-using HomeNetCore.Interfaces.Diagnostics;
-using HomeNetOrm.Enums;
 using HomeNetOrm.Generators.Base;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;

@@ -1,11 +1,11 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
-using HomeNetCore.Exeptions;
 using HomeNetOrm.Interfaces;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Models;
 using System.Data;
 using System.Data.Common;
 using Dapper;
+using HomeNetOrm.Exeptions;
 
 namespace HomeNetOrm.DBProviders.Base
 {

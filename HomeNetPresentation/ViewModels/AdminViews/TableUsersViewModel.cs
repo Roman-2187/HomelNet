@@ -30,10 +30,10 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 
         private void InitializeBusSubscriptions()
         {
-            // 🔥 ВСЕ ЭТИ СОБЫТИЯ КОНВЕЙЕР БУТСТРАППЕРА ГАРАНТИРОВАННО ВЫРАВНЯЛ В UI-ПОТОК!
-            _eventBus.Subscribe<IUserRepo.IDeleted>(OnUserDeletedFromDb);
-            _eventBus.Subscribe<IUserRepo.IInserted>(OnUserAdded);
-            _eventBus.Subscribe<IUserRepo.IUpdated>(OnUserUpdated);
+           
+            _eventBus.Subscribe<IUserRepo.Deleted>(OnUserDeletedFromDb);
+            _eventBus.Subscribe<IUserRepo.Inserted>(OnUserAdded);
+            _eventBus.Subscribe<IUserRepo.Updated>(OnUserUpdated);
 
             _eventBus.Subscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
             _eventBus.Subscribe<IDbContextContainer.InfrastructureReady>(OnInfrastructureReady);
@@ -51,7 +51,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
                 var list = await _userRepo.GetAllAsync<UserEntity>();
 
                 // 🧼 Чистота: Запрос шел через await, возврат контекста гарантирован .NET
-                Users = new ObservableCollection<UserEntity>(list ?? Enumerable.Empty<UserEntity>());
+                Users = new ObservableCollection<UserEntity>(list ?? []);
 
                 BroadcastRefreshed();
             }
@@ -63,7 +63,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
 
        
 
-        private void OnUserUpdated(IUserRepo.IUpdated msg)
+        private void OnUserUpdated(IUserRepo.Updated msg)
         {
             if (msg?.User == null) return;
 
@@ -80,7 +80,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             }
         }
 
-        private void OnUserDeletedFromDb(IUserRepo.IDeleted msg)
+        private void OnUserDeletedFromDb(IUserRepo.Deleted msg)
         {
             var uiUser = Users.FirstOrDefault(u => u.Id == msg.UserId);
             if (uiUser != null)
@@ -90,7 +90,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
             }
         }
 
-        private void OnUserAdded(IUserRepo.IInserted msg)
+        private void OnUserAdded(IUserRepo.Inserted msg)
         {
             if (msg.User == null) return;
 
@@ -116,9 +116,9 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         public override void Dispose()
         {
             base.Dispose();
-            _eventBus.Unsubscribe<IUserRepo.IDeleted>(OnUserDeletedFromDb);
-            _eventBus.Unsubscribe<IUserRepo.IInserted>(OnUserAdded);
-            _eventBus.Unsubscribe<IUserRepo.IUpdated>(OnUserUpdated);
+            _eventBus.Unsubscribe<IUserRepo.Deleted>(OnUserDeletedFromDb);
+            _eventBus.Unsubscribe<IUserRepo.Inserted>(OnUserAdded);
+            _eventBus.Unsubscribe<IUserRepo.Updated>(OnUserUpdated);
             _eventBus.Unsubscribe<IUsersTableVm.RefreshRequest>(OnRefreshRequest);
         }
     }

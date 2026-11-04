@@ -22,7 +22,7 @@ namespace HomeNet.Models.Shared.Entity
 
         // Когда автор физически создал запись на своем устройстве
         [ObservableProperty]
-        private DateTimeOffset _localCreatedAt = DateTimeOffset.UtcNow;
+        private DateTimeOffset _localCreatedAt = DateTimeOffset.Now;  
 
         // When база данных (сервер) закоммитила эту запись у себя
         [ObservableProperty]

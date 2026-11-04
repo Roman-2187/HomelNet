@@ -28,6 +28,9 @@ namespace HomeNet.DI.Modules
         protected override TableBuilder<UserEntity> BuildUsersSchema()
         {
             var builder = base.BuildUsersSchema().WithVersionTracking();
+            
+            builder.AddColumn(f => f.ServerCreatedAt);
+            builder.AddColumn(f => f.UpdatedAt);
             builder.AddColumn(u => u.Version);
             return builder;
         }

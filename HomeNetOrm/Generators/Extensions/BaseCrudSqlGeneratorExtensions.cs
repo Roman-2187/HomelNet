@@ -36,7 +36,6 @@ namespace HomeNetOrm.Generators.Extensions
             return generator.CreateQuery()
                 .Emit(CmdType.Update).Table()
                 .Emit(PhraseType.Set).SetFields()
-                // 🔥 Теперь лямбда скомпилируется идеально, так как вызов строго типизирован!
                 .Emit(PhraseType.Where).Col(e => e.Id).Emit(OpType.Equal).Param(e => e.Id, baseGen.DapperParams["Id"])
                 .Build();
         }

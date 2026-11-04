@@ -42,10 +42,7 @@ namespace HomeNet.DI.Modules
             builder.AddColumn(u => u.Email).HasLength(50).IsRequired();
             builder.AddColumn(u => u.Password).HasLength(100).IsRequired();
 
-            // 🔥 НАШ НОВЫЙ СТАНДАРТ РАСПРЕДЕЛЕННЫХ ТАЙМСТАМПОВ
-            builder.AddColumn(u => u.LocalCreatedAt);
-            builder.AddColumn(u => u.ServerCreatedAt);
-            builder.AddColumn(u => u.UpdatedAt);
+          
             return builder;
         }
 
@@ -74,9 +71,7 @@ namespace HomeNet.DI.Modules
             builder.AddColumn(f => f.FriendId).IsRequired();
 
             // 🔥 НАШ НОВЫЙ СТАНДАРТ РАСПРЕДЕЛЕННЫХ ТАЙМСТАМПОВ
-            builder.AddColumn(f => f.LocalCreatedAt);
-            builder.AddColumn(f => f.ServerCreatedAt);
-            builder.AddColumn(f => f.UpdatedAt);
+           
             return builder;
         }
 

@@ -8,15 +8,16 @@
 
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.89" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.0-preview3.26238.4" />
-    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
+    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="11.0.0-rc.3.26522.148" />
     <PackageReference Include="Npgsql" Version="10.0.3" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="11.0.0-rc.3.26522.148" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\HomeNet.Infrastructure.Shared\HomeNet.Infrastructure.Shared.csproj" />
-    <ProjectReference Include="..\HomeNetCore\HomeNetCore.csproj" />
+    <ProjectReference Include="..\HomeNet.Models.Shared\HomeNet.Models.Shared.csproj" />
   </ItemGroup>
 
 </Project>

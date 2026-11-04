@@ -42,7 +42,7 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Subscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed);
 
             // 🔥 ПОДПИСКА НА ЕДИНЫЙ ИСТОЧНИК ПРАВДЫ ОТ ОРМ
-            _eventBus.Subscribe<IUserRepo.IDeleted>(OnUserDeleted);
+            _eventBus.Subscribe<IUserRepo.Deleted>(OnUserDeleted);
 
             ResetForm();
         }
@@ -64,7 +64,7 @@ namespace HomeNetPresentation.ViewModels
         }
 
         // 🔥 Метод теперь принимает системный тип события от репозитория
-        private void OnUserDeleted(IUserRepo.IDeleted msg)
+        private void OnUserDeleted(IUserRepo.Deleted msg)
         {
             var userToRemove = FoundUsers.FirstOrDefault(u => u.Id == msg.UserId);
             if (userToRemove != null)
@@ -181,7 +181,7 @@ namespace HomeNetPresentation.ViewModels
             base.Dispose();
             _eventBus.Unsubscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
             _eventBus.Unsubscribe<IUsersTableVm.Refreshed>(OnUsersRefreshed);
-            _eventBus.Unsubscribe<IUserRepo.IDeleted>(OnUserDeleted);
+            _eventBus.Unsubscribe<IUserRepo.Deleted>(OnUserDeleted);
         }
     }
 }
