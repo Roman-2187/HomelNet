@@ -4,9 +4,6 @@ using HomeNet.Models.Shared.Entity;
 using HomeNet.Synchronization.Interfaces.Sinc;
 using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Repositories.Extensions; // 🔥 ПОДКЛЮЧАЕМ НАШИ ОБВЕСЫ!
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace HomeNet.Synchronization.Sinc
 {
@@ -58,7 +55,8 @@ namespace HomeNet.Synchronization.Sinc
                 // 📤 НАПРАВЛЕНИЕ PUSH: Достаем локальные оффлайн-хвосты (IsSynced == 0)
                 // ============================================================================
                 // 🔥 ИСПРАВЛЕНО: Вызываем дженерик-экстеншен базового CRUD с указанием сущности!
-                var allUsers = await _userRepository.GetAllAsync<UserEntity>();
+                var allUsers = await _userRepository.GetAllAsync();
+              
                 var pendingList = allUsers.Where(u => u.IsSynced == 0).ToList();
 
                 if (pendingList.Count > 0)
@@ -83,7 +81,7 @@ namespace HomeNet.Synchronization.Sinc
             if (msg.User.IsSynced == 1)
             {
                 Logger.LogDebug($"[UserSync] Сохраняем прилетевшего из сети пользователя: {msg.User.Id}");
-                await _userRepository.InsertUserAsync(msg.User);
+                await _userRepository.InsertAsync(msg.User);
                 return;
             }
 
@@ -112,7 +110,7 @@ namespace HomeNet.Synchronization.Sinc
             Logger.LogInfo($"[UserSync] Удаление подтверждено сервером. Стираем локально: {msg.UserId}");
 
             // 🔥 ИСПРАВЛЕНО: Вызываем дженерик-экстеншен базового CRUD для удаления
-            await _userRepository.DeleteByIdAsync<UserEntity>(msg.UserId);
+            await _userRepository.DeleteByIdAsync(msg.UserId);
         }
 
         private void OnUserUpdated(IUserRepo.Updated msg)

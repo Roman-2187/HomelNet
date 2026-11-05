@@ -48,7 +48,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
         {
             try
             {
-                var list = await _userRepo.GetAllAsync<UserEntity>();
+                var list = await _userRepo.GetAllAsync();
 
                 // 🧼 Чистота: Запрос шел через await, возврат контекста гарантирован .NET
                 Users = new ObservableCollection<UserEntity>(list ?? []);

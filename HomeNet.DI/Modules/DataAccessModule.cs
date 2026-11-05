@@ -16,26 +16,17 @@ namespace HomeNet.DI.Modules
 {
     public class DataAccessModule
     {
-        // 🔥 Теперь здесь гордо трудится наша единая Царь-Машина!
         public SiberNetDbEngine DbEngine { get; }
         public IApiClient ApiClient { get; }
         public string ApiBaseUrl { get; }
         public IDbContextContainer DbContextContainer { get; }
 
-        // Чистые интерфейсы репозиториев наружу для Avalonia
         public IUserRepo UserRepository { get; }
         public IMessageRepo MessageRepository { get; }
-
-        // Конкретный репозиторий настроек девайса без лишних интерфейсов-пустышек
         public ClientDeviceSettingsRepository DeviceSettingsRepository { get; }
 
-        // Железный ID девайса из SQLite сессии
         public Guid CurrentDeviceId { get; private set; }
-
-        // Наш главный синхро-движок ОРМ
         public SyncEngine OrmEngine { get; }
-
-        // Сетевой слушатель SignalR
         public SignalRNotificationListener NotificationListener { get; }
 
         public DataAccessModule(
@@ -46,51 +37,61 @@ namespace HomeNet.DI.Modules
         {
             ApiBaseUrl = apiBaseUrl;
 
+            // =========================================================================
+            // 🔥 МАГИЯ ЗДЕСЬ: Разделяем шину на Открытую и Закрытую
+            // =========================================================================
+            if (eventBus is not IInternalEventBus internalBus)
+            {
+                throw new InvalidOperationException(
+                    "[DataAccessModule] Критическая ошибка архитектуры: переданная шина не реализует IInternalEventBus. " +
+                    "Репозитории не смогут публиковать факты!");
+            }
+
             // 🎯 1. Запускаем SiberNetDbEngine в режиме локального клиента (SQLite)
             DbEngine = new SiberNetDbEngine(DbEngineType.SQLiteSQLClient, sqliteConn, appSchemas, logger);
 
-            // =========================================================================
-            // 🔥 2. СЕТЕВОЙ КУРЬЕР API С АВТОМАТИЧЕСКИМ ИНТЕРЦЕПТОРОМ ОШИБОК
-            // =========================================================================
-            // Создаем наш сетевой фильтр-партизан и отдаем ему автобус
-            var networkInterceptor = new NetworkExceptionInterceptor(eventBus);
+            // 🔥 2. Инициализируем фабрику репозиториев (передаем закрытую шину)
+            DbEngine.InitializeRepositories(internalBus);
 
-            // Жестко привязываем его к стандартному внутреннему хэндлеру .NET для отправки пакетов
-            networkInterceptor.InnerHandler = new HttpClientHandler();
+            // 🔥 3. Достаем готовые репозитории из фабрики
+            UserRepository = DbEngine.Repositories.GetRepository<IUserRepo>();
+            MessageRepository = DbEngine.Repositories.GetRepository<IMessageRepo>();
+            DeviceSettingsRepository = DbEngine.Repositories.GetRepository<ClientDeviceSettingsRepository>();
 
-            // Собираем HttpClient, пропустив его через наш интерцептор, и задаем базовый адрес
+            // =========================================================================
+            // 4. СЕТЕВОЙ КУРЬЕР API (Интерцептору нужна открытая шина)
+            // =========================================================================
+            var networkInterceptor = new NetworkExceptionInterceptor(eventBus)
+            {
+                InnerHandler = new HttpClientHandler()
+            };
+
             var httpClient = new HttpClient(networkInterceptor)
             {
                 BaseAddress = new Uri(apiBaseUrl),
-                Timeout = TimeSpan.FromSeconds(10) // Защита от бесконечного зависания сети
+                Timeout = TimeSpan.FromSeconds(10)
             };
 
-            // Отдаем полностью заряженный HttpClient в твой курьер API
             ApiClient = new HttpApiClient(httpClient, logger);
             // =========================================================================
 
-            // 3. Контейнер хаба инициализации (принимает наш универсальный движок)
-            DbContextContainer = new DbContextContainer(DbEngine, apiBaseUrl, eventBus, logger);
+            // 5. Контейнер хаба инициализации
+            DbContextContainer = new DbContextContainer(DbEngine, apiBaseUrl, internalBus, logger);
 
-            // 4. Штампуем репозитории на автопилоте!
-            UserRepository = DbEngine.CreateUserRepository(eventBus);
-            MessageRepository = DbEngine.CreateMessageRepository(eventBus);
-            DeviceSettingsRepository = DbEngine.CreateDeviceSettingsRepository();
-
-            // 5. Инициализация слоев синхронизации
-            var userSync = new UserSynchronizer(UserRepository, eventBus, logger);
-            var messageSync = new MessageSynchronizer(MessageRepository, eventBus, logger);
+            // 6. Инициализация слоев синхронизации
+            var userSync = new UserSynchronizer(UserRepository, internalBus, logger);
+            var messageSync = new MessageSynchronizer(MessageRepository, internalBus, logger);
             var syncCoordinator = new CompositeSyncCoordinator(userSync, messageSync);
 
-            // 6. Упаковываем репозитории в главный управляющий SincEngine
+            // 7. Упаковываем репозитории в главный управляющий SincEngine
             OrmEngine = new SyncEngine(UserRepository, MessageRepository, syncCoordinator, logger);
 
-            // 7. Сборка сетевых хандлеров
-            var messageNetworkHandler = new MessageNetworkHandler(ApiClient, eventBus, logger);
-            var userNetworkHandler = new UserNetworkHandler(ApiClient, eventBus, logger);
+            // 8. Сборка сетевых хандлеров
+            var messageNetworkHandler = new MessageNetworkHandler(ApiClient, internalBus, logger);
+            var userNetworkHandler = new UserNetworkHandler(ApiClient, internalBus, logger);
 
-            // 8. Запуск SignalR листенера комьютаций
-            NotificationListener = new SignalRNotificationListener(apiBaseUrl, messageNetworkHandler, userNetworkHandler, logger, eventBus);
+            // 9. Запуск SignalR листенера
+            NotificationListener = new SignalRNotificationListener(apiBaseUrl, messageNetworkHandler, userNetworkHandler, logger, internalBus);
         }
 
         public async Task InitializeDeviceSessionAsync()

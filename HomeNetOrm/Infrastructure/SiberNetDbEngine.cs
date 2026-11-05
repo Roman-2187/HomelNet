@@ -3,15 +3,10 @@ using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetOrm.DBProviders.Base;
 using HomeNetOrm.DBProviders.Postgres;
 using HomeNetOrm.Generators.Base;
-using HomeNetOrm.Generators.Local;
-using HomeNetOrm.Generators.Remote;
 using HomeNetOrm.Interfaces.Builders;
 using HomeNetOrm.Interfaces.DbInfrastructure;
-using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Models;
 using HomeNetOrm.Repositories.Base;
-using HomeNetOrm.Repositories.Local;
-using HomeNetOrm.Repositories.Remote;
 using Microsoft.Data.Sqlite;
 using Npgsql;
 using System.Data.Common;
@@ -26,7 +21,7 @@ namespace HomeNetOrm.Infrastructure
 
     public class SiberNetDbEngine : IDbEngine, IDisposable
     {
-        private readonly string _connectionString; 
+        private readonly string _connectionString;
         private readonly ILogger _logger;
         private readonly IEnumerable<TableSchema> _schemas;
         private readonly ISqlDialectTranslator _translator;
@@ -34,10 +29,9 @@ namespace HomeNetOrm.Infrastructure
         private readonly ISchemaSqlGenerator _schemaGenerator;
         private readonly DbEngineType _engineType;
 
-        /// <summary>
-        /// Многопоточная фабрика соединений. На лету создает чистый экземпляр 
-        /// нужного провайдера (SQLite/Postgres) для каждого асинхронного потока.
-        /// </summary>
+        // 🔥 Тип фабрики теперь общий, чтобы можно было хранить и Local, и Remote
+        public BaseRepositoryFactory Repositories { get; private set; } = null!;
+
         public Func<DbConnection> ConnectionFactory => () =>
         {
             DbConnection conn = _engineType switch
@@ -77,36 +71,39 @@ namespace HomeNetOrm.Infrastructure
             }
         }
 
-        // --- 🏗️ Универсальные фабрики репозиториев штампуют методы на базе ConnectionFactory ---
-
-        public IUserRepo CreateUserRepository(IEventBus eventBus)
+        // =========================================================================
+        // 🏗️ ИНИЦИАЛИЗАЦИЯ РЕПОЗИТОРИЕВ (Вызывается из DataAccessModule)
+        // =========================================================================
+        public void InitializeRepositories(IInternalEventBus? eventBus)
         {
-            // 🔥 Вычищено: Используем новый плоский генератор пользователей взамен Synced-мусора!
-            var generator = new UserSqlGenerator(_schemas, _translator, _logger);
-            return new UserRepository(ConnectionFactory, generator, _logger, eventBus);
+            _logger.LogInfo("[DbEngine] Инициализация фабрики репозиториев...");
+
+            // 🔥 ЕДИНАЯ ТОЧКА ВЫБОРА ФАБРИКИ
+            if (_engineType == DbEngineType.SQLiteSQLClient)
+            {
+                if (eventBus == null)
+                    throw new ArgumentNullException(nameof(eventBus), "Клиентская фабрика требует IInternalEventBus!");
+
+                Repositories = new LocalRepositoryFactory(
+                    ConnectionFactory,
+                    _schemas,
+                    _translator,
+                    _logger,
+                    eventBus);
+            }
+            else
+            {
+                Repositories = new RemoteRepositoryFactory(
+                    ConnectionFactory,
+                    _schemas,
+                    _translator,
+                    _logger);
+            }
         }
 
-        public IMessageRepo CreateMessageRepository(IEventBus eventBus)
-        {
-            // 🔥 Вычищено: Используем новый плоский генератор сообщений взамен Synced-мусора!
-            var generator = new MessageSqlGenerator(_schemas, _translator, _logger);
-            return new MessageRepository(ConnectionFactory, generator, _logger, eventBus);
-        }
-
-        public ClientDeviceSettingsRepository CreateDeviceSettingsRepository()
-        {
-            var generator = new DeviceSettingsSqlGenerator(_schemas, _translator, _logger);
-            return new ClientDeviceSettingsRepository(ConnectionFactory, generator);
-        }
-
-        public DeviceSyncRepository CreateDeviceSyncRepository()
-        {
-            var generator = new DeviceSyncSqlGenerator(_schemas, _translator, _logger);
-            // 🔥 Исправлено: Добавлен логгер в конструктор репозитория чекпоинтов девайса
-            return new DeviceSyncRepository(ConnectionFactory, generator);
-        }
-
-        // --- ⚙️ Универсальный запуск инициализации таблиц и схем ---
+        // =========================================================================
+        // ⚙️ УНИВЕРСАЛЬНЫЙ ЗАПУСК ИНИЦИАЛИЗАЦИИ ТАБЛИЦ И СХЕМ
+        // =========================================================================
         public async Task InitializeChannelAsync()
         {
             using (var baseConnection = ConnectionFactory())
@@ -131,11 +128,12 @@ namespace HomeNetOrm.Infrastructure
                         _logger
                     );
                 }
-            } 
+            }
         }
 
         public void Dispose()
         {
+            // Если у фабрики есть ресурсы для очистки, очищаем здесь
         }
     }
 }

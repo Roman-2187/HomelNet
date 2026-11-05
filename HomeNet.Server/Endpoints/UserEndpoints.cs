@@ -38,11 +38,11 @@ namespace HomeNet.Server.Endpoints
                     serverLogger.LogInfo($"[API PUSH] Прилетел профиль пользователя '{incomingUser.Email}' (ID: {incomingUser.Id})");
 
                     // 🔥 ИСПРАВЛЕНО: Вызываем GetByIdAsync через глобальный дженерик-обвес
-                    var existingServerUser = await userRepository.GetByIdAsync<UserEntity>(incomingUser.Id);
+                    var existingServerUser = await userRepository.GetByIdAsync(incomingUser.Id);
 
                     if (existingServerUser == null)
                     {
-                        await userRepository.InsertUserAsync(incomingUser);
+                        await userRepository.InsertAsync(incomingUser);
                         serverLogger.LogInfo($"[API Успех] Новый... записан.");
                     }
                     else
@@ -55,7 +55,7 @@ namespace HomeNet.Server.Endpoints
                         existingServerUser.PhoneNumber = incomingUser.PhoneNumber;
 
                         // 🔥 ИСПРАВЛЕНО: Вызываем UpdateAsync через глобальный дженерик-обвес
-                        await userRepository.UpdateAsync<UserEntity>(existingServerUser);
+                        await userRepository.UpdateAsync(existingServerUser);
                         serverLogger.LogInfo($"[API Успех] Профиль... успешно обновлен.");
                     }
 
@@ -76,7 +76,7 @@ namespace HomeNet.Server.Endpoints
                     serverLogger.LogInfo($"[API] Запрос на удаление пользователя (ID: {id})");
 
                     // 🔥 ИСПРАВЛЕНО: Вызываем DeleteByIdAsync через глобальный дженерик-обвес
-                    await userRepository.DeleteByIdAsync<UserEntity>(id);
+                    await userRepository.DeleteByIdAsync(id);
                     serverLogger.LogInfo($"[API Успех] Пользователь успешно удален.");
 
                     await hubContext.Clients.All.SendAsync("ReceiveUserDeleted", id);

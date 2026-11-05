@@ -63,7 +63,7 @@ namespace HomeNetPresentation.ViewModels.AdminViews
                     bool emailExists = await _userRepository.EmailExistsAsync(user.Email);
                     if (!emailExists)
                     {
-                        await _userRepository.InsertUserAsync(user);
+                        await _userRepository.InsertAsync(user);
 
                         
                         addedCount++;

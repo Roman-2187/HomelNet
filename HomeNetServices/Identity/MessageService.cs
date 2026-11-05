@@ -38,7 +38,7 @@ namespace HomeNetServices.Services.Identity
             try
             {
                 // Репозиторий сам сохранит запись и сам сделает ЕДИНСТВЕННЫЙ правильный выстрел в шину
-                await _messageRepo.SaveMessageAsync(entity);
+                await _messageRepo.InsertAsync(entity);
 
                 return new IMessageService.ChatVerdict(true, string.Empty, entity);
             }
@@ -66,7 +66,7 @@ namespace HomeNetServices.Services.Identity
             catch (Exception)
             {
                 // Если истории еще нет или репозиторий пуст — отдаем пустой список, чтобы не вешать UI
-                return Array.Empty<MessageEntity>();
+                return [];
             }
         }
     }

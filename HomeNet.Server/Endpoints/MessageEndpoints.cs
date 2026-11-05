@@ -43,7 +43,7 @@ namespace HomeNet.Server.Endpoints
                     serverLogger.LogInfo($"[API] Прилетел объект сообщения от {incomingMessage.SenderId} для {incomingMessage.ReceiverId}");
 
                     // Метод остался доменным, внутри него пропишутся правильные таймстампы
-                    await messageRepository.SaveMessageAsync(incomingMessage);
+                    await messageRepository.InsertAsync(incomingMessage);
 
                     serverLogger.LogInfo($"[API Успех] Сообщение {incomingMessage.Id} успешно записано in PostgreSQL.");
 

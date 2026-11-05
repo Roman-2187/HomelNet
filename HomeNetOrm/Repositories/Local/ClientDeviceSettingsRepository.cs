@@ -1,11 +1,8 @@
 ﻿using Dapper;
 using HomeNet.Models.Shared.Entity;
-using HomeNetOrm.Generators; // Подключаем напрямую папку с классами генераторов
 using HomeNetOrm.Generators.Local;
 using HomeNetOrm.Models;
-using System;
 using System.Data.Common;
-using System.Threading.Tasks;
 
 namespace HomeNetOrm.Repositories.Local
 {

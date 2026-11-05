@@ -3,7 +3,7 @@
 namespace HomeNetOrm.Interfaces.Repositories
 {
     // 🔥 Наследуем плоский корневой IRepository
-    public interface IMessageRepo : IRepository
+    public interface IMessageRepo : IRepository ,ICrudRepository<MessageEntity>
     {
         // ==========================================
         // 📥 КОМАНДЫ (Открытые рекорды для шины)
@@ -24,7 +24,7 @@ namespace HomeNetOrm.Interfaces.Repositories
         // ==========================================
         // 🔍 ПРЯМЫЕ МЕТОДЫ (Только уникальный домен чатов)
         // ==========================================
-        Task<bool> SaveMessageAsync(MessageEntity message);
+        
         Task<IEnumerable<MessageEntity>> GetChatHistoryAsync(Guid senderId, Guid receiverId);
         Task<bool> MarkAsReadAsync(Guid senderId, Guid receiverId);
         Task<int> GetUnreadCountAsync(Guid currentUserId, Guid senderId);

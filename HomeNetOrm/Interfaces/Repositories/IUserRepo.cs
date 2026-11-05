@@ -2,7 +2,7 @@
 
 namespace HomeNetOrm.Interfaces.Repositories
 {
-    public interface IUserRepo : IRepository
+    public interface IUserRepo : IRepository , ICrudRepository<UserEntity>
     {
         // ==========================================
         // 📥 КОМАНДЫ (Свободные рекорды для шины)
@@ -23,6 +23,6 @@ namespace HomeNetOrm.Interfaces.Repositories
         // ==========================================
         Task<bool> EmailExistsAsync(string? email);
         Task<UserEntity?> GetByEmailAsync(string email);
-        Task<UserEntity> InsertUserAsync(UserEntity user);
+      
     }
 }

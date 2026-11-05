@@ -25,7 +25,7 @@ namespace HomeNetServices.Identity
             // 2. Чистое сохранение
             try
             {
-                await _userRepository.InsertUserAsync(user);
+                await _userRepository.InsertAsync(user);
                 return new IRegistrationService.Verdict(true, validationResults, user);
             }
             catch (Exception ex)

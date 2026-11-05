@@ -33,6 +33,11 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
                     {
                         try
                         {
+                            // 🔥 ПРОПУСКАЕМ методы из системных сборок и Avalonia (они не наши)
+                            var declaringTypeName = method.DeclaringType?.FullName ?? "";
+                            if (declaringTypeName.StartsWith("System") || declaringTypeName.StartsWith("Avalonia"))
+                                continue;
+
                             var body = method.GetMethodBody();
                             byte[] il = body?.GetILAsByteArray();
                             if (il == null || il.Length == 0) continue;
@@ -64,19 +69,41 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
 
                 try
                 {
+                    // 🔥 Дополнительная защита: если токен вне диапазона — пропускаем
+                    if (token <= 0 || token >= il.Length) continue;
+
                     var called = method.Module.ResolveMethod(token);
-                    if (called != null && called.IsGenericMethod && (called.Name == "Publish" || called.Name == "PublishAsync"))
+
+                    if (called != null && called.IsGenericMethod)
                     {
-                        var eventType = called.GetGenericArguments()[0];
-                        var node = getOrCreateNode(componentName);
+                        string name = called.Name;
+                        if (name == "Publish" || name == "PublishAsync")
+                        {
+                            var genericArgs = called.GetGenericArguments();
+                            if (genericArgs == null || genericArgs.Length == 0) continue;
 
-                        if (!node.PublishedMessages.Contains(eventType)) node.PublishedMessages.Add(eventType);
+                            var eventType = genericArgs[0];
 
-                        if (!registry.ContainsKey(eventType)) registry[eventType] = MessageState.None;
-                        registry[eventType] |= MessageState.Published;
+                            // 🔥 Игнорируем системные типы
+                            if (eventType.FullName != null && eventType.FullName.StartsWith("System."))
+                                continue;
+
+                            var node = getOrCreateNode(componentName);
+
+                            if (!node.PublishedMessages.Contains(eventType))
+                                node.PublishedMessages.Add(eventType);
+
+                            if (!registry.ContainsKey(eventType))
+                                registry[eventType] = MessageState.None;
+
+                            registry[eventType] |= MessageState.Published;
+                        }
                     }
                 }
-                catch { }
+                catch (Exception)
+                {
+                    // 🔥 Тихий игнор: сканер не должен ронять приложение
+                }
             }
         }
     }

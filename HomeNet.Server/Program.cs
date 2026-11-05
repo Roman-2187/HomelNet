@@ -7,7 +7,6 @@ using HomeNetOrm.Repositories.Remote;
 using Microsoft.AspNetCore.SignalR;
 using ILogger = HomeNet.Infrastructure.Shared.Interfaces.Diagnostics.ILogger;
 
-
 namespace HomeNet.Server
 {
     public partial class Program
@@ -18,11 +17,9 @@ namespace HomeNet.Server
             const string serverLogName = "server_debug";
 
             // 1. 🪐 СОБИРАЕМ МНОГОСТВОЛЬНЫЙ ЛОГГЕР
-            // Передаем в него нужные реализации. Они все реализуют один чистый ILogger
             ILogger serverLogger = new AggregateLogger(
-                new ConsoleLogger(),                  // Ствол 1: Яркая консоль
-                        
-                new HtmlLogger(serverLogName)         // Ствол 2: Интерактивный киберпанк .html
+                new ConsoleLogger(),
+                new HtmlLogger(serverLogName)
             );
 
             serverLogger.LogInfo("=== [СУБД ХАБ СЕРВЕРА] СИСТЕМА ДВОЙНОГО ЛОГИРОВАНИЯ ИНИЦИАЛИЗИРОВАНА ===");
@@ -30,15 +27,20 @@ namespace HomeNet.Server
             var schemaModule = new RemoteMessengerSchemaModule();
             var serverSchemas = schemaModule.GetSchemas();
 
-            // Твой честный и верный пароль! 🔑
             string postgresConn = builder.Configuration.GetConnectionString("PostgresConnection")
                 ?? "Server=127.0.0.1;Port=5432;Database=home_net_db;User Id=postgres;Password=05011987;";
 
+            // 2. Создаем движок для PostgreSQL
             var postgresEngine = new SiberNetDbEngine(DbEngineType.PostgreSQLServer, postgresConn, serverSchemas, serverLogger);
 
-            IMessageRepo messageRepository = postgresEngine.CreateMessageRepository(null!);
-            IUserRepo userRepository = postgresEngine.CreateUserRepository(null!);
-            DeviceSyncRepository deviceSyncRepository = postgresEngine.CreateDeviceSyncRepository();
+            // 🔥 3. Инициализируем фабрику репозиториев БЕЗ шины событий (null)
+            // Серверу не нужны факты, он просто пишет в базу.
+            postgresEngine.InitializeRepositories(null);
+
+            // 🔥 4. Достаем готовые репозитории из фабрики
+            IMessageRepo messageRepository = postgresEngine.Repositories.GetRepository<IMessageRepo>();
+            IUserRepo userRepository = postgresEngine.Repositories.GetRepository<IUserRepo>();
+            DeviceSyncRepository deviceSyncRepository = postgresEngine.Repositories.GetRepository<DeviceSyncRepository>();
 
             builder.Services.AddSignalR();
             var app = builder.Build();
@@ -54,9 +56,6 @@ namespace HomeNet.Server
             // Инициализация базы данных строго перед стартом самого веб-сервера!
             serverLogger.LogInfo("=== [СУБД ХАБ СЕРВЕРА] ЗАПУСК ИНИЦИАЛИЗАЦИИ POSTGRES ===");
             await postgresEngine.InitializeChannelAsync();
-
-
-           
 
             serverLogger.LogInfo("[SERVER START] Веб-сервер запущен и слушает порт.");
             app.Run();
@@ -74,12 +73,9 @@ namespace HomeNet.Server
             }
 
             // 🔥 РУКОПОЖАТИЕ SIBERNET:
-            // Как только любой клиент (в режиме логирования или чата) успешно открыл сокет,
-            // мы ЛИЧНО ЕМУ (Clients.Caller) отправляем сигнал, что сервер готов к синхронизации!
             await Clients.Caller.SendAsync("ReceiveServerReady");
 
             await base.OnConnectedAsync();
         }
     }
-
 }

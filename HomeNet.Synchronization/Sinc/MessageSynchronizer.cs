@@ -3,7 +3,7 @@ using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
 using HomeNet.Synchronization.Interfaces.Sinc;
 using HomeNetOrm.Interfaces.Repositories;
-using HomeNetOrm.Repositories.Extensions; // 🔥 ПОДКЛЮЧАЕМ НАШИ ОБВЕСЫ!
+using HomeNetOrm.Repositories.Extensions; 
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -51,7 +51,7 @@ namespace HomeNet.Synchronization.Sinc
                 // 📤 НАПРАВЛЕНИЕ PUSH: Локальные оффлайн-хвосты СМС на отправку
                 // ============================================================================
                 // 🔥 ИСПРАВЛЕНО: Вызываем дженерик-экстеншен базового CRUD с указанием сущности!
-                var pendingSyncList = await _messageRepository.GetAllAsync<MessageEntity>();
+                var pendingSyncList = await _messageRepository.GetAllAsync();
                 var pendingList = pendingSyncList.Where(m => m.IsSynced == 0).ToList();
 
                 if (pendingList.Count > 0)
@@ -75,7 +75,7 @@ namespace HomeNet.Synchronization.Sinc
 
             if (msg.Message.IsSynced == 1)
             {
-                await _messageRepository.SaveMessageAsync(msg.Message);
+                await _messageRepository.InsertAsync(msg.Message);
                 return;
             }
 

@@ -26,7 +26,7 @@ namespace HomeNetServices.Services.Identity
         public async Task<IEnumerable<UserEntity>> GetAllUsersAsync()
         {
             // 🔥 ИСПРАВЛЕНО: Явно указали тип сущности <UserEntity>
-            return await _userRepository.GetAllAsync<UserEntity>() ?? Enumerable.Empty<UserEntity>();
+            return await _userRepository.GetAllAsync() ?? Enumerable.Empty<UserEntity>();
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace HomeNetServices.Services.Identity
             try
             {
                 // 🔥 ИСПРАВЛЕНО: Добавлен дженерик-параметр <UserEntity> для точечного поиска по ID
-                var user = await _userRepository.GetByIdAsync<UserEntity>(id);
+                var user = await _userRepository.GetByIdAsync(id);
                 var res = validationResults.First();
 
                 if (user != null)
@@ -85,11 +85,11 @@ namespace HomeNetServices.Services.Identity
                     ? $"{selectedUser.FirstName} {selectedUser.LastName} (ID {id})"
                     : $"ID {id} (Точечно)";
 
-                // 🔥 ИСПРАВЛЕНО: Вызываем глобальный CRUD-метод удаления с указанием <UserEntity>
-                await _userRepository.DeleteByIdAsync<UserEntity>(id);
+               
+                await _userRepository.DeleteByIdAsync(id);
 
                 // 🔥 ИСПРАВЛЕНО: Вызываем GetAllAsync с указанием <UserEntity>
-                var allUsers = await _userRepository.GetAllAsync<UserEntity>() ?? Enumerable.Empty<UserEntity>();
+                var allUsers = await _userRepository.GetAllAsync() ?? Enumerable.Empty<UserEntity>();
                 _logger.LogDebug($"В системе {allUsers.Count()} пользователей");
 
                 idRes.Update(ValidationState.Success, $"Пользователь с ID {id} успешно удален.");
