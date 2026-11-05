@@ -36,6 +36,9 @@ namespace HomeNet.DI.Modules
         {
             var builder = base.BuildMessagesSchema();
             builder.AddColumn(m => m.IsSynced).HasDefault(0, ColumnType.Integer);
+            builder.AddColumn(m => m.LocalCreatedAt);
+            
+            builder.AddColumn(m => m.UpdatedAt);
             return builder;
         }
 

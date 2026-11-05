@@ -57,9 +57,7 @@ namespace HomeNet.DI.Modules
             builder.AddColumn(m => m.IsRead);
 
             // 🔥 НАШ НОВЫЙ СТАНДАРТ РАСПРЕДЕЛЕННЫХ ТАЙМСТАМПОВ
-            builder.AddColumn(m => m.LocalCreatedAt);
-            builder.AddColumn(m => m.ServerCreatedAt);
-            builder.AddColumn(m => m.UpdatedAt);
+            
             return builder;
         }
 

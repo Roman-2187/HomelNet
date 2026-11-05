@@ -38,6 +38,9 @@ namespace HomeNet.DI.Modules
         protected override TableBuilder<MessageEntity> BuildMessagesSchema()
         {
             var builder = base.BuildMessagesSchema().WithVersionTracking();
+           
+            builder.AddColumn(m => m.ServerCreatedAt);
+            builder.AddColumn(m => m.UpdatedAt);
             builder.AddColumn(m => m.Version);
             return builder;
         }
