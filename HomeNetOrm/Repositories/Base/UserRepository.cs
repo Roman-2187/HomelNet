@@ -13,18 +13,17 @@ namespace HomeNetOrm.Repositories.Base
     public class UserRepository : BaseRepository<UserEntity>, IUserRepo, IDisposable
     {
         private readonly IUserSqlGenerator _userSqlGenerator;
-        private readonly IInternalEventBus? _eventBus;
+        private readonly IEventBus? _eventBus;
 
         // 🖥️ СЕРВЕРНЫЙ КОНСТРУКТОР (без шины)
-        internal UserRepository(Func<DbConnection> connectionFactory, IUserSqlGenerator sqlGenerator, ILogger logger)
+        internal UserRepository(Func<DbConnection> connectionFactory, IUserSqlGenerator sqlGenerator, ICastomLogger logger)
             : base(connectionFactory, sqlGenerator, logger)
         {
             _userSqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));
-           
         }
 
         // 📱 КЛИЕНТСКИЙ КОНСТРУКТОР (с шиной)
-        internal UserRepository(Func<DbConnection> connectionFactory, IUserSqlGenerator sqlGenerator, ILogger logger, IInternalEventBus eventBus)
+        internal UserRepository(Func<DbConnection> connectionFactory, IUserSqlGenerator sqlGenerator, ICastomLogger logger, IEventBus eventBus)
             : this(connectionFactory, sqlGenerator, logger)
         {
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
@@ -59,32 +58,50 @@ namespace HomeNetOrm.Repositories.Base
         }
 
         // =========================================================================
-        // 📥 ОБРАБОТЧИКИ КОМАНД
+        // 📥 ОБРАБОТЧИКИ КОМАНД (Вызывают чистые основные методы)
         // =========================================================================
 
         private async void OnInsertRequested(IUserRepo.InsertRequested cmd)
         {
             if (cmd?.User == null) return;
-            try { await InsertAsync(cmd.User); }
-            catch (Exception ex) { Logger.LogError($"[UserRepository] Ошибка InsertRequested: {ex.Message}"); }
+            try
+            {
+                await InsertAsync(cmd.User);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[UserRepository] Ошибка в обработчике InsertRequested: {ex.Message}");
+            }
         }
 
         private async void OnUpdateRequested(IUserRepo.UpdateRequested cmd)
         {
             if (cmd?.User == null) return;
-            try { await UpdateAsync(cmd.User); }
-            catch (Exception ex) { Logger.LogError($"[UserRepository] Ошибка UpdateRequested: {ex.Message}"); }
+            try
+            {
+                await UpdateAsync(cmd.User);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[UserRepository] Ошибка в обработчике UpdateRequested: {ex.Message}");
+            }
         }
 
         private async void OnDeleteRequested(IUserRepo.DeleteRequested cmd)
         {
             if (cmd == null || cmd.UserId == Guid.Empty) return;
-            try { await DeleteByIdAsync(cmd.UserId); }
-            catch (Exception ex) { Logger.LogError($"[UserRepository] Ошибка DeleteRequested: {ex.Message}"); }
+            try
+            {
+                await DeleteByIdAsync(cmd.UserId);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[UserRepository] Ошибка в обработчике DeleteRequested: {ex.Message}");
+            }
         }
 
         // =========================================================================
-        // 🔥 РЕАЛИЗАЦИЯ КОНТРАКТА ICrudRepository (с фактами)
+        // 🔥 РЕАЛИЗАЦИЯ КОНТРАКТА ICrudRepository (С явной generic-публикацией)
         // =========================================================================
 
         public async Task<UserEntity> InsertAsync(UserEntity user)
@@ -109,12 +126,38 @@ namespace HomeNetOrm.Repositories.Base
                 await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, user));
                 Logger.LogInfo($"[UserRepository] Пользователь '{user.FirstName}' успешно записан.");
 
-                _eventBus?.PublishFact(this, new IUserRepo.Inserted(user, "Успешно записан"));
+                // 🔥 Указываем <IUserRepo.Inserted> явно, чтобы инспектор графа зацепился за тип
+                _eventBus?.Publish<IUserRepo.Inserted>(this, new IUserRepo.Inserted(user, "Успешно записан"));
                 return user;
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException($"Ошибка ОРМ вставки: {ex.Message}");
+            }
+        }
+
+        public async Task UpdateAsync(UserEntity entity)
+        {
+            entity.UpdatedAt = DateTimeOffset.UtcNow;
+            var cmd = _userSqlGenerator.GenerateUpdate();
+            int rowsAffected = await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, entity));
+
+            if (rowsAffected > 0)
+            {
+                // 🔥 Добавляем явный generic-параметр и передаем sender
+                _eventBus?.Publish(this, new IUserRepo.Updated(entity, "Обновлен"));
+            }
+        }
+
+        public async Task DeleteByIdAsync(Guid id)
+        {
+            var cmd = _userSqlGenerator.GenerateDelete(id);
+            int rowsAffected = await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, cmd.Params));
+
+            if (rowsAffected > 0)
+            {
+                // 🔥 Добавляем явный generic-параметр и передаем sender
+                _eventBus?.Publish(this, new IUserRepo.Deleted(id));
             }
         }
 
@@ -130,35 +173,12 @@ namespace HomeNetOrm.Repositories.Base
             return await ExecuteAsync(db => db.QueryAsync<UserEntity>(cmd.Sql, cmd.Params));
         }
 
-        public async Task DeleteByIdAsync(Guid id)
-        {
-            var cmd = _userSqlGenerator.GenerateDelete(id);
-            int rowsAffected = await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, cmd.Params));
-
-            if (rowsAffected > 0)
-            {
-                _eventBus?.PublishFact(this, new IUserRepo.Deleted(id));
-            }
-        }
-
-        public async Task UpdateAsync(UserEntity entity)
-        {
-            entity.UpdatedAt = DateTimeOffset.UtcNow;
-            var cmd = _userSqlGenerator.GenerateUpdate();
-            int rowsAffected = await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, entity));
-
-            if (rowsAffected > 0)
-            {
-                _eventBus?.PublishFact(this, new IUserRepo.Updated(entity, "Обновлен"));
-            }
-        }
-
         // =========================================================================
         // 🔍 СПЕЦИФИЧНЫЕ МЕТОДЫ
         // =========================================================================
 
         public async Task<UserEntity?> GetByEmailAsync(string email) =>
-            await ExecuteAsync(db => 
+            await ExecuteAsync(db =>
             db.QueryFirstOrDefaultAsync<UserEntity>(_userSqlGenerator.GenerateSelectByEmail(email).Sql, new { Email = email }));
 
         public async Task<bool> EmailExistsAsync(string? email) => !string.IsNullOrWhiteSpace(email) && await ExecuteAsync(async db =>

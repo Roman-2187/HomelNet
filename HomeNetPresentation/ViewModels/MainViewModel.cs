@@ -6,10 +6,10 @@ namespace HomeNetPresentation.ViewModels
 {
     public partial class MainViewModel
     {
-        private readonly ILogger _logger;
+        private readonly ICastomLogger _logger;
         private readonly IEventBus _eventBus;
 
-        public MainViewModel(ILogger logger, IEventBus eventBus, BaseNavigationState navigation)
+        public MainViewModel(ICastomLogger logger, IEventBus eventBus, BaseNavigationState navigation)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));

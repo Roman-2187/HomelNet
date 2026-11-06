@@ -22,7 +22,7 @@ namespace HomeNetOrm.Infrastructure
     public class SiberNetDbEngine : IDbEngine, IDisposable
     {
         private readonly string _connectionString;
-        private readonly ILogger _logger;
+        private readonly ICastomLogger _logger;
         private readonly IEnumerable<TableSchema> _schemas;
         private readonly ISqlDialectTranslator _translator;
         private readonly IDbProviderSpecification _spec;
@@ -45,7 +45,7 @@ namespace HomeNetOrm.Infrastructure
 
         public DbConnection Connection => ConnectionFactory();
 
-        public SiberNetDbEngine(DbEngineType engineType, string connectionString, IEnumerable<TableSchema> schemas, ILogger logger)
+        public SiberNetDbEngine(DbEngineType engineType, string connectionString, IEnumerable<TableSchema> schemas, ICastomLogger logger)
         {
             _engineType = engineType;
             _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
@@ -74,7 +74,7 @@ namespace HomeNetOrm.Infrastructure
         // =========================================================================
         // 🏗️ ИНИЦИАЛИЗАЦИЯ РЕПОЗИТОРИЕВ (Вызывается из DataAccessModule)
         // =========================================================================
-        public void InitializeRepositories(IInternalEventBus? eventBus)
+        public void InitializeRepositories(IEventBus? eventBus)
         {
             _logger.LogInfo("[DbEngine] Инициализация фабрики репозиториев...");
 

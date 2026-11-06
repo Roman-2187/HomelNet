@@ -7,7 +7,7 @@ namespace HomeNet.Server.Endpoints
 {
     public static class MessageEndpoints
     {
-        public static void MapMessageEndpoints(this IEndpointRouteBuilder endpoints, IMessageRepo messageRepository, HomeNet.Infrastructure.Shared.Interfaces.Diagnostics.ILogger serverLogger)
+        public static void MapMessageEndpoints(this IEndpointRouteBuilder endpoints, IMessageRepo messageRepository, HomeNet.Infrastructure.Shared.Interfaces.Diagnostics.ICastomLogger serverLogger)
         {
             // === [📥 PULL СИНХРОНИЗАЦИЯ СМС] ===
             endpoints.MapGet("/api/messages/sync", async (Guid userId, string lastSyncedAt) =>
@@ -57,6 +57,8 @@ namespace HomeNet.Server.Endpoints
                     return Results.Problem("Ошибка сервера");
                 }
             });
+
+            endpoints.MapGet("/api/messages", () => Results.Ok(new { Status = "OK" }));
         }
     }
 }

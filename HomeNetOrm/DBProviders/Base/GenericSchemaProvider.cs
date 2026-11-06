@@ -18,13 +18,13 @@ namespace HomeNetOrm.DBProviders.Base
         private readonly ISchemaSqlGenerator _sqlInit;
         private readonly DbConnection _requiredConnection;
         private readonly IDbProviderSpecification _spec;
-        private readonly ILogger _logger;
+        private readonly ICastomLogger _logger;
 
         public GenericSchemaProvider(
             ISchemaSqlGenerator sqlInit,
             DbConnection connection,
             IDbProviderSpecification spec,
-            ILogger logger)
+            ICastomLogger logger)
         {
             _requiredConnection = connection ?? throw new ArgumentNullException(nameof(connection));
             _sqlInit = sqlInit ?? throw new ArgumentNullException(nameof(sqlInit));

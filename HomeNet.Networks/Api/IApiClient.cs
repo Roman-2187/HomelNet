@@ -1,6 +1,6 @@
 ﻿using HomeNet.Models.Shared.Entity;
 
-namespace HomeNetCore.Interfaces
+namespace HomeNet.Network.Api
 {
     public interface IApiClient
     {

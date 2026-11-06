@@ -9,7 +9,7 @@ using HomeNet.Infrastructure.Shared.Diagnostics.EventInspector;
 
 public class CoreInfrastructureModule
 {
-    public ILogger Logger { get; }
+    public ICastomLogger Logger { get; }
     public EventBusInspector EventBusInspector { get; }
     public IEventBus EventBus { get; }
     public ILogQueueManager LogQueueManager { get; }

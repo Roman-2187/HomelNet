@@ -8,7 +8,7 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics
     /// Боевой одноствольный логгер SiberNet Engine для записи плоского текста.
     /// Гарантирует чистый запуск сессии и пишет структурированный лог на Рабочий стол. 🪐
     /// </summary>
-    public class TxtLogger : ILogger
+    public class TxtLogger : ICastomLogger
     {
         private readonly string _filePath;
         private readonly object _lock = new();

@@ -1,11 +1,11 @@
 ﻿using HomeNet.Infrastructure.Shared.Enums;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 
-public class AggregateLogger : ILogger
+public class AggregateLogger : ICastomLogger
 {
-    private readonly List<ILogger> _loggers = new();
+    private readonly List<ICastomLogger> _loggers = new();
 
-    public AggregateLogger(params ILogger[] loggers)
+    public AggregateLogger(params ICastomLogger[] loggers)
     {
         if (loggers != null) _loggers.AddRange(loggers);
     }

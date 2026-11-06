@@ -12,9 +12,9 @@ namespace HomeNetOrm.Repositories.Base
 
         // Торчит наружу internal-ом: экстеншены репозитория его увидят, а бизнес-логика — нет!
         internal ISqlGenerator<TEntity> SqlGenerator { get; }
-        public ILogger Logger { get; }
+        public ICastomLogger Logger { get; }
 
-        internal BaseRepository(Func<DbConnection> connectionFactory, ISqlGenerator<TEntity> sqlGenerator, ILogger logger)
+        internal BaseRepository(Func<DbConnection> connectionFactory, ISqlGenerator<TEntity> sqlGenerator, ICastomLogger logger)
         {
             ConnectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             SqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));

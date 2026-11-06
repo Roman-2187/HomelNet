@@ -8,9 +8,9 @@ namespace HomeNetServices.Services.Identity
     public class FriendService : IFriendService
     {
         private readonly IFriendRepo _friendRepository;
-        private readonly ILogger _logger;
+        private readonly ICastomLogger _logger;
 
-        public FriendService(IFriendRepo friendRepository, ILogger logger)
+        public FriendService(IFriendRepo friendRepository, ICastomLogger logger)
         {
             _friendRepository = friendRepository ?? throw new ArgumentNullException(nameof(friendRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

@@ -1,7 +1,7 @@
 ﻿using HomeNet.DI.Modules;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNet.Network;
+using HomeNet.Network.SignalRListeners;
 using HomeNet.Synchronization;
 using HomeNetCore.Enums;
 using HomeNetPresentation.ViewModels;
@@ -22,10 +22,14 @@ namespace HomeNet.DI
         internal readonly BusinessServicesModule Services;
         internal readonly PresentationUiModule Ui;
 
-        public SignalRNotificationListener SignalRListener => DataAccess.NotificationListener;
-        public ILogger Logger => Infrastructure.Logger;
+        // 🔥 Прокидываем свойства для быстрого доступа
+        public ICastomLogger Logger => Infrastructure.Logger;
         public IEventBus EventBus => Infrastructure.EventBus;
         public SyncEngine OrmEngine => DataAccess.OrmEngine;
+
+        // 🔥 ВАЖНО: Теперь листенеры разделены по зонам ответственности!
+        public UserSignalRListener UserListener => DataAccess.UserListener;
+        public MessageSignalRListener MessageListener => DataAccess.MessageListener;
 
         private AppCompositionRoot(BackendMode mode, string apiBaseUrl, string sqliteConn)
         {

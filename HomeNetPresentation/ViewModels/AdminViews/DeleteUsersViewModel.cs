@@ -15,7 +15,7 @@ namespace HomeNetPresentation.ViewModels
     public partial class DeleteUsersViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
     {
         private readonly IDeleteService _srv;
-        private readonly ILogger _log;
+        private readonly ICastomLogger _log;
 
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(SearchCommand))]
@@ -31,7 +31,7 @@ namespace HomeNetPresentation.ViewModels
 
         public ObservableCollection<string> DeletedUsersHistory { get; } = [];
 
-        public DeleteUsersViewModel(IDeleteService srv, IEventBus bus, ILogger log, AdminNavigationManager nav)
+        public DeleteUsersViewModel(IDeleteService srv, IEventBus bus, ICastomLogger log, AdminNavigationManager nav)
             : base(bus, nav)
         {
             _srv = srv ?? throw new ArgumentNullException(nameof(srv));

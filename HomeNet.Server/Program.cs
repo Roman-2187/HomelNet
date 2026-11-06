@@ -1,11 +1,12 @@
 using HomeNet.DI.Modules;
 using HomeNet.Infrastructure.Shared.Diagnostics;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Server.Endpoints;
 using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Repositories.Remote;
 using Microsoft.AspNetCore.SignalR;
-using ILogger = HomeNet.Infrastructure.Shared.Interfaces.Diagnostics.ILogger;
+
 
 namespace HomeNet.Server
 {
@@ -17,7 +18,7 @@ namespace HomeNet.Server
             const string serverLogName = "server_debug";
 
             // 1. 🪐 СОБИРАЕМ МНОГОСТВОЛЬНЫЙ ЛОГГЕР
-            ILogger serverLogger = new AggregateLogger(
+            ICastomLogger serverLogger = new AggregateLogger(
                 new ConsoleLogger(),
                 new HtmlLogger(serverLogName)
             );
@@ -41,6 +42,8 @@ namespace HomeNet.Server
             IMessageRepo messageRepository = postgresEngine.Repositories.GetRepository<IMessageRepo>();
             IUserRepo userRepository = postgresEngine.Repositories.GetRepository<IUserRepo>();
             DeviceSyncRepository deviceSyncRepository = postgresEngine.Repositories.GetRepository<DeviceSyncRepository>();
+
+           
 
             builder.Services.AddSignalR();
             var app = builder.Build();

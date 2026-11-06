@@ -13,10 +13,10 @@ namespace HomeNetPresentation.Services
     /// </summary>
     public partial class UserNavigationManager : BaseNavigationState
     {
-        ILogger _logger { get; set; }
+        ICastomLogger _logger { get; set; }
         [ObservableProperty] private ClientSubTab _currentClientTab = ClientSubTab.None;
 
-        public UserNavigationManager(IEventBus eventBus, ILogger logger) : base(eventBus)
+        public UserNavigationManager(IEventBus eventBus, ICastomLogger logger) : base(eventBus)
         {
             _logger = logger;
             EventBus.Subscribe<IUserVm.OpenAuth>(OnOpenAuthRequested);

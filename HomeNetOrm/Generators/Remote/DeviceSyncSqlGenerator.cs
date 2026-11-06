@@ -11,7 +11,7 @@ namespace HomeNetOrm.Generators.Remote
     // 🔥 Наследуемся строго от CoreSqlGenerator! Никакого лишнего CRUD-мусора
     internal class DeviceSyncSqlGenerator :BaseSqlGenerator<DeviceSyncEntity>, IRemoteDeviceSyncSqlGenerator
     {
-        public DeviceSyncSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ILogger logger)
+        public DeviceSyncSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ICastomLogger logger)
             : base(schemas, translator, logger) { }
 
         public SqlQueryCommand GenerateDeviceSyncUpsert()

@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace HomeNet.Infrastructure.Shared.Interfaces.Diagnostics
 {
-    public interface ILogger
+    public interface ICastomLogger
     {
         // Базовый ствол логгера, который будут реализовывать наши классы
         void Log(LogLevel level, string message, string memberName = "", string filePath = "", int lineNumber = 0);

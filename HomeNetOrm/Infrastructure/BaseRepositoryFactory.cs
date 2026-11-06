@@ -14,8 +14,8 @@ namespace HomeNetOrm.Infrastructure
         protected readonly Func<DbConnection> ConnectionFactory;
         protected readonly IEnumerable<TableSchema> Schemas;
         protected readonly ISqlDialectTranslator Translator;
-        protected readonly ILogger Logger;
-        protected readonly IInternalEventBus? EventBus;
+        protected readonly ICastomLogger Logger;
+        protected readonly IEventBus? EventBus;
 
         protected readonly Dictionary<Type, object> Repositories = new();
 
@@ -23,8 +23,8 @@ namespace HomeNetOrm.Infrastructure
             Func<DbConnection> connectionFactory,
             IEnumerable<TableSchema> schemas,
             ISqlDialectTranslator translator,
-            ILogger logger,
-            IInternalEventBus? eventBus)
+            ICastomLogger logger,
+            IEventBus? eventBus)
         {
             ConnectionFactory = connectionFactory;
             Schemas = schemas;

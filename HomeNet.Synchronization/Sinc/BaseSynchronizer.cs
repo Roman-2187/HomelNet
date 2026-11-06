@@ -5,20 +5,24 @@ using HomeNet.Synchronization.Interfaces.Sinc;
 namespace HomeNet.Synchronization.Sinc
 {
     /// <summary>
-    /// Базовый диспетчер синхронизации. Теперь реально отвязан от сети и полностью безопасен! 🦾
+    /// Базовый диспетчер синхронизации. 
+    /// Теперь он умеет работать с разными API-клиентами через дженерик.
     /// </summary>
-    public abstract class BaseSynchronizer<TEntity> : ISyncCoordinator, IDisposable
+    public abstract class BaseSynchronizer<TEntity, TApiClient> : ISyncCoordinator, IDisposable
         where TEntity : class
+        where TApiClient : class
     {
         protected readonly IEventBus EventBus;
-        protected readonly ILogger Logger;
+        protected readonly ICastomLogger Logger;
+        protected readonly TApiClient ApiClient; // 🔥 Общий API-клиент для наследников
 
         private bool _isInitialSyncExecuted;
 
-        protected BaseSynchronizer(IEventBus eventBus, ILogger logger)
+        protected BaseSynchronizer(IEventBus eventBus, ICastomLogger logger, TApiClient apiClient)
         {
             EventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            ApiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
 
             SubscribeEvents();
         }

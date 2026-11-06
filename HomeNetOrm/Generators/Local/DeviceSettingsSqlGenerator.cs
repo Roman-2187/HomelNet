@@ -11,7 +11,7 @@ namespace HomeNetOrm.Generators.Local
     // 🔥 Тоже строго от CoreSqlGenerator. Чистая спецификация под одну задачу автологина
     internal class DeviceSettingsSqlGenerator : BaseSqlGenerator<DeviceSettingsEntity>,  ILocalDeviceSettingsSqlGenerator
     {
-        public DeviceSettingsSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ILogger logger)
+        public DeviceSettingsSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ICastomLogger logger)
             : base(schemas, translator, logger) { }
 
         public SqlQueryCommand GenerateSelectByKey() =>

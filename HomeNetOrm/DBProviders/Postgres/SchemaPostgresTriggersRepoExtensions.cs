@@ -18,7 +18,7 @@ namespace HomeNetOrm.DBProviders.Postgres
             ISchemaSqlGenerator schemaSqlInitializer,
             ISqlDialectTranslator translator,
             IEnumerable<TableSchema> tableSchemas,
-            ILogger logger)
+            ICastomLogger logger)
         {
             logger.LogInfo("[Postgres Migrator] Серверный режим: Проверка системы версионирования Postgres...");
 

@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using System;
-using System.Threading.Tasks;
 
-namespace HomeNetServer.Hubs
+namespace HomeNet.Server.Hubs
 {
     /// <summary>
     /// Распределенный сетевой автобус SiberNet.

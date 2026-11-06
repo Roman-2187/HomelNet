@@ -11,7 +11,7 @@ namespace HomeNetOrm.Infrastructure
     {
         private readonly IDbEngine _localEngine;
         private readonly IEventBus _eventBus;
-        private readonly ILogger _logger;
+        private readonly ICastomLogger _logger;
         private readonly string _remoteServerUrl;
         private readonly HttpClient _pingClient;
 
@@ -28,7 +28,7 @@ namespace HomeNetOrm.Infrastructure
             IDbEngine localEngine,
             string remoteServerUrl,
             IEventBus eventBus,
-            ILogger logger)
+            ICastomLogger logger)
         {
             _localEngine = localEngine ?? throw new ArgumentNullException(nameof(localEngine));
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
@@ -40,13 +40,13 @@ namespace HomeNetOrm.Infrastructure
 
         public async Task InitializeAllDatabasesAsync()
         {
-            _logger.LogInfo("=== [СУБД ХАБ] ЗАПУСК ИНИЦИАЛИЗАЦИИ ХРАНИЛИЩ ===");
+            _logger.LogInfo("=== [СУБД ХАБ] ЗАПУСК ИНИЦИАЛИЗАЦИИ ЛОКАЛЬНОГО ХРАНИЛИЩА ===");
 
             // Запускаем локальный движок данных и проверяем сервер последовательно
             await InitializeLocalChannelInternalAsync();
             await CheckRemoteServerAvailabilityInternalAsync();
 
-            _logger.LogInfo("=== [СУБД ХАБ] ИНИЦИАЛИЗАЦИЯ ХРАНИЛИЩ ЗАВЕРШЕНА ===");
+            _logger.LogInfo("=== [СУБД ХАБ] ИНИЦИАЛИЗАЦИЯ  ЗАВЕРШЕНА ===");
             _eventBus.Publish(this, new IDbContextContainer.InfrastructureReady());
         }
 

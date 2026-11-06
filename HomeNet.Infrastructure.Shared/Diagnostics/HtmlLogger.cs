@@ -11,7 +11,7 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics
     /// Боевой одноствольный логгер SiberNet Engine для записи на диск.
     /// Генерирует интерактивный HTML-журнал со штампом места вызова. 🪐
     /// </summary>
-    public class HtmlLogger : ILogger
+    public class HtmlLogger : ICastomLogger
     {
         private readonly object _fileLock = new();
         private readonly string _debugFolderPath;

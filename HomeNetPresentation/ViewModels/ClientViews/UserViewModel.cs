@@ -15,11 +15,11 @@ namespace HomeNetPresentation.ViewModels
     public partial class UserViewModel : FormViewModelBase<UserNavigationManager>, IDisposable
     {
         private Guid _currentUserId;
-        ILogger _logger;
+        ICastomLogger _logger;
 
         [ObservableProperty] private ClientSubTab _activeClientTab = ClientSubTab.None;
 
-        public UserViewModel(ILogger logger, IEventBus eventBus, UserNavigationManager navigation)
+        public UserViewModel(ICastomLogger logger, IEventBus eventBus, UserNavigationManager navigation)
             : base(eventBus, navigation)
         {
             _logger = logger;

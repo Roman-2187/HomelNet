@@ -2,7 +2,7 @@
 using HomeNet.Infrastructure.Shared.Enums;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 
-public class ConsoleLogger : ILogger
+public class ConsoleLogger : ICastomLogger
 {
     private readonly Dictionary<LogLevel, ConsoleColor> _colors;
 

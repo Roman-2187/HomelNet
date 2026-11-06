@@ -9,7 +9,7 @@ namespace HomeNetOrm.DBProviders.Base
     /// </summary>
     internal static class SchemaDiffVisualizer
     {
-        public static void LogDifferences(ILogger logger, string dbName, string camelTableName, SchemaDiff diff, List<ColumnSchema>? expectedCamelCols)
+        public static void LogDifferences(ICastomLogger logger, string dbName, string camelTableName, SchemaDiff diff, List<ColumnSchema>? expectedCamelCols)
         {
             if (diff == null || diff.IsIdentical) return;
 

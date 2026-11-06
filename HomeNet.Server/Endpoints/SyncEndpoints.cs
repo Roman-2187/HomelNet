@@ -1,10 +1,11 @@
 ﻿using HomeNetOrm.Repositories.Remote;
+using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 
 namespace HomeNet.Server.Endpoints
 {
     public static class SyncEndpoints
     {
-        public static void MapSyncEndpoints(this IEndpointRouteBuilder endpoints, DeviceSyncRepository deviceSyncRepository, HomeNet.Infrastructure.Shared.Interfaces.Diagnostics.ILogger serverLogger)
+        public static void MapSyncEndpoints(this IEndpointRouteBuilder endpoints, DeviceSyncRepository deviceSyncRepository, ICastomLogger serverLogger)
         {
             var group = endpoints.MapGroup("/api/sync");
 

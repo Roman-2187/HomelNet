@@ -61,7 +61,7 @@ namespace HomeNetAvalonia
 
                 if (currentMode == BackendMode.Real)
                 {
-                    _compositionRoot.Logger.LogInfo("[App Старт] Двуствольный запуск СУБД движков и координатора репликации успешно запущен в фоне.");
+                    _compositionRoot.Logger.LogInfo("[App Старт]  запуск СУБД движков и координатора репликации успешно запущен в фоне.");
                 }
             }
             catch (Exception ex)

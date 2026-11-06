@@ -12,13 +12,13 @@ namespace HomeNet.Synchronization
     {
         
         private readonly ISyncCoordinator _syncCoordinator;
-        private readonly ILogger _logger;
+        private readonly ICastomLogger _logger;
 
         public SyncEngine(
             IUserRepo userRepository,
             IMessageRepo messageRepository,
             ISyncCoordinator syncCoordinator,
-            ILogger logger)
+            ICastomLogger logger)
         { 
             _syncCoordinator = syncCoordinator ?? throw new ArgumentNullException(nameof(syncCoordinator));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

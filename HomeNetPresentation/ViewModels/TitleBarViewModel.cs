@@ -17,12 +17,12 @@ namespace HomeNetPresentation.ViewModels
     public partial class TitleBarViewModel : FormViewModelBase<BaseNavigationState>, IDisposable
     {
 
-    ILogger _logger;
+    ICastomLogger _logger;
         [ObservableProperty] private MainTab _currentMainZone = MainTab.StartZone;
         [ObservableProperty] private ClientSubTab _currentClientTab = ClientSubTab.None;
        
 
-        public TitleBarViewModel(IEventBus eventBus,ILogger logger, BaseNavigationState navigationStateManager)
+        public TitleBarViewModel(IEventBus eventBus,ICastomLogger logger, BaseNavigationState navigationStateManager)
             : base(eventBus, navigationStateManager)
         {
             _eventBus.Subscribe<ITitleBarVm.MacroZoneChanged>(OnMacroZoneChanged);

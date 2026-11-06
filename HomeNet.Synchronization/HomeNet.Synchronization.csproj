@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\HomeNet.Infrastructure.Shared\HomeNet.Infrastructure.Shared.csproj" />
     <ProjectReference Include="..\HomeNet.Models.Shared\HomeNet.Models.Shared.csproj" />
+    <ProjectReference Include="..\HomeNet.Networks\HomeNet.Network.csproj" />
     <ProjectReference Include="..\HomeNetOrm\HomeNetOrm.csproj" />
   </ItemGroup>
 

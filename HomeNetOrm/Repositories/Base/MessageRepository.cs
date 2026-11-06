@@ -13,22 +13,21 @@ namespace HomeNetOrm.Repositories.Base
     public class MessageRepository : BaseRepository<MessageEntity>, IMessageRepo, IDisposable
     {
         private readonly IMessageSqlGenerator _messageSqlGenerator;
-        private readonly IInternalEventBus? _eventBus;
+        private readonly IEventBus? _eventBus;
 
         // 🖥️ СЕРВЕРНЫЙ КОНСТРУКТОР (без шины)
-        internal MessageRepository(Func<DbConnection> connectionFactory, IMessageSqlGenerator sqlGenerator, ILogger logger)
+        internal MessageRepository(Func<DbConnection> connectionFactory, IMessageSqlGenerator sqlGenerator, ICastomLogger logger)
             : base(connectionFactory, sqlGenerator, logger)
         {
             _messageSqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));
-         
         }
 
         // 📱 КЛИЕНТСКИЙ КОНСТРУКТОР (с шиной)
-        internal MessageRepository(Func<DbConnection> connectionFactory, IMessageSqlGenerator sqlGenerator, ILogger logger, IInternalEventBus eventBus)
+        internal MessageRepository(Func<DbConnection> connectionFactory, IMessageSqlGenerator sqlGenerator, ICastomLogger logger, IEventBus eventBus)
             : this(connectionFactory, sqlGenerator, logger)
         {
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-            SubscribeToEvents();
+           // SubscribeToEvents();
         }
 
         // =========================================================================
@@ -61,39 +60,63 @@ namespace HomeNetOrm.Repositories.Base
         }
 
         // =========================================================================
-        // 📥 ОБРАБОТЧИКИ КОМАНД
+        // 📥 ОБРАБОТЧИКИ КОМАНД (Просто вызывают чистые методы)
         // =========================================================================
 
         private async void OnSaveRequested(IMessageRepo.SaveRequested cmd)
         {
             if (cmd?.Message == null) return;
-            try { await InsertAsync(cmd.Message); }
-            catch (Exception ex) { Logger.LogError($"[MessageRepository] Ошибка SaveRequested: {ex.Message}"); }
+            try
+            {
+                await InsertAsync(cmd.Message);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[MessageRepository] Ошибка обработки SaveRequested: {ex.Message}");
+            }
         }
 
         private async void OnUpdateRequested(IMessageRepo.UpdateRequested cmd)
         {
             if (cmd?.Message == null) return;
-            try { await UpdateAsync(cmd.Message); }
-            catch (Exception ex) { Logger.LogError($"[MessageRepository] Ошибка UpdateRequested: {ex.Message}"); }
+            try
+            {
+                await UpdateAsync(cmd.Message);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[MessageRepository] Ошибка обработки UpdateRequested: {ex.Message}");
+            }
         }
 
         private async void OnDeleteRequested(IMessageRepo.DeleteRequested cmd)
         {
             if (cmd == null || cmd.MessageId == Guid.Empty) return;
-            try { await DeleteByIdAsync(cmd.MessageId); }
-            catch (Exception ex) { Logger.LogError($"[MessageRepository] Ошибка DeleteRequested: {ex.Message}"); }
+            try
+            {
+                await DeleteByIdAsync(cmd.MessageId);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[MessageRepository] Ошибка обработки DeleteRequested: {ex.Message}");
+            }
         }
 
         private async void OnClearChatRequested(IMessageRepo.ClearChatRequested cmd)
         {
             if (cmd == null) return;
-            try { await ClearChatHistoryAsync(cmd.SenderId, cmd.ReceiverId); }
-            catch (Exception ex) { Logger.LogError($"[MessageRepository] Ошибка ClearChatRequested: {ex.Message}"); }
+            try
+            {
+                await ClearChatHistoryAsync(cmd.SenderId, cmd.ReceiverId);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[MessageRepository] Ошибка обработки ClearChatRequested: {ex.Message}");
+            }
         }
 
         // =========================================================================
-        // 🔥 РЕАЛИЗАЦИЯ КОНТРАКТА ICrudRepository (публикует ФАКТЫ)
+        // 🔥 РЕАЛИЗАЦИЯ КОНТРАКТА ICrudRepository (Явные generic-публикации)
         // =========================================================================
 
         public async Task<MessageEntity> InsertAsync(MessageEntity message)
@@ -101,12 +124,44 @@ namespace HomeNetOrm.Repositories.Base
             if (message.Id == Guid.Empty) message.Id = Guid.NewGuid();
 
             var cmd = _messageSqlGenerator.GenerateInsert();
-            await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, message));
-            Logger.LogInfo($"[MessageRepository] Сообщение '{message.Id}' успешно записано.");
+            try
+            {
+                await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, message));
+                Logger.LogInfo($"[MessageRepository] Сообщение '{message.Id}' успешно записано.");
 
-            // 🔥 Публикуем ФАКТ
-            _eventBus?.PublishFact(this, new IMessageRepo.Saved(message));
-            return message;
+                // 🔥 Добавили явный generic-параметр, чтобы инспектор железно его распарсил
+                _eventBus?.Publish<IMessageRepo.Saved>(this, new IMessageRepo.Saved(message));
+                return message;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Ошибка ОРМ вставки сообщения: {ex.Message}");
+            }
+        }
+
+        public async Task UpdateAsync(MessageEntity entity)
+        {
+            entity.UpdatedAt = DateTimeOffset.UtcNow;
+            var cmd = _messageSqlGenerator.GenerateUpdate();
+            int rowsAffected = await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, entity));
+
+            if (rowsAffected > 0)
+            {
+                // 🔥 Добавили явный generic-параметр
+                _eventBus?.Publish<IMessageRepo.Updated>(this, new IMessageRepo.Updated(entity));
+            }
+        }
+
+        public async Task DeleteByIdAsync(Guid id)
+        {
+            var cmd = _messageSqlGenerator.GenerateDelete(id);
+            int rowsAffected = await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, cmd.Params));
+
+            if (rowsAffected > 0)
+            {
+                // 🔥 Добавили явный generic-параметр
+                _eventBus?.Publish<IMessageRepo.Deleted>(this, new IMessageRepo.Deleted(id));
+            }
         }
 
         public async Task<MessageEntity?> GetByIdAsync(Guid id)
@@ -121,33 +176,8 @@ namespace HomeNetOrm.Repositories.Base
             return await ExecuteAsync(db => db.QueryAsync<MessageEntity>(cmd.Sql, cmd.Params));
         }
 
-        public async Task DeleteByIdAsync(Guid id)
-        {
-            var cmd = _messageSqlGenerator.GenerateDelete(id);
-            int rowsAffected = await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, cmd.Params));
-
-            if (rowsAffected > 0)
-            {
-                // 🔥 Публикуем ФАКТ
-                _eventBus?.PublishFact(this, new IMessageRepo.Deleted(id));
-            }
-        }
-
-        public async Task UpdateAsync(MessageEntity entity)
-        {
-            entity.UpdatedAt = DateTimeOffset.UtcNow;
-            var cmd = _messageSqlGenerator.GenerateUpdate();
-            int rowsAffected = await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, entity));
-
-            if (rowsAffected > 0)
-            {
-                // 🔥 Публикуем ФАКТ
-                _eventBus?.PublishFact(this, new IMessageRepo.Updated(entity));
-            }
-        }
-
         // =========================================================================
-        // 🔍 СПЕЦИФИЧНЫЕ МЕТОДЫ (без публикации фактов, просто чтение/очистка)
+        // 🔍 СПЕЦИФИЧНЫЕ МЕТОДЫ
         // =========================================================================
 
         public async Task<bool> ClearChatHistoryAsync(Guid senderId, Guid receiverId)
@@ -157,8 +187,8 @@ namespace HomeNetOrm.Repositories.Base
 
             if (rowsAffected > 0)
             {
-                // 🔥 Публикуем ФАКТ
-                _eventBus?.PublishFact(this, new IMessageRepo.ChatCleared(senderId, receiverId));
+                // 🔥 Добавили явный generic-параметр для удаления чата
+                _eventBus?.Publish<IMessageRepo.ChatCleared>(this, new IMessageRepo.ChatCleared(senderId, receiverId));
             }
 
             return rowsAffected > 0;

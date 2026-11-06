@@ -18,14 +18,14 @@ namespace HomeNetPresentation.ViewModels
     public partial class AuthenticationViewModel : FormViewModelBase<UserNavigationManager>, IDisposable
     {
         private readonly IAuthenticateService _loginService;
-        private readonly ILogger _logger;
+        private readonly ICastomLogger _logger;
 
         [ObservableProperty] private UserEntity _userData = new();
 
         public AuthenticationViewModel(
             IAuthenticateService loginService,
             IEventBus eventBus,
-            ILogger logger,
+            ICastomLogger logger,
             UserNavigationManager navigation) : base(eventBus, navigation) // Передали строго типизированный навигатор в generic-базу
         {
             _loginService = loginService ?? throw new ArgumentNullException(nameof(loginService));

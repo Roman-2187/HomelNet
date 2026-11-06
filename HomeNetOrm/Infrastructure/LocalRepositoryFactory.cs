@@ -16,16 +16,16 @@ namespace HomeNetOrm.Infrastructure
         Func<DbConnection> connectionFactory,
         IEnumerable<TableSchema> schemas,
         ISqlDialectTranslator translator,
-        ILogger logger,
-        IInternalEventBus eventBus) : BaseRepositoryFactory(connectionFactory, schemas, translator, logger, eventBus)
+        ICastomLogger logger,
+        IEventBus eventBus) : BaseRepositoryFactory(connectionFactory, schemas, translator, logger, eventBus)
     {
 
         // 🔥 Реализуем фабричные методы (с шиной)
         internal override IUserRepo CreateUserRepository(IUserSqlGenerator generator)
-            => new UserRepository(ConnectionFactory, generator, Logger, EventBus!);
+            => new UserRepository(ConnectionFactory, generator, Logger, eventBus);
 
         internal override IMessageRepo CreateMessageRepository(IMessageSqlGenerator generator)
-            => new MessageRepository(ConnectionFactory, generator, Logger, EventBus!);
+            => new MessageRepository(ConnectionFactory, generator, Logger, eventBus);
 
         // 🔥 Добавляем специфичный для клиента репозиторий
         protected override void RegisterSpecificRepositories()

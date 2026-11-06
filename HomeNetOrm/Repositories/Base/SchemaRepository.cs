@@ -16,7 +16,7 @@ namespace HomeNetOrm.Repositories.Base
         private readonly ISchemaSqlGenerator _schemaSqlInitializer;
         private readonly ISchemaProvider _schemaProvider;
         private readonly IEnumerable<TableSchema> _tableSchemas;
-        private readonly ILogger _logger;
+        private readonly ICastomLogger _logger;
         private readonly string _dbName;
 
         public SchemaRepository(
@@ -24,7 +24,7 @@ namespace HomeNetOrm.Repositories.Base
             ISchemaProvider schemaProvider,
             ISchemaSqlGenerator schemaSqlInitializer,
             IEnumerable<TableSchema> tableSchemas,
-            ILogger logger)
+            ICastomLogger logger)
         {
             _dbConnection = connection ?? throw new ArgumentNullException(nameof(connection));
             _schemaProvider = schemaProvider ?? throw new ArgumentNullException(nameof(schemaProvider));

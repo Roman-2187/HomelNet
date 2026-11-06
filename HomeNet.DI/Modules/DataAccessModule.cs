@@ -1,6 +1,7 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNet.Network;
+using HomeNet.Network.Network.ApiClient; // Твои новые клиенты
+using HomeNet.Network.SignalRListeners; // Твои новые листенеры
 using HomeNet.Synchronization;
 using HomeNet.Synchronization.Interfaces.Sinc;
 using HomeNet.Synchronization.Sinc;
@@ -17,81 +18,58 @@ namespace HomeNet.DI.Modules
     public class DataAccessModule
     {
         public SiberNetDbEngine DbEngine { get; }
-        public IApiClient ApiClient { get; }
         public string ApiBaseUrl { get; }
         public IDbContextContainer DbContextContainer { get; }
-
         public IUserRepo UserRepository { get; }
         public IMessageRepo MessageRepository { get; }
         public ClientDeviceSettingsRepository DeviceSettingsRepository { get; }
-
         public Guid CurrentDeviceId { get; private set; }
         public SyncEngine OrmEngine { get; }
-        public SignalRNotificationListener NotificationListener { get; }
+
+        public UserSignalRListener UserListener { get; }
+        public MessageSignalRListener MessageListener { get; }
 
         public DataAccessModule(
             string sqliteConn, string apiBaseUrl,
             IEnumerable<TableSchema> appSchemas,
-            ILogger logger, ILogQueueManager logQueue,
+            ICastomLogger logger, ILogQueueManager logQueue,
             IEventBus eventBus)
         {
             ApiBaseUrl = apiBaseUrl;
 
-            // =========================================================================
-            // 🔥 МАГИЯ ЗДЕСЬ: Разделяем шину на Открытую и Закрытую
-            // =========================================================================
-            if (eventBus is not IInternalEventBus internalBus)
-            {
-                throw new InvalidOperationException(
-                    "[DataAccessModule] Критическая ошибка архитектуры: переданная шина не реализует IInternalEventBus. " +
-                    "Репозитории не смогут публиковать факты!");
-            }
-
-            // 🎯 1. Запускаем SiberNetDbEngine в режиме локального клиента (SQLite)
+            // 1. Движок и репозитории
             DbEngine = new SiberNetDbEngine(DbEngineType.SQLiteSQLClient, sqliteConn, appSchemas, logger);
-
-            // 🔥 2. Инициализируем фабрику репозиториев (передаем закрытую шину)
-            DbEngine.InitializeRepositories(internalBus);
-
-            // 🔥 3. Достаем готовые репозитории из фабрики
+            DbEngine.InitializeRepositories(eventBus);
             UserRepository = DbEngine.Repositories.GetRepository<IUserRepo>();
             MessageRepository = DbEngine.Repositories.GetRepository<IMessageRepo>();
             DeviceSettingsRepository = DbEngine.Repositories.GetRepository<ClientDeviceSettingsRepository>();
 
             // =========================================================================
-            // 4. СЕТЕВОЙ КУРЬЕР API (Интерцептору нужна открытая шина)
+            // 2. HttpClient (БЕЗ интерцептора — он не нужен)
             // =========================================================================
-            var networkInterceptor = new NetworkExceptionInterceptor(eventBus)
-            {
-                InnerHandler = new HttpClientHandler()
-            };
-
-            var httpClient = new HttpClient(networkInterceptor)
+            var httpClient = new HttpClient
             {
                 BaseAddress = new Uri(apiBaseUrl),
                 Timeout = TimeSpan.FromSeconds(10)
             };
 
-            ApiClient = new HttpApiClient(httpClient, logger);
-            // =========================================================================
+            // 🔥 3. Создаем разделенные API-клиенты
+            var userApiClient = new UserApiClient(httpClient, logger);
+            var messageApiClient = new MessageApiClient(httpClient, logger);
 
-            // 5. Контейнер хаба инициализации
-            DbContextContainer = new DbContextContainer(DbEngine, apiBaseUrl, internalBus, logger);
+            // 4. Контейнер хаба
+            DbContextContainer = new DbContextContainer(DbEngine, apiBaseUrl, eventBus, logger);
 
-            // 6. Инициализация слоев синхронизации
-            var userSync = new UserSynchronizer(UserRepository, internalBus, logger);
-            var messageSync = new MessageSynchronizer(MessageRepository, internalBus, logger);
+            // 🔥 5. Синхронизаторы получают свои API-клиенты
+            var userSync = new UserSynchronizer(UserRepository, userApiClient, eventBus, logger);
+            var messageSync = new MessageSynchronizer(MessageRepository, messageApiClient, eventBus, logger);
             var syncCoordinator = new CompositeSyncCoordinator(userSync, messageSync);
 
-            // 7. Упаковываем репозитории в главный управляющий SincEngine
             OrmEngine = new SyncEngine(UserRepository, MessageRepository, syncCoordinator, logger);
 
-            // 8. Сборка сетевых хандлеров
-            var messageNetworkHandler = new MessageNetworkHandler(ApiClient, internalBus, logger);
-            var userNetworkHandler = new UserNetworkHandler(ApiClient, internalBus, logger);
-
-            // 9. Запуск SignalR листенера
-            NotificationListener = new SignalRNotificationListener(apiBaseUrl, messageNetworkHandler, userNetworkHandler, logger, internalBus);
+            // 🔥 6. Создаем разделенные SignalR-листенеры
+            UserListener = new UserSignalRListener(apiBaseUrl, logger, eventBus);
+            MessageListener = new MessageSignalRListener(apiBaseUrl, logger, eventBus);
         }
 
         public async Task InitializeDeviceSessionAsync()

@@ -10,7 +10,7 @@ namespace HomeNetOrm.Generators.Base
     // 🔥 Класс чист от репликации, занимается только доменной логикой пользователей
     internal class UserSqlGenerator : BaseSqlGenerator<UserEntity>, IUserSqlGenerator
     {
-        public UserSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ILogger logger)
+        public UserSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ICastomLogger logger)
             : base(schemas, translator, logger)
         {
         }

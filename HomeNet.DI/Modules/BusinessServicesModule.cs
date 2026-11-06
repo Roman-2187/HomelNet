@@ -23,7 +23,7 @@ namespace HomeNet.DI.Modules
             IUserRepo userRepo,
             IMessageRepo msgRepo,
             ClientDeviceSettingsRepository deviceSettingsRepo,
-            ILogger logger,
+            ICastomLogger logger,
             IEventBus eventBus)
         {
            UserRepository = userRepo;

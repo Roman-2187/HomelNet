@@ -18,7 +18,7 @@ namespace HomeNetTests
         {
             // 1. ARRANGE (Подготовка окружения)
             var eventBusMock = new Mock<IEventBus>();
-            var loggerMock = new Mock<ILogger>();
+            var loggerMock = new Mock<ICastomLogger>();
 
             // Списки для хранения колбэков, которые компоненты зарегистрируют в шине
             Action<IUserVm.OpenRegistration> navigatorOpenRegCallback = null;
@@ -70,7 +70,7 @@ namespace HomeNetTests
         {
             // 1. ARRANGE (Подготовка окружения)
             var eventBusMock = new Mock<IEventBus>();
-            var loggerMock = new Mock<ILogger>();
+            var loggerMock = new Mock<ICastomLogger>();
 
             Action<IUserVm.OpenAuth> navigatorOpenAuthCallback = null;
             Action<IUserVm.ClientTabChanged> userVmTabChangedCallback = null;
@@ -118,7 +118,7 @@ namespace HomeNetTests
         {
             // 1. ARRANGE (Подготовка окружения)
             var eventBusMock = new Mock<IEventBus>();
-            var loggerMock = new Mock<ILogger>();
+            var loggerMock = new Mock<ICastomLogger>();
 
             // Коллекция для хранения ВСЕХ подписчиков на событие успешного входа
             var signedInCallbacks = new List<Action<IUserVm.UserSignedIn>>();

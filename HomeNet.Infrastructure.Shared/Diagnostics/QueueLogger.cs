@@ -3,7 +3,7 @@ using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 
 namespace HomeNet.Infrastructure.Shared.Diagnostics
 {
-    public class QueueLogger : ILogger
+    public class QueueLogger : ICastomLogger
     {
         private readonly Action<LogQueueEntry> _logQueueWriter;
 

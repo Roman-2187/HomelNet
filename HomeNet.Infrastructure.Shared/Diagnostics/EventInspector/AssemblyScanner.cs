@@ -1,4 +1,7 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using HomeNet.Infrastructure.Shared.Enums;
 
 namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
@@ -42,6 +45,7 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
                             byte[] il = body?.GetILAsByteArray();
                             if (il == null || il.Length == 0) continue;
 
+                            // Теперь метод статический, вызов сработает корректно
                             ParseMethodIL(il, method, componentName, getOrCreateNode, registry);
                         }
                         catch { }
@@ -50,6 +54,7 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
             }
         }
 
+        // 🔥 Сделали метод static, исправили byte[] il и genericArgs[0]
         private static void ParseMethodIL(
             byte[] il,
             MethodBase method,
@@ -69,19 +74,19 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
 
                 try
                 {
-                    // 🔥 Дополнительная защита: если токен вне диапазона — пропускаем
-                    if (token <= 0 || token >= il.Length) continue;
-
+                    // 🔥 Ошибочная проверка token >= il.Length удалена.
+                    // Токен метаданных берется из модуля, а не из массива IL-байтов метода.
                     var called = method.Module.ResolveMethod(token);
 
                     if (called != null && called.IsGenericMethod)
                     {
                         string name = called.Name;
-                        if (name == "Publish" || name == "PublishAsync")
+                        if (name == "Publish" || name == "PublishAsync" || name == "PublishFact")
                         {
                             var genericArgs = called.GetGenericArguments();
                             if (genericArgs == null || genericArgs.Length == 0) continue;
 
+                            // Достаем первый generic-параметр (тип события)
                             var eventType = genericArgs[0];
 
                             // 🔥 Игнорируем системные типы
@@ -100,9 +105,10 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
                         }
                     }
                 }
-                catch (Exception)
+                catch
                 {
-                    // 🔥 Тихий игнор: сканер не должен ронять приложение
+                    // 🔥 Тихий игнор: если токен принадлежит другой сборке, 
+                    // ResolveMethod выбросит исключение, и мы просто идем дальше
                 }
             }
         }

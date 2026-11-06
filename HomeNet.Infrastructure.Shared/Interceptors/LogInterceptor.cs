@@ -7,9 +7,9 @@ namespace HomeNet.Infrastructure.Shared.Interceptors
 {
     public class AutoLoggerInterceptor
     {
-        private readonly ILogger _baseLogger;
+        private readonly ICastomLogger _baseLogger;
 
-        public AutoLoggerInterceptor(ILogger baseLogger)
+        public AutoLoggerInterceptor(ICastomLogger baseLogger)
         {
             _baseLogger = baseLogger ?? throw new ArgumentNullException(nameof(baseLogger));
         }

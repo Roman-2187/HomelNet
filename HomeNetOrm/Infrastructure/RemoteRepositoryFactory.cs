@@ -16,7 +16,7 @@ namespace HomeNetOrm.Infrastructure
         Func<DbConnection> connectionFactory,
         IEnumerable<TableSchema> schemas,
         ISqlDialectTranslator translator,
-        ILogger logger) : BaseRepositoryFactory(connectionFactory, schemas, translator, logger, null)
+        ICastomLogger logger) : BaseRepositoryFactory(connectionFactory, schemas, translator, logger, null)
     {
 
         // 🔥 Реализуем фабричные методы (без шины)

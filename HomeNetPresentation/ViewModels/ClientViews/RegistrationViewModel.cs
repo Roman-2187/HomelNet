@@ -18,7 +18,7 @@ namespace HomeNetPresentation.ViewModels
     public partial class RegistrationViewModel : FormViewModelBase<UserNavigationManager>
     {
         private readonly IRegistrationService _registerService;
-        private readonly ILogger _logger;
+        private readonly ICastomLogger _logger;
         [ObservableProperty] private UserEntity _userData = new();
 
 
@@ -27,7 +27,7 @@ namespace HomeNetPresentation.ViewModels
         public RegistrationViewModel(
             IRegistrationService registerService,
             IEventBus eventBus,
-            ILogger logger,
+            ICastomLogger logger,
             UserNavigationManager navigation) : base(eventBus, navigation) // Передали строго типизированный навигатор в базу
         {
             _registerService = registerService ?? throw new ArgumentNullException(nameof(registerService));

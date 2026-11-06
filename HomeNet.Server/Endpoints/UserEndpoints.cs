@@ -1,13 +1,13 @@
-﻿using HomeNet.Models.Shared.Entity; // Подключаем твою правильную модель со Shared
+﻿using HomeNet.Models.Shared.Entity; 
 using HomeNetOrm.Interfaces.Repositories;
-using HomeNetOrm.Repositories.Extensions; // 🔥 ПОДКЛЮЧАЕМ НАШИ РАСШИРЕНИЯ (CRUD + SYNC)
+using HomeNetOrm.Repositories.Extensions; 
 using Microsoft.AspNetCore.SignalR;
 
 namespace HomeNet.Server.Endpoints
 {
     public static class UserEndpoints
     {
-        public static void MapUserEndpoints(this IEndpointRouteBuilder endpoints, IUserRepo userRepository, HomeNet.Infrastructure.Shared.Interfaces.Diagnostics.ILogger serverLogger)
+        public static void MapUserEndpoints(this IEndpointRouteBuilder endpoints, IUserRepo userRepository, HomeNet.Infrastructure.Shared.Interfaces.Diagnostics.ICastomLogger serverLogger)
         {
             // === [📥 PULL ОБНОВЛЕНИЯ ПРОФИЛЕЙ] ===
             endpoints.MapGet("/api/users/sync", async (Guid deviceId, string lastSyncedAt) =>

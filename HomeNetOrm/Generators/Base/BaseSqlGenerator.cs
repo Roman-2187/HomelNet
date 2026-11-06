@@ -12,13 +12,13 @@ namespace HomeNetOrm.Generators.Base
     {
         protected readonly TableSchema Schema;
         protected readonly TableSchema CamelSchema;
-        protected readonly ILogger Logger;
+        protected readonly ICastomLogger Logger;
 
         public ISqlDialectTranslator Translator { get; }
         public IReadOnlyDictionary<string, string> DbColumns { get; }
         public IReadOnlyDictionary<string, string> DapperParams { get; }
 
-        protected BaseSqlGenerator(IEnumerable<TableSchema> availableSchemas, ISqlDialectTranslator translator, ILogger logger)
+        protected BaseSqlGenerator(IEnumerable<TableSchema> availableSchemas, ISqlDialectTranslator translator, ICastomLogger logger)
         {
             Translator = translator ?? throw new ArgumentNullException(nameof(translator));
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));

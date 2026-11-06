@@ -9,7 +9,7 @@ namespace HomeNetOrm.Generators.Base
 {
     internal class MessageSqlGenerator : BaseSqlGenerator<MessageEntity>, IMessageSqlGenerator
     {
-        public MessageSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ILogger logger)
+        public MessageSqlGenerator(IEnumerable<TableSchema> schemas, ISqlDialectTranslator translator, ICastomLogger logger)
             : base(schemas, translator, logger)
         {
         }

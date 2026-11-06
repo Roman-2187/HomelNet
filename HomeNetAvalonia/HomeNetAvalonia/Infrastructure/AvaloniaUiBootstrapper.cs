@@ -1,64 +1,53 @@
 ﻿using Dapper;
 using HomeNet.DI;
-using HomeNet.Network;
+using HomeNet.Network.SignalRListeners;
 using HomeNetAvalonia.Animators;
 using HomeNetCore.Enums;
-using HomeNetCore.Interfaces.Network;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetOrm.Helpers;
 using HomeNetOrm.Interfaces.Builders;
+using HomeNetOrm.Interfaces.DbInfrastructure;
 using System;
 using System.Threading.Tasks;
 
 namespace HomeNetAvalonia.Infrastructure
 {
-    /// <summary>
-    /// Бортовой конфигуратор и регулировщик жизненного цикла SiberNet.
-    /// Отвечает за чистый запуск систем, оркестрацию СУБД и активацию сокетов. 🧼
-    /// </summary>
     public static class AvaloniaUiBootstrapper
     {
         private static bool _isInitialized = false;
-        private static bool _isSyncStarted = false; // Защита от двойного старта репликации
+        private static bool _isSyncStarted = false;
 
         public static AppCompositionRoot BuildAvaloniaContainer(BackendMode mode, string apiBaseUrl, string sqliteConn)
         {
-            if (_isInitialized)
-            {
-                return AppCompositionRoot.Instance;
-            }
+            if (_isInitialized) return AppCompositionRoot.Instance;
 
             // 1. Базовые мапперы типов Dapper
             SqlMapper.AddTypeHandler(new DateTimeOffsetHandler());
             SqlMapper.AddTypeHandler(new GuidTypeHandler());
 
-            // 2. Строим чистый каркас контейнера Pure DI
+            // 2. Строим каркас
             AppCompositionRoot.Initialize(mode, apiBaseUrl, sqliteConn);
             _isInitialized = true;
 
             AppCompositionRoot root = AppCompositionRoot.Instance;
 
             // ============================================================================
-            // 🚌 ОРКЕСТРАЦИЯ ЖИЗНЕННОГО ЦИКЛА СИСТЕМЫ (ПОДПИСКИ)
+            // 🚌 ПОДПИСКИ НА ЖИЗНЕННЫЙ ЦИКЛ
             // ============================================================================
-
-            // Системные подписки на готовность слоев, переехавшие из Root
             root.EventBus.SubscribeAsync<ServerBecameReadyEvent>(OnServerBecameReady);
             root.EventBus.SubscribeAsync<IDbContextContainer.InfrastructureReady>(OnInfrastructureReady);
-
-            // Родные автобусы авторизации вьюмоделей сессий
             root.EventBus.SubscribeAsync<IUserVm.UserSignedIn>(OnUserSessionActivated);
             root.EventBus.SubscribeAsync<IUserVm.UserSignedUp>(OnUserSessionActivated);
 
             if (mode == BackendMode.Real || mode == BackendMode.Local)
             {
                 _ = new CloseWindowAnimator(root.EventBus);
-                _ = new MinimizeWindowAnimator(root.EventBus); // 🔥 ДОБАВИЛИ СВЕРТЫВАНИЕ
-                _ = new WidescreenWindowAnimator(root.EventBus); // 
+                _ = new MinimizeWindowAnimator(root.EventBus);
+                _ = new WidescreenWindowAnimator(root.EventBus);
             }
 
             // ============================================================================
-            // 💥 СТАРТ АСИНХРОННОЙ ИНИЦИАЛИЗАЦИИ БАЗ ДАННЫХ
+            // 💥 СТАРТ ИНИЦИАЛИЗАЦИИ БАЗ
             // ============================================================================
             Task.Run(async () =>
             {
@@ -71,28 +60,27 @@ namespace HomeNetAvalonia.Infrastructure
         private static async Task OnInfrastructureReady(IDbContextContainer.InfrastructureReady ev)
         {
             AppCompositionRoot root = AppCompositionRoot.Instance;
-            root.Logger.LogInfo("[Bootstrapper Старт] Локальные СУБД проверены. Поднимаем сокет...");
+            root.Logger.LogInfo("[Bootstrapper Старт] Локальные СУБД проверены. Поднимаем сокеты...");
 
             try
             {
-                await root.SignalRListener.ConnectAsync();
+                // 🔥 Подключаем оба листенера (они сами разберутся, какие события слушать)
+                await root.UserListener.ConnectAsync();
+                await root.MessageListener.ConnectAsync();
 
-                // Автономный защитный таймер на 8 секунд ожидания рукопожатия бэка
+                // Защитный таймер на 8 секунд ожидания рукопожатия бэка
                 _ = Task.Run(async () =>
                 {
                     await Task.Delay(TimeSpan.FromSeconds(8));
-
                     if (!_isSyncStarted)
                     {
                         root.Logger.LogWarning("[SiberNet Engine] ⏳ Превышено время ожидания сервера (8 сек). Переход в Offline Mode.");
-                        root.EventBus.Publish(root, new NetworkStatusChanged(false));
                     }
                 });
             }
             catch (Exception ex)
             {
                 root.Logger.LogError($"[Bootstrapper Старт] Ошибка сокета: {ex.Message}");
-                root.EventBus.Publish(root, new NetworkStatusChanged(false));
             }
         }
 
@@ -104,8 +92,6 @@ namespace HomeNetAvalonia.Infrastructure
             AppCompositionRoot root = AppCompositionRoot.Instance;
             root.Logger.LogInfo("[SiberNet Engine] Сигнал готовности получен бутстраппером! Зажигаем репликацию...");
 
-            root.EventBus.Publish(root, new NetworkStatusChanged(true));
-
             try
             {
                 await root.OrmEngine.StartAsync();
@@ -114,7 +100,6 @@ namespace HomeNetAvalonia.Infrastructure
             catch (Exception ex)
             {
                 root.Logger.LogError($"[Bootstrapper Старт] Критический сбой движка репликации: {ex.Message}");
-                root.EventBus.Publish(root, new NetworkStatusChanged(false));
             }
         }
 
@@ -133,7 +118,9 @@ namespace HomeNetAvalonia.Infrastructure
 
                 if (authenticatedUserId.HasValue)
                 {
-                    await root.SignalRListener.ConnectAsync(authenticatedUserId.Value);
+                    // 🔥 Подключаем раздельные листенеры с привязкой к UserId
+                    await root.UserListener.ConnectAsync(authenticatedUserId.Value);
+                    await root.MessageListener.ConnectAsync(authenticatedUserId.Value);
                 }
             }
             catch (Exception ex)

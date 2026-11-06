@@ -1,22 +1,23 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
+using HomeNet.Network.Network.ApiClient;
 using HomeNet.Synchronization.Interfaces.Sinc;
 using HomeNetOrm.Interfaces.Repositories;
-using HomeNetOrm.Repositories.Extensions; // 🔥 ПОДКЛЮЧАЕМ НАШИ ОБВЕСЫ!
+using HomeNetOrm.Repositories.Extensions;
 
 namespace HomeNet.Synchronization.Sinc
 {
-    /// <summary>
-    /// Автоматический фоновый конвейер репликации профилей пользователей.
-    /// Работает через укрощенный IUserSyncActions и "глупый" IUserRepo! 🧼🦾
-    /// </summary>
-    public class UserSynchronizer : BaseSynchronizer<UserEntity>
+    public class UserSynchronizer : BaseSynchronizer<UserEntity, IUserApiClient>
     {
         private readonly IUserRepo _userRepository;
 
-        public UserSynchronizer(IUserRepo userRepository, IEventBus eventBus, ILogger logger)
-            : base(eventBus, logger)
+        public UserSynchronizer(
+            IUserRepo userRepository,
+            IUserApiClient apiClient,
+            IEventBus eventBus,
+            ICastomLogger logger)
+            : base(eventBus, logger, apiClient) // Передаем клиент в базу
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         }
@@ -45,26 +46,30 @@ namespace HomeNet.Synchronization.Sinc
             {
                 Logger.LogInfo($"[{GetType().Name}] Запуск синхронизации профилей...");
 
-                // ============================================================================
-                // 📥 НАПРАВЛЕНИЕ PULL: Затягиваем обновления с бэкенда через короткий рекорд-брат
-                // ============================================================================
-                Logger.LogInfo($"[{GetType().Name}] Кричим в автобус запрос на скачивание обновлений юзеров...");
-                EventBus.Publish(this, new IUserSyncActions.PullRequested());
+                // 📥 PULL: Скачиваем с сервера
+                var freshUsers = await ApiClient.FetchFreshUsersAsync(Guid.Empty, DateTimeOffset.MinValue);
+                foreach (var user in freshUsers)
+                {
+                    user.IsSynced = 1;
+                    // Отправляем команду в репозиторий на сохранение
+                    EventBus.Publish(this, new IUserRepo.InsertRequested(user));
+                }
 
-                // ============================================================================
-                // 📤 НАПРАВЛЕНИЕ PUSH: Достаем локальные оффлайн-хвосты (IsSynced == 0)
-                // ============================================================================
-                // 🔥 ИСПРАВЛЕНО: Вызываем дженерик-экстеншен базового CRUD с указанием сущности!
+                // 📤 PUSH: Отправляем локальные оффлайн-хвосты
                 var allUsers = await _userRepository.GetAllAsync();
-              
                 var pendingList = allUsers.Where(u => u.IsSynced == 0).ToList();
 
                 if (pendingList.Count > 0)
                 {
-                    Logger.LogWarning($"[{GetType().Name}] Обнаружено {pendingList.Count} неотправленных юзеров с IsSynced == 0. Инициируем PUSH.");
+                    Logger.LogWarning($"[{GetType().Name}] Обнаружено {pendingList.Count} неотправленных юзеров. Инициируем PUSH.");
                     foreach (var user in pendingList)
                     {
-                        EventBus.Publish(this, new IUserSyncActions.Pending(user));
+                        bool success = await ApiClient.PushUserAsync(user);
+                        if (success)
+                        {
+                            // Сообщаем, что сервер принял
+                            EventBus.Publish(this, new IUserSyncActions.Confirmed(user.Id));
+                        }
                     }
                 }
             }
@@ -76,51 +81,50 @@ namespace HomeNet.Synchronization.Sinc
 
         private async void OnUserInserted(IUserRepo.Inserted msg)
         {
-            if (msg?.User == null) return;
+            if (msg?.User == null || msg.User.IsSynced == 1) return;
 
-            if (msg.User.IsSynced == 1)
+            // Прямой PUSH, если юзер создан локально
+            bool success = await ApiClient.PushUserAsync(msg.User);
+            if (success)
             {
-                Logger.LogDebug($"[UserSync] Сохраняем прилетевшего из сети пользователя: {msg.User.Id}");
-                await _userRepository.InsertAsync(msg.User);
-                return;
+                EventBus.Publish(this, new IUserSyncActions.Confirmed(msg.User.Id));
             }
+        }
 
-            EventBus.Publish(this, new IUserSyncActions.Pending(msg.User));
+        private async void OnUserUpdated(IUserRepo.Updated msg)
+        {
+            if (msg?.User == null || msg.User.IsSynced == 1) return;
+
+            bool success = await ApiClient.PushUserAsync(msg.User);
+            if (success)
+            {
+                EventBus.Publish(this, new IUserSyncActions.Confirmed(msg.User.Id));
+            }
+        }
+
+        private async void OnUserDeleted(IUserRepo.Deleted msg)
+        {
+            if (msg == null || msg.UserId == Guid.Empty) return;
+
+            bool success = await ApiClient.DeleteUserAsync(msg.UserId);
+            if (success)
+            {
+                EventBus.Publish(this, new IUserSyncActions.DeleteConfirmed(msg.UserId));
+            }
         }
 
         private async void OnUserSyncedOnServer(IUserSyncActions.Confirmed msg)
         {
             if (msg == null) return;
             Logger.LogInfo($"[UserSync] Сервер подтвердил профиль '{msg.GuidId}'. Помечаем как синхронизированный.");
-
-            // 🔥 ИСПРАВЛЕНО: Вызываем специализированный экстеншен маркировки юзеров!
             await _userRepository.MarkUserAsSyncedAsync(msg.GuidId);
-        }
-
-        private void OnUserDeleted(IUserRepo.Deleted msg)
-        {
-            if (msg == null || msg.UserId == Guid.Empty) return;
-
-            EventBus.Publish(this, new IUserSyncActions.DeletePending(msg.UserId));
         }
 
         private async void OnUserDeleteConfirmedByServer(IUserSyncActions.DeleteConfirmed msg)
         {
             if (msg == null) return;
             Logger.LogInfo($"[UserSync] Удаление подтверждено сервером. Стираем локально: {msg.UserId}");
-
-            // 🔥 ИСПРАВЛЕНО: Вызываем дженерик-экстеншен базового CRUD для удаления
             await _userRepository.DeleteByIdAsync(msg.UserId);
-        }
-
-        private void OnUserUpdated(IUserRepo.Updated msg)
-        {
-            if (msg?.User == null) return;
-
-            if (msg.User.IsSynced == 0)
-            {
-                EventBus.Publish(this, new IUserSyncActions.Pending(msg.User));
-            }
         }
     }
 }

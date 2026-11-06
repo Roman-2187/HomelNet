@@ -6,7 +6,6 @@ using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Interfaces.ViewModels.AdminZone;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetOrm.Interfaces.Repositories;
-using HomeNetOrm.Repositories.Extensions;
 using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels.ClientViews
@@ -18,7 +17,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
     public partial class DeviceSettingsViewModel : FormViewModelBase<UserNavigationManager>, IDisposable
     {
         private readonly IDeviceSettingsService _deviceSettingsService;
-        private readonly ILogger _logger;
+        private readonly ICastomLogger _logger;
         private readonly IUserRepo _userRepository;
 
         [ObservableProperty] private bool _isRememberMeChecked = true;
@@ -29,7 +28,7 @@ namespace HomeNetPresentation.ViewModels.ClientViews
             IDeviceSettingsService deviceSettingsService,
             IUserRepo userRepository,
             IEventBus eventBus,
-            ILogger logger,
+            ICastomLogger logger,
             UserNavigationManager navigation) : base(eventBus, navigation)
         {
             _deviceSettingsService = deviceSettingsService;

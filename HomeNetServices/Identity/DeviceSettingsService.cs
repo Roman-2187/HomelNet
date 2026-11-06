@@ -8,7 +8,7 @@ namespace HomeNetServices.Identity
     public class DeviceSettingsService : IDeviceSettingsService
     {
         private readonly ClientDeviceSettingsRepository _deviceSettingsRepo;
-        private readonly ILogger _logger;
+        private readonly ICastomLogger _logger;
 
         // 🔥 Наш вечный стейт в оперативке
         private DeviceSettingsEntity? _cachedSettings;
@@ -16,7 +16,7 @@ namespace HomeNetServices.Identity
         // Смарт-замок для предотвращения race condition при ленивой инициализации
         private readonly SemaphoreSlim _semaphore = new(1, 1);
 
-        public DeviceSettingsService(ClientDeviceSettingsRepository deviceSettingsRepo, ILogger logger)
+        public DeviceSettingsService(ClientDeviceSettingsRepository deviceSettingsRepo, ICastomLogger logger)
         {
             _deviceSettingsRepo = deviceSettingsRepo ?? throw new ArgumentNullException(nameof(deviceSettingsRepo));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

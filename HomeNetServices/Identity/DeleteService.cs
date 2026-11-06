@@ -15,9 +15,9 @@ namespace HomeNetServices.Services.Identity
     public class DeleteService : IDeleteService
     {
         private readonly IUserRepo _userRepository;
-        private readonly ILogger _logger;
+        private readonly ICastomLogger _logger;
 
-        public DeleteService(IUserRepo userRepo, ILogger logger)
+        public DeleteService(IUserRepo userRepo, ICastomLogger logger)
         {
             _userRepository = userRepo;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

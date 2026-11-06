@@ -35,7 +35,7 @@ namespace HomeNet.DI.Modules
 
         public PresentationUiModule(
             IEventBus eventBus,
-            ILogger logger,
+            ICastomLogger logger,
             ILogQueueManager logQueue,
             BusinessServicesModule services, // 🔥 ОДИН ОБЪЕКТ Вместо 6 разрозненных сервисов!
             IEventInspector inspector)
