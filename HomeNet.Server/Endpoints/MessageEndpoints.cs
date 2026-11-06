@@ -1,4 +1,5 @@
-﻿using HomeNet.Models.Shared.Entity;
+﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Models.Shared.Entity;
 using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Repositories.Extensions; // 🔥 ОБЯЗАТЕЛЬНО ПОДКЛЮЧАЕМ НАШИ ЭКСТЕНШЕНЫ!
 using Microsoft.AspNetCore.SignalR;
@@ -7,7 +8,7 @@ namespace HomeNet.Server.Endpoints
 {
     public static class MessageEndpoints
     {
-        public static void MapMessageEndpoints(this IEndpointRouteBuilder endpoints, IMessageRepo messageRepository, HomeNet.Infrastructure.Shared.Interfaces.Diagnostics.ICastomLogger serverLogger)
+        public static void MapMessageEndpoints(this IEndpointRouteBuilder endpoints, IMessageRepo messageRepository, ICastomLogger serverLogger)
         {
             // === [📥 PULL СИНХРОНИЗАЦИЯ СМС] ===
             endpoints.MapGet("/api/messages/sync", async (Guid userId, string lastSyncedAt) =>

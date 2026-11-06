@@ -4,7 +4,7 @@ using HomeNet.Infrastructure.Shared.Diagnostics.EventInspector;
 namespace HomeNet.Infrastructure.Shared.Routing
 {
     // 🔥 Теперь класс реализует расширенный интерфейс
-    public class EventBus : IInternalEventBus
+    public class EventBus : IEventBus
     {
         private readonly Dictionary<Type, List<object>> _subscribers = new();
         public EventBusInspector Inspector { get; }
@@ -42,13 +42,7 @@ namespace HomeNet.Infrastructure.Shared.Routing
             catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Profiler Error] {ex.Message}"); }
         }
 
-        // 🔥 НОВЫЙ МЕТОД: Публикация факта
-        public void PublishFact<TMessage>(object sender, TMessage message)
-        {
-            // Мы просто вызываем обычный Publish. 
-            // Вся магия в том, что этот метод физически отсутствует в IEventBus.
-            Publish(sender, message);
-        }
+      
 
         public async Task PublishAsync<TMessage>(object sender, TMessage message)
         {
