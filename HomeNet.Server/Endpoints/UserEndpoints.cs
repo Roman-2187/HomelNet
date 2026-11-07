@@ -1,8 +1,10 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Models.Shared.Entity;
+using HomeNetOrm.Exeptions;
 using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Repositories.Extensions;
 using Microsoft.AspNetCore.SignalR;
+using System.Data.Common;
 
 namespace HomeNet.Server.Endpoints
 {
@@ -26,6 +28,33 @@ namespace HomeNet.Server.Endpoints
                 catch (Exception ex)
                 {
                     serverLogger.LogError($"[API Ошибка] Сбой PULL ОРМ пользователей: {ex.Message}");
+                    return Results.Problem("Ошибка сервера");
+                }
+            });
+
+
+            // === [🔐 АУТЕНТИФИКАЦИЯ] ===
+            endpoints.MapPost("/api/users/auth", async (LoginRequest request) =>
+            {
+                try
+                {
+                    serverLogger.LogInfo($"[API AUTH] Попытка входа для {request.Email}...");
+
+                    // Ищем юзера по Email в Postgres
+                    var user = await userRepository.GetByEmailAsync(request.Email);
+
+                    if (user == null || user.Password != request.Password)
+                    {
+                        serverLogger.LogWarning($"[API AUTH] Неверный email или пароль для {request.Email}");
+                        return Results.Unauthorized(); // Вернет 401
+                    }
+
+                    serverLogger.LogInfo($"[API AUTH] Успешный вход для {request.Email}");
+                    return Results.Ok(user); // Вернет 200 и JSON с юзером
+                }
+                catch (Exception ex)
+                {
+                    serverLogger.LogError($"[API AUTH] Ошибка авторизации: {ex.Message}");
                     return Results.Problem("Ошибка сервера");
                 }
             });
@@ -73,24 +102,13 @@ namespace HomeNet.Server.Endpoints
                 {
                     serverLogger.LogInfo($"[API PUSH] Прилетел профиль пользователя '{incomingUser.Email}' (ID: {incomingUser.Id})");
 
+                    // 🔥 Ищем по ID (это единственный правильный способ проверить, есть ли такой юзер)
                     var existingServerUser = await userRepository.GetByIdAsync(incomingUser.Id);
 
-                    // 🔥 ПРОВЕРКА УНИКАЛЬНОСТИ EMAIL (для новых пользователей)
-                    if (existingServerUser == null)
+                    if (existingServerUser != null)
                     {
-                        var userWithSameEmail = await userRepository.GetByEmailAsync(incomingUser.Email);
-                        if (userWithSameEmail != null)
-                        {
-                            serverLogger.LogWarning($"[API Конфликт] Email '{incomingUser.Email}' уже занят.");
-                            return Results.Conflict(new { Error = "Email уже зарегистрирован" });
-                        }
-
-                        await userRepository.InsertAsync(incomingUser);
-                        serverLogger.LogInfo($"[API Успех] Новый пользователь '{incomingUser.FirstName}' записан.");
-                    }
-                    else
-                    {
-                        serverLogger.LogInfo($"[API Чек] Пользователь найден. Обновляем профиль...");
+                        // Юзер существует по ID — обновляем (это нормальный PUSH)
+                        serverLogger.LogInfo($"[API Чек] Пользователь найден по ID. Обновляем профиль...");
 
                         existingServerUser.DeviceId = incomingUser.DeviceId;
                         existingServerUser.FirstName = incomingUser.FirstName;
@@ -100,37 +118,34 @@ namespace HomeNet.Server.Endpoints
                         await userRepository.UpdateAsync(existingServerUser);
                         serverLogger.LogInfo($"[API Успех] Профиль успешно обновлен.");
                     }
+                    else
+                    {
+                        // Юзера по ID нет — это новый. Пытаемся вставить.
+                        // Если Email занят — репозиторий кинет DuplicateEmailException.
+                        serverLogger.LogInfo($"[API Новый] Юзера нет по ID. Пытаемся создать...");
+                        await userRepository.InsertAsync(incomingUser);
+                        serverLogger.LogInfo($"[API Успех] Новый пользователь '{incomingUser.FirstName}' записан.");
+                    }
 
                     return Results.Ok(new { Success = true });
                 }
-                catch (Exception ex)
+                catch (DuplicateEmailException ex) // 🔥 Ловим доменное исключение от репозитория!
                 {
-                    serverLogger.LogError($"[API Ошибка] Не удалось обработать PUSH пользователя: {ex.Message}");
+                    serverLogger.LogWarning($"[API Конфликт] {ex.Message}");
+                    return Results.Conflict(new { Error = ex.Message });
+                }
+                catch (DatabaseException ex) // 🔥 Ловим ошибку БД (упала база, синтаксис и т.д.)
+                {
+                    serverLogger.LogError($"[API Ошибка БД] {ex.Message}");
                     return Results.Problem("Ошибка сервера");
                 }
-            });
-
-            // === [📤 УДАЛЕНИЕ ПОЛЬЗОВАТЕЛЯ] ===
-            endpoints.MapDelete("/api/users/{id:guid}", async (Guid id, IHubContext<ServerChatHub> hubContext) =>
-            {
-                try
-                {
-                    serverLogger.LogInfo($"[API] Запрос на удаление пользователя (ID: {id})");
-
-                    await userRepository.DeleteByIdAsync(id);
-                    serverLogger.LogInfo($"[API Успех] Пользователь успешно удален.");
-
-                    // Оповещаем всех клиентов (через SignalR)
-                    await hubContext.Clients.All.SendAsync("ReceiveUserDeleted", id);
-
-                    return Results.Ok(new { Success = true });
-                }
                 catch (Exception ex)
                 {
-                    serverLogger.LogError($"[API Ошибка] Не удалось удалить пользователя: {ex.Message}");
+                    serverLogger.LogError($"[API Ошибка] Не удалось обработать PUSH: {ex.Message}");
                     return Results.Problem("Ошибка сервера");
                 }
             });
         }
+        public record LoginRequest(string Email, string Password);
     }
 }

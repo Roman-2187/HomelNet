@@ -3,6 +3,7 @@ using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
 using HomeNet.Network.Network.ApiClient;
 using HomeNet.Synchronization.Interfaces.Sinc;
+using HomeNetOrm.Exeptions;
 using HomeNetOrm.Interfaces.Repositories;
 
 namespace HomeNet.Synchronization.Sinc
@@ -29,19 +30,14 @@ namespace HomeNet.Synchronization.Sinc
             SubscribeEvents();
         }
 
-        // =========================================================================
-        // 📥 СТАРТОВАЯ СИНХРОНИЗАЦИЯ (PULL/PUSH)
-        // =========================================================================
         public async Task StartAsync()
         {
             if (_isInitialSyncExecuted) return;
             _isInitialSyncExecuted = true;
 
             _logger.LogInfo("=== [UserSyncService] ЗАПУСК СТАРТОВОЙ СИНХРОНИЗАЦИИ ===");
-
             await PullAsync();
             await PushAsync();
-
             _logger.LogInfo("=== [UserSyncService] СТАРТОВАЯ СИНХРОНИЗАЦИЯ ЗАВЕРШЕНА ===");
         }
 
@@ -53,7 +49,15 @@ namespace HomeNet.Synchronization.Sinc
                 foreach (var user in freshUsers)
                 {
                     user.IsSynced = 1;
-                    await _userRepository.InsertAsync(user); // Репозиторий крикнет Inserted
+
+                    try
+                    {
+                        await _userRepository.InsertAsync(user);
+                    }
+                    catch (DuplicateEmailException)
+                    {
+                        _logger.LogDebug($"[UserSyncService] Юзер {user.Email} уже есть в кэше. Пропускаем.");
+                    }
                 }
             }
             catch (Exception ex)
@@ -74,7 +78,6 @@ namespace HomeNet.Synchronization.Sinc
                     _logger.LogWarning($"[UserSyncService] Обнаружено {pending.Count} неотправленных юзеров. Инициируем PUSH.");
                     foreach (var user in pending)
                     {
-                        // ApiClient сам опубликует факт, координатор (мы) его поймает
                         await _apiClient.PushUserAsync(user);
                     }
                 }
@@ -85,51 +88,83 @@ namespace HomeNet.Synchronization.Sinc
             }
         }
 
-        // =========================================================================
-        // 🎧 РЕАКЦИЯ НА СОБЫТИЯ
-        // =========================================================================
         private void SubscribeEvents()
         {
-            // Факты от API (успешная регистрация/удаление на сервере)
-            _eventBus.Subscribe<IUserApiClient.UserRegisteredOnServer>(OnUserRegistered);
-            _eventBus.Subscribe<IUserApiClient.UserDeletedOnServer>(OnUserDeleted);
-
-            // Факты от SignalR (сеть прислала данные)
-            _eventBus.Subscribe<UserReceivedFromNetwork>(OnUserReceivedFromNetwork);
-            _eventBus.Subscribe<UserDeletedFromNetwork>(OnUserDeletedFromNetwork);
+            // 🔥 Подписываемся на async Task, а не async void
+            _eventBus.SubscribeAsync<IUserApiClient.UserRegisteredOnServer>(OnUserRegistered);
+            _eventBus.SubscribeAsync<IUserApiClient.UserDeletedOnServer>(OnUserDeleted);
+            _eventBus.SubscribeAsync<UserReceivedFromNetwork>(OnUserReceivedFromNetwork);
+            _eventBus.SubscribeAsync<UserDeletedFromNetwork>(OnUserDeletedFromNetwork);
         }
 
-        private async void OnUserRegistered(IUserApiClient.UserRegisteredOnServer msg)
+        // 🔥 Возвращаем Task, а не void
+        private async Task OnUserRegistered(IUserApiClient.UserRegisteredOnServer msg)
         {
-            _logger.LogInfo($"[UserSyncService] Сервер подтвердил юзера {msg.User.Id}. Пишем в SQLite.");
-            await _userRepository.InsertAsync(msg.User);
+            try
+            {
+                _logger.LogInfo($"[UserSyncService] Сервер подтвердил юзера {msg.User.Id}. Пишем в SQLite.");
+                await _userRepository.InsertAsync(msg.User);
+            }
+            catch (DuplicateEmailException)
+            {
+                _logger.LogDebug($"[UserSyncService] Юзер {msg.User.Email} уже есть в кэше. Пропускаем.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"[UserSyncService] Ошибка при сохранении юзера: {ex.Message}");
+            }
         }
 
-        private async void OnUserDeleted(IUserApiClient.UserDeletedOnServer msg)
+        private async Task OnUserDeleted(IUserApiClient.UserDeletedOnServer msg)
         {
-            _logger.LogInfo($"[UserSyncService] Сервер удалил юзера {msg.UserId}. Стираем локально.");
-            await _userRepository.DeleteByIdAsync(msg.UserId);
+            try
+            {
+                _logger.LogInfo($"[UserSyncService] Сервер удалил юзера {msg.UserId}. Стираем локально.");
+                await _userRepository.DeleteByIdAsync(msg.UserId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"[UserSyncService] Ошибка удаления: {ex.Message}");
+            }
         }
 
-        // 🔥 Обработчики для сети
-        private async void OnUserReceivedFromNetwork(UserReceivedFromNetwork msg)
+        private async Task OnUserReceivedFromNetwork(UserReceivedFromNetwork msg)
         {
-            _logger.LogInfo($"[UserSyncService] Сеть прислала юзера {msg.User.Id}. Пишем в SQLite.");
-            await _userRepository.InsertAsync(msg.User);
+            try
+            {
+                _logger.LogInfo($"[UserSyncService] Сеть прислала юзера {msg.User.Id}. Пишем в SQLite.");
+                await _userRepository.InsertAsync(msg.User);
+            }
+            catch (DuplicateEmailException)
+            {
+                _logger.LogDebug($"[UserSyncService] Юзер {msg.User.Email} уже есть в кэше. Пропускаем.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"[UserSyncService] Ошибка сохранения: {ex.Message}");
+            }
         }
 
-        private async void OnUserDeletedFromNetwork(UserDeletedFromNetwork msg)
+        private async Task OnUserDeletedFromNetwork(UserDeletedFromNetwork msg)
         {
-            _logger.LogInfo($"[UserSyncService] Сеть прислала удаление юзера {msg.UserId}. Стираем локально.");
-            await _userRepository.DeleteByIdAsync(msg.UserId);
+            try
+            {
+                _logger.LogInfo($"[UserSyncService] Сеть прислала удаление юзера {msg.UserId}. Стираем локально.");
+                await _userRepository.DeleteByIdAsync(msg.UserId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"[UserSyncService] Ошибка удаления: {ex.Message}");
+            }
         }
 
         public void Dispose()
         {
-            _eventBus.Unsubscribe<IUserApiClient.UserRegisteredOnServer>(OnUserRegistered);
-            _eventBus.Unsubscribe<IUserApiClient.UserDeletedOnServer>(OnUserDeleted);
-            _eventBus.Unsubscribe<UserReceivedFromNetwork>(OnUserReceivedFromNetwork);
-            _eventBus.Unsubscribe<UserDeletedFromNetwork>(OnUserDeletedFromNetwork);
+            // 🔥 Отписываемся так же (EventBus сам разберется)
+            _eventBus.UnsubscribeAsync<IUserApiClient.UserRegisteredOnServer>(OnUserRegistered);
+            _eventBus.UnsubscribeAsync<IUserApiClient.UserDeletedOnServer>(OnUserDeleted);
+            _eventBus.UnsubscribeAsync<UserReceivedFromNetwork>(OnUserReceivedFromNetwork);
+            _eventBus.UnsubscribeAsync<UserDeletedFromNetwork>(OnUserDeletedFromNetwork);
         }
     }
 }

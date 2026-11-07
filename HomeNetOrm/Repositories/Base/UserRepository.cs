@@ -2,75 +2,61 @@
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
+using HomeNetOrm.Exeptions;
 using HomeNetOrm.Generators.Extensions;
+using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Interfaces.Repositories;
 using System.Data.Common;
 
 namespace HomeNetOrm.Repositories.Base
 {
-    // 🔥 Добавляем IDisposable, чтобы можно было освобождать ресурсы
     public class UserRepository : BaseRepository<UserEntity>, IUserRepo
     {
         private readonly IUserSqlGenerator _userSqlGenerator;
         private readonly IEventBus? _eventBus;
+        private readonly IDbExceptionHandler _errorHandler; // 🔥
 
         // 🖥️ СЕРВЕРНЫЙ КОНСТРУКТОР (без шины)
-        internal UserRepository(Func<DbConnection> connectionFactory, IUserSqlGenerator sqlGenerator, ICastomLogger logger)
+        internal UserRepository(Func<DbConnection> connectionFactory, IUserSqlGenerator sqlGenerator, ICastomLogger logger, IDbExceptionHandler errorHandler)
             : base(connectionFactory, sqlGenerator, logger)
         {
             _userSqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));
+            _errorHandler = errorHandler ?? throw new ArgumentNullException(nameof(errorHandler));
         }
 
         // 📱 КЛИЕНТСКИЙ КОНСТРУКТОР (с шиной)
-        internal UserRepository(Func<DbConnection> connectionFactory, IUserSqlGenerator sqlGenerator, ICastomLogger logger, IEventBus eventBus)
-            : this(connectionFactory, sqlGenerator, logger)
+        internal UserRepository(Func<DbConnection> connectionFactory, IUserSqlGenerator sqlGenerator, ICastomLogger logger, IEventBus eventBus, IDbExceptionHandler errorHandler)
+            : this(connectionFactory, sqlGenerator, logger, errorHandler)
         {
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-          
         }
-
-
-      
-       
-
-
-        // =========================================================================
-        // 🔥 РЕАЛИЗАЦИЯ КОНТРАКТА ICrudRepository (С явной generic-публикацией)
-        // =========================================================================
 
         public async Task<UserEntity> InsertAsync(UserEntity user)
         {
             if (user.Id == Guid.Empty) user.Id = Guid.NewGuid();
 
-            var existingUser = await GetByIdAsync(user.Id);
-            if (existingUser == null && !string.IsNullOrWhiteSpace(user.Email))
-            {
-                existingUser = await GetByEmailAsync(user.Email);
-            }
-
-            if (existingUser != null)
-            {
-                Logger.LogWarning($"[UserRepository] Пользователь уже существует. (ID: {user.Id}). Публикация Inserted пропущена.");
-                return existingUser;
-            }
-
             var cmd = _userSqlGenerator.GenerateInsert();
+
             try
             {
                 await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, user));
                 Logger.LogInfo($"[UserRepository] Пользователь '{user.FirstName}' успешно записан.");
 
-               
                 _eventBus?.Publish(this, new IUserRepo.Inserted(user, "Успешно записан"));
                 return user;
             }
+            catch (Exception ex) when (_errorHandler.IsDuplicateKeyException(ex))
+            {
+                // 🔥 Если это дубликат — кидаем DuplicateEmailException
+                throw new DuplicateEmailException(user.Email);
+            }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Ошибка ОРМ вставки: {ex.Message}");
+                // 🔥 Любая другая ошибка БД — кидаем DatabaseException
+                throw _errorHandler.Translate(ex);
             }
         }
-
         public async Task UpdateAsync(UserEntity entity)
         {
             entity.UpdatedAt = DateTimeOffset.UtcNow;
@@ -79,7 +65,6 @@ namespace HomeNetOrm.Repositories.Base
 
             if (rowsAffected > 0)
             {
-                // 🔥 Добавляем явный generic-параметр и передаем sender
                 _eventBus?.Publish(this, new IUserRepo.Updated(entity, "Обновлен"));
             }
         }
@@ -91,7 +76,6 @@ namespace HomeNetOrm.Repositories.Base
 
             if (rowsAffected > 0)
             {
-                // 🔥 Добавляем явный generic-параметр и передаем sender
                 _eventBus?.Publish(this, new IUserRepo.Deleted(id));
             }
         }
@@ -107,10 +91,6 @@ namespace HomeNetOrm.Repositories.Base
             var cmd = _userSqlGenerator.GenerateSelectAll();
             return await ExecuteAsync(db => db.QueryAsync<UserEntity>(cmd.Sql, cmd.Params));
         }
-
-        // =========================================================================
-        // 🔍 СПЕЦИФИЧНЫЕ МЕТОДЫ
-        // =========================================================================
 
         public async Task<UserEntity?> GetByEmailAsync(string email) =>
             await ExecuteAsync(db =>

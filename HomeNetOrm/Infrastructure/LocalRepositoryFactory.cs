@@ -1,6 +1,6 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNetOrm.Generators.Base;
+using HomeNetOrm.DBProviders.Sqlite; // 🔥 Для SqliteExceptionHandler
 using HomeNetOrm.Generators.Local;
 using HomeNetOrm.Interfaces.DbInfrastructure;
 using HomeNetOrm.Interfaces.Generators;
@@ -19,15 +19,15 @@ namespace HomeNetOrm.Infrastructure
         ICastomLogger logger,
         IEventBus eventBus) : BaseRepositoryFactory(connectionFactory, schemas, translator, logger, eventBus)
     {
+        // 🔥 Создаем обработчик ошибок для SQLite
+        private readonly IDbExceptionHandler _errorHandler = new SqliteExceptionHandler();
 
-        // 🔥 Реализуем фабричные методы (с шиной)
         internal override IUserRepo CreateUserRepository(IUserSqlGenerator generator)
-            => new UserRepository(ConnectionFactory, generator, Logger, eventBus);
+            => new UserRepository(ConnectionFactory, generator, Logger, eventBus, _errorHandler); // 🔥 Передаем обработчик
 
         internal override IMessageRepo CreateMessageRepository(IMessageSqlGenerator generator)
-            => new MessageRepository(ConnectionFactory, generator, Logger, eventBus);
+            => new MessageRepository(ConnectionFactory, generator, Logger, eventBus); // 🔥 Передаем обработчик
 
-        // 🔥 Добавляем специфичный для клиента репозиторий
         protected override void RegisterSpecificRepositories()
         {
             var deviceSettingsGen = new DeviceSettingsSqlGenerator(Schemas, Translator, Logger);

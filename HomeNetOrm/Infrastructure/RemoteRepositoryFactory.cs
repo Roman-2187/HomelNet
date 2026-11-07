@@ -1,5 +1,5 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
-using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNetOrm.DBProviders.Postgres; // 🔥 Для PostgresExceptionHandler
 using HomeNetOrm.Generators.Base;
 using HomeNetOrm.Generators.Remote;
 using HomeNetOrm.Interfaces.DbInfrastructure;
@@ -18,15 +18,15 @@ namespace HomeNetOrm.Infrastructure
         ISqlDialectTranslator translator,
         ICastomLogger logger) : BaseRepositoryFactory(connectionFactory, schemas, translator, logger)
     {
+        // 🔥 Создаем обработчик ошибок для Postgres
+        private readonly IDbExceptionHandler _errorHandler = new PostgresExceptionHandler();
 
-        // 🔥 Реализуем фабричные методы (без шины)
         internal override IUserRepo CreateUserRepository(IUserSqlGenerator generator)
-            => new UserRepository(ConnectionFactory, generator, Logger);
+            => new UserRepository(ConnectionFactory, generator, Logger, _errorHandler); // 🔥 Передаем обработчик
 
         internal override IMessageRepo CreateMessageRepository(IMessageSqlGenerator generator)
-            => new MessageRepository(ConnectionFactory, generator, Logger);
+            => new MessageRepository(ConnectionFactory, generator, Logger); // 🔥 Передаем обработчик
 
-        // 🔥 Добавляем специфичный для сервера репозиторий
         protected override void RegisterSpecificRepositories()
         {
             var deviceSyncGen = new DeviceSyncSqlGenerator(Schemas, Translator, Logger);

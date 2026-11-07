@@ -99,7 +99,8 @@ namespace HomeNetPresentation.ViewModels
                 else
                 {
                     StatusMessage = "Есть ошибки в полях";
-                    _logger.LogWarning($"[AuthVM] Неудачная попытка входа для: {UserData.Email}");
+                    _logger.LogWarning($"[AuthVM] Неудачная попытка входа для: {UserData.Email} пароль{UserData.Password}");
+
                 }
             }
             catch (Exception ex)

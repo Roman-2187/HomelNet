@@ -109,7 +109,6 @@ namespace HomeNet.Network.Network.ApiClient
         }
 
 
-        // 🔥 ДОБАВЛЕННЫЙ МЕТОД: Аутентификация через API
         public async Task<UserEntity?> AuthenticateAsync(string email, string password)
         {
             try
@@ -118,12 +117,21 @@ namespace HomeNet.Network.Network.ApiClient
 
                 var response = await HttpClient.PostAsJsonAsync("/api/users/auth", new { Email = email, Password = password });
 
+                // 🔥 ЛОГИРУЕМ КОД ОТВЕТА ОТ СЕРВЕРА
+                Logger.LogInfo($"[UserApiClient] Сервер ответил кодом: {(int)response.StatusCode} ({response.StatusCode})");
+
                 if (response.IsSuccessStatusCode)
                 {
-                    return await response.Content.ReadFromJsonAsync<UserEntity>();
+                    var user = await response.Content.ReadFromJsonAsync<UserEntity>();
+                    Logger.LogInfo($"[UserApiClient] Успешный вход. Юзер: {user?.Email ?? "null"}");
+                    return user;
                 }
 
-                return null; // Сервер сказал "неверный пароль" или "не найден"
+                // 🔥 ЛОГИРУЕМ ТЕЛО ОШИБКИ (если сервер что-то прислал)
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Logger.LogWarning($"[UserApiClient] Сервер отклонил вход. Тело ответа: {errorContent}");
+
+                return null;
             }
             catch (Exception ex)
             {
