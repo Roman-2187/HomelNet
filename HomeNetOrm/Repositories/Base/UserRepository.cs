@@ -10,7 +10,7 @@ using System.Data.Common;
 namespace HomeNetOrm.Repositories.Base
 {
     // 🔥 Добавляем IDisposable, чтобы можно было освобождать ресурсы
-    public class UserRepository : BaseRepository<UserEntity>, IUserRepo, IDisposable
+    public class UserRepository : BaseRepository<UserEntity>, IUserRepo
     {
         private readonly IUserSqlGenerator _userSqlGenerator;
         private readonly IEventBus? _eventBus;
@@ -27,78 +27,13 @@ namespace HomeNetOrm.Repositories.Base
             : this(connectionFactory, sqlGenerator, logger)
         {
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-            SubscribeToEvents(); // 🔥 Вызываем метод подписки
+          
         }
 
-        // =========================================================================
-        // 📥 ПОДПИСКА И ОТПИСКА
-        // =========================================================================
 
-        private void SubscribeToEvents()
-        {
-            if (_eventBus == null) return;
+      
+       
 
-            _eventBus.Subscribe<IUserRepo.InsertRequested>(OnInsertRequested);
-            _eventBus.Subscribe<IUserRepo.UpdateRequested>(OnUpdateRequested);
-            _eventBus.Subscribe<IUserRepo.DeleteRequested>(OnDeleteRequested);
-        }
-
-        private void UnsubscribeFromEvents()
-        {
-            if (_eventBus == null) return;
-
-            _eventBus.Unsubscribe<IUserRepo.InsertRequested>(OnInsertRequested);
-            _eventBus.Unsubscribe<IUserRepo.UpdateRequested>(OnUpdateRequested);
-            _eventBus.Unsubscribe<IUserRepo.DeleteRequested>(OnDeleteRequested);
-        }
-
-        public void Dispose()
-        {
-            UnsubscribeFromEvents();
-        }
-
-        // =========================================================================
-        // 📥 ОБРАБОТЧИКИ КОМАНД (Вызывают чистые основные методы)
-        // =========================================================================
-
-        private async void OnInsertRequested(IUserRepo.InsertRequested cmd)
-        {
-            if (cmd?.User == null) return;
-            try
-            {
-                await InsertAsync(cmd.User);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"[UserRepository] Ошибка в обработчике InsertRequested: {ex.Message}");
-            }
-        }
-
-        private async void OnUpdateRequested(IUserRepo.UpdateRequested cmd)
-        {
-            if (cmd?.User == null) return;
-            try
-            {
-                await UpdateAsync(cmd.User);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"[UserRepository] Ошибка в обработчике UpdateRequested: {ex.Message}");
-            }
-        }
-
-        private async void OnDeleteRequested(IUserRepo.DeleteRequested cmd)
-        {
-            if (cmd == null || cmd.UserId == Guid.Empty) return;
-            try
-            {
-                await DeleteByIdAsync(cmd.UserId);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"[UserRepository] Ошибка в обработчике DeleteRequested: {ex.Message}");
-            }
-        }
 
         // =========================================================================
         // 🔥 РЕАЛИЗАЦИЯ КОНТРАКТА ICrudRepository (С явной generic-публикацией)
@@ -126,8 +61,8 @@ namespace HomeNetOrm.Repositories.Base
                 await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, user));
                 Logger.LogInfo($"[UserRepository] Пользователь '{user.FirstName}' успешно записан.");
 
-                // 🔥 Указываем <IUserRepo.Inserted> явно, чтобы инспектор графа зацепился за тип
-                _eventBus?.Publish<IUserRepo.Inserted>(this, new IUserRepo.Inserted(user, "Успешно записан"));
+               
+                _eventBus?.Publish(this, new IUserRepo.Inserted(user, "Успешно записан"));
                 return user;
             }
             catch (Exception ex)

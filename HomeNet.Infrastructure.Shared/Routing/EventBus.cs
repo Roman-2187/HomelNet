@@ -14,7 +14,7 @@ namespace HomeNet.Infrastructure.Shared.Routing
             Inspector = inspector ?? throw new ArgumentNullException(nameof(inspector));
         }
 
-        // ... (Методы Subscribe, SubscribeAsync, RegisterSubscriber остаются без изменений) ...
+      
 
         public void Subscribe<TMessage>(Action<TMessage> action)
         {
@@ -75,7 +75,7 @@ namespace HomeNet.Infrastructure.Shared.Routing
             _ = PublishAsync(sender, message);
         }
 
-        // ... (Методы Unsubscribe остаются без изменений) ...
+       
         public void Unsubscribe<TMessage>(Action<TMessage> action) => UnsubscribeInternal(typeof(TMessage), action);
         public void UnsubscribeAsync<TMessage>(Func<TMessage, Task> asyncHandler) => UnsubscribeInternal(typeof(TMessage), asyncHandler);
 
@@ -88,6 +88,7 @@ namespace HomeNet.Infrastructure.Shared.Routing
                 if (actions.Count == 0)
                 {
                     _subscribers.Remove(messageType);
+
                     Inspector.RecordUnsubscribe(messageType);
                 }
             }

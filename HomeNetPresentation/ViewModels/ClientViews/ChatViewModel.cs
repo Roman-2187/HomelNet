@@ -10,10 +10,6 @@ using System.Collections.ObjectModel;
 
 namespace HomeNetPresentation.ViewModels
 {
-    /// <summary>
-    /// Автономная киберпанк-витрина чата SiberNet.
-    /// Благодаря сквозному UI-конвейеру работает на полной скорости без единого лока! 🧼
-    /// </summary>
     public partial class ChatViewModel : ObservableObject, IDisposable
     {
         private readonly IEventBus _eventBus;
@@ -23,7 +19,6 @@ namespace HomeNetPresentation.ViewModels
         [ObservableProperty] private string _currentUserName = string.Empty;
         [ObservableProperty] private bool _isChatOpen = false;
         [ObservableProperty] private string _inputText = string.Empty;
-
         [ObservableProperty] private string _selectedFriendName = string.Empty;
         [ObservableProperty] private Guid? _selectedFriendId;
         [ObservableProperty] private ObservableCollection<MessageEntity> _messages = new();
@@ -40,8 +35,10 @@ namespace HomeNetPresentation.ViewModels
         {
             _eventBus.Subscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
             _eventBus.Subscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
-            _eventBus.Subscribe<IContactsVm.FriendSelected>(OnFriendSelected);     
-            _eventBus.Subscribe<IMessageRepo.SaveRequested>(OnMessageReceivedInRealTime);
+            _eventBus.Subscribe<IContactsVm.FriendSelected>(OnFriendSelected);
+
+            // 🔥 Ловим факт сохранения в SQLite (от репозитория)
+            _eventBus.Subscribe<IMessageRepo.Saved>(OnMessageSaved);
         }
 
         private void OnUserSignedIn(IUserVm.UserSignedIn msg)
@@ -66,24 +63,19 @@ namespace HomeNetPresentation.ViewModels
             SelectedFriendId = msg.Friend.Id;
             SelectedFriendName = msg.Friend.FirstName ?? "Собеседник";
 
-            // 🧼 Полная безопасность: Мы зашли из UI-потока, локи больше не нужны
             Messages.Clear();
             IsChatOpen = true;
 
             try
             {
                 var history = await _messageService.GetPrivateHistoryAsync(CurrentUserId, SelectedFriendId.Value);
-
                 if (history != null)
                 {
-                    var historyList = history.ToList();
-
-                    foreach (var m in historyList)
+                    foreach (var m in history)
                     {
                         m.IsOutgoing = m.SenderId == CurrentUserId;
                     }
-
-                    Messages = new ObservableCollection<MessageEntity>(historyList);
+                    Messages = new ObservableCollection<MessageEntity>(history);
                 }
             }
             catch (Exception ex)
@@ -100,35 +92,28 @@ namespace HomeNetPresentation.ViewModels
             var rawText = InputText.Trim();
             InputText = string.Empty;
 
+            // 🔥 Отправляем через сервис (он дернет API)
             var verdict = await _messageService.SendPrivateMessageAsync(CurrentUserId, SelectedFriendId.Value, rawText);
 
-            if (verdict.IsValid && verdict.CreatedMessage != null)
-            {
-                verdict.CreatedMessage.IsOutgoing = true;
-
-                // Локальное эхо выполняется атомарно в родном UI-потоке
-                if (!Messages.Any(m => m.Id == verdict.CreatedMessage.Id))
-                {
-                    Messages.Add(verdict.CreatedMessage);
-                }
-            }
-            else
+            if (!verdict.IsValid)
             {
                 _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"[ОШИБКА ЧАТА]: {verdict.ErrorMessage}"));
             }
+            // Успех обработается в OnMessageSaved (когда SyncService запишет в SQLite)
         }
 
-        private void OnMessageReceivedInRealTime(IMessageRepo.SaveRequested msg)
+        // 🔥 Ловим сохранение в SQLite (от SyncService -> Repository)
+        private void OnMessageSaved(IMessageRepo.Saved msg)
         {
             if (msg?.Message == null || SelectedFriendId == null) return;
 
-            // Проверяем, принадлежит ли прилетевшее сообщение текущему открытому диалогу
+            // Проверяем, принадлежит ли сообщение текущему открытому диалогу
             if ((msg.Message.SenderId == SelectedFriendId.Value && msg.Message.ReceiverId == CurrentUserId) ||
                 (msg.Message.SenderId == CurrentUserId && msg.Message.ReceiverId == SelectedFriendId.Value))
             {
                 msg.Message.IsOutgoing = msg.Message.SenderId == CurrentUserId;
 
-             
+                // Добавляем, если еще нет
                 if (!Messages.Any(m => m.Id == msg.Message.Id))
                 {
                     Messages.Add(msg.Message);
@@ -146,7 +131,7 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
             _eventBus.Unsubscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
             _eventBus.Unsubscribe<IContactsVm.FriendSelected>(OnFriendSelected);
-            _eventBus.Unsubscribe<IMessageRepo.SaveRequested>(OnMessageReceivedInRealTime);
+            _eventBus.Unsubscribe<IMessageRepo.Saved>(OnMessageSaved);
         }
     }
 }

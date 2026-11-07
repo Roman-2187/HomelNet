@@ -10,7 +10,7 @@ using System.Data.Common;
 namespace HomeNetOrm.Repositories.Base
 {
     // 🔥 Добавляем IDisposable для отписки от шины
-    public class MessageRepository : BaseRepository<MessageEntity>, IMessageRepo, IDisposable
+    public class MessageRepository : BaseRepository<MessageEntity>, IMessageRepo
     {
         private readonly IMessageSqlGenerator _messageSqlGenerator;
         private readonly IEventBus? _eventBus;
@@ -27,93 +27,15 @@ namespace HomeNetOrm.Repositories.Base
             : this(connectionFactory, sqlGenerator, logger)
         {
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-           // SubscribeToEvents();
+          
         }
 
-        // =========================================================================
-        // 📥 ПОДПИСКА И ОТПИСКА
-        // =========================================================================
+       
 
-        private void SubscribeToEvents()
-        {
-            if (_eventBus == null) return;
+        
 
-            _eventBus.Subscribe<IMessageRepo.SaveRequested>(OnSaveRequested);
-            _eventBus.Subscribe<IMessageRepo.UpdateRequested>(OnUpdateRequested);
-            _eventBus.Subscribe<IMessageRepo.DeleteRequested>(OnDeleteRequested);
-            _eventBus.Subscribe<IMessageRepo.ClearChatRequested>(OnClearChatRequested);
-        }
+       
 
-        private void UnsubscribeFromEvents()
-        {
-            if (_eventBus == null) return;
-
-            _eventBus.Unsubscribe<IMessageRepo.SaveRequested>(OnSaveRequested);
-            _eventBus.Unsubscribe<IMessageRepo.UpdateRequested>(OnUpdateRequested);
-            _eventBus.Unsubscribe<IMessageRepo.DeleteRequested>(OnDeleteRequested);
-            _eventBus.Unsubscribe<IMessageRepo.ClearChatRequested>(OnClearChatRequested);
-        }
-
-        public void Dispose()
-        {
-            UnsubscribeFromEvents();
-        }
-
-        // =========================================================================
-        // 📥 ОБРАБОТЧИКИ КОМАНД (Просто вызывают чистые методы)
-        // =========================================================================
-
-        private async void OnSaveRequested(IMessageRepo.SaveRequested cmd)
-        {
-            if (cmd?.Message == null) return;
-            try
-            {
-                await InsertAsync(cmd.Message);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"[MessageRepository] Ошибка обработки SaveRequested: {ex.Message}");
-            }
-        }
-
-        private async void OnUpdateRequested(IMessageRepo.UpdateRequested cmd)
-        {
-            if (cmd?.Message == null) return;
-            try
-            {
-                await UpdateAsync(cmd.Message);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"[MessageRepository] Ошибка обработки UpdateRequested: {ex.Message}");
-            }
-        }
-
-        private async void OnDeleteRequested(IMessageRepo.DeleteRequested cmd)
-        {
-            if (cmd == null || cmd.MessageId == Guid.Empty) return;
-            try
-            {
-                await DeleteByIdAsync(cmd.MessageId);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"[MessageRepository] Ошибка обработки DeleteRequested: {ex.Message}");
-            }
-        }
-
-        private async void OnClearChatRequested(IMessageRepo.ClearChatRequested cmd)
-        {
-            if (cmd == null) return;
-            try
-            {
-                await ClearChatHistoryAsync(cmd.SenderId, cmd.ReceiverId);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"[MessageRepository] Ошибка обработки ClearChatRequested: {ex.Message}");
-            }
-        }
 
         // =========================================================================
         // 🔥 РЕАЛИЗАЦИЯ КОНТРАКТА ICrudRepository (Явные generic-публикации)
@@ -130,7 +52,7 @@ namespace HomeNetOrm.Repositories.Base
                 Logger.LogInfo($"[MessageRepository] Сообщение '{message.Id}' успешно записано.");
 
                 // 🔥 Добавили явный generic-параметр, чтобы инспектор железно его распарсил
-                _eventBus?.Publish<IMessageRepo.Saved>(this, new IMessageRepo.Saved(message));
+                _eventBus?.Publish(this, new IMessageRepo.Saved(message));
                 return message;
             }
             catch (Exception ex)
@@ -148,7 +70,7 @@ namespace HomeNetOrm.Repositories.Base
             if (rowsAffected > 0)
             {
                 // 🔥 Добавили явный generic-параметр
-                _eventBus?.Publish<IMessageRepo.Updated>(this, new IMessageRepo.Updated(entity));
+                _eventBus?.Publish(this, new IMessageRepo.Updated(entity));
             }
         }
 
@@ -160,7 +82,7 @@ namespace HomeNetOrm.Repositories.Base
             if (rowsAffected > 0)
             {
                 // 🔥 Добавили явный generic-параметр
-                _eventBus?.Publish<IMessageRepo.Deleted>(this, new IMessageRepo.Deleted(id));
+                _eventBus?.Publish(this, new IMessageRepo.Deleted(id));
             }
         }
 
@@ -188,7 +110,7 @@ namespace HomeNetOrm.Repositories.Base
             if (rowsAffected > 0)
             {
                 // 🔥 Добавили явный generic-параметр для удаления чата
-                _eventBus?.Publish<IMessageRepo.ChatCleared>(this, new IMessageRepo.ChatCleared(senderId, receiverId));
+                _eventBus?.Publish(this, new IMessageRepo.ChatCleared(senderId, receiverId));
             }
 
             return rowsAffected > 0;

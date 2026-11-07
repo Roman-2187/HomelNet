@@ -24,7 +24,7 @@ namespace HomeNetOrm.Infrastructure
             IEnumerable<TableSchema> schemas,
             ISqlDialectTranslator translator,
             ICastomLogger logger,
-            IEventBus? eventBus)
+            IEventBus? eventBus = null)
         {
             ConnectionFactory = connectionFactory;
             Schemas = schemas;

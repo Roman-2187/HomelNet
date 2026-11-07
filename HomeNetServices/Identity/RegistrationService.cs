@@ -2,44 +2,46 @@
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Validation;
-using HomeNetOrm.Interfaces.Repositories;
-
-
+using HomeNet.Network.Network.ApiClient; // 🔥 Только API
 
 namespace HomeNetServices.Identity
 {
-    public class RegistrationService(IUserRepo userRepository) : IRegistrationService
+    public class RegistrationService : IRegistrationService
     {
-        private readonly IUserRepo _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+        private readonly IUserApiClient _apiClient; // 🔥 Только API!
 
-        /// <summary>
-        /// Выполняет регистрацию. Возвращает лаконичный вложенный вердикт из интерфейса.
-        /// </summary>
+        public RegistrationService(IUserApiClient apiClient)
+        {
+            _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
+        }
+
         public async Task<IRegistrationService.Verdict> RegisterUserAsync(UserEntity user)
         {
-            // 1. Пошаговая валидация
-            var validationResults = await ValidateInputAsync(user);
+            // 1. Пошаговая валидация (формат полей, без запросов в БД)
+            var validationResults = ValidateInput(user);
             if (validationResults.Any(r => r.State == ValidationState.Error))
                 return new IRegistrationService.Verdict(false, validationResults, null);
 
-            // 2. Чистое сохранение
-            try
+            // 2. Отправка на сервер (сервер сам проверит уникальность Email)
+            bool success = await _apiClient.PushUserAsync(user);
+
+            if (success)
             {
-                await _userRepository.InsertAsync(user);
+                // Сервер подтвердил — координатор сохранит в SQLite.
                 return new IRegistrationService.Verdict(true, validationResults, user);
             }
-            catch (Exception ex)
+            else
             {
                 var errorResult = new ValidationResult
                 {
                     State = ValidationState.Error,
-                    Message = $"Ошибка сохранения пользователя: {ex.Message}"
+                    Message = "Сервер отклонил регистрацию (возможно, Email уже занят)."
                 };
-                return new IRegistrationService.Verdict(false, new List<ValidationResult> { errorResult }, null);
+                return new IRegistrationService.Verdict(false, [errorResult], null);
             }
         }
 
-        private async Task<List<ValidationResult>> ValidateInputAsync(UserEntity input)
+        private List<ValidationResult> ValidateInput(UserEntity input)
         {
             var results = new List<ValidationResult>();
 
@@ -47,7 +49,7 @@ namespace HomeNetServices.Identity
             var nameRes = ValidateUserName(input.FirstName);
             results.Add(nameRes);
 
-            // ➡️ ШАГ 2: Самостоятельная валидация Email (больше не зависит от Имени!)
+            // ➡️ ШАГ 2: Валидация Email (только формат, без запроса в БД)
             var emailRes = new ValidationResult { Field = TypeField.EmailType };
 
             if (string.IsNullOrWhiteSpace(input.Email))
@@ -60,22 +62,21 @@ namespace HomeNetServices.Identity
             }
             else
             {
-                // 🎯 ТЕПЕРЬ ЗАПРОС В СУБД ИДЕТ ВСЕГДА! Плевать, что там с именем.
-                emailRes = await ValidateEmailAsync(input.Email);
+                // 🔥 Просто проверяем формат. Уникальность проверит сервер.
+                emailRes = SetResult(emailRes, ValidationState.Success, "Email свободен и принят");
             }
             results.Add(emailRes);
 
             // 🎯 ШАГ 3: Защитный барьер для паролей
-            // Если Имя или Email содержат ошибки — пароли не трогаем, держим в режиме Info (бирюзовый неон)
             if (nameRes.State == ValidationState.Error || emailRes.State == ValidationState.Error)
             {
                 results.Add(new ValidationResult { Field = TypeField.PasswordType, State = ValidationState.Info, Message = "Пароль должен содержать минимум 8 символов, буквы и цифры" });
                 results.Add(new ValidationResult { Field = TypeField.ConfirmedPasswordType, State = ValidationState.Info, Message = "Пароли должны совпадать" });
 
-                return results; // Выходим раньше времени, скрывая ошибки паролей
+                return results;
             }
 
-            // ➡️ ШАГ 4: Сюда дойдем, только когда Имя и Email без косяков
+            // ➡️ ШАГ 4: Валидация паролей
             var passRes = ValidatePassword(input.Password);
             var confirmRes = ValidateConfirmedPassword(input.Password, input.ConfirmPassword);
 
@@ -83,14 +84,12 @@ namespace HomeNetServices.Identity
             return results;
         }
 
-
         private ValidationResult ValidateUserName(string? userName)
         {
             var res = new ValidationResult { Field = TypeField.NameType };
             if (string.IsNullOrWhiteSpace(userName)) return
                     SetResult(res, ValidationState.Error, "Имя пользователя не может быть пустым");
 
-            // 🔥 Вызов через статический инструмент-алгоритм
             return !ValidationFormat.IsValidUserName(userName) ?
                 SetResult(res, ValidationState.Error, "Допустимо минимум 3 буквы подряд без пробелов") :
                 SetResult(res, ValidationState.Success, "Имя пользователя принято");
@@ -102,7 +101,6 @@ namespace HomeNetServices.Identity
             if (string.IsNullOrWhiteSpace(password)) return
                     SetResult(res, ValidationState.Error, "Пароль не может быть пустым");
 
-            // 🔥 Вызов через статический инструмент-алгоритм
             return !ValidationFormat.IsValidPassword(password) ?
                 SetResult(res, ValidationState.Error, "Пароль должен содержать минимум 8 символов, буквы и цифры") :
                 SetResult(res, ValidationState.Success, "Пароль принято");
@@ -115,18 +113,6 @@ namespace HomeNetServices.Identity
                     SetResult(res, ValidationState.Error, "Пароль не может быть пустым");
             return confirmedPassword != password ? SetResult(res, ValidationState.Error, "пароли не совпадают") :
                 SetResult(res, ValidationState.Success, "пароли совпадают");
-        }
-
-        private async Task<ValidationResult> ValidateEmailAsync(string email)
-        {
-            var res = new ValidationResult { Field = TypeField.EmailType };
-            try
-            {
-                return await _userRepository.EmailExistsAsync(email) ?
-                    SetResult(res, ValidationState.Error, "Email уже зарегистрирован") :
-                    SetResult(res, ValidationState.Success, "Email свободен и принят");
-            }
-            catch (Exception ex) { return SetResult(res, ValidationState.Error, $"Ошибка проверки email: {ex.Message}"); }
         }
 
         private ValidationResult SetResult(ValidationResult res, ValidationState state, string message)

@@ -2,7 +2,6 @@
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
 using HomeNet.Network.SignalRListeners;
-using HomeNetOrm.Interfaces.Repositories;
 using Microsoft.AspNetCore.SignalR.Client;
 
 public class UserSignalRListener : BaseSignalRListener
@@ -17,15 +16,23 @@ public class UserSignalRListener : BaseSignalRListener
         {
             Logger.LogInfo($"[СЕТЬ] Поймали юзера {user.Id} от сервера.");
             user.IsSynced = 1;
-            EventBus.Publish(this, new IUserRepo.InsertRequested(user)); // Команда в репозиторий
+
+            // 🔥 Публикуем СВОЙ факт (от имени листенера)
+            EventBus.Publish(this, new UserReceivedFromNetwork(user));
             return Task.CompletedTask;
         });
 
         connection.On<Guid>("ReceiveUserDeleted", (userId) =>
         {
             Logger.LogWarning($"[СЕТЬ] Поймали удаление юзера {userId}.");
-            EventBus.Publish(this, new IUserRepo.DeleteRequested(userId));
+
+            // 🔥 Публикуем СВОЙ факт
+            EventBus.Publish(this, new UserDeletedFromNetwork(userId));
             return Task.CompletedTask;
         });
     }
 }
+
+// 🔥 Новые факты для сети
+public record UserReceivedFromNetwork(UserEntity User);
+public record UserDeletedFromNetwork(Guid UserId);

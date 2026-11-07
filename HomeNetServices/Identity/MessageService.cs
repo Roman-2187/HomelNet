@@ -1,27 +1,25 @@
-﻿using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNet.Models.Shared.Entity;
+﻿using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Interfaces.Services;
+using HomeNet.Network.Network.ApiClient;
 using HomeNetOrm.Interfaces.Repositories;
 
 namespace HomeNetServices.Services.Identity
 {
     public class MessageService : IMessageService
     {
-        private readonly IMessageRepo _messageRepo;
-        private readonly IEventBus _eventBus;
+        private readonly IMessageApiClient _apiClient;
+        private readonly IMessageRepo _messageRepo; // Для чтения истории
 
-        public MessageService(IMessageRepo messageRepo, IEventBus eventBus)
+        public MessageService(IMessageApiClient apiClient, IMessageRepo messageRepo)
         {
+            _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
             _messageRepo = messageRepo ?? throw new ArgumentNullException(nameof(messageRepo));
-            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         }
 
         public async Task<IMessageService.ChatVerdict> SendPrivateMessageAsync(Guid senderId, Guid receiverId, string text)
         {
             if (string.IsNullOrWhiteSpace(text))
-            {
                 return new IMessageService.ChatVerdict(false, "Сообщение не может быть пустым", null);
-            }
 
             var entity = new MessageEntity
             {
@@ -32,40 +30,34 @@ namespace HomeNetServices.Services.Identity
                 MediaType = "Text",
                 IsRead = false,
                 LocalCreatedAt = DateTime.UtcNow,
-                IsSynced = 0
+                IsSynced = 1 // Улетает на сервер
             };
 
             try
             {
-                // Репозиторий сам сохранит запись и сам сделает ЕДИНСТВЕННЫЙ правильный выстрел в шину
-                await _messageRepo.InsertAsync(entity);
+                // 🔥 Отправляем через API (API опубликует факт, SyncService запишет в SQLite)
+                bool success = await _apiClient.PushMessageAsync(entity);
 
-                return new IMessageService.ChatVerdict(true, string.Empty, entity);
+                if (success)
+                    return new IMessageService.ChatVerdict(true, string.Empty, entity);
+                else
+                    return new IMessageService.ChatVerdict(false, "Сервер недоступен. Сообщение не отправлено.", null);
             }
-
             catch (Exception ex)
             {
-                return new IMessageService.ChatVerdict(false, $"Ошибка бэкенда при сохранении: {ex.Message}", null);
+                return new IMessageService.ChatVerdict(false, $"Ошибка API: {ex.Message}", null);
             }
         }
 
-        /// <summary>
-        /// 🎯 УДОВЛЕТВОРЯЕМ КОНТРАКТ: Вытягиваем историю сообщений
-        /// </summary>
         public async Task<IEnumerable<MessageEntity>> GetPrivateHistoryAsync(Guid userId, Guid friendId)
         {
             try
             {
-                // Запрашиваем из репозитория всю переписку (где я отправитель, а он получатель, И НАОБОРОТ)
                 var allMessages = await _messageRepo.GetChatHistoryAsync(userId, friendId);
-
-
-                // На всякий случай сортируем по времени, чтобы переписка шла сверху вниз
                 return allMessages.OrderBy(m => m.LocalCreatedAt);
             }
             catch (Exception)
             {
-                // Если истории еще нет или репозиторий пуст — отдаем пустой список, чтобы не вешать UI
                 return [];
             }
         }

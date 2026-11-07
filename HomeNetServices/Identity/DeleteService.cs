@@ -3,8 +3,7 @@ using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Validation;
-using HomeNetOrm.Interfaces.Repositories;
-using HomeNetOrm.Repositories.Extensions; // 🔥 ПОДКЛЮЧАЕМ НАШИ ГЛОБАЛЬНЫЙ CRUD ОБВЕС
+using HomeNet.Network.Network.ApiClient;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,24 +13,22 @@ namespace HomeNetServices.Services.Identity
 {
     public class DeleteService : IDeleteService
     {
-        private readonly IUserRepo _userRepository;
+        private readonly IUserApiClient _apiClient;
         private readonly ICastomLogger _logger;
 
-        public DeleteService(IUserRepo userRepo, ICastomLogger logger)
+        public DeleteService(IUserApiClient apiClient, ICastomLogger logger)
         {
-            _userRepository = userRepo;
+            _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<IEnumerable<UserEntity>> GetAllUsersAsync()
         {
-            // 🔥 ИСПРАВЛЕНО: Явно указали тип сущности <UserEntity>
-            return await _userRepository.GetAllAsync() ?? Enumerable.Empty<UserEntity>();
+            // 🔥 Выгружаем юзеров с сервера (API)
+            var users = await _apiClient.FetchFreshUsersAsync(Guid.Empty, DateTimeOffset.MinValue);
+            return users ?? Enumerable.Empty<UserEntity>();
         }
 
-        /// <summary>
-        /// 🎯 Конвейер поиска пользователя (в твоём фирменном стиле вердиктов)
-        /// </summary>
         public async Task<IDeleteService.SearchVerdict> SearchUserAsync(string targetUserId)
         {
             var validationResults = ValidateIdInput(targetUserId);
@@ -42,8 +39,8 @@ namespace HomeNetServices.Services.Identity
             Guid id = Guid.Parse(targetUserId);
             try
             {
-                // 🔥 ИСПРАВЛЕНО: Добавлен дженерик-параметр <UserEntity> для точечного поиска по ID
-                var user = await _userRepository.GetByIdAsync(id);
+                // 🔥 Ищем на сервере (API)
+                var user = await _apiClient.GetUserByIdAsync(id);
                 var res = validationResults.First();
 
                 if (user != null)
@@ -53,18 +50,15 @@ namespace HomeNetServices.Services.Identity
                 }
 
                 return new IDeleteService.SearchVerdict(false, validationResults, null)
-                    .WithResult(res, ValidationState.Error, $"Пользователь с ID {id} не существует.");
+                    .WithResult(res, ValidationState.Error, $"Пользователь с ID {id} не существует на сервере.");
             }
             catch (Exception ex)
             {
-                var errorResult = new ValidationResult { State = ValidationState.Error, Message = $"Ошибка БД: {ex.Message}" };
+                var errorResult = new ValidationResult { State = ValidationState.Error, Message = $"Ошибка сети: {ex.Message}" };
                 return new IDeleteService.SearchVerdict(false, new List<ValidationResult> { errorResult }, null);
             }
         }
 
-        /// <summary>
-        /// 🎯 Конвейер удаления пользователя
-        /// </summary>
         public async Task<IDeleteService.DeleteVerdict> DeleteUserAsync(string targetUserId, UserEntity? selectedUser)
         {
             Guid id = selectedUser?.Id ?? (Guid.TryParse(targetUserId, out Guid parsedId) ? parsedId : Guid.Empty);
@@ -85,12 +79,18 @@ namespace HomeNetServices.Services.Identity
                     ? $"{selectedUser.FirstName} {selectedUser.LastName} (ID {id})"
                     : $"ID {id} (Точечно)";
 
-               
-                await _userRepository.DeleteByIdAsync(id);
+                // 🔥 Удаляем на сервере (API)
+                bool success = await _apiClient.DeleteUserAsync(id);
 
-                // 🔥 ИСПРАВЛЕНО: Вызываем GetAllAsync с указанием <UserEntity>
-                var allUsers = await _userRepository.GetAllAsync() ?? Enumerable.Empty<UserEntity>();
-                _logger.LogDebug($"В системе {allUsers.Count()} пользователей");
+                if (!success)
+                {
+                    idRes.Update(ValidationState.Error, "Сервер недоступен или удаление отклонено.");
+                    return new IDeleteService.DeleteVerdict(false, validationResults, id, null);
+                }
+
+                // 🔥 После удаления запрашиваем актуальный список с сервера
+                var allUsers = await _apiClient.FetchFreshUsersAsync(Guid.Empty, DateTimeOffset.MinValue);
+                _logger.LogDebug($"В системе {allUsers.Count()} пользователей (после удаления)");
 
                 idRes.Update(ValidationState.Success, $"Пользователь с ID {id} успешно удален.");
 
@@ -105,7 +105,7 @@ namespace HomeNetServices.Services.Identity
             }
             catch (Exception ex)
             {
-                idRes.Update(ValidationState.Error, $"Ошибка удаления из БД: {ex.Message}");
+                idRes.Update(ValidationState.Error, $"Ошибка удаления: {ex.Message}");
                 return new IDeleteService.DeleteVerdict(false, validationResults, id, null);
             }
         }
@@ -117,9 +117,8 @@ namespace HomeNetServices.Services.Identity
             if (string.IsNullOrWhiteSpace(targetUserId))
                 return new List<ValidationResult> { res.Update(ValidationState.Error, "Ошибка: ID не может быть пустым!") };
 
-            // 🔥 ИСПРАВЛЕНО С int НА Guid: Теперь валидация проверяет валидный шестнадцатеричный Guid, а не цифры!
             if (!Guid.TryParse(targetUserId, out _))
-                return new List<ValidationResult> { res.Update(ValidationState.Error, "Ошибка: ID должен быть валидным Guid (формат: 00000000-0000-0000-0000-000000000000)!") };
+                return new List<ValidationResult> { res.Update(ValidationState.Error, "Ошибка: ID должен быть валидным Guid!") };
 
             return new List<ValidationResult> { res.Update(ValidationState.Success, "ID корректен для поиска") };
         }

@@ -47,11 +47,13 @@ namespace HomeNet.DI
                 Infrastructure.EventBus);
 
             Services = new BusinessServicesModule(
-                DataAccess.UserRepository,
-                DataAccess.MessageRepository,
-                DataAccess.DeviceSettingsRepository,
-                Infrastructure.Logger,
-                Infrastructure.EventBus);
+      DataAccess.UserRepository,          // Для чтения из кэша
+      DataAccess.MessageRepository,       // Для чтения из кэша
+      DataAccess.DeviceSettingsRepository,// Локальные настройки
+      DataAccess.UserApiClient,           // 🔥 ДЛЯ РЕГИСТРАЦИИ И АУТЕНТИФИКАЦИИ
+      DataAccess.MessageApiClient,        // 🔥 ДЛЯ ОТПРАВКИ СООБЩЕНИЙ
+      Infrastructure.Logger,
+      Infrastructure.EventBus);
 
             Ui = new PresentationUiModule(
                 Infrastructure.EventBus,

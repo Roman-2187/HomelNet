@@ -2,113 +2,73 @@
 using HomeNetCore.Enums;
 using HomeNetCore.Interfaces;
 using HomeNetCore.Validation;
-using HomeNetOrm.Interfaces.Repositories;
+using HomeNet.Network.Network.ApiClient; // 🔥
 
 namespace HomeNetServices.Identity
 {
-    public class AuthenticateService(IUserRepo userRepository) : IAuthenticateService
+    public class AuthenticateService : IAuthenticateService
     {
-        private readonly IUserRepo _userRepository = userRepository;
+        private readonly IUserApiClient _apiClient; // 🔥 Только API!
 
-        /// <summary>
-        /// Выполняет проверку пользователя. Возвращает лаконичный вложенный вердикт из интерфейса Ядра.
-        /// </summary>
-        public async Task<IAuthenticateService.Verdict> CheckUserAsync(UserEntity userInput)
+        public AuthenticateService(IUserApiClient apiClient)
         {
-            if (userInput == null)
-                throw new ArgumentNullException(nameof(userInput));
-
-            // 🔥 ВЫЧИЩАЕМ ПРОБЕЛЫ НА ВХОДЕ В СЕРВИС:
-            // Если email передан с пробелами, полностью убираем их, чтобы база данных SQLite не спотыкалась
-            if (!string.IsNullOrWhiteSpace(userInput.Email))
-            {
-                userInput.Email = userInput.Email.Replace(" ", "");
-            }
-
-            var validationResults = await ValidateInputAsync(userInput);
-            var hasCriticalErrors = validationResults.Any(r => r.State == ValidationState.Error);
-
-            UserEntity? authenticatedUser = null;
-
-            // Если критических ошибок нет — вытаскиваем тёпленького юзера из базы для логгера и UI
-            if (!hasCriticalErrors && !string.IsNullOrWhiteSpace(userInput.Email))
-            {
-                authenticatedUser = await _userRepository.GetByEmailAsync(userInput.Email);
-            }
-
-            // 🔥 Возвращаем наш красивый вложенный рекорд
-            return new IAuthenticateService.Verdict(!hasCriticalErrors, validationResults, authenticatedUser);
+            _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
         }
 
-        private async Task<List<ValidationResult>> ValidateInputAsync(UserEntity input)
+        public async Task<IAuthenticateService.Verdict> CheckUserAsync(UserEntity userInput)
+        {
+            if (userInput == null) throw new ArgumentNullException(nameof(userInput));
+
+            if (!string.IsNullOrWhiteSpace(userInput.Email))
+                userInput.Email = userInput.Email.Replace(" ", "");
+
+            // 1. Валидация (локальная)
+            var validationResults = ValidateInput(userInput);
+            if (validationResults.Any(r => r.State == ValidationState.Error))
+                return new IAuthenticateService.Verdict(false, validationResults, null);
+
+            // 2. Проверка на сервере (онлайн)
+            var authenticatedUser = await _apiClient.AuthenticateAsync(userInput.Email!, userInput.Password!);
+
+            if (authenticatedUser != null)
+            {
+                return new IAuthenticateService.Verdict(true, validationResults, authenticatedUser);
+            }
+            else
+            {
+                var errorResult = new ValidationResult
+                {
+                    Field = TypeField.PasswordType,
+                    State = ValidationState.Error,
+                    Message = "Неверный email или пароль (или сервер недоступен)."
+                };
+                return new IAuthenticateService.Verdict(false, new List<ValidationResult> { errorResult }, null);
+            }
+        }
+
+        private List<ValidationResult> ValidateInput(UserEntity input)
         {
             var results = new List<ValidationResult>();
 
-            var emailResult = await ValidateEmailAsync(input.Email!);
+            // Валидация Email (только формат, без запроса в БД)
+            var emailResult = new ValidationResult { Field = TypeField.EmailType };
+            if (string.IsNullOrWhiteSpace(input.Email) || !ValidationFormat.IsValidEmail(input.Email))
+                emailResult = SetResult(emailResult, ValidationState.Error, "Некорректный формат email");
+            else
+                emailResult = SetResult(emailResult, ValidationState.Success, "Email принят");
+
             results.Add(emailResult);
 
-            var passwordResult = emailResult.State switch
-            {
-                ValidationState.Error => new ValidationResult
-                {
-                    Field = TypeField.PasswordType,
-                    State = ValidationState.Info,
-                    Message = "Текущий пароль"
-                },
-                ValidationState.Success => await VerifyPasswordPlainTextAsync(input.Email!, input.Password!),
-                _ => await VerifyPasswordPlainTextAsync(input.Email!, input.Password!)
-            };
+            // Валидация пароля (только формат)
+            var passResult = new ValidationResult { Field = TypeField.PasswordType };
+            if (string.IsNullOrWhiteSpace(input.Password))
+                passResult = SetResult(passResult, ValidationState.Error, "Пароль не может быть пустым");
+            else
+                passResult = SetResult(passResult, ValidationState.Success, "Пароль принят");
 
-            results.Add(passwordResult);
+            results.Add(passResult);
+
             return results;
-        }
-
-        private async Task<ValidationResult> ValidateEmailAsync(string email)
-        {
-            var result = new ValidationResult { Field = TypeField.EmailType };
-
-            try
-            {
-                if (string.IsNullOrWhiteSpace(email))
-                    return SetResult(result, ValidationState.Error, "Email не может быть пустым");
-
-                // 🔥 Вызов через статический инструмент-алгоритм из Utils (работает уже по чистой строке)
-                if (!ValidationFormat.IsValidEmail(email))
-                    return SetResult(result, ValidationState.Error, "Некорректный формат email");
-
-                var emailExists = await _userRepository.EmailExistsAsync(email);
-
-                return emailExists
-                    ? SetResult(result, ValidationState.Success, "Email найден")
-                    : SetResult(result, ValidationState.Error, "Email не найден");
-            }
-            catch (Exception ex)
-            {
-                return SetResult(result, ValidationState.Error, $"Ошибка проверки email: {ex.Message}");
-            }
-        }
-
-        private async Task<ValidationResult> VerifyPasswordPlainTextAsync(string email, string password)
-        {
-            var result = new ValidationResult { Field = TypeField.PasswordType };
-
-            try
-            {
-                if (string.IsNullOrWhiteSpace(password))
-                    return SetResult(result, ValidationState.Error, "Пароль не может быть пустым");
-
-                var user = await _userRepository.GetByEmailAsync(email);
-                if (user == null)
-                    return SetResult(result, ValidationState.Error, "Пользователь не найден");
-
-                return user.Password == password
-                    ? SetResult(result, ValidationState.Success, "Пароль верен")
-                    : SetResult(result, ValidationState.Error, "Неверный пароль");
-            }
-            catch (Exception ex)
-            {
-                return SetResult(result, ValidationState.Error, $"Ошибка проверки пароля: {ex.Message}");
-            }
         }
 
         private ValidationResult SetResult(ValidationResult res, ValidationState state, string message)

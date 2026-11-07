@@ -2,7 +2,6 @@
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
 using HomeNet.Network.SignalRListeners;
-using HomeNetOrm.Interfaces.Repositories;
 using Microsoft.AspNetCore.SignalR.Client;
 
 public class MessageSignalRListener : BaseSignalRListener
@@ -17,8 +16,13 @@ public class MessageSignalRListener : BaseSignalRListener
         {
             Logger.LogInfo($"[СЕТЬ] Поймали сообщение {message.Id} от сервера.");
             message.IsSynced = 1;
-            EventBus.Publish(this, new IMessageRepo.SaveRequested(message)); // Команда в репозиторий
+
+            // 🔥 Публикуем СВОЙ факт
+            EventBus.Publish(this, new MessageReceivedFromNetwork(message));
             return Task.CompletedTask;
         });
     }
 }
+
+// 🔥 Новый факт для сети
+public record MessageReceivedFromNetwork(MessageEntity Message);

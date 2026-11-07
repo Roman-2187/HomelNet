@@ -1,7 +1,7 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNet.Network.Network.ApiClient; // Твои новые клиенты
-using HomeNet.Network.SignalRListeners; // Твои новые листенеры
+using HomeNet.Network.Network.ApiClient;
+using HomeNet.Network.SignalRListeners;
 using HomeNet.Synchronization;
 using HomeNet.Synchronization.Interfaces.Sinc;
 using HomeNet.Synchronization.Sinc;
@@ -29,6 +29,13 @@ namespace HomeNet.DI.Modules
         public UserSignalRListener UserListener { get; }
         public MessageSignalRListener MessageListener { get; }
 
+        // 🔥 ДОБАВЛЯЕМ СВОЙСТВА ДЛЯ API-КЛИЕНТОВ
+        public IUserApiClient UserApiClient { get; }
+        public IMessageApiClient MessageApiClient { get; }
+
+        public UserSyncService UserSyncService { get; }
+        public MessageSyncService MessageSyncService { get; }
+
         public DataAccessModule(
             string sqliteConn, string apiBaseUrl,
             IEnumerable<TableSchema> appSchemas,
@@ -44,30 +51,29 @@ namespace HomeNet.DI.Modules
             MessageRepository = DbEngine.Repositories.GetRepository<IMessageRepo>();
             DeviceSettingsRepository = DbEngine.Repositories.GetRepository<ClientDeviceSettingsRepository>();
 
-            // =========================================================================
-            // 2. HttpClient (БЕЗ интерцептора — он не нужен)
-            // =========================================================================
+            // 2. HttpClient
             var httpClient = new HttpClient
             {
                 BaseAddress = new Uri(apiBaseUrl),
                 Timeout = TimeSpan.FromSeconds(10)
             };
 
-            // 🔥 3. Создаем разделенные API-клиенты
-            var userApiClient = new UserApiClient(httpClient, logger);
-            var messageApiClient = new MessageApiClient(httpClient, logger);
+            // 3. API-клиенты (и сохраняем их в свойства!)
+            UserApiClient = new UserApiClient(httpClient, logger, eventBus);
+            MessageApiClient = new MessageApiClient(httpClient, logger, eventBus);
 
             // 4. Контейнер хаба
             DbContextContainer = new DbContextContainer(DbEngine, apiBaseUrl, eventBus, logger);
 
-            // 🔥 5. Синхронизаторы получают свои API-клиенты
-            var userSync = new UserSynchronizer(UserRepository, userApiClient, eventBus, logger);
-            var messageSync = new MessageSynchronizer(MessageRepository, messageApiClient, eventBus, logger);
-            var syncCoordinator = new CompositeSyncCoordinator(userSync, messageSync);
+            // 🔥 5. Создаем SyncService
+            UserSyncService = new UserSyncService(UserRepository, UserApiClient, eventBus, logger);
+            MessageSyncService = new MessageSyncService(MessageRepository, MessageApiClient, eventBus, logger);
 
+            // 6. Запускаем стартовую синхронизацию
+            var syncCoordinator = new CompositeSyncCoordinator(UserSyncService, MessageSyncService);
             OrmEngine = new SyncEngine(UserRepository, MessageRepository, syncCoordinator, logger);
 
-            // 🔥 6. Создаем разделенные SignalR-листенеры
+            // 7. SignalR-листенеры
             UserListener = new UserSignalRListener(apiBaseUrl, logger, eventBus);
             MessageListener = new MessageSignalRListener(apiBaseUrl, logger, eventBus);
         }

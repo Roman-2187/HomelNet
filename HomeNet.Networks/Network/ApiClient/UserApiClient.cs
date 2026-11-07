@@ -1,26 +1,40 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
 using System.Net.Http.Json;
 
 namespace HomeNet.Network.Network.ApiClient
 {
-
-
-
     public class UserApiClient : BaseApiClient, IUserApiClient
     {
-        public UserApiClient(HttpClient httpClient, ICastomLogger logger) : base(httpClient, logger) { }
+        private readonly IEventBus _eventBus;
+
+        public UserApiClient(HttpClient httpClient, ICastomLogger logger, IEventBus eventBus)
+            : base(httpClient, logger)
+        {
+            _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+        }
 
         public async Task<bool> PushUserAsync(UserEntity user)
         {
             try
             {
                 var response = await HttpClient.PostAsJsonAsync("/api/users", user);
-                return response.IsSuccessStatusCode;
+
+                if (response.IsSuccessStatusCode)
+                {
+                    // 🔥 Кричим, что сервер принял
+                    _eventBus.Publish(this, new IUserApiClient.UserRegisteredOnServer(user));
+                    return true;
+                }
+
+                _eventBus.Publish(this, new IUserApiClient.UserRegistrationFailed(user.Id, $"HTTP {response.StatusCode}"));
+                return false;
             }
             catch (Exception ex)
             {
                 Logger.LogError($"[UserApiClient] Ошибка отправки пользователя: {ex.Message}");
+                _eventBus.Publish(this, new IUserApiClient.UserRegistrationFailed(user.Id, ex.Message));
                 return false;
             }
         }
@@ -30,11 +44,21 @@ namespace HomeNet.Network.Network.ApiClient
             try
             {
                 var response = await HttpClient.DeleteAsync($"/api/users/{userId}");
-                return response.IsSuccessStatusCode;
+
+                if (response.IsSuccessStatusCode)
+                {
+                    // 🔥 Кричим, что сервер удалил
+                    _eventBus.Publish(this, new IUserApiClient.UserDeletedOnServer(userId));
+                    return true;
+                }
+
+                _eventBus.Publish(this, new IUserApiClient.UserDeleteFailed(userId, $"HTTP {response.StatusCode}"));
+                return false;
             }
             catch (Exception ex)
             {
                 Logger.LogError($"[UserApiClient] Ошибка удаления пользователя: {ex.Message}");
+                _eventBus.Publish(this, new IUserApiClient.UserDeleteFailed(userId, ex.Message));
                 return false;
             }
         }
@@ -52,6 +76,59 @@ namespace HomeNet.Network.Network.ApiClient
             {
                 Logger.LogError($"[UserApiClient] Не удалось скачать обновления пользователей: {ex.Message}");
                 return Array.Empty<UserEntity>();
+            }
+        }
+
+        public async Task<UserEntity?> GetUserByIdAsync(Guid id)
+        {
+            try
+            {
+                Logger.LogInfo($"[UserApiClient] Запрос юзера по ID: {id}...");
+                return await HttpClient.GetFromJsonAsync<UserEntity>($"/api/users/{id}");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[UserApiClient] Ошибка получения юзера {id}: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<IReadOnlyCollection<UserEntity>> GetAllUsersAsync()
+        {
+            try
+            {
+                Logger.LogInfo("[UserApiClient] Запрос всех пользователей...");
+                var response = await HttpClient.GetFromJsonAsync<List<UserEntity>>("/api/users");
+                return response ?? new List<UserEntity>();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[UserApiClient] Ошибка получения списка: {ex.Message}");
+                return Array.Empty<UserEntity>();
+            }
+        }
+
+
+        // 🔥 ДОБАВЛЕННЫЙ МЕТОД: Аутентификация через API
+        public async Task<UserEntity?> AuthenticateAsync(string email, string password)
+        {
+            try
+            {
+                Logger.LogInfo($"[UserApiClient] Попытка входа для {email}...");
+
+                var response = await HttpClient.PostAsJsonAsync("/api/users/auth", new { Email = email, Password = password });
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<UserEntity>();
+                }
+
+                return null; // Сервер сказал "неверный пароль" или "не найден"
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[UserApiClient] Ошибка при авторизации: {ex.Message}");
+                return null;
             }
         }
     }

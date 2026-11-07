@@ -5,16 +5,10 @@ namespace HomeNetOrm.Interfaces.Repositories
     // 🔥 Наследуем плоский корневой IRepository
     public interface IMessageRepo : IRepository ,ICrudRepository<MessageEntity>
     {
-        // ==========================================
-        // 📥 КОМАНДЫ (Открытые рекорды для шины)
-        // ==========================================
-        public record SaveRequested(MessageEntity Message);
-        public record UpdateRequested(MessageEntity Message);
-        public record DeleteRequested(Guid MessageId);
-        public record ClearChatRequested(Guid SenderId, Guid ReceiverId);
+       
 
         // ==========================================
-        // 📤 ФАКТЫ (Защищенные интерфейсы фактов)
+        // 📤 ФАКТЫ 
         // ==========================================
         public record Saved(MessageEntity Message);
         public record Updated(MessageEntity Message);

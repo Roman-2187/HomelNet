@@ -1,42 +1,56 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
+using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
+using HomeNet.Network.Network.ApiClient;
+using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
 
-namespace HomeNet.Network.Network.ApiClient
+public class MessageApiClient : BaseApiClient, IMessageApiClient
 {
+    private readonly IEventBus _eventBus;
 
-    public class MessageApiClient : BaseApiClient, IMessageApiClient
+    public MessageApiClient(HttpClient httpClient, ICastomLogger logger, IEventBus eventBus)
+        : base(httpClient, logger)
     {
-        public MessageApiClient(HttpClient httpClient, ICastomLogger logger) : base(httpClient, logger) { }
+        _eventBus = eventBus;
+    }
 
-        public async Task<bool> PushMessageAsync(MessageEntity message)
+    public async Task<bool> PushMessageAsync(MessageEntity message)
+    {
+        try
         {
-            try
+            var response = await HttpClient.PostAsJsonAsync("/api/messages", message);
+
+            if (response.IsSuccessStatusCode)
             {
-                var response = await HttpClient.PostAsJsonAsync("/api/messages", message);
-                return response.IsSuccessStatusCode;
+                _eventBus.Publish(this, new IMessageApiClient.MessageSentOnServer(message));
+                return true;
             }
-            catch (Exception ex)
-            {
-                Logger.LogError($"[MessageApiClient] Ошибка отправки сообщения: {ex.Message}");
-                return false;
-            }
+
+            _eventBus.Publish(this, new IMessageApiClient.MessageSendFailed(message.Id, $"HTTP {response.StatusCode}"));
+            return false;
         }
-
-        public async Task<IReadOnlyCollection<MessageEntity>> FetchFreshMessagesAsync(Guid userId, DateTimeOffset lastSyncedAt)
+        catch (Exception ex)
         {
-            try
-            {
-                Logger.LogInfo($"[MessageApiClient] Отправляем PULL по User ID: {userId}...");
-                string url = $"/api/messages/sync?userId={userId}&lastSyncedAt={Uri.EscapeDataString(lastSyncedAt.ToString("o"))}";
-                var response = await HttpClient.GetFromJsonAsync<List<MessageEntity>>(url);
-                return response ?? new List<MessageEntity>();
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"[MessageApiClient] Не удалось скачать сообщения: {ex.Message}");
-                return Array.Empty<MessageEntity>();
-            }
+            Logger.LogError($"[MessageApiClient] Ошибка отправки: {ex.Message}");
+            _eventBus.Publish(this, new IMessageApiClient.MessageSendFailed(message.Id, ex.Message));
+            return false;
+        }
+    }
+
+    // PULL остается синхронным (для Synchronizer)
+    public async Task<IReadOnlyCollection<MessageEntity>> FetchFreshMessagesAsync(Guid userId, DateTimeOffset lastSyncedAt)
+    {
+        try
+        {
+            string url = $"/api/messages/sync?userId={userId}&lastSyncedAt={Uri.EscapeDataString(lastSyncedAt.ToString("o"))}";
+            var response = await HttpClient.GetFromJsonAsync<List<MessageEntity>>(url);
+            return response ?? new List<MessageEntity>();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError($"[MessageApiClient] Ошибка PULL: {ex.Message}");
+            return Array.Empty<MessageEntity>();
         }
     }
 }
