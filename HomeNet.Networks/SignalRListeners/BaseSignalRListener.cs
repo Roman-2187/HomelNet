@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.SignalR.Client;
+﻿using HomeNet.Infrastructure.Shared;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Interfaces.ViewModels.UserZone; // Для IUserVm
+using Microsoft.AspNetCore.SignalR.Client;
 
 namespace HomeNet.Network.SignalRListeners
 {
@@ -18,7 +19,6 @@ namespace HomeNet.Network.SignalRListeners
             Logger = logger;
             EventBus = eventBus;
 
-            // 🔥 САМОПОДЪЕМ: Слушаем вход и сразу подключаемся
             EventBus.Subscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
             EventBus.Subscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
         }
@@ -63,8 +63,23 @@ namespace HomeNet.Network.SignalRListeners
                 return Task.CompletedTask;
             });
 
-            await Connection.StartAsync();
-            Logger.LogInfo($"[СЕТЬ] SignalR поднят для {GetType().Name}.");
+            // 🔥 Оборачиваем запуск соединения в ExecuteSafeAsync
+            // Если сервер недоступен, ошибка запишется в лог, но не упадет и не пойдет выше.
+            await AutoExceptionHandler.ExecuteSafeAsync(Logger, async () =>
+            {
+                await Connection.StartAsync();
+                return true; // Заглушка, так как метод требует возвращаемое значение
+            });
+
+            // Эта строчка выполнится в любом случае (даже если упало выше), но только если коннект живой
+            if (Connection.State == HubConnectionState.Connected)
+            {
+                Logger.LogInfo($"[СЕТЬ] SignalR поднят для {GetType().Name}.");
+            }
+            else
+            {
+                Logger.LogWarning($"[СЕТЬ] SignalR не подключен для {GetType().Name}. Работаем в офлайн-режиме.");
+            }
         }
 
         protected abstract void RegisterHandlers(HubConnection connection);
