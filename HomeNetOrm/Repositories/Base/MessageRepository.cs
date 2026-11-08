@@ -3,7 +3,9 @@ using HomeNet.Infrastructure.Shared;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
+using HomeNetOrm.Exeptions; // Тут лежат DuplicateEmailException, DatabaseException и т.д.
 using HomeNetOrm.Generators.Extensions;
+using HomeNetOrm.Interfaces.DbInfrastructure; // Для IDbExceptionHandler
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Interfaces.Repositories;
 using System.Data.Common;
@@ -14,15 +16,19 @@ namespace HomeNetOrm.Repositories.Base
     {
         private readonly IMessageSqlGenerator _messageSqlGenerator;
         private readonly IEventBus? _eventBus;
+        private readonly IDbExceptionHandler _errorHandler;
 
-        internal MessageRepository(Func<DbConnection> connectionFactory, IMessageSqlGenerator sqlGenerator, ICastomLogger logger)
+        // 🖥️ СЕРВЕРНЫЙ КОНСТРУКТОР (без шины)
+        internal MessageRepository(Func<DbConnection> connectionFactory, IMessageSqlGenerator sqlGenerator, ICastomLogger logger, IDbExceptionHandler errorHandler)
             : base(connectionFactory, sqlGenerator, logger)
         {
             _messageSqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));
+            _errorHandler = errorHandler ?? throw new ArgumentNullException(nameof(errorHandler));
         }
 
-        internal MessageRepository(Func<DbConnection> connectionFactory, IMessageSqlGenerator sqlGenerator, ICastomLogger logger, IEventBus eventBus)
-            : this(connectionFactory, sqlGenerator, logger)
+        // 📱 КЛИЕНТСКИЙ КОНСТРУКТОР (с шиной)
+        internal MessageRepository(Func<DbConnection> connectionFactory, IMessageSqlGenerator sqlGenerator, ICastomLogger logger, IEventBus eventBus, IDbExceptionHandler errorHandler)
+            : this(connectionFactory, sqlGenerator, logger, errorHandler)
         {
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         }
@@ -33,13 +39,25 @@ namespace HomeNetOrm.Repositories.Base
 
             var cmd = _messageSqlGenerator.GenerateInsert();
 
-            // Оборачиваем в интерцептор
-            await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
-                ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, message)));
+            try
+            {
+                // Просто выполняем запрос без статического перехватчика
+                await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, message));
 
-            Logger.LogInfo($"[MessageRepository] Сообщение '{message.Id}' успешно записано.");
-            _eventBus?.Publish(this, new IMessageRepo.Saved(message));
-            return message;
+                Logger.LogInfo($"[MessageRepository] Сообщение '{message.Id}' успешно записано.");
+                _eventBus?.Publish(this, new IMessageRepo.Saved(message));
+                return message;
+            }
+            catch (Exception ex) when (_errorHandler.IsDuplicateKeyException(ex))
+            {
+                // Если SQLite выкинул UNIQUE constraint — кидаем доменное исключение
+                throw new DuplicateMessageException(message.Id);
+            }
+            catch (Exception ex)
+            {
+                // Любая другая ошибка БД
+                throw _errorHandler.Translate(ex);
+            }
         }
 
         public async Task UpdateAsync(MessageEntity entity)
@@ -104,10 +122,13 @@ namespace HomeNetOrm.Repositories.Base
      await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
          ExecuteAsync(db => db.QueryAsync<MessageEntity>(
              _messageSqlGenerator.GenerateSelectChatHistory(senderId, receiverId).Sql,
-             new { SenderId = senderId, ReceiverId = receiverId })));
-
-
-
+             new
+             {
+                 SenderId1 = senderId,
+                 ReceiverId1 = receiverId,
+                 SenderId2 = receiverId,
+                 ReceiverId2 = senderId
+             })));
         public async Task<bool> MarkAsReadAsync(Guid senderId, Guid receiverId) =>
             await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
                 ExecuteAsync(async db => await db.ExecuteAsync(

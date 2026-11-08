@@ -5,8 +5,10 @@ using HomeNet.Models.Shared.Entity;
 using HomeNetCore.Interfaces.Services;
 using HomeNetCore.Interfaces.ViewModels.AdminZone;
 using HomeNetCore.Interfaces.ViewModels.UserZone;
+using HomeNetOrm.Interfaces.Builders;
 using HomeNetOrm.Interfaces.Repositories;
 using HomeNetPresentation.Services;
+using static HomeNetOrm.Interfaces.Builders.IDbContextContainer;
 
 namespace HomeNetPresentation.ViewModels.ClientViews
 {
@@ -48,11 +50,22 @@ namespace HomeNetPresentation.ViewModels.ClientViews
             _eventBus.Subscribe<IAdminVm.LogoutAdmin>(_ => OnLogoutRequested(null!));
 
 
-            // Инициализация железа
+            _eventBus.Subscribe<IDbContextContainer.InfrastructureReady>(OnInfrastructureReady);
+
+           
+        }
+
+
+        private void OnInfrastructureReady(IDbContextContainer.InfrastructureReady msg)
+        {
+            _logger.LogInfo("[AutoLogin] Получен сигнал, что база готова. Запускаем проверку сессии.");
+
+         // Инициализация железа
             Task.Run(LoadHardwareIdAsync);
 
             // 🔥 При старте ВьюМодели проверяем: если есть сохраненные данные — сразу ломимся в сервис
             Task.Run(TryAutoLoginAsync);
+           
         }
 
         private async Task LoadHardwareIdAsync()

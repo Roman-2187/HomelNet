@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using HomeNet.Infrastructure.Shared;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
@@ -15,7 +16,7 @@ namespace HomeNetOrm.Repositories.Base
     {
         private readonly IUserSqlGenerator _userSqlGenerator;
         private readonly IEventBus? _eventBus;
-        private readonly IDbExceptionHandler _errorHandler; // 🔥
+        private readonly IDbExceptionHandler _errorHandler;
 
         // 🖥️ СЕРВЕРНЫЙ КОНСТРУКТОР (без шины)
         internal UserRepository(Func<DbConnection> connectionFactory, IUserSqlGenerator sqlGenerator, ICastomLogger logger, IDbExceptionHandler errorHandler)
@@ -32,6 +33,7 @@ namespace HomeNetOrm.Repositories.Base
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         }
 
+        // 🔥 Вставка осталась с ручной обработкой (т.к. кидаем DuplicateEmailException)
         public async Task<UserEntity> InsertAsync(UserEntity user)
         {
             if (user.Id == Guid.Empty) user.Id = Guid.NewGuid();
@@ -48,20 +50,23 @@ namespace HomeNetOrm.Repositories.Base
             }
             catch (Exception ex) when (_errorHandler.IsDuplicateKeyException(ex))
             {
-                // 🔥 Если это дубликат — кидаем DuplicateEmailException
-                throw new DuplicateEmailException(user.Email);
+                throw new DuplicateEmailException(user.Email!);
             }
             catch (Exception ex)
             {
-                // 🔥 Любая другая ошибка БД — кидаем DatabaseException
                 throw _errorHandler.Translate(ex);
             }
         }
+
+        // 🔥 ОСТАЛЬНЫЕ МЕТОДЫ ОБЕРНУТЫ В ПЕРЕХВАТЧИК
+
         public async Task UpdateAsync(UserEntity entity)
         {
             entity.UpdatedAt = DateTimeOffset.UtcNow;
             var cmd = _userSqlGenerator.GenerateUpdate();
-            int rowsAffected = await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, entity));
+
+            int rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+                ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, entity)));
 
             if (rowsAffected > 0)
             {
@@ -72,7 +77,9 @@ namespace HomeNetOrm.Repositories.Base
         public async Task DeleteByIdAsync(Guid id)
         {
             var cmd = _userSqlGenerator.GenerateDelete(id);
-            int rowsAffected = await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, cmd.Params));
+
+            int rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+                ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, cmd.Params)));
 
             if (rowsAffected > 0)
             {
@@ -83,20 +90,31 @@ namespace HomeNetOrm.Repositories.Base
         public async Task<UserEntity?> GetByIdAsync(Guid id)
         {
             var cmd = _userSqlGenerator.GenerateSelectById(id);
-            return await ExecuteAsync(db => db.QueryFirstOrDefaultAsync<UserEntity>(cmd.Sql, cmd.Params));
+
+            return await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+                ExecuteAsync(db => db.QueryFirstOrDefaultAsync<UserEntity>(cmd.Sql, cmd.Params)));
         }
 
         public async Task<IEnumerable<UserEntity>> GetAllAsync()
         {
             var cmd = _userSqlGenerator.GenerateSelectAll();
-            return await ExecuteAsync(db => db.QueryAsync<UserEntity>(cmd.Sql, cmd.Params));
+
+            return await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+                ExecuteAsync(db => db.QueryAsync<UserEntity>(cmd.Sql, cmd.Params)));
         }
 
         public async Task<UserEntity?> GetByEmailAsync(string email) =>
-            await ExecuteAsync(db =>
-            db.QueryFirstOrDefaultAsync<UserEntity>(_userSqlGenerator.GenerateSelectByEmail(email).Sql, new { Email = email }));
+            await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+                ExecuteAsync(db => db.QueryFirstOrDefaultAsync<UserEntity>(
+                    _userSqlGenerator.GenerateSelectByEmail(email).Sql, new { Email = email })));
 
-        public async Task<bool> EmailExistsAsync(string? email) => !string.IsNullOrWhiteSpace(email) && await ExecuteAsync(async db =>
-            await db.ExecuteScalarAsync<int>(_userSqlGenerator.GenerateEmailExists(email).Sql, new { Email = email }) > 0);
+        public async Task<bool> EmailExistsAsync(string? email)
+        {
+            if (string.IsNullOrWhiteSpace(email)) return false;
+
+            return await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+                ExecuteAsync(async db => await db.ExecuteScalarAsync<int>(
+                    _userSqlGenerator.GenerateEmailExists(email).Sql, new { Email = email }) > 0));
+        }
     }
 }

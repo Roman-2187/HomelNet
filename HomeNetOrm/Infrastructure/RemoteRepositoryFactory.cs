@@ -25,7 +25,7 @@ namespace HomeNetOrm.Infrastructure
             => new UserRepository(ConnectionFactory, generator, Logger, _errorHandler); // 🔥 Передаем обработчик
 
         internal override IMessageRepo CreateMessageRepository(IMessageSqlGenerator generator)
-            => new MessageRepository(ConnectionFactory, generator, Logger); // 🔥 Передаем обработчик
+            => new MessageRepository(ConnectionFactory, generator, Logger, _errorHandler); // 🔥 Передаем обработчик
 
         protected override void RegisterSpecificRepositories()
         {

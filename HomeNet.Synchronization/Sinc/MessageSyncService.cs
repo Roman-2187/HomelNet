@@ -1,7 +1,10 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNet.Models.Shared.Entity;
 using HomeNet.Network.Network.ApiClient;
 using HomeNet.Synchronization.Interfaces.Sinc;
+using HomeNetCore.Interfaces.ViewModels.UserZone;
+using HomeNetOrm.Exeptions; // Для DuplicateMessageException
 using HomeNetOrm.Interfaces.Repositories;
 
 namespace HomeNet.Synchronization.Sinc
@@ -12,7 +15,9 @@ namespace HomeNet.Synchronization.Sinc
         private readonly IMessageApiClient _apiClient;
         private readonly IEventBus _eventBus;
         private readonly ICastomLogger _logger;
-        private bool _isInitialSyncExecuted;
+
+        private Guid _currentUserId;
+        private bool _isSyncing = false;
 
         public MessageSyncService(
             IMessageRepo messageRepository,
@@ -28,32 +33,35 @@ namespace HomeNet.Synchronization.Sinc
             SubscribeEvents();
         }
 
-        // =========================================================================
-        // 📥 СТАРТОВАЯ СИНХРОНИЗАЦИЯ (PULL/PUSH)
-        // =========================================================================
-        public async Task StartAsync()
+        public Task StartAsync()
         {
-            if (_isInitialSyncExecuted) return;
-            _isInitialSyncExecuted = true;
+            _logger.LogInfo("[MessageSyncService] Ожидание авторизации для старта синхронизации...");
+            return Task.CompletedTask;
+        }
 
-            _logger.LogInfo("=== [MessageSyncService] ЗАПУСК СТАРТОВОЙ СИНХРОНИЗАЦИИ ===");
+        private async void OnUserAuthenticated(Guid userId)
+        {
+            if (_isSyncing) return;
+            _currentUserId = userId;
+            _isSyncing = true;
+
+            _logger.LogInfo($"[MessageSyncService] Пользователь авторизован ({_currentUserId}). Начинаем синхронизацию.");
 
             await PullAsync();
             await PushAsync();
 
-            _logger.LogInfo("=== [MessageSyncService] СТАРТОВАЯ СИНХРОНИЗАЦИЯ ЗАВЕРШЕНА ===");
+            _logger.LogInfo("[MessageSyncService] Синхронизация завершена.");
         }
 
         private async Task PullAsync()
         {
             try
             {
-                // В реальном коде userId берется из сессии
-                var freshMessages = await _apiClient.FetchFreshMessagesAsync(Guid.Empty, DateTimeOffset.MinValue);
+                var freshMessages = await _apiClient.FetchFreshMessagesAsync(_currentUserId, DateTimeOffset.MinValue);
                 foreach (var message in freshMessages)
                 {
                     message.IsSynced = 1;
-                    await _messageRepository.InsertAsync(message); // Репозиторий крикнет Saved
+                    await TryInsertMessageAsync(message); // 🔥 Используем скромный метод
                 }
             }
             catch (Exception ex)
@@ -84,29 +92,47 @@ namespace HomeNet.Synchronization.Sinc
             }
         }
 
-        // =========================================================================
-        // 🎧 РЕАКЦИЯ НА СОБЫТИЯ
-        // =========================================================================
+        // 🔥 СКРОМНЫЙ МЕТОД ДЛЯ ВСТАВКИ
+        private async Task TryInsertMessageAsync(MessageEntity message)
+        {
+            try
+            {
+                await _messageRepository.InsertAsync(message);
+            }
+            catch (DuplicateMessageException)
+            {
+                _logger.LogDebug($"  сообщение {message.Id} пропущено по дубликату ");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($" Не удалось сохранить сообщение {message.Id}: {ex.Message}");
+            }
+        }
+
         private void SubscribeEvents()
         {
-            // Факты от API (успешная отправка на сервер)
             _eventBus.Subscribe<IMessageApiClient.MessageSentOnServer>(OnMessageSent);
-
-            // Факты от SignalR (сеть прислала сообщение)
             _eventBus.Subscribe<MessageReceivedFromNetwork>(OnMessageReceivedFromNetwork);
+
+            _eventBus.Subscribe<IUserVm.UserSignedIn>(msg => {
+                if (msg?.User != null) OnUserAuthenticated(msg.User.Id);
+            });
+
+            _eventBus.Subscribe<IUserVm.UserSignedUp>(msg => {
+                if (msg?.User != null) OnUserAuthenticated(msg.User.Id);
+            });
         }
 
         private async void OnMessageSent(IMessageApiClient.MessageSentOnServer msg)
         {
             _logger.LogInfo($"[MessageSyncService] Сервер подтвердил сообщение {msg.Message.Id}. Пишем в SQLite.");
-            await _messageRepository.InsertAsync(msg.Message);
+            await TryInsertMessageAsync(msg.Message); // 🔥 Используем тот же скромный метод
         }
 
-        // 🔥 Обработчик для сети
         private async void OnMessageReceivedFromNetwork(MessageReceivedFromNetwork msg)
         {
             _logger.LogInfo($"[MessageSyncService] Сеть прислала сообщение {msg.Message.Id}. Пишем в SQLite.");
-            await _messageRepository.InsertAsync(msg.Message);
+            await TryInsertMessageAsync(msg.Message); // 🔥 Используем тот же скромный метод
         }
 
         public void Dispose()

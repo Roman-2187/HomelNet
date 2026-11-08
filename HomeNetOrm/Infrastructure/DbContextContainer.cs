@@ -1,9 +1,6 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetOrm.Interfaces.Builders;
-using System;
-using System.Net.Http;
-using System.Threading.Tasks;
 
 namespace HomeNetOrm.Infrastructure
 {

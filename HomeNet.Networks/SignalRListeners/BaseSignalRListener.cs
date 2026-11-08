@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
+using HomeNetCore.Interfaces.ViewModels.UserZone; // Для IUserVm
 
 namespace HomeNet.Network.SignalRListeners
 {
@@ -16,6 +17,28 @@ namespace HomeNet.Network.SignalRListeners
             ApiBaseUrl = apiBaseUrl;
             Logger = logger;
             EventBus = eventBus;
+
+            // 🔥 САМОПОДЪЕМ: Слушаем вход и сразу подключаемся
+            EventBus.Subscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
+            EventBus.Subscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
+        }
+
+        private async void OnUserSignedIn(IUserVm.UserSignedIn msg)
+        {
+            if (msg?.User?.Id != null)
+            {
+                Logger.LogInfo($"[СЕТЬ] Поймали вход пользователя {msg.User.Id}. Поднимаем SignalR для {GetType().Name}...");
+                await ConnectAsync(msg.User.Id);
+            }
+        }
+
+        private async void OnUserSignedUp(IUserVm.UserSignedUp msg)
+        {
+            if (msg?.User?.Id != null)
+            {
+                Logger.LogInfo($"[СЕТЬ] Поймали регистрацию пользователя {msg.User.Id}. Поднимаем SignalR для {GetType().Name}...");
+                await ConnectAsync(msg.User.Id);
+            }
         }
 
         public async Task ConnectAsync(Guid? userId = null)
@@ -31,10 +54,8 @@ namespace HomeNet.Network.SignalRListeners
                 .WithAutomaticReconnect()
                 .Build();
 
-            // 🔥 Даем наследнику зарегистрировать его обработчики
             RegisterHandlers(Connection);
 
-            // Слушаем сигнал готовности сервера
             Connection.On("ReceiveServerReady", () =>
             {
                 Logger.LogInfo("[СЕТЬ] 🔥 Получен сигнал готовности от сервера!");
@@ -46,11 +67,12 @@ namespace HomeNet.Network.SignalRListeners
             Logger.LogInfo($"[СЕТЬ] SignalR поднят для {GetType().Name}.");
         }
 
-        // 🔥 Каждый наследник реализует это под свою зону
         protected abstract void RegisterHandlers(HubConnection connection);
 
         public async ValueTask DisposeAsync()
         {
+            EventBus.Unsubscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
+            EventBus.Unsubscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
             if (Connection != null) await Connection.DisposeAsync();
         }
     }

@@ -12,7 +12,7 @@ public class MessageSignalRListener : BaseSignalRListener
     protected override void RegisterHandlers(HubConnection connection)
     {
         // 🔥 Слушаем только сообщения
-        connection.On<MessageEntity>("ReceiveMessageSync", (message) =>
+        connection.On<MessageEntity>("ReceiveMessage", (message) =>
         {
             Logger.LogInfo($"[СЕТЬ] Поймали сообщение {message.Id} от сервера.");
             message.IsSynced = 1;
