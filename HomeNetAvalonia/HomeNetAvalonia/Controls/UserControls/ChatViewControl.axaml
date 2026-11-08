@@ -15,14 +15,14 @@
         <Style Selector="Border.msg-cloud">
             <Setter Property="Border.HorizontalAlignment" Value="Left"/>
             <Setter Property="Border.Background" Value="#1500F0FF"/>
-            <Setter Property="Border.Margin" Value="100,5,0,5"/>
+            <Setter Property="Border.Margin" Value="80,5,0,5"/>
         </Style>
 
         <!-- 🎯 ТВОИ СООБЩЕНИЯ (Исходящие справа): -->
         <Style Selector="Border.msg-cloud[Tag=true]">
             <Setter Property="Border.HorizontalAlignment" Value="Right"/>
             <Setter Property="Border.Background" Value="#3300F0FF"/>
-            <Setter Property="Border.Margin" Value="0,5,100,5"/>
+            <Setter Property="Border.Margin" Value="0,5,80,5"/>
         </Style>
     </UserControl.Styles>
 
@@ -52,11 +52,12 @@
                                 <!-- 🦾 СВЯЗУЮЩИЙ МОСТ: Прямо пихаем булево свойство в Tag без StringFormat! -->
                                 <Border Classes="msg-cloud" 
                                         Tag="{Binding IsOutgoing}"
-                                        Padding="50,5,50,5" 
+                                        Padding="10" 
                                         CornerRadius="4" 
                                         BorderThickness="1" 
                                         BorderBrush="#3300F0FF" 
-                                        MaxWidth="380">
+                                        MinWidth="200"
+                                        MaxWidth="200">
                                     <Grid RowDefinitions="Auto, Auto">
                                         <TextBlock Grid.Row="0" Text="{Binding Text}" Foreground="#00F0FF" FontSize="13" TextWrapping="Wrap"/>
                                         <TextBlock Grid.Row="1" Text="{Binding FormattedTime, FallbackValue='00:00'}" Foreground="#5500F0FF" FontSize="10" HorizontalAlignment="Right" Margin="0,3,0,0"/>

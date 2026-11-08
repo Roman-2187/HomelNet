@@ -36,14 +36,36 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Subscribe<IUserVm.UserSignedIn>(OnUserSignedIn);
             _eventBus.Subscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
             _eventBus.Subscribe<IContactsVm.FriendSelected>(OnFriendSelected);
-
-            // 🔥 Ловим факт сохранения в SQLite (от репозитория)
             _eventBus.Subscribe<IMessageRepo.Saved>(OnMessageSaved);
+            
+            // 🔥 Подписываемся на логаут, чтобы вычистить чат
+            _eventBus.Subscribe<IUserVm.LogoutClient>(OnLogout);
+        }
+
+        // 🔥 Очищаем всё при логауте
+        private void OnLogout(IUserVm.LogoutClient msg)
+        {
+            Messages.Clear();
+            SelectedFriendId = null;
+            SelectedFriendName = string.Empty;
+            CurrentUserId = Guid.Empty;
+            CurrentUserName = string.Empty;
+            IsChatOpen = false;
+            InputText = string.Empty;
         }
 
         private void OnUserSignedIn(IUserVm.UserSignedIn msg)
         {
             if (msg?.User == null) return;
+            
+            // 🔥 Если это новый пользователь (ID изменился), чистим старые сообщения
+            if (CurrentUserId != msg.User.Id)
+            {
+                Messages.Clear();
+                SelectedFriendId = null;
+                IsChatOpen = false;
+            }
+            
             CurrentUserId = msg.User.Id;
             CurrentUserName = msg.User.FirstName ?? "Вы";
         }
@@ -51,6 +73,15 @@ namespace HomeNetPresentation.ViewModels
         private void OnUserSignedUp(IUserVm.UserSignedUp msg)
         {
             if (msg?.User == null) return;
+            
+            // 🔥 Та же логика при регистрации
+            if (CurrentUserId != msg.User.Id)
+            {
+                Messages.Clear();
+                SelectedFriendId = null;
+                IsChatOpen = false;
+            }
+
             CurrentUserId = msg.User.Id;
             CurrentUserName = msg.User.FirstName ?? "Вы";
         }
@@ -92,28 +123,23 @@ namespace HomeNetPresentation.ViewModels
             var rawText = InputText.Trim();
             InputText = string.Empty;
 
-            // 🔥 Отправляем через сервис (он дернет API)
             var verdict = await _messageService.SendPrivateMessageAsync(CurrentUserId, SelectedFriendId.Value, rawText);
 
             if (!verdict.IsValid)
             {
                 _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"[ОШИБКА ЧАТА]: {verdict.ErrorMessage}"));
             }
-            // Успех обработается в OnMessageSaved (когда SyncService запишет в SQLite)
         }
 
-        // 🔥 Ловим сохранение в SQLite (от SyncService -> Repository)
         private void OnMessageSaved(IMessageRepo.Saved msg)
         {
             if (msg?.Message == null || SelectedFriendId == null) return;
 
-            // Проверяем, принадлежит ли сообщение текущему открытому диалогу
             if ((msg.Message.SenderId == SelectedFriendId.Value && msg.Message.ReceiverId == CurrentUserId) ||
                 (msg.Message.SenderId == CurrentUserId && msg.Message.ReceiverId == SelectedFriendId.Value))
             {
                 msg.Message.IsOutgoing = msg.Message.SenderId == CurrentUserId;
 
-                // Добавляем, если еще нет
                 if (!Messages.Any(m => m.Id == msg.Message.Id))
                 {
                     Messages.Add(msg.Message);
@@ -132,6 +158,7 @@ namespace HomeNetPresentation.ViewModels
             _eventBus.Unsubscribe<IUserVm.UserSignedUp>(OnUserSignedUp);
             _eventBus.Unsubscribe<IContactsVm.FriendSelected>(OnFriendSelected);
             _eventBus.Unsubscribe<IMessageRepo.Saved>(OnMessageSaved);
+            _eventBus.Unsubscribe<IUserVm.LogoutClient>(OnLogout);
         }
     }
 }
