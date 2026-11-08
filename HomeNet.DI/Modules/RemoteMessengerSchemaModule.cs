@@ -18,7 +18,7 @@ namespace HomeNet.DI.Modules
             deviceSync.AddColumn(d => d.UserId).AsPrimaryKey();
             deviceSync.AddColumn(d => d.Version);
 
-            // 🔥 ПРИВЕЛИ ДАТЫ В ПОРЯДОК: У девайсов нет Local/Server логики, они пишут техническое время
+          
             deviceSync.AddColumn(d => d.CreatedAt);
             deviceSync.AddColumn(d => d.UpdatedAt);
 

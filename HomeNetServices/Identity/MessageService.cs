@@ -51,15 +51,11 @@ namespace HomeNetServices.Services.Identity
 
         public async Task<IEnumerable<MessageEntity>> GetPrivateHistoryAsync(Guid userId, Guid friendId)
         {
-            try
-            {
+          
                 var allMessages = await _messageRepo.GetChatHistoryAsync(userId, friendId);
                 return allMessages.OrderBy(m => m.LocalCreatedAt);
-            }
-            catch (Exception)
-            {
-                return [];
-            }
+            
+           
         }
     }
 }

@@ -15,25 +15,24 @@ namespace HomeNetOrm.Generators.Base
         }
 
         public SqlQueryCommand GenerateSelectChatHistory(Guid senderId, Guid receiverId) =>
-            CreateQuery()
-                .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
-                .Emit(PhraseType.Where)
-                .Emit(OpType.OpenBracket)
-                    // Машина сама соберет временные переменные @SenderId1 и @ReceiverId1
-                    .Col(m => m.SenderId).Emit(OpType.Equal).Param(m => m.SenderId, "1", senderId)
-                    .Emit(OpType.And)
-                    .Col(m => m.ReceiverId).Emit(OpType.Equal).Param(m => m.ReceiverId, "1", receiverId)
-                .Emit(OpType.CloseBracket)
-                .Emit(OpType.Or)
-                .Emit(OpType.OpenBracket)
-                    // Машина сама соберет временные переменные @SenderId2 и @ReceiverId2
-                    .Col(m => m.SenderId).Emit(OpType.Equal).Param(m => m.SenderId, "2", receiverId)
-                    .Emit(OpType.And)
-                    .Col(m => m.ReceiverId).Emit(OpType.Equal).Param(m => m.ReceiverId, "2", senderId)
-                .Emit(OpType.CloseBracket)
-                // 🔥 Сортируем историю чата строго по авторскому времени создания СМС для идеального порядка в UI
-                .Emit(PhraseType.OrderBy).Col(m => m.LocalCreatedAt).Emit(OpType.Asc)
-                .Build();
+    CreateQuery()
+        .Emit(CmdType.Select).Fields().Emit(PhraseType.From).Table()
+        .Emit(PhraseType.Where)
+        .Emit(OpType.OpenBracket)
+            // Используем просто @SenderId и @ReceiverId
+            .Col(m => m.SenderId).Emit(OpType.Equal).Param(m => m.SenderId, senderId)
+            .Emit(OpType.And)
+            .Col(m => m.ReceiverId).Emit(OpType.Equal).Param(m => m.ReceiverId, receiverId)
+        .Emit(OpType.CloseBracket)
+        .Emit(OpType.Or)
+        .Emit(OpType.OpenBracket)
+            // И тут используем ТЕ ЖЕ САМЫЕ @SenderId и @ReceiverId (только меняем местами)
+            .Col(m => m.SenderId).Emit(OpType.Equal).Param(m => m.SenderId, receiverId)
+            .Emit(OpType.And)
+            .Col(m => m.ReceiverId).Emit(OpType.Equal).Param(m => m.ReceiverId, senderId)
+        .Emit(OpType.CloseBracket)
+        .Emit(PhraseType.OrderBy).Col(m => m.LocalCreatedAt).Emit(OpType.Asc)
+        .Build();
 
         public SqlQueryCommand GenerateMarkAsRead(Guid senderId, Guid receiverId) =>
             CreateQuery()

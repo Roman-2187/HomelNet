@@ -1,6 +1,5 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNet.Models.Shared.Entity;
 using HomeNet.Network.Network.ApiClient;
 using HomeNet.Synchronization.Interfaces.Sinc;
 using HomeNetOrm.Exeptions;
@@ -167,4 +166,4 @@ namespace HomeNet.Synchronization.Sinc
             _eventBus.UnsubscribeAsync<UserDeletedFromNetwork>(OnUserDeletedFromNetwork);
         }
     }
-}
+} 

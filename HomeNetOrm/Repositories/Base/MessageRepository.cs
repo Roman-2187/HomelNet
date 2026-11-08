@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using HomeNet.Infrastructure.Shared;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
@@ -9,67 +10,48 @@ using System.Data.Common;
 
 namespace HomeNetOrm.Repositories.Base
 {
-    // 🔥 Добавляем IDisposable для отписки от шины
     public class MessageRepository : BaseRepository<MessageEntity>, IMessageRepo
     {
         private readonly IMessageSqlGenerator _messageSqlGenerator;
         private readonly IEventBus? _eventBus;
 
-        // 🖥️ СЕРВЕРНЫЙ КОНСТРУКТОР (без шины)
         internal MessageRepository(Func<DbConnection> connectionFactory, IMessageSqlGenerator sqlGenerator, ICastomLogger logger)
             : base(connectionFactory, sqlGenerator, logger)
         {
             _messageSqlGenerator = sqlGenerator ?? throw new ArgumentNullException(nameof(sqlGenerator));
         }
 
-        // 📱 КЛИЕНТСКИЙ КОНСТРУКТОР (с шиной)
         internal MessageRepository(Func<DbConnection> connectionFactory, IMessageSqlGenerator sqlGenerator, ICastomLogger logger, IEventBus eventBus)
             : this(connectionFactory, sqlGenerator, logger)
         {
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
-          
         }
-
-       
-
-        
-
-       
-
-
-        // =========================================================================
-        // 🔥 РЕАЛИЗАЦИЯ КОНТРАКТА ICrudRepository (Явные generic-публикации)
-        // =========================================================================
 
         public async Task<MessageEntity> InsertAsync(MessageEntity message)
         {
             if (message.Id == Guid.Empty) message.Id = Guid.NewGuid();
 
             var cmd = _messageSqlGenerator.GenerateInsert();
-            try
-            {
-                await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, message));
-                Logger.LogInfo($"[MessageRepository] Сообщение '{message.Id}' успешно записано.");
 
-                // 🔥 Добавили явный generic-параметр, чтобы инспектор железно его распарсил
-                _eventBus?.Publish(this, new IMessageRepo.Saved(message));
-                return message;
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"Ошибка ОРМ вставки сообщения: {ex.Message}");
-            }
+            // Оборачиваем в интерцептор
+            await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+                ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, message)));
+
+            Logger.LogInfo($"[MessageRepository] Сообщение '{message.Id}' успешно записано.");
+            _eventBus?.Publish(this, new IMessageRepo.Saved(message));
+            return message;
         }
 
         public async Task UpdateAsync(MessageEntity entity)
         {
             entity.UpdatedAt = DateTimeOffset.UtcNow;
             var cmd = _messageSqlGenerator.GenerateUpdate();
-            int rowsAffected = await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, entity));
+
+            int rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+                ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, entity)));
 
             if (rowsAffected > 0)
             {
-                // 🔥 Добавили явный generic-параметр
                 _eventBus?.Publish(this, new IMessageRepo.Updated(entity));
             }
         }
@@ -77,11 +59,12 @@ namespace HomeNetOrm.Repositories.Base
         public async Task DeleteByIdAsync(Guid id)
         {
             var cmd = _messageSqlGenerator.GenerateDelete(id);
-            int rowsAffected = await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, cmd.Params));
+
+            int rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+                ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, cmd.Params)));
 
             if (rowsAffected > 0)
             {
-                // 🔥 Добавили явный generic-параметр
                 _eventBus?.Publish(this, new IMessageRepo.Deleted(id));
             }
         }
@@ -89,27 +72,28 @@ namespace HomeNetOrm.Repositories.Base
         public async Task<MessageEntity?> GetByIdAsync(Guid id)
         {
             var cmd = _messageSqlGenerator.GenerateSelectById(id);
-            return await ExecuteAsync(db => db.QueryFirstOrDefaultAsync<MessageEntity>(cmd.Sql, cmd.Params));
+
+            return await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+                ExecuteAsync(db => db.QueryFirstOrDefaultAsync<MessageEntity>(cmd.Sql, cmd.Params)));
         }
 
         public async Task<IEnumerable<MessageEntity>> GetAllAsync()
         {
             var cmd = _messageSqlGenerator.GenerateSelectAll();
-            return await ExecuteAsync(db => db.QueryAsync<MessageEntity>(cmd.Sql, cmd.Params));
-        }
 
-        // =========================================================================
-        // 🔍 СПЕЦИФИЧНЫЕ МЕТОДЫ
-        // =========================================================================
+            return await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+                ExecuteAsync(db => db.QueryAsync<MessageEntity>(cmd.Sql, cmd.Params)));
+        }
 
         public async Task<bool> ClearChatHistoryAsync(Guid senderId, Guid receiverId)
         {
             var cmd = _messageSqlGenerator.GenerateClearChatHistory(senderId, receiverId);
-            int rowsAffected = await ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, cmd.Params));
+
+            int rowsAffected = await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+                ExecuteAsync(db => db.ExecuteAsync(cmd.Sql, cmd.Params)));
 
             if (rowsAffected > 0)
             {
-                // 🔥 Добавили явный generic-параметр для удаления чата
                 _eventBus?.Publish(this, new IMessageRepo.ChatCleared(senderId, receiverId));
             }
 
@@ -117,18 +101,23 @@ namespace HomeNetOrm.Repositories.Base
         }
 
         public async Task<IEnumerable<MessageEntity>> GetChatHistoryAsync(Guid senderId, Guid receiverId) =>
-            await ExecuteAsync(db => db.QueryAsync<MessageEntity>(
-                _messageSqlGenerator.GenerateSelectChatHistory(senderId, receiverId).Sql,
-                new { SenderId = senderId, ReceiverId = receiverId }));
+     await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+         ExecuteAsync(db => db.QueryAsync<MessageEntity>(
+             _messageSqlGenerator.GenerateSelectChatHistory(senderId, receiverId).Sql,
+             new { SenderId = senderId, ReceiverId = receiverId })));
+
+
 
         public async Task<bool> MarkAsReadAsync(Guid senderId, Guid receiverId) =>
-            await ExecuteAsync(async db => await db.ExecuteAsync(
-                _messageSqlGenerator.GenerateMarkAsRead(senderId, receiverId).Sql,
-                new { SenderId = senderId, ReceiverId = receiverId }) > 0);
+            await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+                ExecuteAsync(async db => await db.ExecuteAsync(
+                    _messageSqlGenerator.GenerateMarkAsRead(senderId, receiverId).Sql,
+                    new { SenderId = senderId, ReceiverId = receiverId }) > 0));
 
         public async Task<int> GetUnreadCountAsync(Guid currentUserId, Guid senderId) =>
-            await ExecuteAsync(db => db.ExecuteScalarAsync<int>(
-                _messageSqlGenerator.GenerateUnreadCount(currentUserId, senderId).Sql,
-                new { CurrentUserId = currentUserId, SenderId = senderId }));
+            await AutoExceptionHandler.ExecuteThrowAsync(Logger, () =>
+                ExecuteAsync(db => db.ExecuteScalarAsync<int>(
+                    _messageSqlGenerator.GenerateUnreadCount(currentUserId, senderId).Sql,
+                    new { CurrentUserId = currentUserId, SenderId = senderId })));
     }
 }
