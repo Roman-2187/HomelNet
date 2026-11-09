@@ -6,10 +6,11 @@
              x:Class="HomeNetAvalonia.Controls.StatusBarControl"
               xmlns:vm="using:HomeNetPresentation.ViewModels"
               x:DataType="vm:StatusBarViewModel" Background="Transparent">
-   <Border Background="#FF1C2433" Margin="5"
-            BorderBrush="#304050" 
+   <Border  Margin="1"
+          Background="#0DADD8E6"
             BorderThickness="0.5" 
             CornerRadius="2" 
+
             VerticalAlignment="Stretch" 
             HorizontalAlignment="Stretch">
         

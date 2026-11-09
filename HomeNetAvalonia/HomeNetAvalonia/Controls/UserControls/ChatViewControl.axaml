@@ -8,78 +8,134 @@
 
              mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="500"
              x:Class="HomeNetAvalonia.Controls.ChatViewControl"
-             x:DataType="vm:ChatViewModel">
+             x:DataType="vm:ChatViewModel" >
 
       <UserControl.Styles>
         <!-- 🕶️ ЧУЖИЕ СООБЩЕНИЯ (Входящие слева): -->
         <Style Selector="Border.msg-cloud">
             <Setter Property="Border.HorizontalAlignment" Value="Left"/>
             <Setter Property="Border.Background" Value="#1500F0FF"/>
-            <Setter Property="Border.Margin" Value="80,5,0,5"/>
+            <Setter Property="Border.Margin" Value="100,5,0,5"/>
         </Style>
 
         <!-- 🎯 ТВОИ СООБЩЕНИЯ (Исходящие справа): -->
         <Style Selector="Border.msg-cloud[Tag=true]">
             <Setter Property="Border.HorizontalAlignment" Value="Right"/>
             <Setter Property="Border.Background" Value="#3300F0FF"/>
-            <Setter Property="Border.Margin" Value="0,5,80,5"/>
+            <Setter Property="Border.Margin" Value="0,5,100,5"/>
         </Style>
     </UserControl.Styles>
 
-    <!-- 🌌 Глобальный DataContext Хаба для полной автономности контрола -->
-    <ContentControl DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False">
-        <Grid DataContext="{Binding ChatViewModel}" RowDefinitions="Auto, *, Auto" Margin="5">
+ <ContentControl Classes="AccountMenuContainer" 
+    DataContext="{DynamicResource ComponentHub}" 
+    x:CompileBindings="False">
+    
+    <!-- 🔥 ЕДИНЫЙ КИБЕР-КОНТЕЙНЕР (вместо отдельных кусков) -->
+    <Border
+        DataContext="{Binding ChatViewModel}"
+        
+       >
+        
+        <Grid RowDefinitions="Auto, *, Auto">
             
             <!-- 🔝 ВЕРХНЯЯ ЧАСТЬ: Шапка текущего чата -->
-            <Border Grid.Row="0" Background="#1100F0FF" BorderBrush="#00F0FF" BorderThickness="1" Padding="15,10" Margin="0,0,0,5">
+            <!-- Отделяем нижней линией, без фона -->
+            <Border
+                Grid.Row="0"
+                
+                BorderBrush="#3300F0FF"
+                BorderThickness="0"
+                Background="#1100F0FF"
+                Height="45"
+                Padding="15,10">
                 <StackPanel Orientation="Horizontal" Spacing="10">
                     <Ellipse Width="10" Height="10" Fill="#00FF66" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding SelectedFriendName, FallbackValue='Загрузка защищенного канала...'}" Foreground="#00F0FF" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                    <TextBlock 
+                        Text="{Binding SelectedFriendName, FallbackValue='Загрузка ...'}"
+                        Foreground="#00F0FF"
+                        FontWeight="Bold"
+                        FontSize="14"
+                        VerticalAlignment="Center"/>
                 </StackPanel>
             </Border>
 
-            <!-- 💬 СРЕДНЯЯ ЧАСТЬ: Лента сообщений -->
-            <Border Grid.Row="1" Background="#22000000" BorderBrush="#00F0FF" BorderThickness="1" Margin="0,0,0,5">
-                <!-- 🔥 КРАСОТА: Навешиваем твой кастомный автоскролл через прикрепляемое свойство! -->
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" 
-                              VerticalScrollBarVisibility="Auto"
-                              behaviors:AutoScrollBehavior.EnableAutoScroll="True">
+            <!-- 💬 СРЕДНЯЯ ЧАСТЬ: Лента сообщений (прозрачный фон, чтобы просвечивал главный) -->
+            <ScrollViewer HorizontalAlignment="Stretch"
+                Grid.Row="1"
+                HorizontalScrollBarVisibility="Disabled" 
+                VerticalScrollBarVisibility="Auto"
+                behaviors:AutoScrollBehavior.EnableAutoScroll="True"
+                Padding="10">
+                
+                <ItemsControl ItemsSource="{Binding Messages}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:MessageEntity">
+                            
+                            <!-- Сам пузырь (без рамки, но с легкой тенью для объема) -->
+                            <Border Classes="msg-cloud" 
+                                    Tag="{Binding IsOutgoing}"
+                                    Padding="10" 
+                                    CornerRadius="6" 
+                                    BorderThickness="0"
+                                    MinWidth="200"
+                                    MaxWidth="200"
+                                    
+                                    BoxShadow="0 0 10 0 #2200F0FF">
+                                <Grid RowDefinitions="Auto, Auto">
+                                    <TextBlock
+                                        Grid.Row="0" 
+                                        Text="{Binding Text}"
+                                        Foreground="#00F0FF"
+                                        FontSize="13"
+                                        TextWrapping="Wrap"/>
+                                    <TextBlock
+                                        Grid.Row="1" 
+                                        Text="{Binding FormattedTime, FallbackValue='00:00'}"
+                                        Foreground="#5500F0FF" 
+                                        FontSize="10" HorizontalAlignment="Right"
+                                       />
+                                </Grid>
+                            </Border>
+                            
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- ⌨️ НИЖНЯЯ ЧАСТЬ: Поле ввода и кнопка (тоже без фона, но с линией сверху) -->
+            <Border
+                Grid.Row="2"
+                Background="Transparent"
+                BorderBrush="#3300F0FF"
+                BorderThickness="0,1,0,0"
+                Padding="5">
+                <Grid ColumnDefinitions="*, Auto" ColumnSpacing="5">
+                    <TextBox 
+                        Grid.Column="0" 
+                        Text="{Binding InputText, Mode=TwoWay}" 
+                        PlaceholderText="Введите шифрованное сообщение..." 
+                        Foreground="#00F0FF" 
+                        Background="Transparent" 
+                        FontSize="13" 
+                        BorderThickness="0"
+                        VerticalContentAlignment="Center">
+                        <TextBox.KeyBindings>
+                            <KeyBinding Gesture="Enter" Command="{Binding SendMessageCommand}"/>
+                        </TextBox.KeyBindings>
+                    </TextBox>
                     
-                    <ItemsControl ItemsSource="{Binding Messages}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="models:MessageEntity">
-                                
-                                <!-- 🦾 СВЯЗУЮЩИЙ МОСТ: Прямо пихаем булево свойство в Tag без StringFormat! -->
-                                <Border Classes="msg-cloud" 
-                                        Tag="{Binding IsOutgoing}"
-                                        Padding="10" 
-                                        CornerRadius="4" 
-                                        BorderThickness="1" 
-                                        BorderBrush="#3300F0FF" 
-                                        MinWidth="200"
-                                        MaxWidth="200">
-                                    <Grid RowDefinitions="Auto, Auto">
-                                        <TextBlock Grid.Row="0" Text="{Binding Text}" Foreground="#00F0FF" FontSize="13" TextWrapping="Wrap"/>
-                                        <TextBlock Grid.Row="1" Text="{Binding FormattedTime, FallbackValue='00:00'}" Foreground="#5500F0FF" FontSize="10" HorizontalAlignment="Right" Margin="0,3,0,0"/>
-                                    </Grid>
-                                </Border>
-                                
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
+                    <Button 
+                        Grid.Column="1" 
+                        Content="ОТПРАВИТЬ" 
+                        Command="{Binding SendMessageCommand}"
+                        Classes="cyber-btn" 
+                        Width="100" 
+                        HorizontalContentAlignment="Center" 
+                        VerticalContentAlignment="Center"/>
+                </Grid>
             </Border>
-
-            <!-- ⌨️ НИЖНЯЯ ЧАСТЬ: Поле ввода и кнопка отправки -->
-            <Grid Grid.Row="2" ColumnDefinitions="*, Auto" ColumnSpacing="5">
-                <TextBox Grid.Column="0" Text="{Binding InputText, Mode=TwoWay}" PlaceholderText="Введите шифрованное сообщение..." Foreground="#00F0FF" Background="#1100F0FF" BorderBrush="#00F0FF" BorderThickness="1" FontSize="13" VerticalContentAlignment="Center">
-                    <TextBox.KeyBindings>
-                        <KeyBinding Gesture="Enter" Command="{Binding SendMessageCommand}"/>
-                    </TextBox.KeyBindings>
-                </TextBox>
-                <Button Grid.Column="1" Content="ОТПРАВИТЬ" Command="{Binding SendMessageCommand}" Classes="cyber-btn" Width="100" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
-            </Grid>
-
+            
         </Grid>
-    </ContentControl>
+    </Border>
+</ContentControl>
 </UserControl>

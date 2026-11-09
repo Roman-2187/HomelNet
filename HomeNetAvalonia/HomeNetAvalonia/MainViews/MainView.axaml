@@ -79,7 +79,7 @@
             где формы регистрации будут открываться во весь рост -->
             <controls:MainContentZoneControl 
                 Grid.Row="1"
-                Grid.ColumnSpan="2" Margin="0,0,5,0"
+                Grid.ColumnSpan="2" 
                 HorizontalAlignment="Stretch" 
                 VerticalAlignment="Stretch"/>
 
@@ -93,7 +93,7 @@
  
 
     <controls:StatusBarControl
-        Height="40" 
+        Height="50" 
         x:CompileBindings="False"
         DataContext="{Binding Source={StaticResource ComponentHub},
         Path=StatusBarViewModel}"/>

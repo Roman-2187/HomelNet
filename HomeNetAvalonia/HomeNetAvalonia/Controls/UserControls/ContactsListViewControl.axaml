@@ -9,54 +9,145 @@
              x:DataType="vm:ContactsViewModel">
 
     <!-- 🌌 Глобальный DataContext Хаба для полной автономности контрола -->
-    <ContentControl
-        DataContext="{DynamicResource ComponentHub}"
-        x:CompileBindings="False">
+
+
+   
+  <ContentControl Classes="AccountMenuContainer" 
+    DataContext="{DynamicResource ComponentHub}" 
+    x:CompileBindings="False" >
+    
+    <!-- 🦾 Автоматически проваливаемся в родную ContactsViewModel -->
+    <!-- 🔥 Задаем RowDefinitions="*", чтобы этот Grid растянулся на всё пространство -->
+    <Grid Background="#10ADD8E6"
+        DataContext="{Binding ContactsViewModel}"
+        RowDefinitions="*">
         
-        <!-- 🦾 Автоматически проваливаемся в родную ContactsViewModel -->
-        <Grid DataContext="{Binding ContactsViewModel}" RowDefinitions="Auto, *">
+        <!-- 🛡️ ЕДИНЫЙ КИБЕР-КОНТЕЙНЕР ДЛЯ ПАНЕЛИ КОНТАКТОВ -->
+       
             
-                      <!-- 🍔 ВЕРХНЯЯ ЧАСТЬ: Кнопка управления, выхода и имя текущего кибер-юзера -->
-            <Border Grid.Row="0" Background="#1100F0FF" BorderBrush="#3300F0FF" BorderThickness="0,0,0,1" Padding="5" Margin="5,5,5,0">
-                <Grid ColumnDefinitions="Auto, *">
-                    <!-- Родное меню логаута -->
-                    <controls:AccountMenuControl Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+            <!-- 🔥 Внутренний Grid с двумя строками -->
+            <Grid RowDefinitions="Auto, *">
+                
+                <!-- 🍔 ВЕРХНЯЯ ЧАСТЬ: Кнопка управления, выхода и имя текущего юзера -->
+                <Border 
+                    Grid.Row="0"
+                    Background="#1100F0FF"
+                    BorderBrush="#3300F0FF"
                     
-                    <!-- 👤 ПЛАШКА ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ -->
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,0,5,0">
-                        <TextBlock Text="СЕТЬ:" Foreground="#5500F0FF" FontSize="11" VerticalAlignment="Center" FontWeight="Bold"/>
-                        <TextBlock Text="{Binding CurrentUserName, FallbackValue='Авторизация...'}" 
-                                   Foreground="#FF00AA" 
-                                   FontWeight="Bold" 
-                                   FontSize="13" 
-                                   VerticalAlignment="Center"/>
-                        <!-- Маленькая неоновая точка статуса -->
-                        <Ellipse Width="8" Height="8" Fill="#00FF66" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Grid>
-            </Border>
+                    CornerRadius="2"
+                    Padding="5" >
+                    <Grid ColumnDefinitions="Auto, *">
+                        <controls:AccountMenuControl
+                            Grid.Column="0" HorizontalAlignment="Left"
+                            VerticalAlignment="Center"/>
+                        
+                        <StackPanel
+                            Height="35"
+                            Grid.Column="1"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            Spacing="8" Margin="0,0,5,0">
+                            <TextBlock
+                                Text="СЕТЬ:"
+                                Foreground="#5500F0FF"
+                                FontSize="11" VerticalAlignment="Center"
+                                FontWeight="Bold"/>
+                            <TextBlock
+                                Text="{Binding CurrentUserName, FallbackValue='Авторизация...'}" 
+                                
+                                FontWeight="Bold" 
+                                FontSize="13" 
+                                VerticalAlignment="Center"/>
+                            <Ellipse 
+                                Width="8"
+                                Height="8" 
+                                Fill="#00FF66"
+                                VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
 
+                <!-- 👥 НИЖНЯЯ ЧАСТЬ: Список контактов -->
+                <!-- 🔥 Строка "*" заставит ListBox занять всё оставшееся место -->
+  <ListBox 
+    Grid.Row="1"
+    ItemsSource="{Binding Friends}" 
+    SelectedItem="{Binding SelectedFriend, Mode=TwoWay}"
+    Background="Transparent"
+    BorderThickness="0"
+    Margin="0,2,0,0">
+  <ListBox.ItemContainerTheme>
+    <!-- 
+      🔥 ControlTheme задает правила отрисовки для КАЖДОГО элемента списка (ListBoxItem).
+      BasedOn="{StaticResource {x:Type ListBoxItem}}" означает: 
+      "Возьми базовую тему Avalonia и немного переопредели её".
+    -->
+    <ControlTheme TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+        
+        <!-- 
+          🔹 Базовое состояние (когда элемент НЕ выделен и НЕ наведен).
+          Background="Transparent" — фон прозрачный, чтобы был виден фон самого ListBox.
+          Padding="5" — внутренний отступ, чтобы текст не прилипал к краям.
+        -->
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Padding" Value="5"/>
 
-            <!-- 👥 НИЖНЯЯ ЧАСТЬ: Настоящий список контактов -->
-            <Border Grid.Row="1" Background="#2200F0FF" BorderBrush="#00F0FF" BorderThickness="1" Margin="5">
-                <ListBox ItemsSource="{Binding Friends}" 
-                         SelectedItem="{Binding SelectedFriend, Mode=TwoWay}"
-                         Background="Transparent"
-                         BorderThickness="0">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal" Spacing="10" Margin="5">
-                                <Ellipse Width="32" Height="32" Fill="#00F0FF" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding FirstName}" 
-                                           Foreground="#00F0FF" 
-                                           VerticalAlignment="Center" 
-                                           FontSize="14"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </Border>
-            
-        </Grid>
-    </ContentControl>
+        <!-- 
+          🔥 СТАТИК (Выделенный элемент). 
+          Срабатывает, когда ты кликаешь по элементу (он становится SelectedItem).
+          Selector="^:selected" означает "текущий элемент в состоянии selected".
+          Мы меняем Background (фон) и BorderBrush (цвет рамки).
+          BorderThickness="1,0,0,0" рисует рамку только слева (толщина 1 пиксель).
+        -->
+       <Style Selector="^:selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="#1100F0FF" />
+            <Setter Property="BorderBrush" Value="#00F0FF" />   <!-- Яркий голубой для полоски -->
+            <Setter Property="BorderThickness" Value="0.4,0,0,0" />
+            <Setter Property="CornerRadius" Value="2" /> <!-- Полоска только слева -->
+        </Style>
+
+        <!-- 
+          🔥 НАВЕДЕНИЕ (Hover).
+          Срабатывает, когда ты просто наводишь мышку на элемент, но НЕ кликнул.
+          Selector="^:pointerover" означает "текущий элемент в состоянии pointerover".
+          Мы делаем фон чуть более заметным, но менее ярким, чем выделение.
+        -->
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="#1500F0FF" />
+                <Setter Property="CornerRadius" Value="2" /> 
+<!-- Очень прозрачный голубой -->
+        </Style>
+        
+        <!-- 
+          💡 Если хочешь, чтобы при наведении на ВЫДЕЛЕННЫЙ элемент фон не перебивался 
+          на менее яркий, можно добавить комбинированный селектор:
+          <Style Selector="^:selected:pointerover">
+              <Setter Property="Background" Value="#3300F0FF" />
+          </Style>
+          Но в текущей логике ListBoxItem:pointerover может перебить :selected, 
+          если они идут в таком порядке. Если фон при наведении на выделенный элемент 
+          становится тусклым, поменяй их местами (сначала pointerover, потом selected).
+        -->
+
+    </ControlTheme>
+</ListBox.ItemContainerTheme>
+
+   <ListBox.ItemTemplate>
+    <DataTemplate>
+        <TextBlock 
+            Text="{Binding FirstName}" 
+            Foreground="#00F0FF" 
+            FontSize="15" 
+            Padding="15,8" />
+    </DataTemplate>
+</ListBox.ItemTemplate>
+</ListBox>
+    
+   
+                
+            </Grid>
+       
+        
+    </Grid>
+</ContentControl>
 </UserControl>
