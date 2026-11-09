@@ -87,7 +87,7 @@
                         IsVisible="{Binding UserViewModel.ActiveClientTab,
                         Converter={StaticResource EqualityConverter},
                         ConverterParameter={x:Static enums:ClientSubTab.Messenger}}">
-                    <TextBlock Text="🌌 ВЫБЕРИТЕ КОНТАКТ ДЛЯ НАЧАЛА ШИФРОВАНИЯ" 
+                    <TextBlock Text="🌌 ВЫБЕРИТЕ КОНТАКТ ЧТОБЫ НАЧАТЬ ЧАТ" 
                                Foreground="#4400F0FF"
                                HorizontalAlignment="Center" 
                                VerticalAlignment="Center"

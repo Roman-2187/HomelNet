@@ -4,24 +4,29 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="using:HomeNetAvalonia.Views"
-        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+        xmlns:conv="using:HomeNetAvalonia.Converters"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
         x:Class="HomeNetAvalonia.Views.MainWindow"
-        Width="900" Height="600"
+        MinWidth="400" MinHeight="300" 
         WindowDecorations="None"
         ExtendClientAreaToDecorationsHint="True"
         TransparencyLevelHint="Transparent"
         Background="{x:Null}"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        
+        Width="{Binding $parent[Window].Screens.Primary.Bounds.Width, Converter={StaticResource ScreenPercentConverter}, ConverterParameter=80}"
+        Height="{Binding $parent[Window].Screens.Primary.Bounds.Height, Converter={StaticResource ScreenPercentConverter}, ConverterParameter=80}">
 
+    <Window.Resources>
+        <!-- Регистрируем конвертер локально -->
+        <conv:ScreenPercentConverter x:Key="ScreenPercentConverter" />
+    </Window.Resources>
 
-        <Window.Styles>
+    <Window.Styles>
         <Style Selector="Window">
             <Setter Property="RenderTransform" Value="translateY(0px)"/>
-            
-            <!-- 👑 ВОТ ТАК ЭТО ПИШЕТСЯ В АВАЛОНИИ: Через обычный Setter! -->
             <Setter Property="Transitions">
                 <Transitions>
-                    <!-- Плавный сдвиг за 500мс с замедлением -->
                     <TransformOperationsTransition 
                         Property="RenderTransform" 
                         Duration="0:0:0.5" 
@@ -29,13 +34,21 @@
                 </Transitions>
             </Setter>
         </Style>
-
-        <!-- ТРИГГЕР: Когда наш C#-аниматор добавит класс exit-anim, окно улетит вниз -->
         <Style Selector="Window.exit-anim">
             <Setter Property="RenderTransform" Value="translateY(1200px)"/>
         </Style>
     </Window.Styles>
 
-
-    <views:MainView />
+    <!-- Единый контейнер, который заполняет всё окно -->
+    <Border Background="Transparent" 
+           
+            
+            
+            BoxShadow="0 0 20 0 #55000000"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch">
+        
+        <views:MainView />
+        
+    </Border>
 </Window>

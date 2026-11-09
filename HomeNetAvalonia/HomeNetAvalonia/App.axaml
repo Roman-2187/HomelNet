@@ -5,12 +5,15 @@
     xmlns:val="using:HomeNetCore.Models.Validation;assembly=HomeNetCore"   
     xmlns:enums="using:HomeNetCore.Enums.Navigation;assembly=HomeNetCore"
     xmlns:di="clr-namespace:HomeNet.DI;assembly=HomeNet.DI"
+    xmlns:conv="using:HomeNetAvalonia.Converters"
     x:Class="HomeNetAvalonia.App"
+    
     RequestedThemeVariant="Dark">
 
     <Application.Resources>
         <!-- Твой хаб-локатор встает без ошибок -->
         <di:ComponentHub x:Key="ComponentHub"/>
+         <conv:ScreenPercentConverter x:Key="ScreenPercentConverter" />
     </Application.Resources>
     
    <Application.Styles>

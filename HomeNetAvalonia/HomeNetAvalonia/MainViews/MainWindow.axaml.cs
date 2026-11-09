@@ -1,11 +1,18 @@
 ﻿using Avalonia.Controls;
+using Avalonia.Markup.Xaml;
 
-namespace HomeNetAvalonia.Views;
-
-public partial class MainWindow : Window
+namespace HomeNetAvalonia.Views
 {
-    public MainWindow()
+    public partial class MainWindow : Window
     {
-        InitializeComponent();
+        public MainWindow()
+        {
+            InitializeComponent();
+        }
+
+        private void InitializeComponent()
+        {
+            AvaloniaXamlLoader.Load(this);
+        }
     }
 }

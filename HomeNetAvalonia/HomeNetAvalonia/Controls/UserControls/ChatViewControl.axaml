@@ -113,7 +113,7 @@
                     <TextBox 
                         Grid.Column="0" 
                         Text="{Binding InputText, Mode=TwoWay}" 
-                        PlaceholderText="Введите шифрованное сообщение..." 
+                        PlaceholderText="Введите  сообщение..." 
                         Foreground="#00F0FF" 
                         Background="Transparent" 
                         FontSize="13" 
