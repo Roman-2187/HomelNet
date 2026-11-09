@@ -2,8 +2,10 @@
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Network.Network.ApiClient;
 using HomeNet.Synchronization.Interfaces.Sinc;
+using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetOrm.Exeptions;
 using HomeNetOrm.Interfaces.Repositories;
+using static HomeNetCore.Interfaces.ViewModels.UserZone.IUserVm;
 
 namespace HomeNet.Synchronization.Sinc
 {
@@ -44,18 +46,38 @@ namespace HomeNet.Synchronization.Sinc
         {
             try
             {
+                // 🔥 Передаем реальный ID устройства (если нужно) или Guid.Empty
                 var freshUsers = await _apiClient.FetchFreshUsersAsync(Guid.Empty, DateTimeOffset.MinValue);
+
                 foreach (var user in freshUsers)
                 {
-                    user.IsSynced = 1;
+                    user.IsSynced = 1; // Помечаем как синхронизированного
 
                     try
                     {
+                        // Пытаемся вставить
                         await _userRepository.InsertAsync(user);
                     }
                     catch (DuplicateEmailException)
                     {
-                        _logger.LogDebug($"[UserSyncService] Юзер {user.Email} уже есть в кэше. Пропускаем.");
+                        // 🔥 Если юзер уже есть — обновляем его (ставим IsSynced = 1)
+                        var existing = await _userRepository.GetByEmailAsync(user.Email!);
+                        if (existing != null)
+                        {
+                            existing.IsSynced = 1;
+                            existing.DeviceId = user.DeviceId;
+                            existing.FirstName = user.FirstName;
+                            existing.LastName = user.LastName;
+                            existing.PhoneNumber = user.PhoneNumber;
+                            // и другие поля, которые нужно обновить
+
+                            await _userRepository.UpdateAsync(existing);
+                            _logger.LogDebug($"[UserSyncService] Юзер {user.Email} обновлен (IsSynced=1).");
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"[UserSyncService] Не удалось найти юзера {user.Email} для обновления.");
+                        }
                     }
                 }
             }
@@ -94,6 +116,29 @@ namespace HomeNet.Synchronization.Sinc
             _eventBus.SubscribeAsync<IUserApiClient.UserDeletedOnServer>(OnUserDeleted);
             _eventBus.SubscribeAsync<UserReceivedFromNetwork>(OnUserReceivedFromNetwork);
             _eventBus.SubscribeAsync<UserDeletedFromNetwork>(OnUserDeletedFromNetwork);
+            _eventBus.SubscribeAsync<IUserVm.UserSignedIn>(OnUserSignedIn);
+            _eventBus.SubscribeAsync<IUserVm.UserSignedUp>(OnUserSignedUp);
+        }
+
+        private async Task OnUserSignedIn(IUserVm.UserSignedIn msg)
+        {
+            if (msg?.User?.Id == null) return;
+
+            _logger.LogInfo($"[UserSyncService] Пользователь авторизован ({msg.User.Id}). Начинаем синхронизацию.");
+
+            // Вместо StartAsync (который проверяет флаг) вызываем Pull/Push напрямую
+            await PullAsync();
+            await PushAsync();
+        }
+
+        private async Task OnUserSignedUp(IUserVm.UserSignedUp msg)
+        {
+            if (msg?.User?.Id == null) return;
+
+            _logger.LogInfo($"[UserSyncService] Пользователь зарегистрирован ({msg.User.Id}). Начинаем синхронизацию.");
+
+            await PullAsync();
+            await PushAsync();
         }
 
         // 🔥 Возвращаем Task, а не void
