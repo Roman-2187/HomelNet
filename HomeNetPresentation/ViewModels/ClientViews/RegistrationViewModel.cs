@@ -58,6 +58,39 @@ namespace HomeNetPresentation.ViewModels
 
         #region 🦾 НАНО-КОМАНДЫ ДЛЯ КНОПОК РЕГИСТРАЦИИ (CommunityToolkit)
 
+
+        [RelayCommand]
+        private async Task CheckEmailAsync()
+        {
+            var email = UserData.Email;
+            if (string.IsNullOrWhiteSpace(email)) return;
+
+            // 🔥 1. СРАЗУ показываем статус "Проверка..."
+            // Создаем временный результат
+            var checkingResult = new ValidationResult
+            {
+                Field = TypeField.EmailType,
+                State = ValidationState.Info,
+                Message = "Проверка..."
+            };
+
+            // Создаем новый словарь и кладем туда "Проверка..."
+            var checkingDict = new Dictionary<TypeField, ValidationResult>(ValidationResults);
+            checkingDict[TypeField.EmailType] = checkingResult;
+            ValidationResults = checkingDict;
+
+            // 2. Дергаем сервис (он будет ждать ответа или таймаута)
+            var result = await _registerService.CheckEmailOnBlurAsync(email);
+
+            // 3. Создаем ЕЩЕ ОДИН словарь уже с реальным результатом
+            var finalDict = new Dictionary<TypeField, ValidationResult>(ValidationResults);
+            finalDict[TypeField.EmailType] = result;
+            ValidationResults = finalDict;
+        }
+
+
+
+
         [RelayCommand]
         private async Task RegisterAsync()
         {

@@ -9,6 +9,11 @@ namespace HomeNet.Network.Network.ApiClient
     {
         private readonly IEventBus _eventBus;
 
+        private class EmailCheckResponse
+        {
+            public bool Exists { get; set; }
+        }
+
         public UserApiClient(HttpClient httpClient, ICastomLogger logger, IEventBus eventBus)
             : base(httpClient, logger)
         {
@@ -139,5 +144,24 @@ namespace HomeNet.Network.Network.ApiClient
                 return null;
             }
         }
+
+
+        public async Task<bool> CheckEmailExistsAsync(string email)
+        {
+            try
+            {
+                var response = await HttpClient.GetFromJsonAsync<EmailCheckResponse>($"/api/users/check-email?email={Uri.EscapeDataString(email)}");
+                return response?.Exists ?? false;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[UserApiClient] Ошибка проверки Email: {ex.Message}");
+                throw; // 🔥 ПРОБРАСЫВАЕМ ДАЛЬШЕ! Сервис сам поймет, что произошла ошибка.
+            }
+        }
+
     }
+
+
+
 }

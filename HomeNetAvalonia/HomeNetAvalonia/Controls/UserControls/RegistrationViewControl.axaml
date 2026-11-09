@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:di="using:HomeNet.DI"
+             xmlns:behaviors="using:HomeNetAvalonia.Behaviors"
              mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="600"
              x:Class="HomeNetAvalonia.Controls.RegistrationViewControl"
              x:DataType="di:ComponentHub" Width="600" Height="450"
@@ -35,6 +36,7 @@
                 <TextBlock Text="Email:" Foreground="#00CCFF" Margin="0,0,0,4" FontSize="12"/>
                 <TextBox Classes="validation-box"
                          Text="{Binding UserData.Email, Mode=TwoWay}"
+                          behaviors:LostFocusCommandBehavior.Command="{Binding CheckEmailCommand}" 
                          Tag="{Binding ValidationResults[EmailType].State}" />
                 <TextBlock Classes="validation-hint"
                            Text="{Binding ValidationResults[EmailType].Message}"

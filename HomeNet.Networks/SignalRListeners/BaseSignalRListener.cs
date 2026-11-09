@@ -1,7 +1,7 @@
 ﻿using HomeNet.Infrastructure.Shared;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNetCore.Interfaces.ViewModels.UserZone; // Для IUserVm
+using HomeNetCore.Interfaces.ViewModels.UserZone; 
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace HomeNet.Network.SignalRListeners

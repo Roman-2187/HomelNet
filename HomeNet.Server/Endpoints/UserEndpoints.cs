@@ -3,6 +3,7 @@ using HomeNet.Models.Shared.Entity;
 using HomeNetOrm.Exeptions;
 using HomeNetOrm.Interfaces.Repositories;
 using HomeNetOrm.Repositories.Extensions;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using System.Data.Common;
 
@@ -142,6 +143,27 @@ namespace HomeNet.Server.Endpoints
                 catch (Exception ex)
                 {
                     serverLogger.LogError($"[API Ошибка] Не удалось обработать PUSH: {ex.Message}");
+                    return Results.Problem("Ошибка сервера");
+                }
+            });
+
+
+
+            // === [📥 ПРОВЕРКА СУЩЕСТВОВАНИЯ EMAIL] ===
+            endpoints.MapGet("/api/users/check-email", async ([FromServices] IUserRepo repo, [FromQuery] string email) =>
+            {
+                try
+                {
+                    if (string.IsNullOrWhiteSpace(email)) return Results.BadRequest("Email обязателен");
+
+                    var exists = await repo.EmailExistsAsync(email);
+                    serverLogger.LogInfo($"[API] Проверка Email '{email}': {(exists ? "Занят" : "Свободен")}");
+
+                    return Results.Ok(new { Exists = exists });
+                }
+                catch (Exception ex)
+                {
+                    serverLogger.LogError($"[API Ошибка] Сбой проверки Email: {ex.Message}");
                     return Results.Problem("Ошибка сервера");
                 }
             });

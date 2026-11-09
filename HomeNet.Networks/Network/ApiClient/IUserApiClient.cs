@@ -12,6 +12,8 @@ namespace HomeNet.Network.Network.ApiClient
         Task<UserEntity?> GetUserByIdAsync(Guid id);
         Task<IReadOnlyCollection<UserEntity>> GetAllUsersAsync();
 
+        Task<bool> CheckEmailExistsAsync(string email);
+
         Task<UserEntity?> AuthenticateAsync(string email, string password);
 
         // 🔥 ФАКТЫ, которые публикует сам API-клиент

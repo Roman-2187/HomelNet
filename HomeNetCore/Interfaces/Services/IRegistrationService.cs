@@ -12,6 +12,9 @@ namespace HomeNetCore.Interfaces.Services
         /// </summary>
         public record Verdict(bool IsValid, List<ValidationResult> Results, UserEntity? VerifiedUser = null);
 
+        Task<ValidationResult> CheckEmailOnBlurAsync(string email);
+
         Task<Verdict> RegisterUserAsync(UserEntity user);
+      
     }
 }

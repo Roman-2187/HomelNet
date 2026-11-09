@@ -39,14 +39,18 @@ namespace HomeNet.Server
             postgresEngine.InitializeRepositories(null);
 
             // 🔥 4. Достаем готовые репозитории из фабрики
-            IMessageRepo messageRepository = postgresEngine.Repositories.GetRepository<IMessageRepo>();
-            IUserRepo userRepository = postgresEngine.Repositories.GetRepository<IUserRepo>();
-            DeviceSyncRepository deviceSyncRepository = postgresEngine.Repositories.GetRepository<DeviceSyncRepository>();
+IMessageRepo messageRepository = postgresEngine.Repositories.GetRepository<IMessageRepo>();
+IUserRepo userRepository = postgresEngine.Repositories.GetRepository<IUserRepo>();
+DeviceSyncRepository deviceSyncRepository = postgresEngine.Repositories.GetRepository<DeviceSyncRepository>();
 
-           
+// 🔥 РЕГИСТРИРУЕМ В DI-КОНТЕЙНЕРЕ ASP.NET CORE:
+builder.Services.AddSingleton(userRepository);
+// Если будешь использовать [FromServices] для других репо, добавь их сюда же:
+// builder.Services.AddSingleton(messageRepository);
+// builder.Services.AddSingleton(deviceSyncRepository);
 
-            builder.Services.AddSignalR();
-            var app = builder.Build();
+builder.Services.AddSignalR();
+var app = builder.Build();
 
             // --- МАППИНГ РАЗДЕЛЕННЫХ СЛОЕВ ЭНДПОИНТОВ ---
             app.MapMessageEndpoints(messageRepository, serverLogger);
