@@ -5,9 +5,10 @@
              xmlns:vm="using:HomeNetAvalonia.ViewModels"
              xmlns:behaviors="clr-namespace:HomeNetAvalonia.Behaviors"
              xmlns:controls="clr-namespace:HomeNetAvalonia.Controls"
-             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
+             mc:Ignorable="d" 
              x:Class="HomeNetAvalonia.Views.MainView"
-             Background="Transparent">
+             Background="Transparent"
+              MinWidth="800" MinHeight="600" >
 
     <!-- 👑 ВОЗВРАЩАЕМ ТВОЙ СТАРЫЙ ПУЛЕНЕПРОБИВАЕМЫЙ ОБВЕС КОРПУСА -->
      <ContentControl Classes="CyberpunkContainer"

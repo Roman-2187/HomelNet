@@ -7,15 +7,15 @@
         xmlns:conv="using:HomeNetAvalonia.Converters"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
         x:Class="HomeNetAvalonia.Views.MainWindow"
-        MinWidth="400" MinHeight="300" 
+        Width="900" Height="600" 
+      
         WindowDecorations="None"
         ExtendClientAreaToDecorationsHint="True"
         TransparencyLevelHint="Transparent"
         Background="{x:Null}"
         WindowStartupLocation="CenterScreen"
         
-        Width="{Binding $parent[Window].Screens.Primary.Bounds.Width, Converter={StaticResource ScreenPercentConverter}, ConverterParameter=80}"
-        Height="{Binding $parent[Window].Screens.Primary.Bounds.Height, Converter={StaticResource ScreenPercentConverter}, ConverterParameter=80}">
+        >
 
     <Window.Resources>
         <!-- Регистрируем конвертер локально -->
@@ -44,7 +44,7 @@
            
             
             
-            BoxShadow="0 0 20 0 #55000000"
+           
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch">
         

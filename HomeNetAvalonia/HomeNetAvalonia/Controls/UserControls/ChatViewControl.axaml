@@ -24,6 +24,57 @@
             <Setter Property="Border.Background" Value="#3300F0FF"/>
             <Setter Property="Border.Margin" Value="0,5,100,5"/>
         </Style>
+
+           <!-- 🔥 УБИРАЕМ РАМКУ И ФОН У TEXTBOX ВООБЩЕ (включая фокус) -->
+    <Style Selector="TextBox">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="15,0"/>
+    </Style>
+
+    <!-- Убираем подсветку при наведении -->
+    <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="#1500F0FF"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+
+    <!-- Убираем подсветку при фокусе -->
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="#10ADD8E6"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+
+           <Style Selector="Button.cyber-btn">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/> <!-- Убираем стандартные отступы -->
+        <Setter Property="CornerRadius" Value="2"/>
+    </Style>
+
+     <!-- 🔥 КРАСИВАЯ КНОПКА ОТПРАВКИ -->
+    <Style Selector="Button.cyber-btn">
+        <!-- Убираем стандартный фон и рамку -->
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="5,5"/> <!-- Нормальные отступы для текста -->
+        <Setter Property="CornerRadius" Value="2"/>
+        <Setter Property="Height" Value="45"/> 
+
+        
+        <!-- Центрируем текст по вертикали и горизонтали -->
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
+    <!-- Наведение: аккуратная подсветка -->
+    <Style Selector="Button.cyber-btn:pointerover">
+        <Setter Property="Background" Value="#3300F0FF"/> <!-- Полупрозрачный голубой -->
+    </Style>
+
+    <!-- Нажатие: чуть ярче -->
+    <Style Selector="Button.cyber-btn:pressed">
+        <Setter Property="Background" Value="#5500F0FF"/>
+    </Style>
     </UserControl.Styles>
 
  <ContentControl Classes="AccountMenuContainer" 
@@ -31,7 +82,7 @@
     x:CompileBindings="False">
     
     <!-- 🔥 ЕДИНЫЙ КИБЕР-КОНТЕЙНЕР (вместо отдельных кусков) -->
-    <Border
+    <Border   Focusable="True" Background="Transparent" behaviors:ClearFocusBehavior.IsEnabled="True"
         DataContext="{Binding ChatViewModel}"
         
        >
@@ -84,6 +135,7 @@
                                 <Grid RowDefinitions="Auto, Auto">
                                     <TextBlock
                                         Grid.Row="0" 
+
                                         Text="{Binding Text}"
                                         Foreground="#00F0FF"
                                         FontSize="13"
@@ -106,18 +158,19 @@
             <Border
                 Grid.Row="2"
                 Background="Transparent"
-                BorderBrush="#3300F0FF"
-                BorderThickness="0,1,0,0"
-                Padding="5">
-                <Grid ColumnDefinitions="*, Auto" ColumnSpacing="5">
+                
+               
+                >
+                <Grid ColumnDefinitions="*, Auto"  Height="45">
                     <TextBox 
                         Grid.Column="0" 
+                       
                         Text="{Binding InputText, Mode=TwoWay}" 
                         PlaceholderText="Введите  сообщение..." 
                         Foreground="#00F0FF" 
                         Background="Transparent" 
                         FontSize="13" 
-                        BorderThickness="0"
+                      
                         VerticalContentAlignment="Center">
                         <TextBox.KeyBindings>
                             <KeyBinding Gesture="Enter" Command="{Binding SendMessageCommand}"/>
@@ -129,7 +182,8 @@
                         Content="ОТПРАВИТЬ" 
                         Command="{Binding SendMessageCommand}"
                         Classes="cyber-btn" 
-                        Width="100" 
+                       FontSize="14"
+                        Width="120" 
                         HorizontalContentAlignment="Center" 
                         VerticalContentAlignment="Center"/>
                 </Grid>

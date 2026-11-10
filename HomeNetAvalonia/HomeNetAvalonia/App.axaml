@@ -13,7 +13,7 @@
     <Application.Resources>
         <!-- Твой хаб-локатор встает без ошибок -->
         <di:ComponentHub x:Key="ComponentHub"/>
-         <conv:ScreenPercentConverter x:Key="ScreenPercentConverter" />
+        
     </Application.Resources>
     
    <Application.Styles>
