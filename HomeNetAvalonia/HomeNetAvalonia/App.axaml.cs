@@ -38,8 +38,6 @@ namespace HomeNetAvalonia
                 _compositionRoot = AvaloniaUiBootstrapper.BuildAvaloniaContainer(currentMode, apiBaseUrl, sqliteConnectionString);
 
 
-                // 2. Запускаем наш "тупой" сборщик на чистом "new"
-                _compositionRoot = AvaloniaUiBootstrapper.BuildAvaloniaContainer(currentMode, apiBaseUrl, sqliteConnectionString);
 
 
 
@@ -52,12 +50,11 @@ namespace HomeNetAvalonia
                         // Просто забираем MainViewModel из ручного графа! Без всяких GetRequiredService
                         DataContext = _compositionRoot.GetViewModel<MainViewModel>()
                     };
+
+                    _compositionRoot.EventBusInspector.StartBackgroundScan(_compositionRoot.Logger);
                 }
 
-                // 🔥 ШАГ 4: БЕЗОПАСНЫЙ ФОНОВЫЙ ПУСК ОБЕИХ СУБД И СИНХРОНИЗАТОРА!
-                // Поскольку AppCompositionRoot при вызове Initialize() сам запускает фоновую таску 
-                // прогрева DbContextContainer и SyncCoordinator, нам здесь даже писать ничего не нужно!
-                // Но для логирования старта оставим простое уведомление:
+              
 
                 if (currentMode == BackendMode.Real)
                 {

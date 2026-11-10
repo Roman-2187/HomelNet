@@ -17,7 +17,7 @@ namespace HomeNetPresentation.ViewModels
     {
         private readonly IEventBus _eventBus;
 
-        [ObservableProperty] private bool _isMenuOpen;
+        [ObservableProperty] private bool _isMenuOpen=false;
         private UserEntity? _currentUser;
 
         [ObservableProperty] private UserEntity? _selectedFriend;
@@ -89,6 +89,19 @@ namespace HomeNetPresentation.ViewModels
             CurrentUserName = "Авторизация...";
             _eventBus.Publish(this, new IUserVm.LogoutClient());
         }
+
+        [RelayCommand]
+        private void ToggleMenu()
+        {
+            IsMenuOpen = !IsMenuOpen;
+        }
+
+
+        // 🔥 Только закрывает (для кликов мимо)
+        [RelayCommand]
+        private void CloseMenu() => IsMenuOpen = false;
+
+
 
         private void OnUserAdded(IUserRepo.Inserted msg)
         {

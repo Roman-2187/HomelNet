@@ -1,4 +1,5 @@
 ﻿using HomeNet.DI.Modules;
+using HomeNet.Infrastructure.Shared.Diagnostics.EventInspector;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Network.SignalRListeners;
@@ -26,6 +27,7 @@ namespace HomeNet.DI
         public ICastomLogger Logger => Infrastructure.Logger;
         public IEventBus EventBus => Infrastructure.EventBus;
         public SyncEngine OrmEngine => DataAccess.OrmEngine;
+        public EventBusInspector EventBusInspector => Infrastructure.EventBusInspector;
 
         // 🔥 ВАЖНО: Теперь листенеры разделены по зонам ответственности!
         public UserSignalRListener UserListener => DataAccess.UserListener;

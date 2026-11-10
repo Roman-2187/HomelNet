@@ -5,47 +5,77 @@ using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Enums.Navigation;
 using HomeNetCore.Interfaces.ViewModels.AdminZone;
 using HomeNetPresentation.Services;
+using HomeNetPresentation.ViewModels;
+// ... остальные using ...
 
-namespace HomeNetPresentation.ViewModels.AdminViews
+public partial class InspectorViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
 {
-    public partial class InspectorViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
+    private readonly EventBusInspector _inspector;
+
+    // 🔥 Запоминаем контекст UI-потока при создании ViewModel
+    private readonly SynchronizationContext? _uiContext = SynchronizationContext.Current;
+
+    [ObservableProperty] private List<IEventInspector.Line> _graphLines = new();
+    [ObservableProperty] private bool _isScanning;
+    [ObservableProperty] private string _loadingMessage = string.Empty;
+
+    public InspectorViewModel(IEventBus eventBus, IEventInspector inspector, AdminNavigationManager navigation)
+        : base(eventBus, navigation)
     {
-        private readonly EventBusInspector _inspector;
+        _inspector = inspector as EventBusInspector ?? throw new ArgumentNullException(nameof(inspector));
 
-        // 🔥 Наш зрячий реактивный список строк для ItemsControl
-        [ObservableProperty] private List<IEventInspector.Line> _graphLines = new();
+        // 🔥 Подписываемся на событие сканирования
+        _inspector.ScanCompleted += OnScanCompleted;
 
-        public InspectorViewModel(IEventBus eventBus, IEventInspector inspector, AdminNavigationManager navigation)
-            : base(eventBus, navigation)
+        _eventBus.Subscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
+        UpdateReport();
+    }
+
+    private void OnScanCompleted()
+    {
+        // 🔥 Возвращаемся в UI-поток и обновляем граф
+        if (_uiContext != null)
         {
-            // Кастуем интерфейс к нашему реальному профайлеру
-            _inspector = inspector as EventBusInspector ?? throw new ArgumentNullException(nameof(inspector));
-
-            _eventBus.Subscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
-
+            _uiContext.Post(_ => UpdateReport(), null);
+        }
+        else
+        {
+            // Если контекст не найден (например, в тестах), обновляем напрямую
             UpdateReport();
         }
+    }
 
-        private void OnAdminTabChanged(IAdminVm.AdminTabChanged msg)
+    private void OnAdminTabChanged(IAdminVm.AdminTabChanged msg)
+    {
+        if (msg == null) return;
+
+        if (msg.ActiveTab == AdminSubTab.EventInspector)
         {
-            if (msg == null) return;
+            UpdateReport();
+        }
+    }
 
-            // Как только админ открыл вкладку инспектора — мгновенно перестраиваем граф из оперативки!
-            if (msg.ActiveTab == AdminSubTab.EventInspector)
-            {
-                UpdateReport();
-            }
+    public void UpdateReport()
+    {
+        // 🔥 Проверяем, идет ли сканирование
+        if (_inspector.IsScanning)
+        {
+            IsScanning = true;
+            LoadingMessage = "⌛ Идёт сканирование сборок... Пожалуйста, подождите.";
+            GraphLines = new List<IEventInspector.Line>();
+            return;
         }
 
-        public void UpdateReport()
-        {
-            GraphLines = _inspector.GenerateObjectGraph();
-        }
+        // Если сканирование завершено, показываем граф
+        IsScanning = false;
+        LoadingMessage = string.Empty;
+        GraphLines = _inspector.GenerateObjectGraph();
+    }
 
-        public override void Dispose()
-        {
-            base.Dispose();
-            _eventBus.Unsubscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
-        }
+    public override void Dispose()
+    {
+        base.Dispose();
+        _inspector.ScanCompleted -= OnScanCompleted; // 🔥 Отписываемся
+        _eventBus.Unsubscribe<IAdminVm.AdminTabChanged>(OnAdminTabChanged);
     }
 }

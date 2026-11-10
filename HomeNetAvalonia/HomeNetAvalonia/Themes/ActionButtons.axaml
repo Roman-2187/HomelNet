@@ -1,0 +1,68 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Базовый стиль для action-кнопок -->
+    <Style Selector="Button.action-btn">
+      
+        <Setter Property="Height" Value="40"/>
+        <Setter Property="Padding" Value="4"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0.4"/>
+        <Setter Property="Foreground" Value="#FFF5546F"/>
+        <Setter Property="FontWeight" Value="Medium"/> 
+        <Setter Property="FontFamily" Value="Segoe UI, San Francisco, Helvetica, Arial"/>
+        <Setter Property="FontSize" Value="14"/>
+        
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border x:Name="border"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="2"
+                        Padding="{TemplateBinding Padding}">
+                    <ContentPresenter x:Name="contentPresenter"
+                                      Content="{TemplateBinding Content}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- Hover -->
+    <Style Selector="Button.action-btn:pointerover /template/ Border#border">
+        <Setter Property="Background" Value="#1AADD8E6"/>
+        <Setter Property="BorderBrush" Value="#00F0FF"/>
+    </Style>
+    <Style Selector="Button.action-btn:pointerover /template/ ContentPresenter#contentPresenter">
+        <Setter Property="Foreground" Value="#00F0FF"/>
+    </Style>
+
+    <!-- Pressed -->
+    <Style Selector="Button.action-btn:pressed /template/ Border#border">
+        <Setter Property="Background" Value="#FF131926"/>
+        <Setter Property="BorderBrush" Value="#FF0D111A"/>
+    </Style>
+    <Style Selector="Button.action-btn:pressed /template/ ContentPresenter#contentPresenter">
+        <Setter Property="Foreground" Value="White"/>
+    </Style>
+    
+    <!-- Иконки (Path) внутри action-кнопок, если есть -->
+    <Style Selector="Button.action-btn Path">
+        <Setter Property="Stroke" Value="#FFF5546F"/>
+        <Setter Property="StrokeThickness" Value="1.5"/>
+        <Setter Property="Width" Value="12"/>
+        <Setter Property="Height" Value="12"/>
+        <Setter Property="Stretch" Value="Uniform"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Button.action-btn:pointerover Path">
+        <Setter Property="Stroke" Value="#00F0FF"/>
+    </Style>
+    <Style Selector="Button.action-btn:pressed Path">
+        <Setter Property="Stroke" Value="White"/>
+    </Style>
+</Styles>

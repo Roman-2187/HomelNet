@@ -82,10 +82,13 @@
     x:CompileBindings="False">
     
     <!-- 🔥 ЕДИНЫЙ КИБЕР-КОНТЕЙНЕР (вместо отдельных кусков) -->
-    <Border   Focusable="True" Background="Transparent" behaviors:ClearFocusBehavior.IsEnabled="True"
+    <Border
+        
+        Focusable="True" Background="Transparent"
+        behaviors:ClearFocusBehavior.IsEnabled="True"
         DataContext="{Binding ChatViewModel}"
         
-       >
+      >
         
         <Grid RowDefinitions="Auto, *, Auto">
             

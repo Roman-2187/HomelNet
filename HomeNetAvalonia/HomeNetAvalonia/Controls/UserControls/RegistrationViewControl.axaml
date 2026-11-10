@@ -20,7 +20,7 @@
               DataContext="{Binding RegistrationViewModel}">
 
             <!-- 0️⃣ USER NAME -->
-            <StackPanel Grid.Row="0" Margin="0,0,0,15">
+            <StackPanel Grid.Row="0"  Margin="0,0,0,15">
                 <TextBlock Text="Имя пользователя:" Foreground="#00CCFF" 
                            Margin="0,0,0,4" FontSize="12"/>
                 <TextBox Classes="validation-box"
@@ -71,14 +71,23 @@
                            Foreground="#00CCFF" VerticalAlignment="Center" FontSize="11"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     
+                    <StackPanel.Styles>
+        <Style Selector="Button.local-size-btn">
+            <Setter Property="Width" Value="120"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Foreground" Value="#00CCFF"/>
+        </Style>
+    </StackPanel.Styles>
+
                     <!-- 🔥 ОЖИВИЛИ КНОПКИ: накинули классы нашего глобального киберпанк-стиля -->
                     <Button Content="Отмена" 
-                            Classes="cyber-btn form-btn" 
-                            Command="{Binding CancelCommand}" Foreground="#00CCFF"
+                            Classes="action-btn local-size-btn" 
+                            Command="{Binding CancelCommand}" 
                             Margin="0,0,15,0"/>
                     
                     <Button Content="{Binding SubmitButtonText}" 
-                            Classes="cyber-btn form-btn" Foreground="#00CCFF"
+                            Classes="action-btn local-size-btn" 
+                          
                             Command="{Binding RegisterCommand}"/>
                     
                 </StackPanel>

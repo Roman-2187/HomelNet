@@ -38,9 +38,8 @@
                                                 BorderBrush="#FFF5546F" BorderThickness="0.5" 
                                                 CornerRadius="2" Background="#FF131926"
                                                 HorizontalAlignment="Left" VerticalAlignment="Top">                                         
-                                             <Image Source="avares://HomeNetAvalonia/Assets/blackcat.jpg" 
-                                               Stretch="UniformToFill" 
-                                                   Opacity="0.9"/>
+                                          <Image Source="{StaticResource BlackCatAvatar}" Stretch="UniformToFill" Opacity="0.9"/>
+                                             
                                         </Border>
 
                                         <!-- Рядом с фото выводим ID и Имя -->

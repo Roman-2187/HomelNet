@@ -1,0 +1,58 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Базовый стиль для системных кнопок -->
+    <Style Selector="Button.system-btn">
+        <Setter Property="Width" Value="40"/>
+        <Setter Property="Height" Value="40"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0.4"/>
+        <Setter Property="Foreground" Value="#FFF5546F"/>
+        
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border x:Name="border"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="2">
+                    <ContentPresenter x:Name="contentPresenter"
+                                      Content="{TemplateBinding Content}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- Иконка внутри системной кнопки -->
+    <Style Selector="Button.system-btn Path">
+        <Setter Property="Stroke" Value="#FFF5546F"/>
+        <Setter Property="StrokeThickness" Value="1.5"/>
+        <Setter Property="Width" Value="11"/>
+        <Setter Property="Height" Value="11"/>
+        <Setter Property="Stretch" Value="Uniform"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- Hover -->
+    <Style Selector="Button.system-btn:pointerover /template/ Border#border">
+        <Setter Property="Background" Value="#1AADD8E6"/>
+        <Setter Property="BorderBrush" Value="#00F0FF"/>
+    </Style>
+    <Style Selector="Button.system-btn:pointerover Path">
+        <Setter Property="Stroke" Value="#00F0FF"/>
+    </Style>
+
+    <!-- Pressed -->
+    <Style Selector="Button.system-btn:pressed /template/ Border#border">
+        <Setter Property="Background" Value="#FF131926"/>
+        <Setter Property="BorderBrush" Value="#FF0D111A"/>
+    </Style>
+    <Style Selector="Button.system-btn:pressed Path">
+        <Setter Property="Stroke" Value="White"/>
+    </Style>
+</Styles>

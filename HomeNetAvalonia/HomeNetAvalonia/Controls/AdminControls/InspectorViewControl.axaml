@@ -7,20 +7,34 @@
              x:Class="HomeNetAvalonia.Controls.InspectorViewControl">
 
     <!-- 📡 Подвязываем DataContext к твоей чистой InspectorViewModel из Хаба ресурсов -->
-    <Grid DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False">
-        <Grid DataContext="{Binding InspectorViewModel}">
+  <Grid DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False">
+    <Grid DataContext="{Binding InspectorViewModel}">
 
-            <!-- 🟢 Твой любимый строгий радиус скругления 3 -->
-            <Border BorderBrush="#304050"
-                    BorderThickness="0.4" CornerRadius="3" Padding="15" Background="#FF111318">
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+        <!-- 🟢 Твой любимый строгий радиус скругления 3 -->
+        <Border BorderBrush="#304050"
+                BorderThickness="0.4" CornerRadius="3" Padding="15" Background="#FF111318">
+            
+            <!-- 🔥 Оборачиваем всё в Grid, чтобы наложить слои -->
+            <Grid>
+                <!-- 🔥 1. Слой загрузки (показывается, если IsScanning = true) -->
+                <TextBlock 
+                    Text="⌛ Идёт сканирование сборок... Пожалуйста, подождите." 
+                    Foreground="#00F0FF" 
+                    FontFamily="Consolas"
+                    FontSize="14"
+                    HorizontalAlignment="Center" 
+                    VerticalAlignment="Center"
+                    IsVisible="{Binding IsScanning}"/>
 
-                    <!-- Главный плоский список строк таймлайна шины -->
+                <!-- 🔥 2. Слой с графом (показывается, если IsScanning = false) -->
+                <ScrollViewer 
+                    HorizontalScrollBarVisibility="Disabled" 
+                    VerticalScrollBarVisibility="Auto"
+                    IsVisible="{Binding !IsScanning}">
+
                     <ItemsControl ItemsSource="{Binding GraphLines}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                
-                                <!-- Биндим текст строки, а энум состояния MessageState переводим в строку для Tag -->
                                 <TextBlock 
                                     Text="{Binding Text}" 
                                     Tag="{Binding State, StringFormat='{}{0}'}"
@@ -31,26 +45,15 @@
                                     Margin="0,1">
                                     
                                     <TextBlock.Styles>
-                                        <!-- 🩵 Дефолтный бирюзовый цвет для обычных заголовков и
-                                        таймлайна сигналов -->
                                         <Style Selector="TextBlock">
                                             <Setter Property="Foreground" Value="#00F0FF"/>
                                         </Style>
-
-                                        <!-- 🔴 СТАТУС: Published (Выстрел в пустоту)
-                                        -> Жесткий Аварийный КРАСНЫЙ -->
                                         <Style Selector="TextBlock[Tag=Published]">
                                             <Setter Property="Foreground" Value="Red"/>
                                         </Style>
-
-                                        <!-- 🟡 СТАТУС: Subscribed (Слушатель в засаде)
-                                        -> Предупреждающий ОРАНЖЕВЫЙ -->
                                         <Style Selector="TextBlock[Tag=Subscribed]">
                                             <Setter Property="Foreground" Value="#FFB300"/>
                                         </Style>
-
-                                        <!-- 🟢 СТАТУС: Live (Живой рабочий канал)
-                                        -> Наш сочный НЕОНОВО-ЗЕЛЕНЫЙ -->
                                         <Style Selector="TextBlock[Tag=Live]">
                                             <Setter Property="Foreground" Value="#00FF66"/>
                                         </Style>
@@ -62,8 +65,9 @@
                     </ItemsControl>
 
                 </ScrollViewer>
-            </Border>
+            </Grid>
             
-        </Grid>
+        </Border>
     </Grid>
+</Grid>
 </UserControl>

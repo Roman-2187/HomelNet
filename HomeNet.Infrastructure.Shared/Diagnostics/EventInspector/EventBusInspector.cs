@@ -10,12 +10,26 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
         private readonly Dictionary<Type, MessageState> _registry = [];
         private readonly HashSet<string> _ignoredMessageTypes = ["LogMessageReceived", "TextChanged"];
 
-        private bool _isProjectScanned = false;
+   
         private readonly object _scanLock = new();
+
+        private bool _isProjectScanned = false;
+        private bool _isScanning = false;
+
+        // 🔥 Событие для UI, чтобы он узнал, когда сканирование завершится
+        public event Action? ScanCompleted;
+
+        // Публичные свойства для проверки статуса
+        public bool IsScanning => _isScanning;
+        public bool IsScanned => _isProjectScanned;
+
+        public EventBusInspector()
+        {
+          
+        }
 
         public void RecordPublish(object sender, Type messageType)
         {
-            EnsureStaticScan();
             string name = sender != null ? (sender is string str ? str : sender.GetType().Name) : "UnknownSource";
             if (name == "Object" && sender is string sName) name = sName;
 
@@ -36,7 +50,6 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
 
         public void RecordSubscribe(string componentName, Type messageType, string methodName, Type subscriberType)
         {
-            EnsureStaticScan();
             var node = GetOrCreateNode(componentName);
             string targetClass = subscriberType?.Name ?? "UnknownClass";
 
@@ -69,15 +82,39 @@ namespace HomeNet.Infrastructure.Shared.Diagnostics.EventInspector
         public string GenerateReport() =>
             string.Join("\n", GenerateObjectGraph().Select(l => l.Text));
 
-        private void EnsureStaticScan()
+        /// <summary>
+        /// Запускает сканирование сборок в фоне, чтобы не тормозить старт приложения.
+        /// </summary>
+        public void StartBackgroundScan(ICastomLogger logger)
         {
-            if (_isProjectScanned) return;
-            lock (_scanLock)
+            if (_isProjectScanned || _isScanning) return;
+
+            _isScanning = true;
+            logger.LogInfo("[EventBusInspector] Начато фоновое сканирование сборок...");
+
+            Task.Run(() =>
             {
-                if (_isProjectScanned) return;
-                AssemblyScanner.ScanPublishers(_nodes, _registry, GetOrCreateNode);
-                _isProjectScanned = true;
-            }
+                try
+                {
+                    lock (_scanLock)
+                    {
+                        AssemblyScanner.ScanPublishers(_nodes, _registry, GetOrCreateNode);
+                        _isProjectScanned = true;
+                    }
+                    logger.LogInfo("[EventBusInspector] Фоновое сканирование сборок успешно завершено.");
+
+                    // 🔥 Уведомляем UI, что сканирование завершено
+                    ScanCompleted?.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError($"[EventBusInspector] Ошибка при фоновом сканировании: {ex.Message}");
+                }
+                finally
+                {
+                    _isScanning = false;
+                }
+            });
         }
 
         private ComponentNode GetOrCreateNode(string name)

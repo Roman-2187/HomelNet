@@ -13,6 +13,8 @@
     <Application.Resources>
         <!-- Твой хаб-локатор встает без ошибок -->
         <di:ComponentHub x:Key="ComponentHub"/>
+         <Bitmap x:Key="CyberBackground">avares://HomeNetAvalonia/Assets/68fadad90ca053b59b3e0178c4983607.png</Bitmap>
+        <Bitmap x:Key="BlackCatAvatar">avares://HomeNetAvalonia/Assets/blackcat.jpg</Bitmap>
         
     </Application.Resources>
     
@@ -21,7 +23,9 @@
     <FluentTheme />
 
 
-        <StyleInclude Source="avares://HomeNetAvalonia/Themes/Buttons.axaml"/>
+
+       <StyleInclude Source="avares://HomeNetAvalonia/Themes/SystemButtons.axaml"/>
+    <StyleInclude Source="avares://HomeNetAvalonia/Themes/ActionButtons.axaml"/>
         <StyleInclude Source="avares://HomeNetAvalonia/Themes/Fields.axaml"/>
        <StyleInclude Source="avares://HomeNetAvalonia/Themes/Containers.axaml"/>
 

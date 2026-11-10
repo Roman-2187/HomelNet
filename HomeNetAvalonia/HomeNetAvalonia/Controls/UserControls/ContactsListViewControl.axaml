@@ -22,11 +22,14 @@
         DataContext="{Binding ContactsViewModel}"
         RowDefinitions="*">
         
+      
+        
         <!-- 🛡️ ЕДИНЫЙ КИБЕР-КОНТЕЙНЕР ДЛЯ ПАНЕЛИ КОНТАКТОВ -->
        
             
             <!-- 🔥 Внутренний Grid с двумя строками -->
-            <Grid RowDefinitions="Auto, *">
+            <Grid RowDefinitions="Auto, *">  
+                
                 
                 <!-- 🍔 ВЕРХНЯЯ ЧАСТЬ: Кнопка управления, выхода и имя текущего юзера -->
                 <Border 
@@ -37,9 +40,15 @@
                     CornerRadius="2"
                     Padding="5" >
                     <Grid ColumnDefinitions="Auto, *">
-                        <controls:AccountMenuControl
-                            Grid.Column="0" HorizontalAlignment="Left"
-                            VerticalAlignment="Center"/>
+
+                         <Button Content="☰"
+                        
+                        Padding="8,3"
+                        FontSize="14"
+                        Command="{Binding  ToggleMenuCommand}" />
+
+
+                     
                         
                         <StackPanel
                             Height="35"
@@ -146,8 +155,12 @@
    
                 
             </Grid>
-       
+        <controls:SideMenuControl
+                        HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"/>
         
     </Grid>
+
+       
 </ContentControl>
 </UserControl>

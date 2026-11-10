@@ -3,32 +3,32 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"           
            xmlns:di="using:HomeNet.DI"
-             mc:Ignorable="d" d:DesignWidth="150" d:DesignHeight="32"
+             mc:Ignorable="d" 
              x:Class="HomeNetAvalonia.Controls.SystemButtons">
 
     
 
- <Grid DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False">
+<Grid DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False">
     <StackPanel DataContext="{Binding SystemButtonsViewModel}"
                 Orientation="Horizontal"
-                VerticalAlignment="Center">
+                VerticalAlignment="Center"
+                Spacing="4"> <!-- 🔥 Отступы между кнопками -->
         
-     <!-- ➖ КНОПКА: СВЕРНУТЬ -->
-        <Button Classes="cyber-btn" Command="{Binding MinimizeWindowCommand}">         
-           <Path Data="M 2,4.75 L 8,4.75 L 8,6.25 L 2,6.25 Z"/>
+    <!-- ➖ КНОПКА: СВЕРНУТЬ -->
+        <Button Classes="cyber-btn system-btn" Command="{Binding MinimizeWindowCommand}">
+           <Path Data="M 2,6.5 L 8,6.5 L 8,7.5 L 2,7.5 Z" Margin="0,10,0,0"/>
         </Button>
 
         <!-- 🔳 КНОПКА: РАЗВЕРНУТЬ -->
-        <Button Classes="cyber-btn" Command="{Binding ToggleGrowWindowCommand}">     
+        <Button Classes="cyber-btn system-btn" Command="{Binding ToggleGrowWindowCommand}">     
             <Path Data="M 1,1 L 9,1 L 9,9 L 1,9 Z"/>
         </Button>
         
         <!-- ✕ КНОПКА: ЗАКРЫТЬ -->
-        <Button Classes="cyber-btn" Command="{Binding RequestCloseApplicationCommand}">    
+        <Button Classes="cyber-btn system-btn" Command="{Binding RequestCloseApplicationCommand}">    
             <Path Data="M 1,1 L 9,9 M 9,1 L 1,9"/>
         </Button>
         
     </StackPanel>
 </Grid>
-
 </UserControl>

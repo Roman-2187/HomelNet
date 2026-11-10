@@ -7,6 +7,7 @@
              xmlns:conv="using:HomeNetAvalonia.Converters"
              xmlns:vm="using:HomeNetPresentation.ViewModels"
              xmlns:di="using:HomeNet.DI" 
+             xmlns:behaviors="using:HomeNetAvalonia.Behaviors"
              xmlns:controls="using:HomeNetAvalonia.Controls"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
              x:DataType="di:ComponentHub">
@@ -37,7 +38,9 @@
     </UserControl.Styles>
 
     <!-- 🌌 Корневой Grid оставляем на ComponentHub, чтобы пути биндингов были прозрачными -->
-    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <Grid
+        behaviors:ClickCommandBehavior.Command="{Binding ContactsViewModel.CloseMenuCommand}"            
+        HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
         
         <!-- Под-экран А: Форма Входа (явно указываем путь через UserViewModel) -->
         <ContentControl

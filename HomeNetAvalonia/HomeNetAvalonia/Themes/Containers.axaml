@@ -27,9 +27,7 @@
                                     ClipToBounds="True">
                                 <!-- ClipToBounds намертво зажмет картинку внутри скругления --> 
                                 <Grid>                                                                        
-                                    <Image Source="avares://HomeNetAvalonia/Assets/68fadad90ca053b59b3e0178c4983607.png" 
-                                           Stretch="UniformToFill"
-                                           Opacity="0.2"/>                                                    
+                                   <Image Source="{StaticResource CyberBackground}" Stretch="UniformToFill" Opacity="0.2"/>                                                 
                                   
                                     <ContentPresenter Name="PART_ContentPresenter"
                                                       Content="{TemplateBinding Content}" 
@@ -68,12 +66,11 @@
                          <Border Margin="0.5" 
                                  BorderThickness="0.5"
                                  CornerRadius="2"
-                                 Background="#FF1C2433"
+                                
+                                 
                                  ClipToBounds="True">
                              <Grid>                                                                        
-                                 <Image Source="avares://HomeNetAvalonia/Assets/68fadad90ca053b59b3e0178c4983607.png" 
-                                        Stretch="UniformToFill"
-                                        Opacity="0.1"/>                                                    
+                                <Image Source="{StaticResource CyberBackground}" Stretch="UniformToFill" Opacity="0.1"/>                                                 
                                
                                  <ContentPresenter Name="PART_ContentPresenter"
                                                    Content="{TemplateBinding Content}" 
@@ -99,7 +96,7 @@
          <ControlTemplate>
              <Grid>
                  <!-- 1️⃣ ВНЕШНИЙ БОРДЕР (Тёмно-стальная рамка #304050, скругление 3) -->
-                 <Border CornerRadius="2.5" 
+                 <Border CornerRadius="2" 
                          BorderThickness="0.5" 
                          BorderBrush="#304050" 
                          Background="#FF1B222E">
@@ -108,27 +105,26 @@
                          <Border BorderThickness="0.5" 
                                  Margin="0.5" 
                                  BorderBrush="#40304050" 
-                                 CornerRadius="2.5"/>
+                                 CornerRadius="2"/>
 
                          <!-- 3️⃣ ВНУТРЕННИЙ БОРДЕР (Глубокий фон и картинка) -->
                          <Border Margin="0.5" 
                                  BorderThickness="0.5"
-                                 CornerRadius="2.5"
+                                 CornerRadius="2"
                                  Background="#FF1C2433"
                                  ClipToBounds="True">
                              <Grid>                                                                        
-                                 <Image Source="avares://HomeNetAvalonia/Assets/68fadad90ca053b59b3e0178c4983607.png" 
-                                        Stretch="UniformToFill"
-                                        Opacity="0.1"/>                                                    
+                                <Image Source="{StaticResource CyberBackground}" Stretch="UniformToFill" Opacity="0.1"/>                                                
                                
                                  <!-- 🟢 ТОНИРОВАНИЕ: Твой цвет ложится вторым слоем в Grid строго ПОВЕРХ картинки -->
                                  <Border Background="Transparent"/>
 
-                                 <ContentPresenter Name="PART_ContentPresenter"
-                                                   Content="{TemplateBinding Content}" 
-                                                   ContentTemplate="{TemplateBinding ContentTemplate}"
-                                                   Margin="{TemplateBinding Padding}"
-                                                   RecognizesAccessKey="True"/>
+                                 <ContentPresenter
+                                     Name="PART_ContentPresenter"
+                                     Content="{TemplateBinding Content}" 
+                                     ContentTemplate="{TemplateBinding ContentTemplate}"
+                                     Margin="{TemplateBinding Padding}"
+                                     RecognizesAccessKey="True"/>
                              </Grid>
                          </Border>
                      </Grid>

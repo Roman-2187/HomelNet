@@ -7,7 +7,7 @@
               xmlns:vm="using:HomeNetPresentation.ViewModels"
               x:DataType="vm:StatusBarViewModel" Background="Transparent">
    <Border  Margin="1"
-          Background="#0DADD8E6"
+          Background="#15000000"
             BorderThickness="0.5" 
             CornerRadius="2" 
 

@@ -1,0 +1,46 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="HomeNetAvalonia.Controls.SideMenuControl"
+             x:CompileBindings="False">
+    
+  <ContentControl DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False">
+     
+     <!-- 🔥 Проваливаемся в ContactsViewModel -->
+     <Grid DataContext="{Binding ContactsViewModel}" >
+         
+         <!-- 🔥 Подложка (перехватывает клики, когда меню открыто) -->
+         <ContentControl IsVisible="{Binding IsMenuOpen, FallbackValue=False}"
+                Classes="CyberpunkInnerContainer"
+                 HorizontalAlignment="Stretch"
+                 VerticalAlignment="Stretch"  >
+
+        
+             <Grid RowDefinitions="Auto, Auto, Auto">
+                 
+                 <TextBlock Grid.Row="0" 
+                            Margin="10"
+                            Text="УПРАВЛЕНИЕ" 
+                            FontWeight="SemiBold" 
+                            FontSize="10" 
+                            HorizontalAlignment="Center" 
+                             
+                            Foreground="#00CCFF"/>
+                 
+                 <!-- 🔥 Убираем фиксированную ширину через HorizontalAlignment="Stretch" -->
+                 <Button Grid.Row="1"
+                         Content="👤 Профиль" 
+                         Classes="action-btn" 
+                         HorizontalAlignment="Stretch" 
+                         Margin="0,4"/>
+                 
+                 <Button Grid.Row="2"
+                         Content="↩ Выйти из системы" 
+                         Command="{Binding LogoutCommand}"  
+                         Classes="action-btn"  
+                         HorizontalAlignment="Stretch" 
+                         Margin="0,4"/>
+             </Grid>
+         </ContentControl>
+     </Grid>
+ </ContentControl>
+</UserControl>

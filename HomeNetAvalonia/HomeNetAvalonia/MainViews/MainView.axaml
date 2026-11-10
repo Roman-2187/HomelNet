@@ -5,7 +5,7 @@
              xmlns:vm="using:HomeNetAvalonia.ViewModels"
              xmlns:behaviors="clr-namespace:HomeNetAvalonia.Behaviors"
              xmlns:controls="clr-namespace:HomeNetAvalonia.Controls"
-             mc:Ignorable="d" 
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600" 
              x:Class="HomeNetAvalonia.Views.MainView"
              Background="Transparent"
               MinWidth="800" MinHeight="600" >
@@ -23,7 +23,7 @@
                 <ColumnDefinition Width="9"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="50"/>
+                <RowDefinition Height="Auto"/>
                 <!-- Row 1: Свободная центральная зона контента -->
                 <RowDefinition Height="*"/> 
                 <!-- Row 2: Статус-бар в самом низу -->
@@ -36,7 +36,7 @@
             <!-- ========================================= -->
             <!-- Накатываем беспроводной перетаскиватель окон ,
             behaviors:WindowDragBehavior.EnableDrag="True" -->
-            <Grid Grid.Row="0" Grid.ColumnSpan="2"  
+            <Grid Grid.Row="0" Grid.ColumnSpan="2"  Background="#15000000"
                   behaviors:WindowDragBehavior.EnableDrag="True">
                 
                 <Grid.ColumnDefinitions> 
@@ -54,7 +54,7 @@
                     Text="SIBERNET v1.0"
                     Foreground="#FFF5546F" 
                     VerticalAlignment="Center"
-                    Margin="15,0,10,0"
+                    Padding="20,0,0,0"
                     FontWeight="Bold"
                     FontSize="12"/>
 
@@ -69,7 +69,7 @@
                 <controls:SystemButtons
                     Grid.Column="2"
                     VerticalAlignment="Center"
-                    Margin="10,0,15,0"/>
+                    />
             </Grid>
 
             <!-- ================================================ -->
@@ -93,7 +93,7 @@
  
 
     <controls:StatusBarControl
-        Height="50" 
+        Height="40" 
         x:CompileBindings="False"
         DataContext="{Binding Source={StaticResource ComponentHub},
         Path=StatusBarViewModel}"/>

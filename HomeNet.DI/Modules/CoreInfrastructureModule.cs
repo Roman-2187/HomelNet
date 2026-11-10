@@ -28,9 +28,9 @@ public class CoreInfrastructureModule
 
         // 🔥 Собираем трехствольный логгер для клиента: Консоль + HTML + Экран приложения!
         Logger = new AggregateLogger(
-     new HtmlLogger(clientLogName),
-     new QueueLogger(entry => LogQueueManager.WriteLog(entry)) 
- );
+        new HtmlLogger(clientLogName),
+        new QueueLogger(entry => LogQueueManager.WriteLog(entry)) 
+       );
 
         // 4. Запускаем воркер очереди логов
         LogQueueManager.SetReady();

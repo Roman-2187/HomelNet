@@ -15,7 +15,7 @@ namespace HomeNetAvalonia.Infrastructure
     public static class AvaloniaUiBootstrapper
     {
         private static bool _isInitialized = false;
-        private static bool _isSyncStarted = false;
+       
 
         public static AppCompositionRoot BuildAvaloniaContainer(BackendMode mode, string apiBaseUrl, string sqliteConn)
         {
