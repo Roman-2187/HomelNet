@@ -39,7 +39,7 @@
 
     <!-- 🌌 Корневой Grid оставляем на ComponentHub, чтобы пути биндингов были прозрачными -->
     <Grid
-        behaviors:ClickCommandBehavior.Command="{Binding ContactsViewModel.CloseMenuCommand}"            
+                 
         HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
         
         <!-- Под-экран А: Форма Входа (явно указываем путь через UserViewModel) -->
@@ -83,7 +83,7 @@
                                               VerticalAlignment="Stretch"/>
 
             <!-- ПРАВАЯ ЧАСТЬ: Динамическая зона переписки -->
-            <Grid Grid.Column="1">
+            <Grid behaviors:ClickCommandBehavior.Command="{Binding ContactsViewModel.CloseMenuCommand}" Grid.Column="1" >
                 
                 <!-- Блок А: Заглушка, если чат еще не выбран (Стейт = Messenger) -->
                 <Border Background="Transparent"
@@ -99,7 +99,7 @@
                 </Border>
 
                 <!-- Блок Б: Настоящий контрол чата (Стейт = Chat) -->
-                <controls:ChatViewControl
+                <controls:ChatViewControl    
                         IsVisible="{Binding UserViewModel.ActiveClientTab,
                         Converter={StaticResource EqualityConverter},
                         ConverterParameter={x:Static enums:ClientSubTab.Chat}}"

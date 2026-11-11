@@ -13,16 +13,16 @@
       <UserControl.Styles>
         <!-- 🕶️ ЧУЖИЕ СООБЩЕНИЯ (Входящие слева): -->
         <Style Selector="Border.msg-cloud">
-            <Setter Property="Border.HorizontalAlignment" Value="Left"/>
+            <Setter Property="Border.HorizontalAlignment" Value="Center"/>
             <Setter Property="Border.Background" Value="#1500F0FF"/>
-            <Setter Property="Border.Margin" Value="100,5,0,5"/>
+            <Setter Property="Border.Margin" Value="10,10,250,10"/>
         </Style>
 
         <!-- 🎯 ТВОИ СООБЩЕНИЯ (Исходящие справа): -->
         <Style Selector="Border.msg-cloud[Tag=true]">
-            <Setter Property="Border.HorizontalAlignment" Value="Right"/>
+            <Setter Property="Border.HorizontalAlignment" Value="Center"/>
             <Setter Property="Border.Background" Value="#3300F0FF"/>
-            <Setter Property="Border.Margin" Value="0,5,100,5"/>
+            <Setter Property="Border.Margin" Value="250,10,10,10"/>
         </Style>
 
            <!-- 🔥 УБИРАЕМ РАМКУ И ФОН У TEXTBOX ВООБЩЕ (включая фокус) -->
@@ -52,7 +52,7 @@
     </Style>
 
      <!-- 🔥 КРАСИВАЯ КНОПКА ОТПРАВКИ -->
-    <Style Selector="Button.cyber-btn">
+    <Style Selector="Button.action-btn">
         <!-- Убираем стандартный фон и рамку -->
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
@@ -67,15 +67,22 @@
     </Style>
 
     <!-- Наведение: аккуратная подсветка -->
-    <Style Selector="Button.cyber-btn:pointerover">
+    <Style Selector="Button.action-btn:pointerover">
         <Setter Property="Background" Value="#3300F0FF"/> <!-- Полупрозрачный голубой -->
     </Style>
 
     <!-- Нажатие: чуть ярче -->
-    <Style Selector="Button.cyber-btn:pressed">
+    <Style Selector="Button.action-btn:pressed">
         <Setter Property="Background" Value="#5500F0FF"/>
     </Style>
+
+          <Style Selector="Button.action-btn:disabled">
+    <Setter Property="Foreground" Value="#FF615959"/> <!-- Серый текст -->
+    <Setter Property="Background" Value="Transparent"/>
+</Style>
     </UserControl.Styles>
+
+
 
  <ContentControl Classes="AccountMenuContainer" 
     DataContext="{DynamicResource ComponentHub}" 
@@ -184,7 +191,8 @@
                         Grid.Column="1" 
                         Content="ОТПРАВИТЬ" 
                         Command="{Binding SendMessageCommand}"
-                        Classes="cyber-btn" 
+                      
+                        Classes="action-btn" 
                        FontSize="14"
                         Width="120" 
                         HorizontalContentAlignment="Center" 

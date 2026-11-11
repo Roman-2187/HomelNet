@@ -16,6 +16,7 @@ namespace HomeNetPresentation.ViewModels
         private readonly IMessageService _messageService;
 
         [ObservableProperty] private Guid _currentUserId;
+
         [ObservableProperty] private string _currentUserName = string.Empty;
         [ObservableProperty] private bool _isChatOpen = false;
         [ObservableProperty] private string _inputText = string.Empty;

@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:di="using:HomeNet.DI"
              xmlns:behaviors="using:HomeNetAvalonia.Behaviors"
-             mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="600"
+             mc:Ignorable="d" 
              x:Class="HomeNetAvalonia.Controls.RegistrationViewControl"
              x:DataType="di:ComponentHub" Width="600" Height="450"
              > 
