@@ -2,6 +2,8 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.VisualTree;
+using HomeNetAvalonia.Controls;
 using System.Windows.Input;
 
 namespace HomeNetAvalonia.Behaviors
@@ -34,6 +36,18 @@ namespace HomeNetAvalonia.Behaviors
         {
             if (sender is Control control)
             {
+                // 🔥 Проверяем, куда был клик
+                if (e.Source is Control source)
+                {
+                    // Если клик был по SideMenuControl (меню) или по ListBox — не выполняем
+                    if (source.FindAncestorOfType<SideMenuControl>() != null)
+                        return;
+
+                    // Можно добавить другие исключения:
+                    // if (source.FindAncestorOfType<ListBox>() != null)
+                    //     return;
+                }
+
                 var command = GetCommand(control);
                 if (command?.CanExecute(null) == true)
                 {

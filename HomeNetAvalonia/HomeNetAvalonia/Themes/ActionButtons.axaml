@@ -52,7 +52,7 @@
     <!-- Иконки (Path) внутри action-кнопок, если есть -->
     <Style Selector="Button.action-btn Path">
         <Setter Property="Stroke" Value="#FFF5546F"/>
-        <Setter Property="StrokeThickness" Value="1.5"/>
+        <Setter Property="StrokeThickness" Value="1"/>
         <Setter Property="Width" Value="12"/>
         <Setter Property="Height" Value="12"/>
         <Setter Property="Stretch" Value="Uniform"/>

@@ -14,25 +14,36 @@
     </UserControl.Resources>
 
     <!-- 🌌 Глобальный DataContext Хаба для рантайма без Code-behind -->
-    <ContentControl
+    <ContentControl 
         DataContext="{DynamicResource ComponentHub}"
         x:CompileBindings="False">
         
         <!-- 🦾 Автоматически проваливаемся в AdminViewModel -->
         <Grid
             DataContext="{Binding AdminViewModel}"
-            ColumnDefinitions="220, *">
+            ColumnDefinitions="250, *">
 
+          
             <!-- === ЛЕВАЯ ЧАСТЬ: Боковая панель ==== -->
-            <ContentControl
+            <ContentControl    
                 Classes="CyberpunkInnerContainer"
-                Grid.Column="0" Margin="5,0,5,0">
+                Grid.Column="0" >
                 <Grid RowDefinitions="Auto, *">
                     
                     <!-- 🔝 ШАПКА ПАНЕЛИ: Упакованный бургер-контрол и заголовок -->
-                    <Grid Grid.Row="0"
+                    <Grid Grid.Row="0" 
                           ColumnDefinitions="Auto, *">
-                        <controls:AccountMenuControl Grid.Column="0"/>
+                        
+                       
+
+                         <Button Content="☰"
+                        
+                        Padding="8,3"
+                        FontSize="14"
+                        Command="{Binding  ToggleMenuCommand}" />
+
+
+
                         <TextBlock
                             Grid.Column="1" 
                             Text="АДМИН ПАНЕЛЬ" 
@@ -40,7 +51,8 @@
                             Foreground="#FFF5546F" 
                             VerticalAlignment="Center"
                             HorizontalAlignment="Center"
-                            FontSize="13"/>
+                            FontSize="13"/> 
+                       
                     </Grid>
 
                     <!-- НАВИГАЦИОННЫЕ КНОПКИ УПРАВЛЕНИЯ -->
@@ -53,7 +65,7 @@
                             Content="{Binding TableButtonText,
                             FallbackValue='Показать users'}" 
                             Command="{Binding ShowUserTableCommand}"
-                            Classes="cyber-btn"
+                            Classes="action-btn"
                             HorizontalAlignment="Stretch"
                             Margin="0,3"/>
                         
@@ -62,7 +74,7 @@
                             Content="{Binding ToggleButtonText,
                             FallbackValue='Показать log'}" 
                             Command="{Binding ShowLogPanelCommand}" 
-                            Classes="cyber-btn"
+                            Classes="action-btn"
                             HorizontalAlignment="Stretch"
                             Margin="0,3"/>
                         
@@ -71,16 +83,16 @@
                             Content="{Binding DeleteButtonText,
                             FallbackValue='Удалить юзера'}"
                             Command="{Binding ShowDeleteFormCommand}"
-                            Classes="cyber-btn"
+                            Classes="action-btn"
                             HorizontalAlignment="Stretch"
                             Margin="0,3"/>
                         
                         <Button
                             Grid.Row="3"
                             Content="{Binding SeedButtonText,
-                            FallbackValue='Сидинг Users'}" 
+                            FallbackValue='Сидинг Users'}"
                             Command="{Binding ShowSeedFormCommand}" 
-                            Classes="cyber-btn"
+                            Classes="action-btn"
                             HorizontalAlignment="Stretch"
                             Margin="0,3"/>
                         
@@ -89,15 +101,26 @@
                             Content="{Binding InspectorButtonText,
                             FallbackValue='Инспектор шины'}" 
                             Command="{Binding ShowInspectorCommand}" 
-                            Classes="cyber-btn"
+                            Classes="action-btn"
                             HorizontalAlignment="Stretch"
                             Margin="0,3"/>
-                    </Grid>
+
+
+                        
+                    </Grid> 
+                   
+
                 </Grid>
             </ContentControl>
 
+               <controls:SideMenuControl 
+                         
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch" />
+
+
             <!-- === ПРАВАЯ ЧАСТЬ: Рабочая зона вкладок === -->
-            <Grid Grid.Column="1">
+            <Grid  Grid.Column="1"   >
                 <Grid.Styles>
                     <!-- Базово прячем все контейнеры-вкладки -->
                     <Style Selector="ContentControl.tab-content">
@@ -105,13 +128,19 @@
                     </Style>
                 </Grid.Styles>
 
+
+    
+                    
+                    
+                 
+
                 <!-- Блок А: Таблица пользователей -->
-                <ContentControl
+                <ContentControl    
                     Classes="tab-content" 
                     IsVisible="{Binding ActiveTab,
                     Converter={StaticResource EqualityConverter},
                     ConverterParameter={x:Static enums:AdminSubTab.UserTable}}">
-                    <controls:UsersTableControl/>
+                    <controls:UsersTableControl   />
                 </ContentControl>
 
                 <!-- Блок Б: Панель Логов -->
@@ -144,12 +173,14 @@
                 </ContentControl>
 
                 <!-- Блок Д: Модуль сидинга (Исправлено навешиванием tab-content) -->
-                <ContentControl
+                <ContentControl 
                     Classes="tab-content" 
                     IsVisible="{Binding ActiveTab,
                     Converter={StaticResource EqualityConverter},
                     ConverterParameter={x:Static enums:AdminSubTab.SeedUsers}}">
                     <controls:SeedUsersViewControl/>
+
+                   
                 </ContentControl>
 
             </Grid>

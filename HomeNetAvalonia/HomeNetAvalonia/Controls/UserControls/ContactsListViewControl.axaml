@@ -12,14 +12,14 @@
 
 
    
-  <ContentControl Classes="AccountMenuContainer" 
-    DataContext="{DynamicResource ComponentHub}" 
-    x:CompileBindings="False" >
+  <ContentControl Classes="CyberpunkInnerContainer" Margin="-6"
+    
+     >
     
     <!-- 🦾 Автоматически проваливаемся в родную ContactsViewModel -->
     <!-- 🔥 Задаем RowDefinitions="*", чтобы этот Grid растянулся на всё пространство -->
     <Grid Background="#10ADD8E6"
-        DataContext="{Binding ContactsViewModel}"
+       
         RowDefinitions="*">
         
       
@@ -78,65 +78,39 @@
 
                 <!-- 👥 НИЖНЯЯ ЧАСТЬ: Список контактов -->
                 <!-- 🔥 Строка "*" заставит ListBox занять всё оставшееся место -->
-  <ListBox 
-    Grid.Row="1"
-    ItemsSource="{Binding Friends}" 
-    SelectedItem="{Binding SelectedFriend, Mode=TwoWay}"
-    Background="Transparent"
-    BorderThickness="0"
-    Margin="0,2,0,0">
-  <ListBox.ItemContainerTheme>
-    <!-- 
-      🔥 ControlTheme задает правила отрисовки для КАЖДОГО элемента списка (ListBoxItem).
-      BasedOn="{StaticResource {x:Type ListBoxItem}}" означает: 
-      "Возьми базовую тему Avalonia и немного переопредели её".
-    -->
+              <ListBox 
+                Grid.Row="1"
+                ItemsSource="{Binding Friends}" 
+                SelectedItem="{Binding SelectedFriend, Mode=TwoWay}"
+                Background="Transparent"
+                BorderThickness="0"
+                Margin="0,2,0,0">
+              <ListBox.ItemContainerTheme>
+    
     <ControlTheme TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
         
-        <!-- 
-          🔹 Базовое состояние (когда элемент НЕ выделен и НЕ наведен).
-          Background="Transparent" — фон прозрачный, чтобы был виден фон самого ListBox.
-          Padding="5" — внутренний отступ, чтобы текст не прилипал к краям.
-        -->
+       
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Padding" Value="5"/>
 
-        <!-- 
-          🔥 СТАТИК (Выделенный элемент). 
-          Срабатывает, когда ты кликаешь по элементу (он становится SelectedItem).
-          Selector="^:selected" означает "текущий элемент в состоянии selected".
-          Мы меняем Background (фон) и BorderBrush (цвет рамки).
-          BorderThickness="1,0,0,0" рисует рамку только слева (толщина 1 пиксель).
-        -->
+       
+      
        <Style Selector="^:selected /template/ ContentPresenter">
             <Setter Property="Background" Value="#1100F0FF" />
             <Setter Property="BorderBrush" Value="#00F0FF" />   <!-- Яркий голубой для полоски -->
-            <Setter Property="BorderThickness" Value="0.4,0,0,0" />
+            <Setter Property="BorderThickness" Value="0.6,0,0,0" />
             <Setter Property="CornerRadius" Value="2" /> <!-- Полоска только слева -->
         </Style>
 
-        <!-- 
-          🔥 НАВЕДЕНИЕ (Hover).
-          Срабатывает, когда ты просто наводишь мышку на элемент, но НЕ кликнул.
-          Selector="^:pointerover" означает "текущий элемент в состоянии pointerover".
-          Мы делаем фон чуть более заметным, но менее ярким, чем выделение.
-        -->
+       
+       
         <Style Selector="^:pointerover">
             <Setter Property="Background" Value="#1500F0FF" />
                 <Setter Property="CornerRadius" Value="2" /> 
 <!-- Очень прозрачный голубой -->
         </Style>
         
-        <!-- 
-          💡 Если хочешь, чтобы при наведении на ВЫДЕЛЕННЫЙ элемент фон не перебивался 
-          на менее яркий, можно добавить комбинированный селектор:
-          <Style Selector="^:selected:pointerover">
-              <Setter Property="Background" Value="#3300F0FF" />
-          </Style>
-          Но в текущей логике ListBoxItem:pointerover может перебить :selected, 
-          если они идут в таком порядке. Если фон при наведении на выделенный элемент 
-          становится тусклым, поменяй их местами (сначала pointerover, потом selected).
-        -->
+       
 
     </ControlTheme>
 </ListBox.ItemContainerTheme>

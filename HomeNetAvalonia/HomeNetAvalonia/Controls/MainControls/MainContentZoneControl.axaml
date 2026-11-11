@@ -5,6 +5,7 @@
              xmlns:enums="using:HomeNetCore.Enums.Navigation"
              xmlns:conv="using:HomeNetAvalonia.Converters"
              xmlns:di="using:HomeNet.DI" 
+              xmlns:behaviors="using:HomeNetAvalonia.Behaviors"
              xmlns:controls="using:HomeNetAvalonia.Controls"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
              x:Class="HomeNetAvalonia.Controls.MainContentZoneControl"
@@ -16,7 +17,9 @@
 
     <!-- 🌌 Глобальный DataContext Хаба для рантайма без Code-behind -->
      <Grid DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False"
-          HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+          HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+          
+         >
         
          <!-- ⚡ ВАЖНО: Убрали общий DataContext TitleBarViewModel отсюда, чтобы не ломать дочерние элементы! -->
          <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
@@ -30,7 +33,8 @@
             </Border>
 
             <!-- 🖥️ МАКРО-ЭКРАН 2: ПАНЕЛЬ АДМИНИСТРАТОРА -->
-            <Border 
+            <Border  
+                behaviors:ClickCommandBehavior.Command="{Binding AdminViewModel.CloseMenuCommand}"
                 x:Name="AdminScreenContainer" Background="Transparent"
                 IsVisible="{Binding TitleBarViewModel.CurrentMainZone,
                 Converter={StaticResource EqualityConverter},
@@ -41,7 +45,7 @@
 
             <!-- 🖥️ МАКРО-ЭКРАН 3: ГЛАВНЫЙ ОБЩИЙ ХОЛСТ КЛИЕНТА (Вход, Регистрация, Чат) -->
             <!-- 🎯 Явно биндим IsVisible через TitleBarViewModel.CurrentMainZone -->
-            <Border
+            <Border behaviors:ClickCommandBehavior.Command="{Binding ContactsViewModel.CloseMenuCommand}"
                 x:Name="UserScreenContainer" 
                 Background="Transparent"
                 IsVisible="{Binding TitleBarViewModel.CurrentMainZone,

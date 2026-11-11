@@ -84,7 +84,7 @@
 
 
 
- <ContentControl Classes="AccountMenuContainer" 
+ <ContentControl Classes="CyberpunkInnerContainer" 
     DataContext="{DynamicResource ComponentHub}" 
     x:CompileBindings="False">
     

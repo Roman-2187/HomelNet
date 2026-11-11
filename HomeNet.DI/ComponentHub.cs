@@ -1,4 +1,5 @@
-﻿using HomeNetPresentation.ViewModels;
+﻿using HomeNetCore.Interfaces.ViewModels.UserZone;
+using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.AdminViews;
 using System;
 
@@ -24,7 +25,7 @@ namespace HomeNet.DI
         public AdminViewModel AdminViewModel => GetViewModelSafe<AdminViewModel>();
         // Было: public UserViewModel UserProfileViewModel => GetViewModelSafe<UserViewModel>();
         // Стало:
-        public UserViewModel UserViewModel => GetViewModelSafe<UserViewModel>();
+        public IUserVm UserViewModel => GetViewModelSafe<UserViewModel>();
 
         // 🔥 ВОТ ЭТОГО НЕ ХВАТАЛО! Добавляем модель списка контактов в локатор
         public ContactsViewModel ContactsViewModel => GetViewModelSafe<ContactsViewModel>();

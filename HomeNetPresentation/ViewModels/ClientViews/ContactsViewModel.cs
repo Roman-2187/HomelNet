@@ -1,11 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System.Collections.ObjectModel;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
-using HomeNetCore.Interfaces.ViewModels.UserZone;
-using HomeNetCore.Interfaces.ViewModels.AdminZone;
 using HomeNet.Models.Shared.Entity;
+using HomeNetCore.Interfaces.ViewModels.AdminZone;
+using HomeNetCore.Interfaces.ViewModels.MainZone;
+using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetOrm.Interfaces.Repositories;
+using System.Collections.ObjectModel;
 
 namespace HomeNetPresentation.ViewModels
 {
@@ -13,7 +14,7 @@ namespace HomeNetPresentation.ViewModels
     /// Реактивный список контактов SiberNet.
     /// Полностью отвязан от СУБД и логики навигации чата! 🧼
     /// </summary>
-    public partial class ContactsViewModel : ObservableObject, IContactsVm, IDisposable
+    public partial class ContactsViewModel : ObservableObject, IContactsVm, IDisposable, IMenuViewModel
     {
         private readonly IEventBus _eventBus;
 

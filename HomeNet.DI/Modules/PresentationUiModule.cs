@@ -1,6 +1,7 @@
 ﻿using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNetCore.Interfaces.Diagnostics;
+using HomeNetCore.Interfaces.ViewModels.UserZone;
 using HomeNetPresentation.Services;
 using HomeNetPresentation.ViewModels;
 using HomeNetPresentation.ViewModels.AdminViews;
@@ -26,7 +27,7 @@ namespace HomeNet.DI.Modules
         public TitleBarViewModel TitleBarVM { get; }
         public SeedUsersViewModel SeedUsersVM { get; }
         public TableUsersViewModel TableUsersVM { get; }
-        public UserViewModel UserVM { get; }
+        public IUserVm UserVM { get; }
         public ContactsViewModel ContactsVM { get; }
         public MainViewModel MainVM { get; }
 

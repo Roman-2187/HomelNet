@@ -99,7 +99,7 @@
                  <Border CornerRadius="2" 
                          BorderThickness="0.5" 
                          BorderBrush="#304050" 
-                         Background="#FF1B222E">
+                         Background="#304050">
                      <Grid>
                          <!-- 2️⃣ СРЕДНИЙ БОРДЕР (Приглушённое стальное свечение) -->
                          <Border BorderThickness="0.5" 
@@ -111,7 +111,7 @@
                          <Border Margin="0.5" 
                                  BorderThickness="0.5"
                                  CornerRadius="2"
-                                 Background="#FF1C2433"
+                                Background="#304050"
                                  ClipToBounds="True">
                              <Grid>                                                                        
                                 <Image Source="{StaticResource CyberBackground}" Stretch="UniformToFill" Opacity="0.1"/>                                                

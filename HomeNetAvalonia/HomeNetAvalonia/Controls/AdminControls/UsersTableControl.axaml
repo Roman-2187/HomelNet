@@ -10,7 +10,7 @@
    <!-- 🌌 ОЖИВЛЯЕМ ХАБ: Превьюер видит модель и не слепнет -->
     <ContentControl DataContext="{DynamicResource ComponentHub}" x:CompileBindings="False">
         <Grid DataContext="{Binding TableUsersViewModel}">
-         <ContentControl Classes="AccountMenuContainer">    
+         <ContentControl Classes="CyberpunkInnerContainer">    
             <!-- Глубокий ScrollViewer для прокрутки кибер-плиток досье -->
             <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                 <ItemsControl ItemsSource="{Binding Users}" Margin="10">
@@ -67,13 +67,11 @@
                                         <TextBlock Grid.Row="4" Text="ЦИФРОВОЙ АДРЕС (EMAIL):" Foreground="#FFF5546F" FontSize="9" FontWeight="Bold"/>
                                         <TextBlock Grid.Row="5" Text="{Binding Email}" Foreground="#00F0FF" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,10"/>
 
-                                        <!-- 🔑 4. ПАРОЛЬ -->
-                                        <TextBlock Grid.Row="6" Text="КЛЮЧ ДОСТУПА (ПАРОЛЬ):" Foreground="#FFF5546F" FontSize="9" FontWeight="Bold"/>
-                                        <TextBlock Grid.Row="7" Text="{Binding Password}" Foreground="#00F0FF" FontSize="11" FontWeight="Medium" Margin="0,2,0,10"/>
+                                        
 
                                         <!-- 📅 5. ДАТА СОЗДАНИЯ -->
                                         <TextBlock Grid.Row="8" Text="ДАТА СОЗДАНИЯ :" Foreground="#00F0FF" FontSize="9" FontWeight="Bold"/>
-                                        <TextBlock Grid.Row="9" Text="{Binding CreatedAt, StringFormat='{}{0:dd.MM.yyyy HH:mm}'}" Foreground="#FFF5546F" FontSize="10" Margin="0,2,0,0"/>
+                                        <TextBlock Grid.Row="9" Text="{Binding LocalCreatedAt, StringFormat='{}{0:dd.MM.yyyy HH:mm}'}" Foreground="#FFF5546F" FontSize="10" Margin="0,2,0,0"/>
                                     </Grid>
 
                                 </StackPanel>

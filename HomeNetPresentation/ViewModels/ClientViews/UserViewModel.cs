@@ -12,7 +12,7 @@ namespace HomeNetPresentation.ViewModels
     /// Тотально изолированная и чистая панель пользователя SiberNet.
     /// Больше не содержит внутри себя ссылки на другие вью-модели! 🧼
     /// </summary>
-    public partial class UserViewModel : FormViewModelBase<UserNavigationManager>, IDisposable
+    public partial class UserViewModel : FormViewModelBase<UserNavigationManager>, IDisposable ,IUserVm
     {
         private Guid _currentUserId;
         ICastomLogger _logger;
@@ -25,6 +25,8 @@ namespace HomeNetPresentation.ViewModels
             _logger = logger;
             InitializeBusSubscriptions();
         }
+
+        
 
         private void InitializeBusSubscriptions()
         {      

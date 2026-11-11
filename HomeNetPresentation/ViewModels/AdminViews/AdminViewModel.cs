@@ -10,16 +10,36 @@ using HomeNetPresentation.Services;
 
 namespace HomeNetPresentation.ViewModels
 {
-    public partial class AdminViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable
+    public partial class AdminViewModel : FormViewModelBase<AdminNavigationManager>, IDisposable, IMenuViewModel
     {
         private readonly ILogQueueManager _adminLogQueueManager;
 
         // Локальный стейт вкладки, скопированный из факта навигатора
-        
+
+        [ObservableProperty] private bool _isMenuOpen = false;
+
+        [RelayCommand]
+        private void ToggleMenu()
+        {
+            IsMenuOpen = !IsMenuOpen;
+        }
+
+
+        // 🔥 Только закрывает (для кликов мимо)
+        [RelayCommand]
+        private void CloseMenu()
+        {
+            IsMenuOpen = false;
+
+
+            _eventBus.Publish(this, new IStatusBarViewModel.TextChanged($"[Лог-Фильтр]: нажал на скрытие панели "));
+
+
+        }
 
         [ObservableProperty] private LogLevelFilter _currentLogFilter = LogLevelFilter.All;
 
-        [ObservableProperty] private bool _isMenuOpen; // Локальный бул для админской шторки
+       
 
 
         [ObservableProperty] private AdminSubTab _activeTab = AdminSubTab.None;

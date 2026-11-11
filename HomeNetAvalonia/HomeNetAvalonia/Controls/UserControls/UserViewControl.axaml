@@ -10,15 +10,13 @@
              xmlns:behaviors="using:HomeNetAvalonia.Behaviors"
              xmlns:controls="using:HomeNetAvalonia.Controls"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
-             x:DataType="di:ComponentHub">
+             x:DataType="di:ComponentHub"  x:CompileBindings="False" >
 
     <UserControl.Resources>
         <conv:EqualityConverter x:Key="EqualityConverter"/>
     </UserControl.Resources>
 
-    <Design.DataContext>
-        <vm:UserViewModel ActiveClientTab="{x:Static enums:ClientSubTab.None}"/>
-    </Design.DataContext>
+  
 
     <UserControl.Styles>
         <!-- По умолчанию сетка мессенджера всегда скрыта 🕶️ -->
@@ -38,12 +36,12 @@
     </UserControl.Styles>
 
     <!-- 🌌 Корневой Grid оставляем на ComponentHub, чтобы пути биндингов были прозрачными -->
-    <Grid
+    <Grid 
                  
         HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
         
         <!-- Под-экран А: Форма Входа (явно указываем путь через UserViewModel) -->
-        <ContentControl
+        <ContentControl  
             IsVisible="{Binding UserViewModel.ActiveClientTab,
             Converter={StaticResource EqualityConverter},
             ConverterParameter={x:Static enums:ClientSubTab.Authentication}}">
@@ -78,24 +76,29 @@
             </Grid.IsVisible>
             
             <!-- ЛЕВАЯ ЧАСТЬ: Список контактов -->
-            <controls:ContactsListViewControl Grid.Column="0"
-                                              HorizontalAlignment="Stretch" 
-                                              VerticalAlignment="Stretch"/>
+            <controls:ContactsListViewControl
+                Grid.Column="0"  DataContext="{Binding ContactsViewModel}"
+                HorizontalAlignment="Stretch" 
+                VerticalAlignment="Stretch"/>
 
             <!-- ПРАВАЯ ЧАСТЬ: Динамическая зона переписки -->
-            <Grid behaviors:ClickCommandBehavior.Command="{Binding ContactsViewModel.CloseMenuCommand}" Grid.Column="1" >
+            <Grid
+               
+                Grid.Column="1" >
                 
                 <!-- Блок А: Заглушка, если чат еще не выбран (Стейт = Messenger) -->
-                <Border Background="Transparent"
-                        IsVisible="{Binding UserViewModel.ActiveClientTab,
-                        Converter={StaticResource EqualityConverter},
-                        ConverterParameter={x:Static enums:ClientSubTab.Messenger}}">
-                    <TextBlock Text="🌌 ВЫБЕРИТЕ КОНТАКТ ЧТОБЫ НАЧАТЬ ЧАТ" 
-                               Foreground="#4400F0FF"
-                               HorizontalAlignment="Center" 
-                               VerticalAlignment="Center"
-                               FontSize="14"
-                               FontWeight="Bold"/>
+                <Border
+                    Background="Transparent"
+                    IsVisible="{Binding UserViewModel.ActiveClientTab,
+                    Converter={StaticResource EqualityConverter},
+                    ConverterParameter={x:Static enums:ClientSubTab.Messenger}}">
+                    <TextBlock
+                        Text="🌌 ВЫБЕРИТЕ КОНТАКТ ЧТОБЫ НАЧАТЬ ЧАТ" 
+                        Foreground="#4400F0FF"
+                        HorizontalAlignment="Center" 
+                        VerticalAlignment="Center"
+                        FontSize="14"
+                        FontWeight="Bold"/>
                 </Border>
 
                 <!-- Блок Б: Настоящий контрол чата (Стейт = Chat) -->
@@ -104,11 +107,8 @@
                         Converter={StaticResource EqualityConverter},
                         ConverterParameter={x:Static enums:ClientSubTab.Chat}}"
                         HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"/>
-                
+                        VerticalAlignment="Stretch"/>               
             </Grid>
         </Grid>
-
-
     </Grid>
 </UserControl>
