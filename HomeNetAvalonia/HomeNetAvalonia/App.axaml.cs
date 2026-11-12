@@ -30,8 +30,8 @@ namespace HomeNetAvalonia
                 string dbPath = DatabasePathHelper.GetDatabasePath("home_net.db");
                 string sqliteConnectionString = $"Data Source={dbPath}";
 
-                // СТАЛО: Передаем сетевой адрес нашего ASP.NET Core API сервера
-                string apiBaseUrl = "http://192.168.0.17:5210"; // <--- Ставим порт 5210 вместо 5000!
+                // Передаем сетевой адрес нашего удаленного сервера
+                string apiBaseUrl = "http://185.154.52.107:5000";
 
 
                 // 2. Запускаем наш "тупой" сборщик на чистом "new"

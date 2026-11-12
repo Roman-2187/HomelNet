@@ -15,12 +15,12 @@ namespace HomeNet.Server
         private static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            const string serverLogName = "server_debug";
+          //  const string serverLogName = "server_debug";
 
             // 1. 🪐 СОБИРАЕМ МНОГОСТВОЛЬНЫЙ ЛОГГЕР
             ICastomLogger serverLogger = new AggregateLogger(
-                new ConsoleLogger(),
-                new HtmlLogger(serverLogName)
+                new ConsoleLogger()/* ,
+                new HtmlLogger(serverLogName)*/
             );
 
             serverLogger.LogInfo("=== [СУБД ХАБ СЕРВЕРА] СИСТЕМА ДВОЙНОГО ЛОГИРОВАНИЯ ИНИЦИАЛИЗИРОВАНА ===");
