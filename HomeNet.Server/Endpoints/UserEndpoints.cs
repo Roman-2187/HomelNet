@@ -60,12 +60,35 @@ namespace HomeNet.Server.Endpoints
                 }
             });
 
-            // === [📥 GET ВСЕХ ПОЛЬЗОВАТЕЛЕЙ (для админки)] ===
-            endpoints.MapGet("/api/users", async () =>
+            // === [📥 GET ВСЕХ ПОЛЬЗОВАТЕЛЕЙ (ТОЛЬКО ДЛЯ АДМИНА)] ===
+            endpoints.MapGet("/api/users", async (Guid userId, Guid deviceId) =>
             {
                 try
                 {
-                    serverLogger.LogInfo("[API] Запрос всех пользователей (админка).");
+                    // 🔥 Ищем пользователя в базе
+                    var user = await userRepository.GetByIdAsync(userId);
+                    if (user == null)
+                    {
+                        serverLogger.LogWarning($"[API] Пользователь {userId} не найден.");
+                        return Results.Unauthorized();
+                    }
+
+                    // 🔥 Проверяем, что это админ (по email)
+                    const string ADMIN_EMAIL = "ohagow.r@gmail.com";
+                    if (user.Email != ADMIN_EMAIL)
+                    {
+                        serverLogger.LogWarning($"[API] Пользователь {user.Email} не админ.");
+                        return Results.Unauthorized();
+                    }
+
+                    // 🔥 (Опционально) Проверяем deviceId
+                    if (user.DeviceId != deviceId)
+                    {
+                        serverLogger.LogWarning($"[API] DeviceId не совпадает для {user.Email}.");
+                        return Results.Unauthorized();
+                    }
+
+                    serverLogger.LogInfo($"[API] Запрос всех пользователей от админа {user.Email}.");
                     var users = await userRepository.GetAllAsync();
                     return Results.Ok(users);
                 }
