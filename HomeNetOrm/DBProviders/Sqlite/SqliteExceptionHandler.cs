@@ -1,5 +1,5 @@
 ﻿using HomeNetOrm.Exeptions;
-using HomeNetOrm.Interfaces.DbInfrastructure;
+using HomeNetOrm.Infrastructure;
 using Microsoft.Data.Sqlite;
 
 namespace HomeNetOrm.DBProviders.Sqlite

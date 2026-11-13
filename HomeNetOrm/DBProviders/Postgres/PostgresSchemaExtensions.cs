@@ -13,7 +13,7 @@ namespace HomeNetOrm.DBProviders.Postgres
             var sb = new StringBuilder();
 
             // 1. Создаем глобальный счетчик в Postgres, если его еще нет
-            sb.Append($"{translator.Translate(CmdType.Create)} SEQUENCE IF NOT EXISTS {VersionSequenceName} START WITH 0; ");
+            sb.Append($"{translator.Translate(CmdType.Create)} SEQUENCE IF NOT EXISTS {VersionSequenceName} START WITH 1; ");
 
             // 2. Пишем функцию, которая при любой операции выдает строке новое сквозное число
             sb.Append($"{translator.Translate(CmdType.Create)} {translator.Translate(TriggerType.Replace)} ")

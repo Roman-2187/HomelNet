@@ -154,16 +154,16 @@
                         VerticalAlignment="Stretch"/>
                 </ContentControl>
 
-                <!-- Блок В: Удаление пользователей (Исправлено навешиванием tab-content) 
+                 <!-- Блок В: Удаление пользователей (Исправлено навешиванием tab-content) -->
                 <ContentControl
                     Classes="tab-content" 
                     IsVisible="{Binding ActiveTab,
                     Converter={StaticResource EqualityConverter},
                     ConverterParameter={x:Static enums:AdminSubTab.DeleteUsers}}">
                     <controls:DeleteUsersControl/>
-                </ContentControl>-->
+                </ContentControl>
 
-                <ContentControl
+              <!--  <ContentControl
                     Classes="tab-content" 
                     IsVisible="{Binding ActiveTab,
                     Converter={StaticResource EqualityConverter},
@@ -179,7 +179,7 @@
                                        HorizontalAlignment="Center" 
                                        VerticalAlignment="Center"/>
                         </Border>
-                    </ContentControl>
+                    </ContentControl>  -->
 
                 <!-- Блок Г: Инспектор шины событий (Исправлено навешиванием tab-content) -->
                 <ContentControl

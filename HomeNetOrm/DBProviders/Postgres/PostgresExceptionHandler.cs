@@ -1,5 +1,5 @@
 ﻿using HomeNetOrm.Exeptions;
-using HomeNetOrm.Interfaces.DbInfrastructure;
+using HomeNetOrm.Infrastructure;
 using Npgsql;
 
 namespace HomeNetOrm.DBProviders.Postgres

@@ -167,6 +167,30 @@ namespace HomeNet.Server.Endpoints
                     return Results.Problem("Ошибка сервера");
                 }
             });
+
+            // === [🗑️ DELETE ПОЛЬЗОВАТЕЛЯ] ===
+            endpoints.MapDelete("/api/users/{id:guid}", async (Guid id) =>
+            {
+                try
+                {
+                    serverLogger.LogInfo($"[API DELETE] Запрос на удаление пользователя: {id}");
+
+                    var user = await userRepository.GetByIdAsync(id);
+                    if (user == null)
+                        return Results.NotFound(new { Error = "Пользователь не найден" });
+
+                    await userRepository.DeleteByIdAsync(id);
+                    serverLogger.LogInfo($"[API DELETE] Пользователь {id} успешно удалён.");
+
+                    return Results.Ok(new { Success = true });
+                }
+                catch (Exception ex)
+                {
+                    serverLogger.LogError($"[API DELETE] Ошибка удаления: {ex.Message}");
+                    return Results.Problem("Ошибка сервера");
+                }
+            });
+
         }
         public record LoginRequest(string Email, string Password);
     }

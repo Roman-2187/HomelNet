@@ -28,8 +28,10 @@ namespace HomeNet.Server
             var schemaModule = new RemoteMessengerSchemaModule();
             var serverSchemas = schemaModule.GetSchemas();
 
-            string postgresConn = builder.Configuration.GetConnectionString("PostgresConnection")
-                ?? "Server=127.0.0.1;Port=5432;Database=home_net_db;User Id=postgres;Password=05011987;";
+            builder.Configuration.AddJsonFile("secrets.json", optional: true, reloadOnChange: true);
+
+            string postgresConn = builder.Configuration["PostgresConnection"]
+            ?? throw new InvalidOperationException("В secrets.json отсутствует PostgresConnection");
 
             // 2. Создаем движок для PostgreSQL
             var postgresEngine = new SiberNetDbEngine(DbEngineType.PostgreSQLServer, postgresConn, serverSchemas, serverLogger);

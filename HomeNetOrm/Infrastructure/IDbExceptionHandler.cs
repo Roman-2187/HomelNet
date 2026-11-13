@@ -1,4 +1,4 @@
-﻿namespace HomeNetOrm.Interfaces.DbInfrastructure
+﻿namespace HomeNetOrm.Infrastructure
 {
     public interface IDbExceptionHandler
     {

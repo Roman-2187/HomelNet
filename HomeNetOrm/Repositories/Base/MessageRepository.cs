@@ -3,9 +3,8 @@ using HomeNet.Infrastructure.Shared;
 using HomeNet.Infrastructure.Shared.Interfaces.Diagnostics;
 using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
-using HomeNetOrm.Exeptions; // Тут лежат DuplicateEmailException, DatabaseException и т.д.
 using HomeNetOrm.Generators.Extensions;
-using HomeNetOrm.Interfaces.DbInfrastructure; // Для IDbExceptionHandler
+using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Interfaces.Repositories;
 using System.Data.Common;

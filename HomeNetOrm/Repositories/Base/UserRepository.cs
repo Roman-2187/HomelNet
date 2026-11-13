@@ -5,7 +5,7 @@ using HomeNet.Infrastructure.Shared.Interfaces.Routing;
 using HomeNet.Models.Shared.Entity;
 using HomeNetOrm.Exeptions;
 using HomeNetOrm.Generators.Extensions;
-using HomeNetOrm.Interfaces.DbInfrastructure;
+using HomeNetOrm.Infrastructure;
 using HomeNetOrm.Interfaces.Generators;
 using HomeNetOrm.Interfaces.Repositories;
 using System.Data.Common;

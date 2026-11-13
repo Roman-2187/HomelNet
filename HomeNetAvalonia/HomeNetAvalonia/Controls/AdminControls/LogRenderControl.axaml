@@ -51,7 +51,7 @@
                             Text="{Binding Text}" 
                             Tag="{Binding Level, StringFormat='{}{0}'}"
                             FontFamily="Consolas" 
-                            FontSize="12" 
+                            FontSize="15" 
                             LetterSpacing="-0.5">
     
                                 <TextBlock.Styles>

@@ -1,5 +1,8 @@
-﻿using Avalonia.Controls;
+﻿using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
+using HomeNetPresentation.ViewModels;
+using System;
 
 namespace HomeNetAvalonia.Views
 {
@@ -10,6 +13,21 @@ namespace HomeNetAvalonia.Views
             InitializeComponent();
         }
 
-       
+
+        protected override void OnOpened(EventArgs e)
+        {
+            base.OnOpened(e);
+
+            // Публикуем событие через EventBus (без прямых зависимостей)
+            if (Application.Current is App app)
+            {
+                app.EventBus.Publish(this, new WindowOpenedEvent
+                {
+                    ElapsedMs = App.AppStopwatch.ElapsedMilliseconds
+                });
+            }
+        }
+
+
     }
 }

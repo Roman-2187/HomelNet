@@ -13,6 +13,17 @@ namespace HomeNetPresentation.ViewModels
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+
+            _eventBus.Subscribe<WindowOpenedEvent>(e =>
+            {
+                _logger.LogInfo($"[PERF] Окно открыто через {e.ElapsedMs} мс");
+            });
         }
+    }
+
+
+    public class WindowOpenedEvent
+    {
+        public long ElapsedMs { get; set; }
     }
 }
